@@ -1,14 +1,15 @@
-Thank you for considering contributing to SCANOSS Scanner. It's people like you that make SCANOSS Scanner such a great tool. Feel welcome and read the following sections
+# Contributing
+Thank you for considering contributing to SCANOSS. It's people like you that make SCANOSS Scanner such a great tool. Feel welcome and read the following sections
 in order to know how to get involved, ask questions and more importantly how to work on something.
 
-SCANOSS Scanner is an open source project and we love to receive contributions from our community. There are many ways to contribute, from writing tutorials or blog posts, improving the documentation, submitting bug reports and feature requests, or writing code.
+SCANOSS is an open source project, and we love to receive contributions from our community. There are many ways to contribute, from writing tutorials or blog posts, improving the documentation, submitting bug reports and feature requests, or writing code.
 A welcome addition to the project is an integration with a new source code repository.
 
 ### Submitting bugs
 
 If you are submitting a bug, please tell us:
 
-- Version of SCANOSS Scanner you are using
+- Version of SCANOSS you are using
 - Version of Python you are using
 - how to reproduce the bug.
 

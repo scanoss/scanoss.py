@@ -2,12 +2,6 @@ import codecs
 import os
 from setuptools import setup, find_packages
 
-# from os import path
-# this_directory = path.abspath(path.dirname(__file__))
-# with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
-#     long_description = f.read()
-
-
 def read(rel_path):
     here = os.path.abspath(os.path.dirname(__file__))
     with codecs.open(os.path.join(here, rel_path), 'r') as fp:
@@ -30,7 +24,7 @@ setup(
     author_email="info@scanoss.com",
     license='GPL 2.0 or later',
     description='Simple Python library to use the SCANOSS APIs.',
-    long_description=read("README.md"),
+    long_description=read("PACKAGE.md"),
     long_description_content_type='text/markdown',
     install_requires=["requests", "crc32c"],
     include_package_data=True,
