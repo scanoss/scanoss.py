@@ -1,0 +1,13 @@
+*.wfp
+*-result.json
+.vscode/
+gitee_com_*
+github_com_*
+master.zip
+dist/
+build/
+.eggs
+*.egg-info
+__pycache__
+venv/
+.idea
