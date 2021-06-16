@@ -22,6 +22,7 @@ import sys
 
 from .scanossapi import ScanossApi
 from .winnowing import Winnowing
+from .cyclonedx import CycloneDx
 
 FILTERED_DIRS = {".git", ".svn", ".eggs", "__pycache__", ".metadata", ".idea",
                  ".sts4-cache", ".launch", ".vscode", ".vs", "venv", ".github", ".circleci"
@@ -288,7 +289,8 @@ class Scanner:
         if self.output_format == 'plain':
             self.__log_result(raw_output)
         elif self.output_format == 'cyclonedx':
-            self.cyclonedx(raw_output)
+            cdx = CycloneDx(self.debug, self.scan_output)
+            cdx.produce_from_str(raw_output)
 
     def scan_wfp(self, wfp: str):
         """
@@ -309,7 +311,8 @@ class Scanner:
         if self.output_format == 'plain':
             self.__log_result(raw_output)
         elif self.output_format == 'cyclonedx':
-            self.cyclonedx(raw_output)
+            cdx = CycloneDx(self.debug, self.scan_output)
+            cdx.produce_from_str(raw_output)
 
     def wfp_file(self, scan_file: str, wfp_file: str = None):
         """
@@ -362,50 +365,6 @@ class Scanner:
                 print(wfps)
         else:
             Scanner.print_stderr(f'Warning: No files found to fingerprint in folder: {scan_dir}')
-
-    def cyclonedx(self, json_str: str):
-        """
-
-        """
-        self.print_debug(f'Processing raw results into CycloneDX format...')
-        results = json.loads(json_str)
-        cdx = {}
-        if results:
-            for f in results:
-                file_details = results.get(f)
-                # print(f'File: {f}: {file_details}')
-                for d in file_details:
-                    id_details = d.get("id")
-                    if not id_details or id_details == 'none':
-                        # print(f'No ID for {f}')
-                        continue
-                    purl = None
-                    purls = d.get('purl')
-                    if not purls:
-                        print(f'Purl block missing for {f}: {file_details}')
-                        continue
-                    for p in purls:
-                        print(f'Purl: {p}')
-                        purl = p
-                        break
-                    if not purl:
-                        print(f'Warning: No PURL found for {f}: {file_details}')
-                        continue
-                    if cdx.get(purl):
-                        print(f'Component {purl} already stored: {cdx.get(purl)}')
-                        continue
-                    fd = {}
-                    print(f'Vendor: {d.get("vendor")}, Comp: {d.get("component")}, Ver: {d.get("version")},'
-                          f' Latest: {d.get("latest")}')
-                    for field in ['vendor', 'component', 'version', 'latest']:
-                        fd[field] = d.get(field)
-                    licenses = d.get('licenses')
-                    for lic in licenses:
-                        print(f'License: {lic.get("name")}')
-                        fd['license'] = lic.get("name")
-                        break
-                    cdx[p] = fd
-            print(f'License summary: {cdx}')
 
 #
 # End of ScanOSS Class

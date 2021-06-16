@@ -17,18 +17,22 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import json
+import os.path
 import sys
+import hashlib
+import time
 
 
 class CycloneDx:
     """
 
     """
-    def __init__(self, output_file: str = None):
+    def __init__(self, debug: bool = False, output_file: str = None):
         """
 
         """
         self.output_file = output_file
+        self.debug = debug
 
     @staticmethod
     def print_stderr(*args, **kwargs):
@@ -51,9 +55,29 @@ class CycloneDx:
         if self.debug:
             self.print_stderr(*args, **kwargs)
 
+    def parse_file(self, file: str):
+        """
+        Parse the given input (raw/plain) JSON file and return CycloneDX summary
+
+        :param file: str - JSON file to parse
+        :return: CycloneDX dictionary
+        """
+        if not file:
+            self.print_stderr('ERROR: No JSON file provided to parse.')
+            return None
+        if not os.path.isfile(file):
+            self.print_stderr('ERROR: JSON file does not exist or is not a file.')
+            return None
+        with open(file) as f:
+            return self.parse(f.read())
+
+
     def parse(self, json_str: str):
         """
+        Parse the given input (raw/plain) JSON string and return CycloneDX summary
 
+        :param json_str: str - JSON string
+        :return: CycloneDX dictionary
         """
         if not json_str:
             self.print_stderr('ERROR: No JSON string provided to parse.')
@@ -73,41 +97,102 @@ class CycloneDx:
                     purl = None
                     purls = d.get('purl')
                     if not purls:
-                        print(f'Purl block missing for {f}: {file_details}')
+                        self.print_stderr(f'Purl block missing for {f}: {file_details}')
                         continue
                     for p in purls:
-                        print(f'Purl: {p}')
+                        self.print_debug(f'Purl: {p}')
                         purl = p
                         break
                     if not purl:
-                        print(f'Warning: No PURL found for {f}: {file_details}')
+                        self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
                         continue
                     if cdx.get(purl):
-                        print(f'Component {purl} already stored: {cdx.get(purl)}')
+                        self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
                         continue
                     fd = {}
-                    print(f'Vendor: {d.get("vendor")}, Comp: {d.get("component")}, Ver: {d.get("version")},'
-                          f' Latest: {d.get("latest")}')
-                    for field in ['vendor', 'component', 'version', 'latest']:
+                    # print(f'Vendor: {d.get("vendor")}, Comp: {d.get("component")}, Ver: {d.get("version")},'
+                    #       f' Latest: {d.get("latest")} ID: {d.get("id")}')
+                    for field in ['id', 'vendor', 'component', 'version', 'latest']:
                         fd[field] = d.get(field)
                     licenses = d.get('licenses')
+                    fdl = []
                     for lic in licenses:
-                        print(f'License: {lic.get("name")}')
-                        fd['license'] = lic.get("name")
-                        break
+                        # print(f'License: {lic.get("name")}')
+                        fdl.append({'id':lic.get("name")})
+                    fd['licenses'] = fdl
                     cdx[p] = fd
-            print(f'License summary: {cdx}')
+            # print(f'License summary: {cdx}')
             return cdx
 
-    def produce(self, json_str: str, output_file: str):
+    def produce_from_file(self, json_file: str, output_file: str = None):
         """
 
+
+        :param json_file:
+        :param output_file:
+        :return:
+        """
+        if not json_file:
+            self.print_stderr('ERROR: No JSON file provided to parse.')
+            return None
+        if not os.path.isfile(json_file):
+            self.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
+            return None
+        with open(json_file, 'r') as f:
+            self.produce_from_str(f.read(), output_file)
+
+
+    def produce_from_str(self, json_str: str, output_file: str = None):
+        """
+
+        :param json_str:
+        :param output_file:
+        :return:
         """
         if not json_str:
             self.print_stderr('ERROR: No JSON string provided to parse.')
             return
-        cdx = (self, json_str)
+        cdx = self.parse(json_str)
+        if not cdx:
+            self.print_stderr('ERROR: No CycloneDX data returned for the JSON string provided.')
+            return
+        md5hex = hashlib.md5(f'{time.time()}'.encode('utf-8')).hexdigest()
+        data = {}
+        data['bomFormat'] = 'CycloneDX'
+        data['specVersion'] = '1.2'
+        data['serialNumber'] = f'scanoss:SCANOSS-PY - SCANOSS CLI-{md5hex}'
+        data['version'] = '1'
+        data['components'] = []
+        for purl in cdx:
+            comp = cdx.get(purl)
+            lic = []
+            licenses = comp.get('licenses')
+            if licenses:
+                for l in licenses:
+                    lic.append({'license': { 'id': l.get('id')}})
+            m_type = 'Snippet' if comp.get('id') == 'snippet' else 'Library'
+            data['components'].append({
+                'type': m_type,
+                'name': comp.get('component'),
+                'publisher': comp.get('vendor'),
+                'version': comp.get('version'),
+                'purl': purl,
+                'licenses': lic
+                # 'licenses': [{
+                #     'license': {
+                #         'id': comp.get('license')
+                #     }
+                # }]
+            })
 
+        file = sys.stdout
+        if not output_file and self.output_file:
+            output_file = self.output_file
+        if output_file:
+            file = open(output_file, 'w')
+        print(json.dumps(data, indent=2), file=file)
+        if output_file:
+            file.close()
 
 #
 # End of CycloneDX Class
@@ -120,6 +205,8 @@ def main():
     """
     print('Testing CycloneDx...')
     cdx = CycloneDx()
+
+    cdx.produce_from_file('scan_output.json')
 
 
 if __name__ == "__main__":

@@ -258,25 +258,3 @@ class Winnowing:
 #
 # End of Winnowing Class
 #
-
-
-def main():
-    """
-    Local test of the Winnowing class
-    """
-    print('Testing Winnowing...')
-    winnowing = Winnowing()
-    filename = "test-file.c"
-    contents = "c code contents"
-    content_types = bytes(contents, encoding="raw_unicode_escape")
-    wfp = winnowing.wfp_for_contents(filename, content_types)
-    print(f'WFP for {filename}:')
-    print(wfp)
-    filename = __file__
-    wfp = winnowing.wfp_for_file(filename, filename)
-    print(f'WFP for {filename}:')
-    print(wfp)
-
-
-if __name__ == "__main__":
-    main()
