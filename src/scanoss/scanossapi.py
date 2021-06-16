@@ -133,18 +133,3 @@ class ScanossApi:
 #
 # End of ScanossApi Class
 #
-
-
-def main():
-    """
-    Local test of the ScanOSS API class
-    """
-    print('Testing ScanossApi...')
-    api = ScanossApi()
-    wfp = "file=ca1c845ca91d74fb1ddd0f47d57bb38c,15,test-file.c"
-    response = api.scan(wfp)
-    print(f'Scan response: {response}')
-
-
-if __name__ == "__main__":
-    main()
