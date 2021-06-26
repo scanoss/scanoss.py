@@ -181,7 +181,7 @@ class Scanner:
         scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         if not self.quiet and self.isatty:
-            spinner = Spinner('Finger printing ')
+            spinner = Spinner('Fingerprinting ')
         for root, dirs, files in os.walk(scan_dir):
             dirs[:] = [d for d in dirs if d.lower() not in FILTERED_DIRS]  # skip directory if in the exclude list
             filtered_files = Scanner.__filter_files(files)                    # Strip out unwanted files
