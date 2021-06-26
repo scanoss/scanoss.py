@@ -27,6 +27,7 @@ import hashlib
 import sys
 
 from crc32c import crc32c
+from binaryornot.check import is_binary
 
 # Winnowing configuration. DO NOT CHANGE.
 GRAM = 30
@@ -43,7 +44,12 @@ ASCII_BACKSLASH = 92
 MAX_CRC32 = 4294967296
 MAX_LONG_LINE_CHARS = 1000
 MAX_POST_SIZE = 64 * 1024  # 64k Max post size
+MIN_FILE_SIZE = 256
 
+SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
+                ".exe", ".zip", ".tar", ".tgz", ".gz", ".rar", ".jar", ".war", ".ear",
+                ".doc", ".docx", ".xls", ".xlsx", ".ppt"
+}
 
 class Winnowing:
     """
@@ -121,10 +127,9 @@ class Winnowing:
             return byte + 32
         return 0
 
-    @staticmethod
-    def __skip_snippets(src: str) -> bool:
+    def __skip_snippets(self, file: str, src: str) -> bool:
         """
-        Determine files that are not of interest based on their content
+        Determine files that are not of interest based on their content or file extension
         Parameters
         ----------
             src: str
@@ -134,15 +139,26 @@ class Winnowing:
             True: if file should be skipped
             False: otherwise
         """
-        if len(src) == 0:
+        if file:
+            lower_file = file.lower()
+            for ending in SKIP_SNIPPET_EXT:
+                if lower_file.lower().endswith(ending):
+                    self.print_debug(f'Skipping snippets due to file ending: {file} - {ending}')
+                    return True;
+        src_len = len(src)
+        if src_len == 0 or src_len < MIN_FILE_SIZE:                   # Ignore empty or files that are too small
+            self.print_debug(f'Skipping snippets as the file is too small: {file} - {src_len}')
             return True
-        if src[0] == "{":                                             # Ignore json
+        prefix = src[0:30].lower().strip()
+        if prefix[0] == "{":                                             # Ignore json
+            self.print_debug(f'Skipping snippets as the file appears to be JSON: {file}')
             return True
-        prefix = src[0:5].lower()
-        if prefix.startswith("<?xml") or prefix.startswith("<html"):  # Ignore xml & html
-            return True
+        if prefix.startswith("<?xml") or prefix.startswith("<html") or prefix.startswith("<AC3D"):
+            self.print_debug(f'Skipping snippets as the file appears to be xml/html/binary: {file}')
+            return True                                               # Ignore xml & html & ac3d
         index = src.index('\n') if '\n' in src else len(src)
         if len(src[0:index]) > MAX_LONG_LINE_CHARS:                   # Ignore long lines
+            self.print_debug(f'Skipping snippets due to file line being too long: {file} - {MAX_LONG_LINE_CHARS}')
             return True
         return False
 
@@ -156,11 +172,26 @@ class Winnowing:
             file: str
                 File name/path to record in WFP
         """
+        binary_file = self.is_binary(path)
         with open(path, 'rb') as f:
             contents = f.read()
-            return self.wfp_for_contents(file, contents)
+            return self.wfp_for_contents(file, binary_file, contents)
 
-    def wfp_for_contents(self, file: str, contents: bytes) -> str:
+    def is_binary(self, path: str):
+        """
+        Check if the specified file is a potential "binary" file
+
+        :param path: Path to the file to check
+        :return: True if binary, False otherwise
+        """
+        if path:
+            binary_path = is_binary(path)
+            if binary_path:
+                self.print_debug(f'Detected binary file: {path}')
+            return binary_path
+        return False
+
+    def wfp_for_contents(self, file: str, bin_file: bool, contents: bytes) -> str:
         """
         Generate a Winnowing Finger Print (WFP) for the given file contents
         Parameters
@@ -175,9 +206,10 @@ class Winnowing:
         """
         file_md5 = hashlib.md5(contents).hexdigest()
         # Print file line
-        wfp = 'file={0},{1},{2}\n'.format(file_md5, len(contents), file)
+        content_length = len(contents)
+        wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, file)
         # We don't process snippets for binaries.
-        if self.__skip_snippets(contents.decode('utf-8', 'ignore')):
+        if bin_file or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
         # Initialize variables
         gram = ""

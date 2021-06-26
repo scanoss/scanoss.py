@@ -20,12 +20,15 @@ import json
 import os
 import sys
 
+from progress.bar import Bar
+from progress.spinner import Spinner
+
 from .scanossapi import ScanossApi
 from .winnowing import Winnowing
 from .cyclonedx import CycloneDx
 
 FILTERED_DIRS = {".git", ".svn", ".eggs", "__pycache__", ".metadata", ".idea",
-                 ".sts4-cache", ".launch", ".vscode", ".vs", "venv", ".github", ".circleci"
+                 ".sts4-cache", ".launch", ".vscode", ".vs", "venv", ".venv", ".github", ".circleci"
                  "node_modules", "vendor"  # TODO should these be removed?
                  }
 FILTERED_EXT = {  # File extensions
@@ -69,6 +72,7 @@ class Scanner:
         self.wfp = wfp if wfp else "scanner_output.wfp"
         self.scan_output = scan_output
         self.output_format = output_format
+        self.isatty = sys.stderr.isatty()
         self.winnowing = Winnowing(debug=debug, quiet=quiet)
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags
@@ -81,9 +85,10 @@ class Scanner:
         """
         file_list = []
         for f in files:
+            f_lower = f.lower()
             ignore = False
             for ending in FILTERED_EXT:
-                if f.lower().endswith(ending):
+                if f_lower.endswith(ending):
                     ignore = True
                     break
             if not ignore:
@@ -175,6 +180,8 @@ class Scanner:
         wfps = ''
         scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
+        if not self.quiet and self.isatty:
+            spinner = Spinner('Finger printing ')
         for root, dirs, files in os.walk(scan_dir):
             dirs[:] = [d for d in dirs if d.lower() not in FILTERED_DIRS]  # skip directory if in the exclude list
             filtered_files = Scanner.__filter_files(files)                    # Strip out unwanted files
@@ -184,7 +191,11 @@ class Scanner:
                 file_stat = os.stat(path)
                 if file_stat.st_size > 0:            # Ignore empty files
                     self.print_debug(f'Fingerprinting {path}...')
+                    if not self.quiet and self.isatty:
+                        spinner.next()
                     wfps += self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
+        if not self.quiet and self.isatty:
+            spinner.finish()
         if wfps:
             self.print_debug(f'Writing fingerprints to {self.wfp}')
             with open(self.wfp, 'w') as f:
@@ -237,6 +248,9 @@ class Scanner:
         self.print_debug(f'Found {file_count} files to process.')
         raw_output = "{\n"
         file_print = ''
+        if not self.quiet and self.isatty:
+            bar = Bar('Scanning', max=file_count)
+            bar.next(0)
         with open(wfp_file) as f:
             for line in f:
                 if line.startswith(WFP_FILE_START):
@@ -256,6 +270,8 @@ class Scanner:
                     if cur_size > MAX_POST_SIZE:
                         Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {MAX_POST_SIZE}')
                     scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
+                    if not self.quiet and self.isatty:
+                        bar.next(batch_files)
                     if scan_resp is not None:
                         for key, value in scan_resp.items():
                             raw_output += "  \"%s\":%s," % (key, json.dumps(value, indent=2))
@@ -277,6 +293,8 @@ class Scanner:
             self.print_debug(f'Sending {batch_files} ({cur_files}) of'
                              f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.')
             scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
+            if not self.quiet and self.isatty:
+                bar.next(batch_files)
             first = True
             if scan_resp is not None:
                 for key, value in scan_resp.items():
@@ -286,6 +304,8 @@ class Scanner:
                     else:
                         raw_output += ",\n  \"%s\":%s" % (key, json.dumps(value, indent=2))
         raw_output += "\n}"
+        if not self.quiet and self.isatty:
+            bar.finish()
         if self.output_format == 'plain':
             self.__log_result(raw_output)
         elif self.output_format == 'cyclonedx':

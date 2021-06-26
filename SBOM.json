@@ -23,5 +23,20 @@
     "homepage": "https://github.com/psf/requests",
     "license_url": "https://raw.githubusercontent.com/psf/requests/master/LICENSE",
     "license": "Apache-2.0"
+  },
+  {
+    "vendor": "audreyfeldroy",
+    "component": "binaryornot",
+    "dependency": "runtime",
+    "homepage": "https://github.com/audreyfeldroy/binaryornot",
+    "license": "BSD-3-Clause"
+  },
+  {
+    "vendor": "verigak",
+    "component": "progress",
+    "dependency": "runtime",
+    "homepage": "https://github.com/verigak/progress",
+    "license_url": "https://opensource.org/licenses/ISC",
+    "license": "ISC"
   }
 ]
