@@ -47,7 +47,8 @@ MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 MIN_FILE_SIZE = 256
 
 SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
-                ".exe", ".zip", ".tar", ".tgz", ".gz", ".rar", ".jar", ".war", ".ear",
+                ".exe", ".zip", ".tar", ".tgz", ".gz", ".rar", ".jar", ".war", ".ear", ".class", ".pyc", ".o", ".a",
+                ".so", ".obj", ".dll", ".lib", ".out", ".app",
                 ".doc", ".docx", ".xls", ".xlsx", ".ppt"
 }
 
@@ -142,21 +143,21 @@ class Winnowing:
         if file:
             lower_file = file.lower()
             for ending in SKIP_SNIPPET_EXT:
-                if lower_file.lower().endswith(ending):
+                if lower_file.endswith(ending):
                     self.print_debug(f'Skipping snippets due to file ending: {file} - {ending}')
                     return True;
         src_len = len(src)
-        if src_len == 0 or src_len < MIN_FILE_SIZE:                   # Ignore empty or files that are too small
+        if src_len == 0 or src_len <= MIN_FILE_SIZE:                  # Ignore empty or files that are too small
             self.print_debug(f'Skipping snippets as the file is too small: {file} - {src_len}')
             return True
-        prefix = src[0:30].lower().strip()
-        if prefix[0] == "{":                                             # Ignore json
+        prefix = src[0:(MIN_FILE_SIZE-1)].lower().strip()
+        if len(prefix) > 0 and prefix[0] == "{":                      # Ignore json
             self.print_debug(f'Skipping snippets as the file appears to be JSON: {file}')
             return True
         if prefix.startswith("<?xml") or prefix.startswith("<html") or prefix.startswith("<AC3D"):
             self.print_debug(f'Skipping snippets as the file appears to be xml/html/binary: {file}')
             return True                                               # Ignore xml & html & ac3d
-        index = src.index('\n') if '\n' in src else len(src)
+        index = src.index('\n') if '\n' in src else (src_len-1) # TODO is this still necessary if we hav a binary check?
         if len(src[0:index]) > MAX_LONG_LINE_CHARS:                   # Ignore long lines
             self.print_debug(f'Skipping snippets due to file line being too long: {file} - {MAX_LONG_LINE_CHARS}')
             return True
