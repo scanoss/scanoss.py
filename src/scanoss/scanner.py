@@ -120,7 +120,7 @@ class Scanner:
         """
         dir_list = []
         for d in dirs:
-            igore = False
+            ignore = False
             if not d.startswith("."):             # Ignore all . folders
                 ignore = True
             if not ignore:
