@@ -27,17 +27,20 @@ from .scanossapi import ScanossApi
 from .winnowing import Winnowing
 from .cyclonedx import CycloneDx
 
-FILTERED_DIRS = {".git", ".svn", ".eggs", "__pycache__", ".metadata", ".idea",
-                 ".sts4-cache", ".launch", ".vscode", ".vs", "venv", ".venv", ".github", ".circleci"
-                 "node_modules", "vendor"  # TODO should these be removed?
+FILTERED_DIRS = {  # Folders to skip
+                 "nbproject", "nbbuild", "nbdist", "__pycache__", "venv", "_yardoc", "eggs", "wheels", "htmlcov",
+                "__pypackages__"
                  }
-FILTERED_EXT = {  # File extensions
+FILTERED_DIR_EXT = { # Folder endings to skip
+                    ".egg-info"
+                   }
+FILTERED_EXT = {  # File extensions to skip
                 ".1", ".2", ".3", ".4", ".5", ".6", ".7", ".8", ".9", ".ac", ".adoc", ".am",
                 ".asciidoc", ".bmp", ".build", ".cfg", ".chm", ".class", ".cmake", ".cnf",
                 ".conf", ".config", ".contributors", ".copying", ".crt", ".csproj", ".css",
-                ".csv", ".cvsignore", ".dat", ".data", ".doc", ".ds_store", ".dtd", ".dts",
-                ".dtsi", ".dump", ".eot", ".eps", ".eslintignore", ".geojson", ".gdoc", ".gif", ".gitignore",
-                ".gitattributes", ".glif", ".gmo", ".gradle", ".guess", ".hex", ".htm", ".html", ".ico", ".iml",
+                ".csv", ".dat", ".data", ".doc", ".docx", ".dtd", ".dts", ".iws", ".c9", ".c9revisions",
+                ".dtsi", ".dump", ".eot", ".eps", ".geojson", ".gdoc", ".gif",
+                ".glif", ".gmo", ".gradle", ".guess", ".hex", ".htm", ".html", ".ico", ".iml",
                 ".in", ".inc", ".info", ".ini", ".ipynb", ".jpeg", ".jpg", ".json", ".jsonld", ".lock",
                 ".log", ".m4", ".map", ".markdown", ".md", ".md5", ".meta", ".mk", ".mxml",
                 ".o", ".otf", ".out", ".pbtxt", ".pdf", ".pem", ".phtml", ".plist", ".png",
@@ -45,11 +48,18 @@ FILTERED_EXT = {  # File extensions
                 ".rst", ".scss", ".sha", ".sha1", ".sha2", ".sha256", ".sln", ".spec", ".sql",
                 ".sub", ".svg", ".svn-base", ".tab", ".template", ".test", ".tex", ".tiff",
                 ".toml", ".ttf", ".txt", ".utf-8", ".vim", ".wav", ".whl", ".woff", ".xht",
-                ".xhtml", ".xls", ".xml", ".xpm", ".xsd", ".xul", ".yaml", ".yml", ".wfp",
+                ".xhtml", ".xls", ".xlsx", ".xml", ".xpm", ".xsd", ".xul", ".yaml", ".yml", ".wfp",
+                ".editorconfig", ".dotcover", ".pid", ".lcov", ".egg", ".manifest", ".cache", ".coverage", ".cover",
+                ".gem", ".pydevproject",
                 # File endings
-                "-doc", "changelog", "config", "copying", "copying.lib", "license",
-                "license.md", "license.txt", "licenses", "makefile", "notice",
-                "readme", "swiftdoc", "texidoc", "todo", "version", "ignore"
+                "-doc", "changelog", "config", "copying", "license",
+                "licenses", "notice",
+                "readme", "swiftdoc", "texidoc", "todo", "version", "ignore", "manifest", "sqlite", "sqlite3"
+                }
+FILTERED_FILES = {  # Files to skip
+                    "gradlew", "gradlew.bat", "mvnw", "mvnw.cmd", "gradle-wrapper.jar",
+                    "thumbs.db", "babel.config.js",
+                    "license.txt", "license.md", "copying.lib", "makefile"
                 }
 WFP_FILE_START = "file="
 MAX_POST_SIZE = 64 * 1024  # 64k Max post size
@@ -85,15 +95,46 @@ class Scanner:
         """
         file_list = []
         for f in files:
-            f_lower = f.lower()
             ignore = False
-            for ending in FILTERED_EXT:
-                if f_lower.endswith(ending):
+            if f.startswith("."):                    # Ignore all . files
+                ignore = True
+            if not ignore:
+                f_lower = f.lower()
+                if f_lower in FILTERED_FILES:        # Check for exact files to ignore
                     ignore = True
-                    break
+                if not ignore:
+                    for ending in FILTERED_EXT:      # Check for file endings to ignore
+                        if f_lower.endswith(ending):
+                            ignore = True
+                            break
             if not ignore:
                 file_list.append(f)
         return file_list
+
+    @staticmethod
+    def __filter_dirs(dirs: list) -> list:
+        """
+        Filter which folders should be considered for processing
+        :param dirs: list of directories to filter
+        :return: list of filtered directories
+        """
+        dir_list = []
+        for d in dirs:
+            igore = False
+            if not d.startswith("."):             # Ignore all . folders
+                ignore = True
+            if not ignore:
+                d_lower = d.lower()
+                if d_lower in FILTERED_DIRS:      # Ignore specific folders
+                    ignore = True
+                if not ignore:
+                    for de in FILTERED_DIR_EXT:   # Ignore specific folder endings
+                        if d_lower.endswith(de):
+                            ignore = True
+                            break
+            if not ignore:
+                dir_list.append(d)
+        return dir_list
 
     @staticmethod
     def __strip_dir(scan_dir: str, length: int, path: str) -> str:
@@ -183,8 +224,8 @@ class Scanner:
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
         for root, dirs, files in os.walk(scan_dir):
-            dirs[:] = [d for d in dirs if d.lower() not in FILTERED_DIRS]  # skip directory if in the exclude list
-            filtered_files = Scanner.__filter_files(files)                    # Strip out unwanted files
+            dirs = Scanner.__filter_dirs(dirs)                             # Strip out unwanted directories
+            filtered_files = Scanner.__filter_files(files)                 # Strip out unwanted files
             self.print_trace(f'Root: {root}, Dirs: {dirs}, Files {filtered_files}')
             for file in filtered_files:
                 path = os.path.join(root, file)
@@ -367,7 +408,7 @@ class Scanner:
         scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         for root, dirs, files in os.walk(scan_dir):
-            dirs[:] = [d for d in dirs if d.lower() not in FILTERED_DIRS]  # skip directory if in the exclude list
+            dirs = Scanner.__filter_dirs(dirs)                             # Strip out unwanted directories
             filtered_files = Scanner.__filter_files(files)                    # Strip out unwanted files
             self.print_trace(f'Root: {root}, Dirs: {dirs}, Files {filtered_files}')
             for file in filtered_files:
