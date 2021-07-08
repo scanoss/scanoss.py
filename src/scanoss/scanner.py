@@ -50,14 +50,14 @@ FILTERED_EXT = {  # File extensions to skip
                 ".toml", ".ttf", ".txt", ".utf-8", ".vim", ".wav", ".whl", ".woff", ".xht",
                 ".xhtml", ".xls", ".xlsx", ".xml", ".xpm", ".xsd", ".xul", ".yaml", ".yml", ".wfp",
                 ".editorconfig", ".dotcover", ".pid", ".lcov", ".egg", ".manifest", ".cache", ".coverage", ".cover",
-                ".gem", ".pydevproject",
+                ".gem",
                 # File endings
                 "-doc", "changelog", "config", "copying", "license",
                 "licenses", "notice",
                 "readme", "swiftdoc", "texidoc", "todo", "version", "ignore", "manifest", "sqlite", "sqlite3"
                 }
 FILTERED_FILES = {  # Files to skip
-                    "gradlew", "gradlew.bat", "mvnw", "mvnw.cmd", "gradle-wrapper.jar",
+                    "gradlew", "gradlew.bat", "mvnw", "mvnw.cmd", "gradle-wrapper.jar", "maven-wrapper.jar",
                     "thumbs.db", "babel.config.js",
                     "license.txt", "license.md", "copying.lib", "makefile"
                 }
@@ -92,6 +92,8 @@ class Scanner:
     def __filter_files(files) -> list:
         """
         Filter which files should be considered for processing
+        :param files: list of files to filter
+        :return list of filtered files
         """
         file_list = []
         for f in files:
@@ -121,7 +123,7 @@ class Scanner:
         dir_list = []
         for d in dirs:
             ignore = False
-            if not d.startswith("."):             # Ignore all . folders
+            if d.startswith("."):                 # Ignore all . folders
                 ignore = True
             if not ignore:
                 d_lower = d.lower()
@@ -224,9 +226,10 @@ class Scanner:
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
         for root, dirs, files in os.walk(scan_dir):
-            dirs = Scanner.__filter_dirs(dirs)                             # Strip out unwanted directories
+            self.print_debug(f'U Root: {root}, Dirs: {dirs}, Files {files}')
+            dirs[:] = Scanner.__filter_dirs(dirs)                          # Strip out unwanted directories
             filtered_files = Scanner.__filter_files(files)                 # Strip out unwanted files
-            self.print_trace(f'Root: {root}, Dirs: {dirs}, Files {filtered_files}')
+            self.print_debug(f'F Root: {root}, Dirs: {dirs}, Files {filtered_files}')
             for file in filtered_files:
                 path = os.path.join(root, file)
                 file_stat = os.stat(path)

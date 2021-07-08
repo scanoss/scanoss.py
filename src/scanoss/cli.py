@@ -165,6 +165,14 @@ def scan(parser, args):
         if not os.path.exists(sbom_path) or not os.path.isfile(sbom_path):
             print_stderr(f'Specified --identify file does not exist or is not a file: {sbom_path}')
             exit(1)
+        if args.ignore:
+            print_stderr(f'Warning: Specified --identify and --ignore options. Skipping ignore.')
+    elif args.ignore:
+        sbom_path = args.ignore
+        scan_type = 'blacklist'
+        if not os.path.exists(sbom_path) or not os.path.isfile(sbom_path):
+            print_stderr(f'Specified --ignore file does not exist or is not a file: {sbom_path}')
+            exit(1)
     scan_output: str = None
     if args.output:
         scan_output = args.output
