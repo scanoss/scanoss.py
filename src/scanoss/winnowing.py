@@ -151,10 +151,10 @@ class Winnowing:
             self.print_debug(f'Skipping snippets as the file is too small: {file} - {src_len}')
             return True
         prefix = src[0:(MIN_FILE_SIZE-1)].lower().strip()
-        if len(prefix) > 0 and prefix[0] == "{":                      # Ignore json
+        if len(prefix) > 0 and (prefix[0] == "{" or prefix[0] == "["):    # Ignore json
             self.print_debug(f'Skipping snippets as the file appears to be JSON: {file}')
             return True
-        if prefix.startswith("<?xml") or prefix.startswith("<html") or prefix.startswith("<AC3D"):
+        if prefix.startswith("<?xml") or prefix.startswith("<html") or prefix.startswith("<ac3d") or prefix.startswith("<!doc"):
             self.print_debug(f'Skipping snippets as the file appears to be xml/html/binary: {file}')
             return True                                               # Ignore xml & html & ac3d
         index = src.index('\n') if '\n' in src else (src_len-1) # TODO is this still necessary if we hav a binary check?
