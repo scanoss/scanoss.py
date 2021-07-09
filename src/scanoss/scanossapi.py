@@ -19,14 +19,15 @@
 import logging
 import os
 import sys
+import time
 from json.decoder import JSONDecodeError
 import requests
 import uuid
 import http.client as http_client
 
-DEFAULT_URL = "https://osskb.org/api/scan/direct"
+DEFAULT_URL      = "https://osskb.org/api/scan/direct"
 SCANOSS_SCAN_URL = os.environ.get("SCANOSS_SCAN_URL") if os.environ.get("SCANOSS_SCAN_URL") else DEFAULT_URL
-SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
+SCANOSS_API_KEY  = os.environ.get("SCANOSS_API_KEY")  if os.environ.get("SCANOSS_API_KEY")  else ''
 
 
 class ScanossApi:
@@ -82,22 +83,50 @@ class ScanossApi:
         if context:
             form_data['context'] = context
         scan_files = {'file': ("%s.wfp" % uuid.uuid1().hex, wfp)}
-        r = None
-        try:
-            r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers, timeout=120)
-        except requests.Timeout:
-            raise Exception(f"ERROR: The SCANOSS API request timed out for {self.url}")
+        r     = None
+        retry = 0    # Add some retry logic to cater for timeouts, etc.
+        while retry <= 5:
+            retry += 1
+            try:
+                r = None
+                r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers, timeout=120)
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if retry > 5:   # Timed out 5 or more times, fail
+                    self.print_stderr(f'ERROR: Timeout/Connection Error POSTing data: {scan_files}')
+                    raise Exception(f"ERROR: The SCANOSS API request timed out for {self.url}") from e
+                else:
+                    self.print_stderr(f'Warning: Timeout/Connection Error communicating with {self.url}. Retrying...')
+                    time.sleep(5)
+            except Exception as e:
+                self.print_stderr(f'ERROR: Exception POSTing data: {scan_files}')
+                raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
+            else:
+                if not r:
+                    if retry > 5:   # No response 5 or more times, fail
+                        raise Exception(f"ERROR: The SCANOSS API request response object is empty for {self.url}")
+                    else:
+                        self.print_stderr(f'Warning: No response received from {self.url}. Retrying...')
+                        time.sleep(5)
+                elif r.status_code >= 400:
+                    if retry > 5:   # No response 5 or more times, fail
+                        raise Exception(f"ERROR: The SCANOSS API returned the following error: HTTP {r.status_code}, {r.text}")
+                    else:
+                        self.print_stderr(f'Warning: Error response code {r.status_code} from {self.url}. Retrying...')
+                        time.sleep(5)
+                else:
+                    retry = 6
+                    break     # Valid response, break out of the retry loop
+        # End of while loop
         if not r:
             raise Exception(f"ERROR: The SCANOSS API request response object is empty for {self.url}")
-        if r.status_code >= 400:
-            raise Exception(f"ERROR: The SCANOSS API returned the following error: HTTP {r.status_code}, {r.text}")
         try:
             if 'xml' in self.scan_format:
                 return r.text
             json_resp = r.json()
             return json_resp
-        except JSONDecodeError:
-            self.print_stderr('The SCANOSS API returned an invalid JSON. Please look in bad_json.json')
+        except (JSONDecodeError, Exception) as e:
+            self.print_stderr(f'The SCANOSS API returned an invalid JSON: {e}')
+            self.print_stderr(f'Ignoring result. Please look in "bad_json.json" for more details.')
             with open('bad_json.json', 'w') as f:
                 f.write(r.text)
             return None

@@ -141,8 +141,6 @@ def wfp(parser, args):
         exit(1)
 
 
-
-
 def scan(parser, args):
     """
     Run the "scan" sub-command
@@ -165,6 +163,8 @@ def scan(parser, args):
         if not os.path.exists(sbom_path) or not os.path.isfile(sbom_path):
             print_stderr(f'Specified --identify file does not exist or is not a file: {sbom_path}')
             exit(1)
+        if not Scanner.valid_json_file(sbom_path):   # Make sure it's a valid JSON file
+            exit(1)
         if args.ignore:
             print_stderr(f'Warning: Specified --identify and --ignore options. Skipping ignore.')
     elif args.ignore:
@@ -173,6 +173,9 @@ def scan(parser, args):
         if not os.path.exists(sbom_path) or not os.path.isfile(sbom_path):
             print_stderr(f'Specified --ignore file does not exist or is not a file: {sbom_path}')
             exit(1)
+        if not Scanner.valid_json_file(sbom_path):   # Make sure it's a valid JSON file
+            exit(1)
+
     scan_output: str = None
     if args.output:
         scan_output = args.output
@@ -184,7 +187,7 @@ def scan(parser, args):
                       flags=flags
                       )
     if args.wfp:
-        scanner.scan_wfp(args.wfp)
+        scanner.scan_wfp_file(args.wfp)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')

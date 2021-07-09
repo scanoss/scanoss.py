@@ -1,7 +1,6 @@
 
 clean:
-	@rm -rf dist/* venv/bin/scanoss-py src/scanoss.egg-info
-	@rm -rf src/scanoss.egg-info
+	@rm -rf dist/* build/* venv/bin/scanoss-py src/scanoss.egg-info
 
 dist: clean dev_uninstall
 	python3 setup.py sdist bdist_wheel

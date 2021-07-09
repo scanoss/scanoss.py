@@ -179,6 +179,29 @@ class Scanner:
                         count += 1
         return count
 
+
+    @staticmethod
+    def valid_json_file(json_file: str) -> bool:
+        """
+        Validate if the specified file is indeed valid JSON
+        :param: str JSON file to load
+        :return bool True if valid, False otherwise
+        """
+        if not json_file:
+            self.print_stderr('ERROR: No JSON file provided to parse.')
+            return False
+        if not os.path.isfile(json_file):
+            self.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
+            return False
+        try:
+            with open(json_file) as f:
+                data = json.load(f)
+        except Exception as e:
+            Scanner.print_stderr(f'Problem parsing JSON file "{json_file}": {e}')
+            return False
+        return True
+
+
     def print_msg(self, *args, **kwargs):
         """
         Print message if quite mode is not enabled
