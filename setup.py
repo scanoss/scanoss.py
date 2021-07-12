@@ -2,6 +2,7 @@ import codecs
 import os
 from setuptools import setup, find_packages
 
+
 def read(rel_path):
     here = os.path.abspath(os.path.dirname(__file__))
     with codecs.open(os.path.join(here, rel_path), 'r') as fp:

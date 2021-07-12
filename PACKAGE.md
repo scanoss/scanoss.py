@@ -89,3 +89,6 @@ Python 3.6 or higher.
 
 ## Source code
 The source for this package can be found [here](https://github.com/scanoss/scanoss.py).
+
+## Changelog
+Details of each release can be found [here](https://github.com/scanoss/scanoss.py/blob/main/CHANGELOG.md).
