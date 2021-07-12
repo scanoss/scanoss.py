@@ -79,5 +79,8 @@ pip3 install scanoss
 ## Bugs/Features
 To request features or alert about bugs, please do so [here](https://github.com/scanoss/scanoss.py/issues).
 
+## Changelog
+Details of major changes to the library can be found in [CHANGELOG.md](CHANGELOG.md).
+
 ## Background
 Details about the Winnowing algorithm used for scanning can be found [here](WINNOWING.md).
