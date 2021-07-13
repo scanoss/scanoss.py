@@ -70,7 +70,11 @@ class ScanossApi:
 
     def scan(self, wfp: str, context: str = None):
         """
+        Scan the specifid WFP and return the JSON object
 
+        :param wfp: WFP to scan
+        :param context: Context to help with idenification
+        :return: JSON result object
         """
         form_data = {}
         if self.sbom:
