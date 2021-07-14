@@ -30,25 +30,28 @@ from progress.spinner import Spinner
 from .scanossapi import ScanossApi
 
 WFP_FILE_START = "file="
+MAX_ALLOWED_THREADS = 30
 
 @dataclass
 class ThreadedScanning(object):
     """
-    Threaded class for running Scanning in parallel (off a queue)
+    Threaded class for running Scanning in parallel (from a queue)
+    WFP scan requests are loaded into the input queue.
+    Multiple threads pull messages off this queue, process the request and put the results into an output queue
     """
     inputs: queue.Queue = queue.Queue()
     output: queue.Queue = queue.Queue()
 
     def __init__(self, scanapi :ScanossApi, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 nb_threads: int = 2
+                 nb_threads: int = 5
                  ) -> None:
         """
         Initialise the ThreadedScanning class
-        :param scanapi:
-        :param debug:
-        :param trace:
-        :param quiet:
-        :param nb_threads:
+        :param scanapi: SCANOSS API to send scan requests to
+        :param debug: enable debug (default False)
+        :param trace: enable trace (default False)
+        :param quiet: enable quiet mode (default False)
+        :param nb_threads: Number of thread to run (default 5)
         """
         self.scanapi = scanapi
         self.debug = debug
@@ -57,6 +60,9 @@ class ThreadedScanning(object):
         self.nb_threads = nb_threads
         self.bar = None
         self.errors = False
+        if nb_threads > MAX_ALLOWED_THREADS:
+            self.print_msg(f'Warning: Requested threads too large: {nb_threads}. Reducing to {MAX_ALLOWED_THREADS}')
+            self.nb_threads = MAX_ALLOWED_THREADS
 
     @staticmethod
     def print_stderr(*args, **kwargs):
@@ -69,10 +75,8 @@ class ThreadedScanning(object):
     def __count_files_in_wfp(wfp: str):
         """
         Count the number of files in the WFP that need to be processed
-        Parameters
-        ----------
-            wfp: str
-                WFP string
+        :param wfp: WFP string
+        :return: number of files in the WFP
         """
         count = 0
         if wfp:
@@ -80,7 +84,6 @@ class ThreadedScanning(object):
                 if WFP_FILE_START in line:
                     count += 1
         return count
-
 
     def print_msg(self, *args, **kwargs):
         """
@@ -128,7 +131,7 @@ class ThreadedScanning(object):
     @property
     def responses(self) -> List[Dict]:
         """
-        Get all responses back from the running threads
+        Get all responses back from the completed threads
         :return: List of JSON objects
         """
         return list(self.output.queue)
@@ -138,12 +141,18 @@ class ThreadedScanning(object):
         Initiate the threads and process all pending requests
         :return: True if successful, False if error encountered
         """
-        self.print_debug(f'Starting {self.nb_threads} threads to process {self.inputs.qsize()} requests...')
+        qsize = self.inputs.qsize()
+        if qsize < self.nb_threads:
+            self.print_debug(f'Input queue ({qsize}) smaller than requested threads: {self.nb_threads}. '
+                             f'Reducing to queue size.')
+            self.nb_threads = qsize
+        else:
+            self.print_debug(f'Starting {self.nb_threads} threads to process {qsize} requests...')
         try:
             for i in range(0, self.nb_threads):
                 threading.Thread(target=self.worker_post, daemon=True).start()
         except Exception as e:
-            ThreadedScanning.print_stderr(f'ERROR: Problem running threaded scanning: {e}')
+            self.print_stderr(f'ERROR: Problem running threaded scanning: {e}')
             self.errors = True
         self.inputs.join()
 
@@ -154,12 +163,14 @@ class ThreadedScanning(object):
         Take each request and process it
         :return: None
         """
+        current_thread = threading.get_ident()
+        self.print_trace(f'Starting worker {current_thread}...')
         while not self.inputs.empty():
             self.print_trace(f'Processing input request...')
             try:
                 wfp = self.inputs.get()
                 count = self.__count_files_in_wfp(wfp)
-                resp = self.scanapi.scan(wfp)
+                resp = self.scanapi.scan(wfp, scan_id=current_thread)
                 if resp:
                     self.output.put(resp)  # Store the output response to later collection
                 self.update_bar(count)

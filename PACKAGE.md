@@ -6,6 +6,10 @@ To install (from [pypi.org](https://pypi.org/project/scanoss)), please run:
 ```bash
 pip3 install scanoss
 ```
+To upgrade an existing installation please run:
+```bash
+pip3 install --upgrade scanoss
+```
 
 ## Usage
 The package can be run from the command line, or consumed from another Python script.
