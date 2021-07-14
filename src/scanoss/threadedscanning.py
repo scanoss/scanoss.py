@@ -60,6 +60,7 @@ class ThreadedScanning(object):
         self.nb_threads = nb_threads
         self.bar = None
         self.errors = False
+        self.lock = threading.Lock()
         if nb_threads > MAX_ALLOWED_THREADS:
             self.print_msg(f'Warning: Requested threads too large: {nb_threads}. Reducing to {MAX_ALLOWED_THREADS}')
             self.nb_threads = MAX_ALLOWED_THREADS
@@ -119,7 +120,14 @@ class ThreadedScanning(object):
         :param amount: amount of progress to update
         """
         if self.bar:
-            self.bar.next(amount)
+            try:
+                self.lock.acquire()
+                try:
+                    self.bar.next(amount)
+                finally:
+                    self.lock.release()
+            except Exception as e:
+                self.print_debug(f'Warning: Update status bar lock failed: {e}. Ignoring.')
 
     def queue_add(self, wfp: str) -> None:
         """
