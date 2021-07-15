@@ -33,11 +33,21 @@ SCANOSS_API_KEY  = os.environ.get("SCANOSS_API_KEY")  if os.environ.get("SCANOSS
 class ScanossApi:
     """
     ScanOSS REST API client class
+    Currently support posting scan requests to the SCANOSS streaming API
     """
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False):
         """
-
+        Initialise the SCANOSS API
+        :param scan_type: Scan type (default identify)
+        :param sbom_path: Input SBOM file to match scan type (default None)
+        :param scan_format: Scan format (default plain)
+        :param flags: Scanning flags (default None)
+        :param url: API URL (default https://osskb.org/api/scan/direct)
+        :param api_key: API Key (default None)
+        :param debug: Enable debug (default False)
+        :param trace: Enable trace (default False)
+        :param quiet: Enable quite mode (default False)
         """
         self.quiet = quiet
         self.debug = debug
@@ -68,9 +78,13 @@ class ScanossApi:
             with open(self.sbom_path) as f:
                 self.sbom = f.read()
 
-    def scan(self, wfp: str, context: str = None):
+    def scan(self, wfp: str, context: str = None, scan_id: int = None):
         """
+        Scan the specifid WFP and return the JSON object
 
+        :param wfp: WFP to scan
+        :param context: Context to help with idenification
+        :return: JSON result object
         """
         form_data = {}
         if self.sbom:
@@ -126,8 +140,9 @@ class ScanossApi:
             return json_resp
         except (JSONDecodeError, Exception) as e:
             self.print_stderr(f'The SCANOSS API returned an invalid JSON: {e}')
-            self.print_stderr(f'Ignoring result. Please look in "bad_json.json" for more details.')
-            with open('bad_json.json', 'w') as f:
+            bad_json_file = f'bad_json-{scan_id}.json' if scan_id else 'bad_json.json'
+            self.print_stderr(f'Ignoring result. Please look in "{bad_json_file}" for more details.')
+            with open(bad_json_file, 'w') as f:
                 f.write(r.text)
             return None
 

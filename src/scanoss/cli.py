@@ -56,11 +56,12 @@ def setup_args() -> None:
                         help='Scan a WFP File instead of a folder (optional)'
                         )
     p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file' )
-    p_scan.add_argument('--ignore', '-n', type=str, help='Ignore components specified in the SBOM file' )
-    p_scan.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
-    p_scan.add_argument('--format', '-f', type=str, choices=['plain', 'cyclonedx'],
+    p_scan.add_argument('--ignore',   '-n', type=str, help='Ignore components specified in the SBOM file' )
+    p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_scan.add_argument('--format',   '-f', type=str, choices=['plain', 'cyclonedx'],
                         help='Result output format (optional - default: plain)'
                         )
+    p_scan.add_argument('--threads', '-T', type=int, default=10, help='Number of threads to use while scanning')
     p_scan.add_argument('--flags', '-F', type=int,
                         help='Scanning engine flags (1: disable snippet matching, 2 enable snippet ids, '
                              '4: disable dependencies, 8: disable licenses, 16: disable copyrights,'
@@ -182,20 +183,23 @@ def scan(parser, args):
         open(scan_output, 'w').close()
     output_format = args.format if args.format else 'plain'
     flags = args.flags if args.flags else None
+    nb_threads = args.threads
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
                       sbom_path=sbom_path, scan_type=scan_type, scan_output=scan_output, output_format=output_format,
-                      flags=flags
+                      flags=flags, nb_threads=nb_threads
                       )
     if args.wfp:
-        scanner.scan_wfp_file(args.wfp)
+        scanner.scan_wfp_file_threaded(args.wfp)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
             exit(1)
         if os.path.isdir(args.scan_dir):
-            scanner.scan_folder(args.scan_dir)
+            if not scanner.scan_folder(args.scan_dir):
+                exit(1)
         elif os.path.isfile(args.scan_dir):
-            scanner.scan_file(args.scan_dir)
+            if not scanner.scan_file(args.scan_dir):
+                exit(1)
         else:
             print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
             exit(1)

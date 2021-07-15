@@ -95,7 +95,7 @@ class Winnowing:
     a list of WFP fingerprints with their corresponding line numbers.
     """
 
-    def __init__(self, size_limit: bool = True, debug: bool = False, quiet: bool = False):
+    def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False):
         """
         Instantiate Winnowing class
         Parameters
@@ -105,6 +105,7 @@ class Winnowing:
         """
         self.size_limit = size_limit
         self.debug = debug
+        self.trace = trace
         self.quiet = quiet
 
     @staticmethod
@@ -144,22 +145,22 @@ class Winnowing:
             lower_file = file.lower()
             for ending in SKIP_SNIPPET_EXT:
                 if lower_file.endswith(ending):
-                    self.print_debug(f'Skipping snippets due to file ending: {file} - {ending}')
+                    self.print_trace(f'Skipping snippets due to file ending: {file} - {ending}')
                     return True;
         src_len = len(src)
         if src_len == 0 or src_len <= MIN_FILE_SIZE:                  # Ignore empty or files that are too small
-            self.print_debug(f'Skipping snippets as the file is too small: {file} - {src_len}')
+            self.print_trace(f'Skipping snippets as the file is too small: {file} - {src_len}')
             return True
         prefix = src[0:(MIN_FILE_SIZE-1)].lower().strip()
         if len(prefix) > 0 and (prefix[0] == "{" or prefix[0] == "["):    # Ignore json
-            self.print_debug(f'Skipping snippets as the file appears to be JSON: {file}')
+            self.print_trace(f'Skipping snippets as the file appears to be JSON: {file}')
             return True
         if prefix.startswith("<?xml") or prefix.startswith("<html") or prefix.startswith("<ac3d") or prefix.startswith("<!doc"):
-            self.print_debug(f'Skipping snippets as the file appears to be xml/html/binary: {file}')
+            self.print_trace(f'Skipping snippets as the file appears to be xml/html/binary: {file}')
             return True                                               # Ignore xml & html & ac3d
         index = src.index('\n') if '\n' in src else (src_len-1) # TODO is this still necessary if we hav a binary check?
         if len(src[0:index]) > MAX_LONG_LINE_CHARS:                   # Ignore long lines
-            self.print_debug(f'Skipping snippets due to file line being too long: {file} - {MAX_LONG_LINE_CHARS}')
+            self.print_trace(f'Skipping snippets due to file line being too long: {file} - {MAX_LONG_LINE_CHARS}')
             return True
         return False
 
@@ -188,7 +189,7 @@ class Winnowing:
         if path:
             binary_path = is_binary(path)
             if binary_path:
-                self.print_debug(f'Detected binary file: {path}')
+                self.print_trace(f'Detected binary file: {path}')
             return binary_path
         return False
 
@@ -279,6 +280,13 @@ class Winnowing:
         Print debug message if enabled
         """
         if self.debug:
+            self.print_stderr(*args, **kwargs)
+
+    def print_trace(self, *args, **kwargs):
+        """
+        Print trace message if enabled
+        """
+        if self.trace:
             self.print_stderr(*args, **kwargs)
 
     @staticmethod

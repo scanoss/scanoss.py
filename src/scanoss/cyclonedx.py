@@ -25,11 +25,12 @@ import time
 
 class CycloneDx:
     """
-
+    CycloneDX management class
+    Handle all interaction with CycloneDX formatting
     """
     def __init__(self, debug: bool = False, output_file: str = None):
         """
-
+        Initialise the CycloneDX class
         """
         self.output_file = output_file
         self.debug = debug
@@ -55,107 +56,85 @@ class CycloneDx:
         if self.debug:
             self.print_stderr(*args, **kwargs)
 
-    def parse_file(self, file: str):
-        """
-        Parse the given input (raw/plain) JSON file and return CycloneDX summary
-
-        :param file: str - JSON file to parse
-        :return: CycloneDX dictionary
-        """
-        if not file:
-            self.print_stderr('ERROR: No JSON file provided to parse.')
-            return None
-        if not os.path.isfile(file):
-            self.print_stderr('ERROR: JSON file does not exist or is not a file.')
-            return None
-        with open(file) as f:
-            return self.parse(f.read())
-
-
-    def parse(self, json_str: str):
+    def parse(self, data: json):
         """
         Parse the given input (raw/plain) JSON string and return CycloneDX summary
 
-        :param json_str: str - JSON string
+        :param data: json - JSON object
         :return: CycloneDX dictionary
         """
-        if not json_str:
-            self.print_stderr('ERROR: No JSON string provided to parse.')
+        if not data:
+            self.print_stderr('ERROR: No JSON data provided to parse.')
             return None
         self.print_debug(f'Processing raw results into CycloneDX format...')
-        results = json.loads(json_str)
         cdx = {}
-        if results:
-            for f in results:
-                file_details = results.get(f)
-                # print(f'File: {f}: {file_details}')
-                for d in file_details:
-                    id_details = d.get("id")
-                    if not id_details or id_details == 'none':
-                        # print(f'No ID for {f}')
-                        continue
-                    purl = None
-                    purls = d.get('purl')
-                    if not purls:
-                        self.print_stderr(f'Purl block missing for {f}: {file_details}')
-                        continue
-                    for p in purls:
-                        self.print_debug(f'Purl: {p}')
-                        purl = p
-                        break
-                    if not purl:
-                        self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
-                        continue
-                    if cdx.get(purl):
-                        self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
-                        continue
-                    fd = {}
-                    # print(f'Vendor: {d.get("vendor")}, Comp: {d.get("component")}, Ver: {d.get("version")},'
-                    #       f' Latest: {d.get("latest")} ID: {d.get("id")}')
-                    for field in ['id', 'vendor', 'component', 'version', 'latest']:
-                        fd[field] = d.get(field)
-                    licenses = d.get('licenses')
-                    fdl = []
-                    for lic in licenses:
-                        # print(f'License: {lic.get("name")}')
-                        fdl.append({'id':lic.get("name")})
-                    fd['licenses'] = fdl
-                    cdx[p] = fd
-            # print(f'License summary: {cdx}')
-            return cdx
+        for f in data:
+            file_details = data.get(f)
+            # print(f'File: {f}: {file_details}')
+            for d in file_details:
+                id_details = d.get("id")
+                if not id_details or id_details == 'none':
+                    # print(f'No ID for {f}')
+                    continue
+                purl = None
+                purls = d.get('purl')
+                if not purls:
+                    self.print_stderr(f'Purl block missing for {f}: {file_details}')
+                    continue
+                for p in purls:
+                    self.print_debug(f'Purl: {p}')
+                    purl = p
+                    break
+                if not purl:
+                    self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
+                    continue
+                if cdx.get(purl):
+                    self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                    continue
+                fd = {}
+                # print(f'Vendor: {d.get("vendor")}, Comp: {d.get("component")}, Ver: {d.get("version")},'
+                #       f' Latest: {d.get("latest")} ID: {d.get("id")}')
+                for field in ['id', 'vendor', 'component', 'version', 'latest']:
+                    fd[field] = d.get(field)
+                licenses = d.get('licenses')
+                fdl = []
+                for lic in licenses:
+                    # print(f'License: {lic.get("name")}')
+                    fdl.append({'id':lic.get("name")})
+                fd['licenses'] = fdl
+                cdx[p] = fd
+        # print(f'License summary: {cdx}')
+        return cdx
 
-    def produce_from_file(self, json_file: str, output_file: str = None):
+    def produce_from_file(self, json_file: str, output_file: str = None) -> bool:
         """
-
-
+        Parse plain/raw input JSON file and produce CycloneDX output
         :param json_file:
         :param output_file:
-        :return:
+        :return: True if successful, False otherwise
         """
         if not json_file:
             self.print_stderr('ERROR: No JSON file provided to parse.')
-            return None
+            return False
         if not os.path.isfile(json_file):
             self.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
-            return None
+            return False
+        success = True
         with open(json_file, 'r') as f:
-            self.produce_from_str(f.read(), output_file)
+            success = self.produce_from_str(f.read(), output_file)
+        return success
 
-
-    def produce_from_str(self, json_str: str, output_file: str = None):
+    def produce_from_json(self, data: json, output_file: str = None) -> bool:
         """
-
-        :param json_str:
-        :param output_file:
-        :return:
+        Produce the CycloneDX output from the input JSON object
+        :param data: JSON object
+        :param output_file: Output file (optional)
+        :return: True if successful, False otherwise
         """
-        if not json_str:
-            self.print_stderr('ERROR: No JSON string provided to parse.')
-            return
-        cdx = self.parse(json_str)
+        cdx = self.parse(data)
         if not cdx:
             self.print_stderr('ERROR: No CycloneDX data returned for the JSON string provided.')
-            return
+            return False
         md5hex = hashlib.md5(f'{time.time()}'.encode('utf-8')).hexdigest()
         data = {}
         data['bomFormat'] = 'CycloneDX'
@@ -184,7 +163,7 @@ class CycloneDx:
                 #     }
                 # }]
             })
-
+        # End for loop
         file = sys.stdout
         if not output_file and self.output_file:
             output_file = self.output_file
@@ -194,20 +173,27 @@ class CycloneDx:
         if output_file:
             file.close()
 
+        return True
+
+    def produce_from_str(self, json_str: str, output_file: str = None) -> bool:
+        """
+        Produce CycloneDX output from input JSON string
+        :param json_str: input JSON string
+        :param output_file: Output file (optional)
+        :return: True if successful, False otherwise
+        """
+        if not json_str:
+            self.print_stderr('ERROR: No JSON string provided to parse.')
+            return False
+        data = None
+        try:
+            data = json.loads(json_str)
+        except Exception as e:
+            self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
+            return False
+        else:
+            return self.produce_from_json(data, output_file)
+        return False
 #
 # End of CycloneDX Class
 #
-
-
-def main():
-    """
-    Local test of the CycloneDX class
-    """
-    print('Testing CycloneDx...')
-    cdx = CycloneDx()
-
-    cdx.produce_from_file('scan_output.json')
-
-
-if __name__ == "__main__":
-    main()
