@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [0.6.5] - 2021-07-15
+### Added
+- Added support to start scanning while fingerprinting to further increase scan performance
+### Fixed
+- Ignoring broken symlink files
+
 ## [0.6.0] - 2021-07-14
 ### Added
 - Added threading to speed up fingerprint scanning
@@ -34,3 +40,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.5.5]: https://github.com/scanoss/scanoss.py/compare/v0.5.4...v0.5.5
 [0.5.6]: https://github.com/scanoss/scanoss.py/compare/v0.5.5...v0.5.6
 [0.6.0]: https://github.com/scanoss/scanoss.py/compare/v0.5.6...v0.6.0
+[0.6.5]: https://github.com/scanoss/scanoss.py/compare/v0.6.0...v0.6.5
