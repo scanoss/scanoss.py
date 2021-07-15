@@ -254,122 +254,91 @@ class Scanner:
             raise Exception(f"ERROR: Please specify a folder to scan")
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f"ERROR: Specified folder does not exist or is not a folder: {scan_dir}")
-        wfps = ''
+
         scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
+        wfp_list = []
+        scan_block = ''
+        scan_size = 0
+        queue_size = 0
+        file_count = 0
+        scan_started = False
         for root, dirs, files in os.walk(scan_dir):
-            self.print_debug(f'U Root: {root}, Dirs: {dirs}, Files {files}')
-            dirs[:] = Scanner.__filter_dirs(dirs)                          # Strip out unwanted directories
-            filtered_files = Scanner.__filter_files(files)                 # Strip out unwanted files
+            self.print_trace(f'U Root: {root}, Dirs: {dirs}, Files {files}')
+            dirs[:] = Scanner.__filter_dirs(dirs)                             # Strip out unwanted directories
+            filtered_files = Scanner.__filter_files(files)                    # Strip out unwanted files
             self.print_debug(f'F Root: {root}, Dirs: {dirs}, Files {filtered_files}')
-            for file in filtered_files:
+            for file in filtered_files:                                       # Cycle through each filtered file
                 path = os.path.join(root, file)
-                file_stat = os.stat(path)
-                if file_stat.st_size > 0:            # Ignore empty files
-                    self.print_debug(f'Fingerprinting {path}...')
+                f_size = 0
+                try:
+                    f_size = os.stat(path).st_size
+                except:
+                    self.print_trace(f'Ignoring missing symlink file: {file}') # Can fail if there is a broken symlink
+                if f_size > 0:                                                 # Ignore broken links and empty files
+                    self.print_trace(f'Fingerprinting {path}...')
                     if spinner:
                         spinner.next()
-                    wfps += self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
+                    wfp = self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
+                    wfp_list.append(wfp)
+                    file_count += 1
+                    if self.threaded_scan:
+                        wfp_size = len(wfp.encode("utf-8"))
+                        if (wfp_size + scan_size) >= MAX_POST_SIZE:
+                            self.threaded_scan.queue_add(scan_block)
+                            queue_size += 1
+                            scan_block = ''
+                        scan_block += wfp
+                        scan_size = len(scan_block.encode("utf-8"))
+                        if scan_size >= MAX_POST_SIZE:
+                            self.threaded_scan.queue_add(scan_block)
+                            queue_size += 1
+                            scan_block = ''
+                        if queue_size > self.nb_threads and not scan_started: # Start scanning if we have something to do
+                            scan_started = True
+                            if not self.threaded_scan.run(wait=False):
+                                self.print_stderr(
+                                    f'Warning: Some errors encounted while scanning. Results might be incomplete.')
+                                success = False
+        # End for loop
+        if self.threaded_scan and scan_block:
+            self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
         if spinner:
             spinner.finish()
-        if wfps:
+
+        if wfp_list:
             self.print_debug(f'Writing fingerprints to {self.wfp}')
             with open(self.wfp, 'w') as f:
-                f.write(wfps)
-            self.print_msg(f'Scanning fingerprints...')
+                f.write(''.join(wfp_list))
             if self.scan_output:
                 self.print_msg(f'Writing results to {self.scan_output}...')
             if self.threaded_scan:
-                success = self.scan_wfp_file_threaded()
+                success = self.__finish_scan_threaded(scan_started, file_count)
             else:
                 success = self.scan_wfp_file()
         else:
             Scanner.print_stderr(f'Warning: No files found to scan in folder: {scan_dir}')
         return success
 
-    def scan_file(self, file: str) -> bool:
+    def __finish_scan_threaded(self, scan_started: bool, file_count: int) -> bool:
         """
-        Scan the specified file and produce a result
-        Parameters
-        ----------
-            file: str
-                File to fingerprint and scan/identify
-        :return True if successful, False otherwise
+        Finish scanning the filtered files and wait for the threads to complete
+        :param scan_started: If the scan has already started or not
+        :param file_count:  Number of total files to be scanned
+        :return: True if successful, False otherwise
         """
         success = True
-        if not file:
-            raise Exception(f"ERROR: Please specify a file to scan")
-        if not os.path.exists(file) or not os.path.isfile(file):
-            raise Exception(f"ERROR: Specified files does not exist or is not a file: {file}")
-        self.print_debug(f'Fingerprinting {file}...')
-        wfps = self.winnowing.wfp_for_file(file, file)
-        if wfps:
-            self.print_debug(f'Scanning {file}...')
-            if self.scan_output:
-                self.print_msg(f'Writing results to {self.scan_output}...')
-            success = self.scan_wfp(wfps)
+        self.threaded_scan.update_bar(create=True, file_count=file_count)
+        if not scan_started:
+            if not self.threaded_scan.run():           # Run the scan and wait for it to complete
+                self.print_stderr(f'Warning: Some errors encounted while scanning. Results might be incomplete.')
+                success = False
         else:
-            success = False
-
-        return success
-
-    def scan_wfp_file_threaded(self, file: str = None) -> bool:
-        """
-        Scan the supplied WFP file in multiple threads
-        :param file: WFP file to scan
-        :return True if scuccessful, False otherwise
-        """
-        success = True
-        wfp_file = file if file else self.wfp   # If a WFP file is specified, use it, otherwise us the default
-        if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
-            raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
-        file_count = Scanner.__count_files_in_wfp_file(wfp_file)
-        cur_files = 0
-        cur_size = 0
-        batch_files = 0
-        wfp = ''
-        self.print_debug(f'Found {file_count} files to process.')
-        file_print = ''
-        bar = None
-        if not self.quiet and self.isatty:
-            bar = Bar('Scanning', max=file_count)
-            bar.next(0)
-            self.threaded_scan.set_bar(bar)
-
-        with open(wfp_file) as f:
-            for line in f:
-                if line.startswith(WFP_FILE_START):
-                    if file_print:
-                        wfp += file_print         # Store the WFP for the current file
-                        cur_size = len(wfp.encode("utf-8"))
-                    file_print = line             # Start storing the next file
-                    cur_files += 1
-                    batch_files += 1
-                else:
-                    file_print += line             # Store the rest of the WFP for this file
-                l_size = cur_size + len(file_print.encode('utf-8'))
-                # Hit the max post size, so sending the current batch and continue processing
-                if l_size >= MAX_POST_SIZE and wfp:
-                    self.print_debug(f'Added {batch_files} ({cur_files}) of'
-                                     f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the pending queue.')
-                    if cur_size > MAX_POST_SIZE:
-                        Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {MAX_POST_SIZE}')
-                    self.threaded_scan.queue_add(wfp)
-                    batch_files = 0
-                    wfp = ''
-        if file_print:
-            wfp += file_print  # Store the WFP for the current file
-        if wfp:
-            self.print_debug(f'Adding {batch_files} ({cur_files}) of'
-                             f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the pending queue.')
-            self.threaded_scan.queue_add(wfp)
-
-        if not self.threaded_scan.run():
-            self.print_stderr(f'Warning: Some errors encounted while scanning. Result might not be complete.')
-            success = False
+            self.threaded_scan.complete()               # Wait for the scans to complete
+        self.threaded_scan.complete_bar()
         responses = self.threaded_scan.responses
         raw_output = "{\n"
         if responses:
@@ -382,11 +351,10 @@ class Scanner:
                             first = False
                         else:
                             raw_output += ",\n  \"%s\":%s" % (key, json.dumps(value, indent=2))
+            # End for loop
         else:
             success = False
         raw_output += "\n}"
-        if bar:
-            bar.finish()
         parsed_json = None
         try:
             parsed_json = json.loads(raw_output)
@@ -404,6 +372,32 @@ class Scanner:
                 success = cdx.produce_from_json(parsed_json)
             else:
                 success = cdx.produce_from_str(raw_output)
+        return success
+
+
+    def scan_file(self, file: str) -> bool:
+        """
+        Scan the specified file and produce a result
+        Parameters
+        ----------
+            file: str
+                File to fingerprint and scan/identify
+        :return True if successful, False otherwise
+        """
+        success = True
+        if not file:
+            raise Exception(f"ERROR: Please specify a file to scan")
+        if not os.path.exists(file) or not os.path.isfile(file):
+            raise Exception(f"ERROR: Specified files does not exist or is not a file: {file}")
+        self.print_debug(f'Fingerprinting {file}...')
+        wfp = self.winnowing.wfp_for_file(file, file)
+        if wfp:
+            self.print_debug(f'Scanning {file}...')
+            if self.scan_output:
+                self.print_msg(f'Writing results to {self.scan_output}...')
+            success = self.scan_wfp(wfp)
+        else:
+            success = False
 
         return success
 
@@ -538,14 +532,14 @@ class Scanner:
             raise Exception(f"ERROR: Specified file does not exist or is not a file: {scan_file}")
 
         self.print_debug(f'Fingerprinting {scan_file}...')
-        wfps = self.winnowing.wfp_for_file(scan_file, scan_file)
-        if wfps:
+        wfp = self.winnowing.wfp_for_file(scan_file, scan_file)
+        if wfp:
             if wfp_file:
                 self.print_stderr(f'Writing fingerprints to {wfp_file}')
                 with open(wfp_file, 'w') as f:
-                    f.write(wfps)
+                    f.write(wfp)
             else:
-                print(wfps)
+                print(wfp)
         else:
             Scanner.print_stderr(f'Warning: No fingerprints generated for: {scan_file}')
 
@@ -561,7 +555,7 @@ class Scanner:
         scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         for root, dirs, files in os.walk(scan_dir):
-            dirs = Scanner.__filter_dirs(dirs)                             # Strip out unwanted directories
+            dirs[:] = Scanner.__filter_dirs(dirs)                             # Strip out unwanted directories
             filtered_files = Scanner.__filter_files(files)                    # Strip out unwanted files
             self.print_trace(f'Root: {root}, Dirs: {dirs}, Files {filtered_files}')
             for file in filtered_files:

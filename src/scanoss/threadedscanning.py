@@ -25,7 +25,6 @@ import queue
 from typing import Dict, List
 from dataclasses import dataclass
 from progress.bar import Bar
-from progress.spinner import Spinner
 
 from .scanossapi import ScanossApi
 
@@ -41,6 +40,7 @@ class ThreadedScanning(object):
     """
     inputs: queue.Queue = queue.Queue()
     output: queue.Queue = queue.Queue()
+    bar: Bar = None
 
     def __init__(self, scanapi :ScanossApi, debug: bool = False, trace: bool = False, quiet: bool = False,
                  nb_threads: int = 5
@@ -57,9 +57,11 @@ class ThreadedScanning(object):
         self.debug = debug
         self.trace = trace
         self.quiet = quiet
+        self.isatty = sys.stderr.isatty()
         self.nb_threads = nb_threads
-        self.bar = None
+        self.bar_count = 0
         self.errors = False
+        self.lock = threading.Lock()
         if nb_threads > MAX_ALLOWED_THREADS:
             self.print_msg(f'Warning: Requested threads too large: {nb_threads}. Reducing to {MAX_ALLOWED_THREADS}')
             self.nb_threads = MAX_ALLOWED_THREADS
@@ -106,6 +108,15 @@ class ThreadedScanning(object):
         if self.trace:
             self.print_stderr(*args, **kwargs)
 
+    def create_bar(self, file_count: int):
+        if not self.quiet and self.isatty and not self.bar:
+            self.bar = Bar('Scanning', max=file_count)
+            self.bar.next(self.bar_count)
+
+    def complete_bar(self):
+        if self.bar:
+            self.bar.finish()
+
     def set_bar(self, bar: Bar) -> None:
         """
         Set the Progress Bar to display progress while scanning
@@ -113,13 +124,23 @@ class ThreadedScanning(object):
         """
         self.bar = bar
 
-    def update_bar(self, amount: int) -> None:
+    def update_bar(self, amount: int = 0, create: bool = False, file_count: int = 0) -> None:
         """
         Update the Progress Bar progress
         :param amount: amount of progress to update
         """
-        if self.bar:
-            self.bar.next(amount)
+        try:
+            self.lock.acquire()
+            try:
+                if create and not self.bar:
+                    self.create_bar(file_count)
+                elif self.bar:
+                    self.bar.next(amount)
+                self.bar_count += amount
+            finally:
+                self.lock.release()
+        except Exception as e:
+            self.print_debug(f'Warning: Update status bar lock failed: {e}. Ignoring.')
 
     def queue_add(self, wfp: str) -> None:
         """
@@ -127,6 +148,9 @@ class ThreadedScanning(object):
         :param wfp: WFP to add to queue
         """
         self.inputs.put(wfp)
+
+    def get_queue_size(self) -> int:
+        return self.inputs.qsize()
 
     @property
     def responses(self) -> List[Dict]:
@@ -136,7 +160,7 @@ class ThreadedScanning(object):
         """
         return list(self.output.queue)
 
-    def run(self) -> bool:
+    def run(self, wait: bool = True) -> bool:
         """
         Initiate the threads and process all pending requests
         :return: True if successful, False if error encountered
@@ -154,9 +178,15 @@ class ThreadedScanning(object):
         except Exception as e:
             self.print_stderr(f'ERROR: Problem running threaded scanning: {e}')
             self.errors = True
-        self.inputs.join()
-
+        if wait:                    # Wait for all inputs to complete
+            self.inputs.join()
         return False if self.errors else True
+
+    def complete(self) -> None:
+        """
+        Wait for input queue to complete processing
+        """
+        self.inputs.join()
 
     def worker_post(self) -> None:
         """
