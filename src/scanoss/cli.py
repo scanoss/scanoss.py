@@ -189,7 +189,7 @@ def scan(parser, args):
                       flags=flags, nb_threads=nb_threads
                       )
     if args.wfp:
-        scanner.scan_wfp_file_threaded(args.wfp)
+        scanner.scan_wfp_file(args.wfp)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
