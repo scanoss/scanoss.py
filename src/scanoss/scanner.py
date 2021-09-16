@@ -51,7 +51,7 @@ FILTERED_EXT = {  # File extensions to skip
                 ".toml", ".ttf", ".txt", ".utf-8", ".vim", ".wav", ".whl", ".woff", ".xht",
                 ".xhtml", ".xls", ".xlsx", ".xml", ".xpm", ".xsd", ".xul", ".yaml", ".yml", ".wfp",
                 ".editorconfig", ".dotcover", ".pid", ".lcov", ".egg", ".manifest", ".cache", ".coverage", ".cover",
-                ".gem",
+                ".gem", ".lst",
                 # File endings
                 "-doc", "changelog", "config", "copying", "license",
                 "licenses", "notice",

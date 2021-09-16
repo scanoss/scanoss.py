@@ -47,9 +47,11 @@ MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 MIN_FILE_SIZE = 256
 
 SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
-                ".exe", ".zip", ".tar", ".tgz", ".gz", ".rar", ".jar", ".war", ".ear", ".class", ".pyc", ".o", ".a",
-                ".so", ".obj", ".dll", ".lib", ".out", ".app",
-                ".doc", ".docx", ".xls", ".xlsx", ".ppt"
+                ".exe", ".zip", ".tar", ".tgz", ".gz", ".7z", ".rar", ".jar", ".war", ".ear", ".class", ".pyc",
+                ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
+                ".lst", ".dat", ".json", ".htm", ".html", ".xml",
+                ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
+                ".pdf"
 }
 
 class Winnowing:
