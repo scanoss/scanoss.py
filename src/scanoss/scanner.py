@@ -53,7 +53,7 @@ FILTERED_EXT = {  # File extensions to skip
                 ".editorconfig", ".dotcover", ".pid", ".lcov", ".egg", ".manifest", ".cache", ".coverage", ".cover",
                 ".gem", ".lst",
                 # File endings
-                "-doc", "changelog", "config", "copying", "license",
+                "-doc", "changelog", "config", "copying", "license", "authors", "news",
                 "licenses", "notice",
                 "readme", "swiftdoc", "texidoc", "todo", "version", "ignore", "manifest", "sqlite", "sqlite3"
                 }
