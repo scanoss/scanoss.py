@@ -21,6 +21,7 @@ import os
 import sys
 import threading
 import queue
+import time
 
 from typing import Dict, List
 from dataclasses import dataclass
@@ -57,11 +58,13 @@ class ThreadedScanning(object):
         self.debug = debug
         self.trace = trace
         self.quiet = quiet
-        self.isatty = sys.stderr.isatty()
         self.nb_threads = nb_threads
-        self.bar_count = 0
-        self.errors = False
-        self.lock = threading.Lock()
+        self._isatty = sys.stderr.isatty()
+        self._bar_count = 0
+        self._errors = False
+        self._lock = threading.Lock()
+        self._stop_event = threading.Event()
+        self._threads = []
         if nb_threads > MAX_ALLOWED_THREADS:
             self.print_msg(f'Warning: Requested threads too large: {nb_threads}. Reducing to {MAX_ALLOWED_THREADS}')
             self.nb_threads = MAX_ALLOWED_THREADS
@@ -109,9 +112,9 @@ class ThreadedScanning(object):
             self.print_stderr(*args, **kwargs)
 
     def create_bar(self, file_count: int):
-        if not self.quiet and self.isatty and not self.bar:
+        if not self.quiet and self._isatty and not self.bar:
             self.bar = Bar('Scanning', max=file_count)
-            self.bar.next(self.bar_count)
+            self.bar.next(self._bar_count)
 
     def complete_bar(self):
         if self.bar:
@@ -130,15 +133,15 @@ class ThreadedScanning(object):
         :param amount: amount of progress to update
         """
         try:
-            self.lock.acquire()
+            self._lock.acquire()
             try:
                 if create and not self.bar:
                     self.create_bar(file_count)
                 elif self.bar:
                     self.bar.next(amount)
-                self.bar_count += amount
+                self._bar_count += amount
             finally:
-                self.lock.release()
+                self._lock.release()
         except Exception as e:
             self.print_debug(f'Warning: Update status bar lock failed: {e}. Ignoring.')
 
@@ -174,19 +177,27 @@ class ThreadedScanning(object):
             self.print_debug(f'Starting {self.nb_threads} threads to process {qsize} requests...')
         try:
             for i in range(0, self.nb_threads):
-                threading.Thread(target=self.worker_post, daemon=True).start()
+                t = threading.Thread(target=self.worker_post, daemon=True)
+                self._threads.append(t)
+                t.start()
         except Exception as e:
             self.print_stderr(f'ERROR: Problem running threaded scanning: {e}')
-            self.errors = True
+            self._errors = True
         if wait:                    # Wait for all inputs to complete
-            self.inputs.join()
-        return False if self.errors else True
+            self.complete()
+        return False if self._errors else True
 
     def complete(self) -> None:
         """
-        Wait for input queue to complete processing
+        Wait for input queue to complete processing and complete the worker threads
         """
         self.inputs.join()
+        self._stop_event.set()       # Tell the worker threads to stop
+        try:
+            for t in self._threads:  # Complete the threads
+                t.join(timeout=5)
+        except Exception as e:
+            self.print_stderr(f'WARNING: Issue encountered terminating scanning worker threads: {e}')
 
     def worker_post(self) -> None:
         """
@@ -195,20 +206,26 @@ class ThreadedScanning(object):
         """
         current_thread = threading.get_ident()
         self.print_trace(f'Starting worker {current_thread}...')
-        while not self.inputs.empty():
-            self.print_trace(f'Processing input request...')
-            try:
-                wfp = self.inputs.get()
-                count = self.__count_files_in_wfp(wfp)
-                resp = self.scanapi.scan(wfp, scan_id=current_thread)
-                if resp:
-                    self.output.put(resp)  # Store the output response to later collection
-                self.update_bar(count)
-                self.inputs.task_done()
-                self.print_trace(f'Request complete.')
-            except Exception as e:
-                ThreadedScanning.print_stderr(f'ERROR: Problem encountered running scan: {e}')
-                self.errors = True
+        while not self._stop_event.is_set():
+            if not self.inputs.empty():          # Only try to get a message if there is one on the queue
+                try:
+                    wfp = self.inputs.get(timeout=5)
+                    self.print_trace(f'Processing input request ({current_thread})...')
+                    count = self.__count_files_in_wfp(wfp)
+                    resp = self.scanapi.scan(wfp, scan_id=current_thread)
+                    if resp:
+                        self.output.put(resp)  # Store the output response to later collection
+                    self.update_bar(count)
+                    self.inputs.task_done()
+                    self.print_trace(f'Request complete ({current_thread}).')
+                except queue.Empty as e:
+                    self.print_stderr(f'No message available to process ({current_thread}). Checking again...')
+                except Exception as e:
+                    ThreadedScanning.print_stderr(f'ERROR: Problem encountered running scan: {e}')
+                    self._errors = True
+            else:
+                time.sleep(1)  # Sleep while waiting for the queue depth to build up
+        self.print_trace(f'Thread complete ({current_thread}).')
 
 #
 # End of ThreadedScanning Class
