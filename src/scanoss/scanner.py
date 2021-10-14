@@ -72,7 +72,8 @@ class Scanner:
     """
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
-                 sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5
+                 sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
+                 skip_snippets: bool = False
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -84,7 +85,7 @@ class Scanner:
         self.scan_output = scan_output
         self.output_format = output_format
         self.isatty = sys.stderr.isatty()
-        self.winnowing = Winnowing(debug=debug, quiet=quiet)
+        self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=skip_snippets)
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags
                                       )
@@ -95,6 +96,8 @@ class Scanner:
                                                   )
         else:
             self.threaded_scan = None
+        if skip_snippets:
+            MAX_POST_SIZE = 8 * 1024  # 8k Max post size if we're skipping snippets
 
     @staticmethod
     def __filter_files(files) -> list:
