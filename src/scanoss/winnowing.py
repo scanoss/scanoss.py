@@ -97,7 +97,9 @@ class Winnowing:
     a list of WFP fingerprints with their corresponding line numbers.
     """
 
-    def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False):
+    def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False,
+                 skip_snippets: bool = False
+                 ):
         """
         Instantiate Winnowing class
         Parameters
@@ -105,10 +107,11 @@ class Winnowing:
             size_limit: bool
                 Limit the size of a fingerprint to 64k (post size) - Default True
         """
-        self.size_limit = size_limit
-        self.debug = debug
-        self.trace = trace
-        self.quiet = quiet
+        self.size_limit    = size_limit
+        self.debug         = debug
+        self.trace         = trace
+        self.quiet         = quiet
+        self.skip_snippets = skip_snippets
 
     @staticmethod
     def __normalize(byte):
@@ -212,8 +215,8 @@ class Winnowing:
         # Print file line
         content_length = len(contents)
         wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, file)
-        # We don't process snippets for binaries.
-        if bin_file or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
+        # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
+        if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
         # Initialize variables
         gram = ""
