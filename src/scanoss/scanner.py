@@ -73,7 +73,7 @@ class Scanner:
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
-                 skip_snippets: bool = False
+                 skip_snippets: bool = False, post_size: int = 64
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -96,8 +96,9 @@ class Scanner:
                                                   )
         else:
             self.threaded_scan = None
+        self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE  # Set the max post size (default 64k)
         if skip_snippets:
-            MAX_POST_SIZE = 8 * 1024  # 8k Max post size if we're skipping snippets
+            self.max_post_size = 8 * 1024          # 8k Max post size if we're skipping snippets
 
     @staticmethod
     def __filter_files(files) -> list:
@@ -290,13 +291,13 @@ class Scanner:
                     file_count += 1
                     if self.threaded_scan:
                         wfp_size = len(wfp.encode("utf-8"))
-                        if (wfp_size + scan_size) >= MAX_POST_SIZE:
+                        if (wfp_size + scan_size) >= self.max_post_size:
                             self.threaded_scan.queue_add(scan_block)
                             queue_size += 1
                             scan_block = ''
                         scan_block += wfp
                         scan_size = len(scan_block.encode("utf-8"))
-                        if scan_size >= MAX_POST_SIZE:
+                        if scan_size >= self.max_post_size:
                             self.threaded_scan.queue_add(scan_block)
                             queue_size += 1
                             scan_block = ''
@@ -444,11 +445,11 @@ class Scanner:
                     file_print += line             # Store the rest of the WFP for this file
                 l_size = cur_size + len(file_print.encode('utf-8'))
                 # Hit the max post size, so sending the current batch and continue processing
-                if l_size >= MAX_POST_SIZE and wfp:
+                if l_size >= self.max_post_size and wfp:
                     self.print_debug(f'Sending {batch_files} ({cur_files}) of'
                                      f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.')
-                    if cur_size > MAX_POST_SIZE:
-                        Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {MAX_POST_SIZE}')
+                    if cur_size > self.max_post_size:
+                        Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
                     scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
                     if bar:
                         bar.next(batch_files)
