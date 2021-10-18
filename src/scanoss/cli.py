@@ -69,6 +69,9 @@ def setup_args() -> None:
                              '256: disable best match, 512: Report identified files)'
                         )
     p_scan.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
+    p_scan.add_argument('--post-size', '-P', type=int, default=64,
+                        help='Number of kilobytes to limit the post to while scanning'
+                        )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -185,11 +188,15 @@ def scan(parser, args):
         open(scan_output, 'w').close()
     output_format = args.format if args.format else 'plain'
     flags = args.flags if args.flags else None
-    if args.skip_snippets and args.debug and not args.quiet:
-        print_stderr("Skipping snippets...")
+    if args.debug and not args.quiet:
+        if args.skip_snippets:
+            print_stderr("Skipping snippets...")
+        if args.post_size != 64:
+            print_stderr(f'Changing scanning POST size to: {args.post_size}k...')
+
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
                       sbom_path=sbom_path, scan_type=scan_type, scan_output=scan_output, output_format=output_format,
-                      flags=flags, nb_threads=args.threads, skip_snippets=args.skip_snippets
+                      flags=flags, nb_threads=args.threads, skip_snippets=args.skip_snippets, post_size=args.post_size
                       )
     if args.wfp:
         scanner.scan_wfp_file(args.wfp)

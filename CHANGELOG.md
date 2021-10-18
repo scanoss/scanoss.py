@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [0.6.11]
+### Added
+- Added option to skip snippet generation in the client (--skip-snippets)
+- Added option to tune the scan packet post size (--post-size)
+- Added Docker/Container support for running the client
+- Fixed threading issue while scanning
+
 ## [0.6.6] - 2021-08-20
 ### Fixed
 - Fixed broken call for scanning WFP file only
@@ -46,3 +53,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.0]: https://github.com/scanoss/scanoss.py/compare/v0.5.6...v0.6.0
 [0.6.5]: https://github.com/scanoss/scanoss.py/compare/v0.6.0...v0.6.5
 [0.6.6]: https://github.com/scanoss/scanoss.py/compare/v0.6.5...v0.6.6
+[0.6.11]: https://github.com/scanoss/scanoss.py/compare/v0.6.6...v0.6.11

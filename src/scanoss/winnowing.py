@@ -98,7 +98,7 @@ class Winnowing:
     """
 
     def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 skip_snippets: bool = False
+                 skip_snippets: bool = False, post_size: int = 64
                  ):
         """
         Instantiate Winnowing class
@@ -112,6 +112,7 @@ class Winnowing:
         self.trace         = trace
         self.quiet         = quiet
         self.skip_snippets = skip_snippets
+        self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE
 
     @staticmethod
     def __normalize(byte):
@@ -253,7 +254,7 @@ class Winnowing:
                             if last_line != line:
                                 if output:
                                     if self.size_limit and \
-                                            (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) > MAX_POST_SIZE:
+                                            (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) > self.max_post_size:
                                         self.print_debug(f'Truncating WFP (64k limit) for: {file}')
                                         output = ''
                                         break               # Stop collecting snippets as it's over 64k
@@ -268,7 +269,7 @@ class Winnowing:
                         window.pop(0)
                     # Shift gram
                     gram = gram[1:]
-        if output and (not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) < MAX_POST_SIZE):
+        if output and (not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) < self.max_post_size):
             wfp += output + '\n'
 
         return wfp
