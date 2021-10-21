@@ -36,7 +36,8 @@ class ScanossApi:
     Currently support posting scan requests to the SCANOSS streaming API
     """
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
-                 url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False):
+                 url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
+                 timeout: int = 120):
         """
         Initialise the SCANOSS API
         :param scan_type: Scan type (default identify)
@@ -58,6 +59,7 @@ class ScanossApi:
         self.sbom_path = sbom_path
         self.scan_format = scan_format if scan_format else 'plain'
         self.flags = flags
+        self.timeout = timeout if timeout > 5 else 120
         self.headers = {}
         if self.api_key:
             self.headers['X-Session'] = self.api_key
@@ -103,7 +105,7 @@ class ScanossApi:
             retry += 1
             try:
                 r = None
-                r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers, timeout=120)
+                r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers, timeout=self.timeout)
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
                 if retry > 5:   # Timed out 5 or more times, fail
                     self.print_stderr(f'ERROR: Timeout/Connection Error POSTing data: {scan_files}')

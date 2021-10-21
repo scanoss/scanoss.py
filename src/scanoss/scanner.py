@@ -51,7 +51,7 @@ FILTERED_EXT = {  # File extensions to skip
                 ".toml", ".ttf", ".txt", ".utf-8", ".vim", ".wav", ".whl", ".woff", ".xht",
                 ".xhtml", ".xls", ".xlsx", ".xml", ".xpm", ".xsd", ".xul", ".yaml", ".yml", ".wfp",
                 ".editorconfig", ".dotcover", ".pid", ".lcov", ".egg", ".manifest", ".cache", ".coverage", ".cover",
-                ".gem", ".lst",
+                ".gem", ".lst", ".pickle", ".pdb", ".gml", ".pot", ".plt",
                 # File endings
                 "-doc", "changelog", "config", "copying", "license", "authors", "news",
                 "licenses", "notice",
@@ -73,7 +73,7 @@ class Scanner:
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
-                 skip_snippets: bool = False, post_size: int = 64
+                 skip_snippets: bool = False, post_size: int = 64, timeout: int = 120
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -87,7 +87,7 @@ class Scanner:
         self.isatty = sys.stderr.isatty()
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=skip_snippets)
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
-                                      sbom_path=sbom_path, scan_type=scan_type, flags=flags
+                                      sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout
                                       )
         self.nb_threads = nb_threads
         if nb_threads and nb_threads > 0:
