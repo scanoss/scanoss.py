@@ -207,6 +207,7 @@ class ThreadedScanning(object):
         current_thread = threading.get_ident()
         self.print_trace(f'Starting worker {current_thread}...')
         while not self._stop_event.is_set():
+            wfp = None
             if not self.inputs.empty():          # Only try to get a message if there is one on the queue
                 try:
                     wfp = self.inputs.get(timeout=5)
@@ -223,6 +224,8 @@ class ThreadedScanning(object):
                 except Exception as e:
                     ThreadedScanning.print_stderr(f'ERROR: Problem encountered running scan: {e}')
                     self._errors = True
+                    if wfp:
+                        self.inputs.task_done()  # If there was a WFP being processed, remove it from the queue
             else:
                 time.sleep(1)  # Sleep while waiting for the queue depth to build up
         self.print_trace(f'Thread complete ({current_thread}).')

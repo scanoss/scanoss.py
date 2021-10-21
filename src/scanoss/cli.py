@@ -72,6 +72,7 @@ def setup_args() -> None:
     p_scan.add_argument('--post-size', '-P', type=int, default=64,
                         help='Number of kilobytes to limit the post to while scanning'
                         )
+    p_scan.add_argument('--timeout', '-M', type=int, default=120, help='Timeout (in seconds) for API communication')
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -193,10 +194,16 @@ def scan(parser, args):
             print_stderr("Skipping snippets...")
         if args.post_size != 64:
             print_stderr(f'Changing scanning POST size to: {args.post_size}k...')
+        if args.timeout != 120:
+            print_stderr(f'Changing scanning POST timeout to: {args.timeout}...')
+    elif not args.quiet:
+        if args.timeout < 5:
+            print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
 
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
                       sbom_path=sbom_path, scan_type=scan_type, scan_output=scan_output, output_format=output_format,
-                      flags=flags, nb_threads=args.threads, skip_snippets=args.skip_snippets, post_size=args.post_size
+                      flags=flags, nb_threads=args.threads, skip_snippets=args.skip_snippets, post_size=args.post_size,
+                      timeout=args.timeout
                       )
     if args.wfp:
         scanner.scan_wfp_file(args.wfp)
