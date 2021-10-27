@@ -23,7 +23,7 @@ setup(
     version=get_version("src/scanoss/__init__.py"),
     author="SCANOSS",
     author_email="info@scanoss.com",
-    license='GPL 2.0 or later',
+    license='MIT',
     description='Simple Python library to use the SCANOSS APIs.',
     long_description=read("PACKAGE.md"),
     long_description_content_type='text/markdown',
