@@ -5,7 +5,7 @@
     "purl": "pkg:github/scanoss/scanoss.py",
     "dependency": "self",
     "comment": "scanoss.py is the implementation, everything else is dependencies",
-    "license": "GPL-2.0-or-later",
+    "license": "MIT",
     "license_url": "https://raw.githubusercontent.com/scanoss/scanoss.py/main/LICENSE"
   },
   {
