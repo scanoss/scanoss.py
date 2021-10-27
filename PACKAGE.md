@@ -30,7 +30,7 @@ Running the bare command will list the available sub-commands:
 
 usage: scanoss-py [-h] {version,ver,scan,sc,fingerprint,fp,wfp} ...
 
-SCANOSS Python CLI. Ver: 0.2.0, License: GPL 2.0-or-later
+SCANOSS Python CLI. Ver: 0.2.0, License: MIT
 
 optional arguments:
   -h, --help            show this help message and exit
