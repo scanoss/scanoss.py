@@ -27,12 +27,12 @@ setup(
     description='Simple Python library to use the SCANOSS APIs.',
     long_description=read("PACKAGE.md"),
     long_description_content_type='text/markdown',
-    install_requires=["requests", "crc32c", "binaryornot", "progress", "dataclasses"],
+    install_requires=["requests", "crc32c", "binaryornot", "progress"],
     include_package_data=True,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent"
     ],
-    python_requires='>=3.6'
+    python_requires='>=3.7'
 )
