@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added threaded scanning to WFP file processing
 ### Changed
 - Changed from GPL license to MIT
+- Changed minimum Python version to 3.7
 
 ## [0.6.11] - 2021-10-18
 ### Added
