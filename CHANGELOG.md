@@ -62,4 +62,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.5]: https://github.com/scanoss/scanoss.py/compare/v0.6.0...v0.6.5
 [0.6.6]: https://github.com/scanoss/scanoss.py/compare/v0.6.5...v0.6.6
 [0.6.11]: https://github.com/scanoss/scanoss.py/compare/v0.6.6...v0.6.11
-[0.6.12]: https://github.com/scanoss/scanoss.py/compare/v0.6.11...v0.7.0
+[0.7.0]: https://github.com/scanoss/scanoss.py/compare/v0.6.11...v0.7.0
