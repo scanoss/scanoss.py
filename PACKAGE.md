@@ -30,7 +30,7 @@ Running the bare command will list the available sub-commands:
 
 usage: scanoss-py [-h] {version,ver,scan,sc,fingerprint,fp,wfp} ...
 
-SCANOSS Python CLI. Ver: 0.2.0, License: MIT
+SCANOSS Python CLI. Ver: 0.7.0, License: MIT
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -76,7 +76,7 @@ These values can be changed from the command line using:
 > scanoss-py scan --apiurl <URL> --key <KEY>
 ```
 
-From code it would look like this:
+From code, it would look like this:
 ```python
 from scanoss.scanner import Scanner
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 ```
 
 ## Requirements
-Python 3.6 or higher.
+Python 3.7 or higher.
 
 ## Source code
 The source for this package can be found [here](https://github.com/scanoss/scanoss.py).

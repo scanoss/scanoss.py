@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [0.6.11]
+## [0.7.0] - 2021-10-25
+### Added
+- Added option to change default REST timeout (--timeout)
+- Added threaded scanning to WFP file processing
+### Changed
+- Changed from GPL license to MIT
+
+## [0.6.11] - 2021-10-18
 ### Added
 - Added option to skip snippet generation in the client (--skip-snippets)
 - Added option to tune the scan packet post size (--post-size)
@@ -54,3 +61,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.5]: https://github.com/scanoss/scanoss.py/compare/v0.6.0...v0.6.5
 [0.6.6]: https://github.com/scanoss/scanoss.py/compare/v0.6.5...v0.6.6
 [0.6.11]: https://github.com/scanoss/scanoss.py/compare/v0.6.6...v0.6.11
+[0.6.12]: https://github.com/scanoss/scanoss.py/compare/v0.6.11...v0.7.0
