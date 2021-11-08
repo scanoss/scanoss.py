@@ -10,13 +10,16 @@ pip3 install scanoss
 ## Usage
 The package can be run from the command line, or consumed from another Python script.
 
-For more details, please look [PACKAGE.md](PACKAGE.md).
+For more details, please look at [PACKAGE.md](PACKAGE.md).
+
+## Container Usage
+To leverage the CLI from within a container, please look at [GHCR.md](GHCR.md).
 
 ## Development
 Before starting with development of this project, please read our [CONTRIBUTING](CONTRIBUTING.md) and [CODE OF CONDUCT](CODE_OF_CONDUCT.md).
 
 ### Requirements
-Python 3.6 or higher.
+Python 3.7 or higher.
 
 The dependencies can be found in the [requirements.txt](requirements.txt) and [requirements-dev.txt](requirements-dev.txt) files.
 

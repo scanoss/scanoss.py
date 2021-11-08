@@ -1,20 +1,25 @@
 """
- SPDX-License-Identifier: GPL-2.0-or-later
+ SPDX-License-Identifier: MIT
 
-   Copyright (C) 2018-2021 SCANOSS LTD
+   Copyright (c) 2021, SCANOSS
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 2 of the License, or
-   (at your option) any later version.
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE.
 """
 import json
 import os
@@ -497,6 +502,61 @@ class Scanner:
             cdx = CycloneDx(self.debug, self.scan_output)
             cdx.produce_from_str(raw_output)
 
+        return success
+
+    def scan_wfp_file_threaded(self, file: str = None) -> bool:
+        """
+        Scan the contents of the specified WFP file (threaded)
+        Parameters
+        ----------
+            file: str
+                WFP file to scan (optional)
+        return: True if successful, False otherwise
+        """
+        success = True
+        wfp_file = file if file else self.wfp   # If a WFP file is specified, use it, otherwise us the default
+        if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
+            raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
+        cur_size = 0
+        scan_size = 0
+        queue_size = 0
+        file_count = 0
+        scan_started = False
+        wfp = ''
+        scan_block = ''
+        with open(wfp_file) as f:   # Parse the WFP file
+            for line in f:
+                if line.startswith(WFP_FILE_START):
+                    if scan_block:
+                        wfp += scan_block         # Store the WFP for the current file
+                        cur_size = len(wfp.encode("utf-8"))
+                    scan_block = line             # Start storing the next file
+                    file_count += 1
+                else:
+                    scan_block += line             # Store the rest of the WFP for this file
+                l_size = cur_size + len(scan_block.encode('utf-8'))
+                # Hit the max post size, so sending the current batch and continue processing
+                if l_size >= self.max_post_size and wfp:
+                    if cur_size > self.max_post_size:
+                        Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
+                    self.threaded_scan.queue_add(wfp)
+                    queue_size += 1
+                    wfp = ''
+                    if queue_size > self.nb_threads and not scan_started:  # Start scanning if we have something to do
+                        scan_started = True
+                        if not self.threaded_scan.run(wait=False):
+                            self.print_stderr(
+                                        f'Warning: Some errors encounted while scanning. Results might be incomplete.')
+                            success = False
+            # End for loop
+        if scan_block:
+            wfp += scan_block  # Store the WFP for the current file
+        if wfp:
+            self.threaded_scan.queue_add(wfp)
+            queue_size += 1
+
+        if not self.__finish_scan_threaded(scan_started, file_count):
+            success = False
         return success
 
     def scan_wfp(self, wfp: str) -> bool:
