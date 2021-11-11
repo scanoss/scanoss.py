@@ -78,7 +78,7 @@ class Scanner:
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
-                 skip_snippets: bool = False, post_size: int = 64, timeout: int = 120
+                 skip_snippets: bool = False, post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -89,6 +89,7 @@ class Scanner:
         self.wfp = wfp if wfp else "scanner_output.wfp"
         self.scan_output = scan_output
         self.output_format = output_format
+        self.no_wfp_file = no_wfp_file
         self.isatty = sys.stderr.isatty()
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=skip_snippets)
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
@@ -319,9 +320,13 @@ class Scanner:
             spinner.finish()
 
         if wfp_list:
-            self.print_debug(f'Writing fingerprints to {self.wfp}')
-            with open(self.wfp, 'w') as f:
-                f.write(''.join(wfp_list))
+            if not self.no_wfp_file or not self.threaded_scan:  # Write a WFP file if no threading or not not requested
+                self.print_debug(f'Writing fingerprints to {self.wfp}')
+                with open(self.wfp, 'w') as f:
+                    f.write(''.join(wfp_list))
+            else:
+                self.print_debug( f'Skipping writing WFP file {self.wfp}')
+            wfp_list = None
             if self.scan_output:
                 self.print_msg(f'Writing results to {self.scan_output}...')
             if self.threaded_scan:
