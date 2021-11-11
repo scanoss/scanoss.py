@@ -146,11 +146,17 @@ class ScanossApi:
             json_resp = r.json()
             return json_resp
         except (JSONDecodeError, Exception) as e:
-            self.print_stderr(f'The SCANOSS API returned an invalid JSON: {e}')
-            bad_json_file = f'bad_json-{scan_id}.json' if scan_id else 'bad_json.json'
+            self.print_stderr(f'ERROR: The SCANOSS API returned an invalid JSON: {e}')
+            ctime = int(time.time())
+            bad_json_file = f'bad_json-{scan_id}-{ctime}.txt' if scan_id else f'bad_json-{ctime}.txt'
             self.print_stderr(f'Ignoring result. Please look in "{bad_json_file}" for more details.')
-            with open(bad_json_file, 'w') as f:
-                f.write(r.text)
+            try:
+                with open(bad_json_file, 'w') as f:
+                    f.write(f"---WFP Begin---\n{scan_files}\n---WFP End---\n---Bad JSON Begin---\n")
+                    f.write(r.text)
+                    f.write("---Bad JSON End---\n")
+            except Exception as ee:
+                self.print_stderr(f'Warning: Issue writing bad json file - {bad_json_file}: {ee}')
             return None
 
     def print_msg(self, *args, **kwargs):
