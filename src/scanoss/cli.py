@@ -65,7 +65,9 @@ def setup_args() -> None:
     p_scan.add_argument('--format',   '-f', type=str, choices=['plain', 'cyclonedx'],
                         help='Result output format (optional - default: plain)'
                         )
-    p_scan.add_argument('--threads', '-T', type=int, default=10, help='Number of threads to use while scanning')
+    p_scan.add_argument('--threads', '-T', type=int, default=10,
+                        help='Number of threads to use while scanning (optional - default 10)'
+                        )
     p_scan.add_argument('--flags', '-F', type=int,
                         help='Scanning engine flags (1: disable snippet matching, 2 enable snippet ids, '
                              '4: disable dependencies, 8: disable licenses, 16: disable copyrights,'
@@ -74,9 +76,12 @@ def setup_args() -> None:
                         )
     p_scan.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
     p_scan.add_argument('--post-size', '-P', type=int, default=64,
-                        help='Number of kilobytes to limit the post to while scanning'
+                        help='Number of kilobytes to limit the post to while scanning (optional - default 64)'
                         )
-    p_scan.add_argument('--timeout', '-M', type=int, default=120, help='Timeout (in seconds) for API communication')
+    p_scan.add_argument('--timeout', '-M', type=int, default=120,
+                        help='Timeout (in seconds) for API communication (optional - default 120)'
+                        )
+    p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -204,10 +209,14 @@ def scan(parser, args):
         if args.timeout < 5:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
 
+    if not os.access( os.getcwd(), os.W_OK ):  # Make sure the current directory is writable. If not disable saving WFP
+        print_stderr(f'Warning: Current directory is not writable: {os.getcwd()}')
+        args.no_wfp_output = True
+
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
                       sbom_path=sbom_path, scan_type=scan_type, scan_output=scan_output, output_format=output_format,
                       flags=flags, nb_threads=args.threads, skip_snippets=args.skip_snippets, post_size=args.post_size,
-                      timeout=args.timeout
+                      timeout=args.timeout, no_wfp_file=args.no_wfp_output
                       )
     if args.wfp:
         if args.threads > 1:
