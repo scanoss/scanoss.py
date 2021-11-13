@@ -45,7 +45,7 @@ publish:  ## Publish Python package to PyPI
 
 ghcr_build:  ## Build GitHub container image
 	@echo "Building GHCR container image..."
-	docker build -t $(GHCR_FULLNAME) .
+	docker build --no-cache -t $(GHCR_FULLNAME) .
 
 ghcr_tag:  ## Tag the latest GH container image with the version from Python
 	@echo "Tagging GHCR latest image with $(VERSION)..."
@@ -60,7 +60,7 @@ ghcr_all: ghcr_build ghcr_tag ghcr_push  ## Execute all GitHub Package container
 
 docker_build:  ## Build Docker container image
 	@echo "Building Docker image..."
-	docker build -t $(DOCKER_FULLNAME) .
+	docker build --no-cache -t $(DOCKER_FULLNAME) .
 
 docker_tag:  ## Tag the latest Docker container image with the version from Python
 	@echo "Tagging Docker latest image with $(VERSION)..."
