@@ -24,6 +24,7 @@
 import unittest
 
 from scanoss.scancodedeps import ScancodeDeps
+from scanoss.threadeddependencies import ThreadedDependencies
 
 
 class MyTestCase(unittest.TestCase):
@@ -50,6 +51,19 @@ class MyTestCase(unittest.TestCase):
         deps = sc_deps.produce_from_file()
         sc_deps.remove_interim_file()
         print(f'Dependency JSON: {deps}')
+        self.assertIsNotNone(deps)
+
+    def test_threaded_scan_dir(self):
+        """
+        Run a dependency scan of the current directory, then parse those results
+        """
+        sc_deps = ScancodeDeps(debug=True)
+        threaded_deps = ThreadedDependencies(sc_deps, ".", debug=True, trace=True)
+
+        self.assertTrue(threaded_deps.run(wait=True))
+
+        deps = threaded_deps.responses
+        print(f'Dependency results: {deps}')
         self.assertIsNotNone(deps)
 
 
