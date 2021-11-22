@@ -29,6 +29,7 @@ import sys
 from .scanner import Scanner
 from .winnowing import Winnowing
 from .scancodedeps import ScancodeDeps
+from .scantype import ScanType
 from . import __version__
 
 
@@ -60,6 +61,9 @@ def setup_args() -> None:
     p_scan.add_argument('--wfp', '-w',  type=str,
                         help='Scan a WFP File instead of a folder (optional)'
                         )
+    p_scan.add_argument('--dep', '-p',  type=str,
+                        help='Use a dependency file instead of a folder (optional)'
+                        )
     p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file' )
     p_scan.add_argument('--ignore',   '-n', type=str, help='Ignore components specified in the SBOM file' )
     p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).' )
@@ -83,6 +87,11 @@ def setup_args() -> None:
                         help='Timeout (in seconds) for API communication (optional - default 120)'
                         )
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
+    p_scan.add_argument('--no-dependencies', action='store_true', help='Skip Dependency scanning')
+    p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
+    p_scan.add_argument('--sc-timeout', type=int, default=600,
+                        help='Timeout (in seconds) for scancode to complete (optional - default 600)'
+                        )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -169,6 +178,37 @@ def wfp(parser, args):
         print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
         exit(1)
 
+def get_scan_options(args):
+    """
+    Parse the scanning options to determine the correct scan settings
+    :param args: cmd args
+    :return: Octal code for encoded scanning options
+    """
+    scan_files = ScanType.SCAN_FILES.value
+    scan_snippets = ScanType.SCAN_SNIPPETS.value
+    scan_dependencies = ScanType.SCAN_DEPENDENCIES.value
+    if args.skip_snippets:
+        scan_snippets = 0
+    if args.no_dependencies:
+        scan_dependencies = 0
+    if args.dependencies_only:
+        scan_files = scan_snippets = 0
+        scan_dependencies = ScanType.SCAN_DEPENDENCIES.value
+
+    scan_options = scan_files + scan_snippets + scan_dependencies
+
+    if args.debug:
+        if ScanType.SCAN_FILES.value & scan_options:
+            print_stderr(f'Scan Files')
+        if ScanType.SCAN_SNIPPETS.value & scan_options:
+            print_stderr(f'Scan Snippets')
+        if ScanType.SCAN_DEPENDENCIES.value & scan_options:
+            print_stderr(f'Scan Dependencies')
+    if scan_options <= 0:
+        print_stderr(f'Error: No valid scan options configured: {scan_options}')
+        exit(1)
+    return scan_options
+
 
 def scan(parser, args):
     """
@@ -204,6 +244,12 @@ def scan(parser, args):
             exit(1)
         if not Scanner.valid_json_file(sbom_path):   # Make sure it's a valid JSON file
             exit(1)
+    if args.dep:
+        if not os.path.exists(args.dep) or not os.path.isfile(args.dep):
+            print_stderr(f'Specified --dep file does not exist or is not a file: {args.dep}')
+            exit(1)
+        if not Scanner.valid_json_file(args.dep):  # Make sure it's a valid JSON file
+            exit(1)
 
     scan_output: str = None
     if args.output:
@@ -226,12 +272,18 @@ def scan(parser, args):
         print_stderr(f'Warning: Current directory is not writable: {os.getcwd()}')
         args.no_wfp_output = True
 
+    scan_options = get_scan_options(args)   # Figure out what scanning options we have
+
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
                       sbom_path=sbom_path, scan_type=scan_type, scan_output=scan_output, output_format=output_format,
-                      flags=flags, nb_threads=args.threads, skip_snippets=args.skip_snippets, post_size=args.post_size,
-                      timeout=args.timeout, no_wfp_file=args.no_wfp_output
+                      flags=flags, nb_threads=args.threads, post_size=args.post_size,
+                      timeout=args.timeout, no_wfp_file=args.no_wfp_output, scan_options=scan_options,
+                      sc_timeout=args.sc_timeout
                       )
     if args.wfp:
+        if not scanner.is_file_or_snippet_scan():
+            print_stderr(f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})')
+            exit(1)
         if args.threads > 1:
             scanner.scan_wfp_file_threaded(args.wfp)
         else:
@@ -241,7 +293,7 @@ def scan(parser, args):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
             exit(1)
         if os.path.isdir(args.scan_dir):
-            if not scanner.scan_folder(args.scan_dir):
+            if not scanner.scan_folder_with_options(args.scan_dir):
                 exit(1)
         elif os.path.isfile(args.scan_dir):
             if not scanner.scan_file(args.scan_dir):
