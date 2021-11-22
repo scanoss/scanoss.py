@@ -33,6 +33,9 @@ from .winnowing import Winnowing
 from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite
 from .threadedscanning import ThreadedScanning
+from .scancodedeps import ScancodeDeps
+from .threadeddependencies import ThreadedDependencies
+from .scantype import ScanType
 
 FILTERED_DIRS = {  # Folders to skip
                  "nbproject", "nbbuild", "nbdist", "__pycache__", "venv", "_yardoc", "eggs", "wheels", "htmlcov",
@@ -75,12 +78,14 @@ MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 class Scanner:
     """
     SCANOSS scanning class
+    Hanlde the scanning of files, snippets and dependencies
     """
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
-                 skip_snippets: bool = False, post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
-                 all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False
+                 post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
+                 all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
+                 scan_options: int = 7, sc_timeout: int = 600
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -96,10 +101,17 @@ class Scanner:
         self.all_extensions = all_extensions
         self.all_folders = all_folders
         self.hidden_files_folders = hidden_files_folders
-        self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=skip_snippets, all_extensions=all_extensions)
+        self.scan_options = scan_options
+        self._skip_snippets = True if not scan_options & ScanType.SCAN_SNIPPETS.value else False
+
+        self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
+                                   all_extensions=all_extensions
+                                   )
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout
                                       )
+        sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout)
+        self.threaded_deps = ThreadedDependencies(sc_deps, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads
         if nb_threads and nb_threads > 0:
             self.threaded_scan = ThreadedScanning(self.scanoss_api, debug=debug, trace=trace, quiet=quiet,
@@ -108,7 +120,7 @@ class Scanner:
         else:
             self.threaded_scan = None
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE  # Set the max post size (default 64k)
-        if skip_snippets:
+        if self._skip_snippets:
             self.max_post_size = 8 * 1024          # 8k Max post size if we're skipping snippets
 
     def __filter_files(self, files: list) -> list:
@@ -254,6 +266,68 @@ class Scanner:
         else:
             print(string)
 
+    def is_file_or_snippet_scan(self):
+        """
+        Check if file or snippet scanning is enabled
+        :return: True if enabled, False otherwise
+        """
+        if self.is_file_scan() or self.is_snippet_scan():
+            return True
+        return False
+
+    def is_file_scan(self):
+        """
+        Check if file scanning is enabled
+        :return: True if enabled, False otherwise
+        """
+        if self.scan_options & ScanType.SCAN_FILES.value:
+            return True
+        return False
+
+    def is_snippet_scan(self):
+        """
+        Check if snippet scanning is enabled
+        :return: True if enabled, False otherwise
+        """
+        if self.scan_options & ScanType.SCAN_SNIPPETS.value:
+            return True
+        return False
+
+    def is_dependency_scan(self):
+        """
+        Check if dependency scanning is enabled
+        :return: True if enabled, False otherwise
+        """
+        if self.scan_options & ScanType.SCAN_DEPENDENCIES.value:
+            return True
+        return False
+
+    def scan_folder_with_options(self, scan_dir: str) -> bool:
+        """
+        Scan the given folder for whatever scaning options that have been configured
+        :param scan_dir: directory to scan
+        :return: True if successful, False otherwise
+        """
+        success = True
+        if not scan_dir:
+            raise Exception(f"ERROR: Please specify a folder to scan")
+        if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
+            raise Exception(f"ERROR: Specified folder does not exist or is not a folder: {scan_dir}")
+        if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
+            raise Exception(f"ERROR: No scan options defined to scan folder: {scan_dir}")
+
+        if self.is_dependency_scan():
+            self.print_msg(f'Searching {scan_dir} for dependencies...')
+            self.threaded_deps.run(what_to_scan=scan_dir, wait=False)
+        if self.is_file_or_snippet_scan():
+            success = self.scan_folder(scan_dir)
+
+        if self.scan_output:
+            self.print_msg(f'Writing results to {self.scan_output}...')
+        if self.threaded_scan:
+            success = self.__finish_scan_threaded()
+        return success
+
     def scan_folder(self, scan_dir: str) -> bool:
         """
         Scan the specified folder producing fingerprints, send to the SCANOSS API and return results
@@ -330,19 +404,21 @@ class Scanner:
             else:
                 self.print_debug( f'Skipping writing WFP file {self.wfp}')
             wfp_list = None
-            if self.scan_output:
-                self.print_msg(f'Writing results to {self.scan_output}...')
             if self.threaded_scan:
-                success = self.__finish_scan_threaded(scan_started, file_count)
-            else:
-                success = self.scan_wfp_file()
+                success = self.__run_scan_threaded(scan_started, file_count)
+            # if self.scan_output:
+            #     self.print_msg(f'Writing results to {self.scan_output}...')
+            # if self.threaded_scan:
+            #     success = self.__finish_scan_threaded(scan_started, file_count)
+            # else:
+            #     success = self.scan_wfp_file()
         else:
             Scanner.print_stderr(f'Warning: No files found to scan in folder: {scan_dir}')
         return success
 
-    def __finish_scan_threaded(self, scan_started: bool, file_count: int) -> bool:
+    def __run_scan_threaded(self, scan_started: bool, file_count: int) -> bool:
         """
-        Finish scanning the filtered files and wait for the threads to complete
+        Finish scanning the filtered files and but do not wait for it to complete
         :param scan_started: If the scan has already started or not
         :param file_count:  Number of total files to be scanned
         :return: True if successful, False otherwise
@@ -350,13 +426,30 @@ class Scanner:
         success = True
         self.threaded_scan.update_bar(create=True, file_count=file_count)
         if not scan_started:
-            if not self.threaded_scan.run():           # Run the scan and wait for it to complete
+            if not self.threaded_scan.run(wait=False):           # Run the scan but do not wait for it to complete
                 self.print_stderr(f'Warning: Some errors encounted while scanning. Results might be incomplete.')
                 success = False
-        else:
+        return success
+
+    def __finish_scan_threaded(self) -> bool:
+        """
+        Wait for the threaded scan to complete
+        :param scan_started: If the scan has already started or not
+        :param file_count:  Number of total files to be scanned
+        :return: True if successful, False otherwise
+        """
+        success = True
+        responses = None
+        dep_responses = None
+        if self.is_file_or_snippet_scan():
             self.threaded_scan.complete()               # Wait for the scans to complete
-        self.threaded_scan.complete_bar()
-        responses = self.threaded_scan.responses
+            self.threaded_scan.complete_bar()
+            responses = self.threaded_scan.responses
+        if self.is_dependency_scan():
+            self.print_msg('Retrieving dependency data...')
+            self.threaded_deps.complete()
+            dep_responses = self.threaded_deps.responses
+            self.print_stderr(f'Dep Data: {dep_responses}')
         raw_output = "{\n"
         if responses:
             first = True
@@ -578,7 +671,9 @@ class Scanner:
             self.threaded_scan.queue_add(wfp)
             queue_size += 1
 
-        if not self.__finish_scan_threaded(scan_started, file_count):
+        if not self.__run_scan_threaded(scan_started, file_count):
+            success = False
+        elif not self.__finish_scan_threaded():
             success = False
         return success
 
