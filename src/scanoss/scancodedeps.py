@@ -152,7 +152,7 @@ class ScancodeDeps:
                     # End packages
                 # End file details
         # End dependencies json
-        self.print_debug(f'Dep Data: {deps}')
+        # self.print_debug(f'Dep Data: {deps}')
         return deps
 
     def produce_from_file(self, json_file: str = None) -> json:
