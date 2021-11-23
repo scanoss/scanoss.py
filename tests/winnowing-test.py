@@ -24,7 +24,6 @@
 import unittest
 
 from scanoss.winnowing import Winnowing
-from scanoss.subclasstest import SubclassTest
 
 
 class MyTestCase(unittest.TestCase):
@@ -52,15 +51,6 @@ class MyTestCase(unittest.TestCase):
         wfp = winnowing.wfp_for_contents(filename, False, content_types)
         print(f'WFP for {filename}: {wfp}')
         self.assertIsNotNone(wfp)
-
-    def test_subclass(self):
-
-        subt = SubclassTest(debug=True, trace=True, extra_flag=True)
-        subt.say_hello()
-        subt.print_debug(f'Debug message')
-        subt.is_extra_flag()
-
-        self.assertTrue(True)
 
 
 if __name__ == '__main__':
