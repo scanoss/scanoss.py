@@ -22,7 +22,6 @@
    THE SOFTWARE.
 """
 
-import os
 import sys
 
 
@@ -33,7 +32,10 @@ class ScanossBase():
 
     def __init__(self, debug: bool = False, trace: bool = False, quiet: bool = False):
         """
-
+        Initialise class
+        :param debug:  enable debug
+        :param trace:  enable tracing
+        :param quiet:  enable quiet mode
         """
         self.debug = debug
         self.quiet = quiet
