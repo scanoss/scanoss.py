@@ -27,8 +27,9 @@ import sys
 import hashlib
 import time
 
+from .scanossbase import ScanossBase
 
-class CycloneDx:
+class CycloneDx(ScanossBase):
     """
     CycloneDX management class
     Handle all interaction with CycloneDX formatting
@@ -39,27 +40,6 @@ class CycloneDx:
         """
         self.output_file = output_file
         self.debug = debug
-
-    @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
 
     def parse(self, data: json):
         """

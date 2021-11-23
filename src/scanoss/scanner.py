@@ -35,6 +35,7 @@ from .threadedscanning import ThreadedScanning
 from .scancodedeps import ScancodeDeps
 from .threadeddependencies import ThreadedDependencies
 from .scantype import ScanType
+from .scanossbase import ScanossBase
 
 FILTERED_DIRS = {  # Folders to skip
                  "nbproject", "nbbuild", "nbdist", "__pycache__", "venv", "_yardoc", "eggs", "wheels", "htmlcov",
@@ -74,7 +75,7 @@ WFP_FILE_START = "file="
 MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 
 
-class Scanner:
+class Scanner(ScanossBase):
     """
     SCANOSS scanning class
     Hanlde the scanning of files, snippets and dependencies
@@ -184,13 +185,6 @@ class Scanner:
         return path
 
     @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
-
-    @staticmethod
     def __count_files_in_wfp_file(wfp_file: str):
         """
         Count the number of files in the WFP that need to be processed
@@ -227,27 +221,6 @@ class Scanner:
             Scanner.print_stderr(f'Problem parsing JSON file "{json_file}": {e}')
             return False
         return True
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs):
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
 
     def __log_result(self, string, outfile=None):
         """

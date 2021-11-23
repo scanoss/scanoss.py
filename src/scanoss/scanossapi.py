@@ -30,12 +30,14 @@ import requests
 import uuid
 import http.client as http_client
 
+from .scanossbase import ScanossBase
+
 DEFAULT_URL      = "https://osskb.org/api/scan/direct"
 SCANOSS_SCAN_URL = os.environ.get("SCANOSS_SCAN_URL") if os.environ.get("SCANOSS_SCAN_URL") else DEFAULT_URL
 SCANOSS_API_KEY  = os.environ.get("SCANOSS_API_KEY")  if os.environ.get("SCANOSS_API_KEY")  else ''
 
 
-class ScanossApi:
+class ScanossApi(ScanossBase):
     """
     ScanOSS REST API client class
     Currently support posting scan requests to the SCANOSS streaming API
@@ -158,34 +160,6 @@ class ScanossApi:
             except Exception as ee:
                 self.print_stderr(f'Warning: Issue writing bad json file - {bad_json_file}: {ee}')
             return None
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs):
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
-
-    @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
 
 #
 # End of ScanossApi Class
