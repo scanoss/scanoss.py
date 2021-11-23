@@ -290,15 +290,17 @@ class Scanner(ScanossBase):
             raise Exception(f"ERROR: No scan options defined to scan folder: {scan_dir}")
 
         if self.is_dependency_scan():
-            self.print_msg(f'Searching {scan_dir} for dependencies...')
-            self.threaded_deps.run(what_to_scan=scan_dir, wait=False)
+            if not self.threaded_deps.run(what_to_scan=scan_dir, wait=False):  # Kick off a background dependency scan
+                success = False
         if self.is_file_or_snippet_scan():
-            success = self.scan_folder(scan_dir)
+            if not self.scan_folder(scan_dir):
+                success = False
 
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.threaded_scan:
-            success = self.__finish_scan_threaded()
+            if not self.__finish_scan_threaded():
+                success = False
         return success
 
     def scan_folder(self, scan_dir: str) -> bool:
@@ -406,9 +408,7 @@ class Scanner(ScanossBase):
 
     def __finish_scan_threaded(self) -> bool:
         """
-        Wait for the threaded scan to complete
-        :param scan_started: If the scan has already started or not
-        :param file_count:  Number of total files to be scanned
+        Wait for the threaded scans to complete
         :return: True if successful, False otherwise
         """
         success = True
