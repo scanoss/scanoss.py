@@ -32,12 +32,13 @@ from dataclasses import dataclass
 from progress.bar import Bar
 
 from .scanossapi import ScanossApi
+from .scanossbase import ScanossBase
 
 WFP_FILE_START = "file="
 MAX_ALLOWED_THREADS = 30
 
 @dataclass
-class ThreadedScanning(object):
+class ThreadedScanning(ScanossBase):
     """
     Threaded class for running Scanning in parallel (from a queue)
     WFP scan requests are loaded into the input queue.
@@ -74,13 +75,6 @@ class ThreadedScanning(object):
             self.nb_threads = MAX_ALLOWED_THREADS
 
     @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
-
-    @staticmethod
     def __count_files_in_wfp(wfp: str):
         """
         Count the number of files in the WFP that need to be processed
@@ -93,27 +87,6 @@ class ThreadedScanning(object):
                 if WFP_FILE_START in line:
                     count += 1
         return count
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs):
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
 
     def create_bar(self, file_count: int):
         if not self.quiet and self._isatty and not self.bar:

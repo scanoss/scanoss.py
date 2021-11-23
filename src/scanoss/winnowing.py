@@ -33,6 +33,8 @@ import sys
 from crc32c import crc32c
 from binaryornot.check import is_binary
 
+from .scanossbase import ScanossBase
+
 # Winnowing configuration. DO NOT CHANGE.
 GRAM = 30
 WINDOW = 64
@@ -58,7 +60,7 @@ SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
                 ".pdf", ".min.js", ".mf"
 }
 
-class Winnowing:
+class Winnowing(ScanossBase):
     """
     Winnowing Algorithm implementation for SCANOSS.
 
@@ -280,34 +282,6 @@ class Winnowing:
             wfp += output + '\n'
 
         return wfp
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs):
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
-
-    @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
 
 #
 # End of Winnowing Class
