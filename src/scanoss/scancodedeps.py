@@ -27,7 +27,10 @@ import os.path
 import sys
 import subprocess
 
-class ScancodeDeps:
+from .scanossbase import ScanossBase
+
+
+class ScancodeDeps(ScanossBase):
     """
     SCANOSS dependency scanning class
     """
@@ -45,34 +48,6 @@ class ScancodeDeps:
         self.scan_output = scan_output
         self.sc_command = sc_command if sc_command else 'scancode'
         self.output_file = output_file if output_file else 'scancode-dependencies.json'
-
-    @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs):
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
 
     def __log_result(self, string, outfile=None):
         """
