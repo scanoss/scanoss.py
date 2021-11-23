@@ -32,9 +32,10 @@ from typing import Dict, List
 from dataclasses import dataclass
 
 from .scancodedeps import ScancodeDeps
+from .scanossbase import ScanossBase
 
 @dataclass
-class ThreadedDependencies(object):
+class ThreadedDependencies(ScanossBase):
     """
 
     """
@@ -54,34 +55,6 @@ class ThreadedDependencies(object):
         self.quiet = quiet
         self._thread = None
         self._errors = False
-
-    @staticmethod
-    def print_stderr(*args, **kwargs) -> None:
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
-
-    def print_msg(self, *args, **kwargs) -> None:
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs) -> None:
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs) -> None:
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
 
     @property
     def responses(self) -> Dict:
