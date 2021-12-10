@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [0.7.2] - 2021-12-10
+### Added
+- Added option to process all file extensions while scanning (--all-extensions)
+- Added option to process all folders while scanning (--all-folders)
+- Added option to process all hidden files/folders while scanning (--all-hidden)
+
 ## [0.7.1] - 2021-11-12
 ### Added
 - Added option to skip WFP file generation while scanning (--no-wfp-output)
@@ -68,3 +74,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.11]: https://github.com/scanoss/scanoss.py/compare/v0.6.6...v0.6.11
 [0.7.0]: https://github.com/scanoss/scanoss.py/compare/v0.6.11...v0.7.0
 [0.7.1]: https://github.com/scanoss/scanoss.py/compare/v0.7.0...v0.7.1
+[0.7.2]: https://github.com/scanoss/scanoss.py/compare/v0.7.1...v0.7.2

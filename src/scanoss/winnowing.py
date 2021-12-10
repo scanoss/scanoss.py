@@ -102,7 +102,7 @@ class Winnowing:
     """
 
     def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 skip_snippets: bool = False, post_size: int = 64
+                 skip_snippets: bool = False, post_size: int = 64, all_extensions: bool = False
                  ):
         """
         Instantiate Winnowing class
@@ -117,6 +117,7 @@ class Winnowing:
         self.quiet         = quiet
         self.skip_snippets = skip_snippets
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE
+        self.all_extensions = all_extensions
 
     @staticmethod
     def __normalize(byte):
@@ -151,6 +152,8 @@ class Winnowing:
             True: if file should be skipped
             False: otherwise
         """
+        if self.all_extensions:
+            return False
         if file:
             lower_file = file.lower()
             for ending in SKIP_SNIPPET_EXT:
