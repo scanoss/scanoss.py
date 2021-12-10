@@ -82,6 +82,9 @@ def setup_args() -> None:
                         help='Timeout (in seconds) for API communication (optional - default 120)'
                         )
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
+    p_scan.add_argument('--all-extensions', action='store_true', help='Scan all file extensions')
+    p_scan.add_argument('--all-folders', action='store_true', help='Scan all folders')
+    p_scan.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -199,6 +202,12 @@ def scan(parser, args):
     output_format = args.format if args.format else 'plain'
     flags = args.flags if args.flags else None
     if args.debug and not args.quiet:
+        if args.all_extensions:
+            print_stderr("Scanning all file extensions/types...")
+        if args.all_folders:
+            print_stderr("Scanning all folders...")
+        if args.all_hidden:
+            print_stderr("Scanning all hidden files/folders...")
         if args.skip_snippets:
             print_stderr("Skipping snippets...")
         if args.post_size != 64:
@@ -216,7 +225,8 @@ def scan(parser, args):
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
                       sbom_path=sbom_path, scan_type=scan_type, scan_output=scan_output, output_format=output_format,
                       flags=flags, nb_threads=args.threads, skip_snippets=args.skip_snippets, post_size=args.post_size,
-                      timeout=args.timeout, no_wfp_file=args.no_wfp_output
+                      timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
+                      all_folders=args.all_folders, hidden_files_folders=args.all_hidden
                       )
     if args.wfp:
         if args.threads > 1:

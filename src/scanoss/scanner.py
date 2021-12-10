@@ -78,7 +78,8 @@ class Scanner:
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
-                 skip_snippets: bool = False, post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False
+                 skip_snippets: bool = False, post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
+                 all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -91,7 +92,10 @@ class Scanner:
         self.output_format = output_format
         self.no_wfp_file = no_wfp_file
         self.isatty = sys.stderr.isatty()
-        self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=skip_snippets)
+        self.all_extensions = all_extensions
+        self.all_folders = all_folders
+        self.hidden_files_folders = hidden_files_folders
+        self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=skip_snippets, all_extensions=all_extensions)
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout
                                       )
@@ -106,8 +110,7 @@ class Scanner:
         if skip_snippets:
             self.max_post_size = 8 * 1024          # 8k Max post size if we're skipping snippets
 
-    @staticmethod
-    def __filter_files(files) -> list:
+    def __filter_files(self, files: list) -> list:
         """
         Filter which files should be considered for processing
         :param files: list of files to filter
@@ -116,14 +119,14 @@ class Scanner:
         file_list = []
         for f in files:
             ignore = False
-            if f.startswith("."):                    # Ignore all . files
+            if f.startswith(".") and not self.hidden_files_folders:  # Ignore all . files unless requested
                 ignore = True
-            if not ignore:
+            if not ignore and not self.all_extensions:  # Skip this check if we're allowing all extensions
                 f_lower = f.lower()
-                if f_lower in FILTERED_FILES:        # Check for exact files to ignore
+                if f_lower in FILTERED_FILES:           # Check for exact files to ignore
                     ignore = True
                 if not ignore:
-                    for ending in FILTERED_EXT:      # Check for file endings to ignore
+                    for ending in FILTERED_EXT:         # Check for file endings to ignore
                         if f_lower.endswith(ending):
                             ignore = True
                             break
@@ -131,8 +134,7 @@ class Scanner:
                 file_list.append(f)
         return file_list
 
-    @staticmethod
-    def __filter_dirs(dirs: list) -> list:
+    def __filter_dirs(self, dirs: list) -> list:
         """
         Filter which folders should be considered for processing
         :param dirs: list of directories to filter
@@ -141,9 +143,9 @@ class Scanner:
         dir_list = []
         for d in dirs:
             ignore = False
-            if d.startswith("."):                 # Ignore all . folders
+            if d.startswith(".") and not self.hidden_files_folders: # Ignore all . folders unless requested
                 ignore = True
-            if not ignore:
+            if not ignore and not self.all_folders: # Skip this check if we're allowing all folders
                 d_lower = d.lower()
                 if d_lower in FILTERED_DIRS:      # Ignore specific folders
                     ignore = True
@@ -278,8 +280,8 @@ class Scanner:
         scan_started = False
         for root, dirs, files in os.walk(scan_dir):
             self.print_trace(f'U Root: {root}, Dirs: {dirs}, Files {files}')
-            dirs[:] = Scanner.__filter_dirs(dirs)                             # Strip out unwanted directories
-            filtered_files = Scanner.__filter_files(files)                    # Strip out unwanted files
+            dirs[:] = self.__filter_dirs(dirs)                             # Strip out unwanted directories
+            filtered_files = self.__filter_files(files)                    # Strip out unwanted files
             self.print_debug(f'F Root: {root}, Dirs: {dirs}, Files {filtered_files}')
             for file in filtered_files:                                       # Cycle through each filtered file
                 path = os.path.join(root, file)
@@ -624,8 +626,8 @@ class Scanner:
         scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         for root, dirs, files in os.walk(scan_dir):
-            dirs[:] = Scanner.__filter_dirs(dirs)                             # Strip out unwanted directories
-            filtered_files = Scanner.__filter_files(files)                    # Strip out unwanted files
+            dirs[:] = self.__filter_dirs(dirs)                             # Strip out unwanted directories
+            filtered_files = self.__filter_files(files)                    # Strip out unwanted files
             self.print_trace(f'Root: {root}, Dirs: {dirs}, Files {filtered_files}')
             for file in filtered_files:
                 path = os.path.join(root, file)
