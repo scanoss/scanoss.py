@@ -31,6 +31,7 @@ from progress.spinner import Spinner
 from .scanossapi import ScanossApi
 from .winnowing import Winnowing
 from .cyclonedx import CycloneDx
+from .spdxlite import SpdxLite
 from .threadedscanning import ThreadedScanning
 
 FILTERED_DIRS = {  # Folders to skip
@@ -388,6 +389,15 @@ class Scanner:
                 success = cdx.produce_from_json(parsed_json)
             else:
                 success = cdx.produce_from_str(raw_output)
+        elif self.output_format == 'spdxlite':
+            spdxlite = SpdxLite(self.debug, self.scan_output)
+            if parsed_json:
+                success = spdxlite.produce_from_json(parsed_json)
+            else:
+                success = spdxlite.produce_from_str(raw_output)
+        else:
+            self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
+            success = False
         return success
 
 
@@ -508,6 +518,12 @@ class Scanner:
         elif self.output_format == 'cyclonedx':
             cdx = CycloneDx(self.debug, self.scan_output)
             cdx.produce_from_str(raw_output)
+        elif self.output_format == 'spdxlite':
+            spdxlite = SpdxLite(self.debug, self.scan_output)
+            success = spdxlite.produce_from_str(raw_output)
+        else:
+            self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
+            success = False
 
         return success
 
@@ -590,6 +606,12 @@ class Scanner:
         elif self.output_format == 'cyclonedx':
             cdx = CycloneDx(self.debug, self.scan_output)
             cdx.produce_from_str(raw_output)
+        elif self.output_format == 'spdxlite':
+            spdxlite = SpdxLite(self.debug, self.scan_output)
+            success = spdxlite.produce_from_str(raw_output)
+        else:
+            self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
+            success = False
 
         return success
 
