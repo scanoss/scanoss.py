@@ -285,7 +285,7 @@ def scan(parser, args):
 
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
                       sbom_path=sbom_path, scan_type=scan_type, scan_output=scan_output, output_format=output_format,
-                      flags=flags, nb_threads=args.threads, skip_snippets=args.skip_snippets, post_size=args.post_size,
+                      flags=flags, nb_threads=args.threads, post_size=args.post_size,
                       timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
                       scan_options=scan_options, sc_timeout=args.sc_timeout
