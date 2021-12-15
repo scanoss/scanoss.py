@@ -1,6 +1,6 @@
 import codecs
 import os
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 def read(rel_path):
@@ -29,6 +29,7 @@ setup(
     long_description_content_type='text/markdown',
     install_requires=["requests", "crc32c", "binaryornot", "progress", "grpcio", "protobuf"],
     include_package_data=True,
+    package_data={'': ['data/*.json']},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
