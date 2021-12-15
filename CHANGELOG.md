@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [0.7.4] - 2021-12-15
+### Changed
+- Updated SPDX Lite report output data (--format spdxlite)
+
 ## [0.7.3] - 2021-12-11
 ### Added
 - Added support for SPDX Lite report output (--format spdxlite)
@@ -80,3 +84,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.1]: https://github.com/scanoss/scanoss.py/compare/v0.7.0...v0.7.1
 [0.7.2]: https://github.com/scanoss/scanoss.py/compare/v0.7.1...v0.7.2
 [0.7.3]: https://github.com/scanoss/scanoss.py/compare/v0.7.2...v0.7.3
+[0.7.4]: https://github.com/scanoss/scanoss.py/compare/v0.7.3...v0.7.4

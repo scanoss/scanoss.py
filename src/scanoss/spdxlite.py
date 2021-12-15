@@ -27,6 +27,11 @@ import sys
 import hashlib
 import time
 import datetime
+import getpass
+import re
+import pkg_resources
+
+from . import __version__
 
 
 class SpdxLite:
@@ -40,6 +45,8 @@ class SpdxLite:
         """
         self.output_file = output_file
         self.debug = debug
+        self._spdx_licenses = {}  # Used to lookup for valid SPDX license identifiers
+        self._spdx_lic_names= {}  # Used to look for SPDX license identifiers by name
 
     @staticmethod
     def print_stderr(*args, **kwargs):
@@ -140,29 +147,56 @@ class SpdxLite:
         if not raw_data:
             self.print_stderr('ERROR: No SPDX data returned for the JSON string provided.')
             return False
+        self.load_license_data()
+        # Using this SPDX version as the spec
+        # https://github.com/spdx/spdx-spec/blob/development/v2.2.2/examples/SPDXJSONExample-v2.2.spdx.json
+        # Validate using:
+        # pip3 install jsonschema
+        # jsonschema -i spdxlite.json  <(curl https://raw.githubusercontent.com/spdx/spdx-spec/v2.2/schemas/spdx-schema.json)
         now = datetime.datetime.utcnow()
-        md5hex = hashlib.md5(f'{time.time()}'.encode('utf-8')).hexdigest()
+        md5hex = hashlib.md5(f'{raw_data}-{now}'.encode('utf-8')).hexdigest()
         data = {}
         data['spdxVersion'] = 'SPDX-2.2'
         data['dataLicense'] = 'CC0-1.0'
-        data['SPDXIdentifier'] = f'SCANOSS-SPDX-{md5hex}'
-        data['DocumentName'] = 'SCANOSS-SBOM'
-        data['creator'] = 'Tool: SCANOSS-PY'
-        data['created'] = now.strftime('%Y-%m-%dT%H:%M:%S') + now.strftime('.%f')[:4] + 'Z'
-        data['Packages'] = []
+        data['SPDXID'] = f'SPDXRef-{md5hex}'
+        data['name'] = 'SCANOSS-SBOM'
+        data['creationInfo'] = {
+            'created': now.strftime('%Y-%m-%dT%H:%M:%S') + now.strftime('.%f')[:4] + 'Z',
+            'creators': [f'Tool: SCANOSS-PY: {__version__}', f'User: {getpass.getuser()}']
+        }
+        data['packages'] = []
         for purl in raw_data:
             comp = raw_data.get(purl)
-            lic = []
+            lic: string = []
             licenses = comp.get('licenses')
+            lic_text = 'NOASSERTION'
             if licenses:
                 for l in licenses:
-                    lic.append(l.get('id'))
-            data['Packages'].append({
-                'PackageName': comp.get('component'),
-                'PackageSPDXID': purl,
-                'PackageVersion': comp.get('version'),
-                'PackageDownloadLocation': comp.get('url'),
-                'DeclaredLicense': f'({" AND ".join(lic)})' if len(lic) > 0 else ''
+                    lc_id = l.get('id')
+                    spdx_id = self.get_spdx_license_id(lc_id)
+                    lic.append(spdx_id if spdx_id else lc_id)
+                lic_text = ' AND '.join(lic)
+                if len(lic) > 1:
+                    lic_text = f'({lic_text})'  # wrap the names in () if there is more than one
+            comp_name = comp.get('component')
+            comp_ver  = comp.get('version')
+            purl_ver  = f'{purl}@{comp_ver}'
+            purl_hash = hashlib.md5(f'{purl_ver}'.encode('utf-8')).hexdigest()
+            data['packages'].append({
+                'name': comp_name,
+                'SPDXID': f'SPDXRef-{purl_hash}',
+                'versionInfo': comp_ver,
+                'downloadLocation': 'NOASSERTION',  # TODO Add actual download location
+                'homepage': comp.get('url'),
+                'licenseDeclared': lic_text,
+                'licenseConcluded': 'NOASSERTION',
+                'filesAnalyzed': False,
+                'copyrightText': 'NOASSERTION',
+                'externalRefs': [ {
+                    'referenceCategory': 'PACKAGE_MANAGER',
+                    'referenceLocator': purl_ver,
+                    'referenceType': 'purl'
+                }]
             })
         # End for loop
         file = sys.stdout
@@ -194,6 +228,77 @@ class SpdxLite:
         else:
             return self.produce_from_json(data, output_file)
         return False
+
+    def load_license_data(self) -> None:
+        """
+        Load the embedded SPDX valid license JSON files
+        Parse its contents to provide a lookup for valid name
+        """
+        self._spdx_licenses = {}
+        self._spdx_lic_names= {}
+        self.print_debug('Loading SPDX License details...')
+        self.load_license_data_file('data/spdx-licenses.json')
+        self.load_license_data_file('data/spdx-exceptions.json', 'licenseExceptionId')
+
+
+    def load_license_data_file(self, filename: str, lic_field: str = 'licenseId') -> bool:
+        """
+        Load the embedded SPDX valid license JSON file
+        Parse its contents to provide a lookup for valid name
+        :param filename: license data file to load
+        :param lic_field: license id field name (default: licenseId)
+        :return: True if successful, False otherwise
+        """
+        data = None
+        try:
+            f_name = pkg_resources.resource_filename(__name__, filename)
+            with open(f_name, 'r') as f:
+                data = json.loads(f.read())
+        except Exception as e:
+            self.print_stderr(f'ERROR: Problem parsing SPDX license input JSON: {e}')
+            return False
+        else:
+            licenses = data.get('licenses')
+            if licenses:
+                for l in licenses:
+                    lic_name = re.sub('\s+', '', l.get('name')).lower()
+                    lic_id = l.get(lic_field)
+                    if lic_id:
+                        lic_id_lc = lic_id.lower()
+                        self._spdx_licenses[lic_id_lc] = lic_id
+                        lic_id_short = (lic_id_lc.split('-'))[0]  # extract the name minus the version (i.e. SSPL-1.0)
+                        if lic_id_lc != lic_id_short and not self._spdx_licenses.get(lic_id_short):
+                            self._spdx_licenses[lic_id_short] = lic_id
+                    if lic_name:
+                        self._spdx_lic_names[lic_name] = lic_id
+            # self.print_stderr(f'Licenses: {self._spdx_licenses}')
+            # self.print_stderr(f'Lookup: {self._spdx_lic_lookup}')
+        return True
+
+    def get_spdx_license_id(self, lic_name: str) -> str:
+        """
+        Get the SPDX License ID if possible
+        :param lic_name: license name or id
+        :return: SPDX license identifier or None
+        """
+        if not lic_name:
+            return None
+        search_name_no_spaces = re.sub('\s+', '', lic_name).lower()  # Remove spaces and lowercase the name
+        search_name_dashes = re.sub('\s+', '-', lic_name).lower()    # Replace spaces with dashes and lowercase
+        lic_id = self._spdx_licenses.get(search_name_no_spaces)      # Lookup based on license id
+        if lic_id:
+            return lic_id
+        lic_id = self._spdx_licenses.get(search_name_dashes)
+        if lic_id:
+            return lic_id
+        lic_id = self._spdx_lic_names.get(search_name_no_spaces)  # Lookup based on license name
+        if lic_id:
+            return lic_id
+        lic_id = self._spdx_lic_names.get(search_name_dashes)
+        if lic_id:
+            return lic_id
+        self.print_stderr(f'Warning: Failed to find valid SPDX license identifier for: {lic_name}')
+        return None
 #
 # End of SpdxLite Class
 #
