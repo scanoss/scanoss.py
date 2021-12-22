@@ -25,7 +25,6 @@ import json
 import os.path
 import sys
 import hashlib
-import time
 import datetime
 import getpass
 import re
@@ -39,6 +38,7 @@ class SpdxLite:
     SPDX Lite management class
     Handle all interaction with SPDX Lite formatting
     """
+
     def __init__(self, debug: bool = False, output_file: str = None):
         """
         Initialise the SpdxLite class
@@ -46,7 +46,7 @@ class SpdxLite:
         self.output_file = output_file
         self.debug = debug
         self._spdx_licenses = {}  # Used to lookup for valid SPDX license identifiers
-        self._spdx_lic_names= {}  # Used to look for SPDX license identifiers by name
+        self._spdx_lic_names = {}  # Used to look for SPDX license identifiers by name
 
     @staticmethod
     def print_stderr(*args, **kwargs):
@@ -54,13 +54,6 @@ class SpdxLite:
         Print the given message to STDERR
         """
         print(*args, file=sys.stderr, **kwargs)
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
 
     def print_debug(self, *args, **kwargs):
         """
@@ -72,7 +65,6 @@ class SpdxLite:
     def parse(self, data: json):
         """
         Parse the given input (raw/plain) JSON string and return a summary
-
         :param data: json - JSON object
         :return: summary dictionary
         """
@@ -111,11 +103,11 @@ class SpdxLite:
                 dc = []
                 for lic in licenses:
                     name = lic.get("name")
-                    if not name in dc:             # Only save the license name once
-                        fdl.append({'id':name})
+                    if name not in dc:  # Only save the license name once
+                        fdl.append({'id': name})
                         dc.append(name)
                 fd['licenses'] = fdl
-                summary[p] = fd
+                summary[purl] = fd
         return summary
 
     def produce_from_file(self, json_file: str, output_file: str = None) -> bool:
@@ -131,7 +123,6 @@ class SpdxLite:
         if not os.path.isfile(json_file):
             self.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
             return False
-        success = True
         with open(json_file, 'r') as f:
             success = self.produce_from_str(f.read(), output_file)
         return success
@@ -155,32 +146,32 @@ class SpdxLite:
         # jsonschema -i spdxlite.json  <(curl https://raw.githubusercontent.com/spdx/spdx-spec/v2.2/schemas/spdx-schema.json)
         now = datetime.datetime.utcnow()
         md5hex = hashlib.md5(f'{raw_data}-{now}'.encode('utf-8')).hexdigest()
-        data = {}
-        data['spdxVersion'] = 'SPDX-2.2'
-        data['dataLicense'] = 'CC0-1.0'
-        data['SPDXID'] = f'SPDXRef-{md5hex}'
-        data['name'] = 'SCANOSS-SBOM'
-        data['creationInfo'] = {
-            'created': now.strftime('%Y-%m-%dT%H:%M:%S') + now.strftime('.%f')[:4] + 'Z',
-            'creators': [f'Tool: SCANOSS-PY: {__version__}', f'User: {getpass.getuser()}']
+        data = {
+            'spdxVersion': 'SPDX-2.2',
+            'dataLicense': 'CC0-1.0',
+            'SPDXID': f'SPDXRef-{md5hex}',
+            'name': 'SCANOSS-SBOM', 'creationInfo': {
+                'created': now.strftime('%Y-%m-%dT%H:%M:%S') + now.strftime('.%f')[:4] + 'Z',
+                'creators': [f'Tool: SCANOSS-PY: {__version__}', f'User: {getpass.getuser()}']
+            },
+            'packages': []
         }
-        data['packages'] = []
         for purl in raw_data:
             comp = raw_data.get(purl)
-            lic: string = []
+            lic_names = []
             licenses = comp.get('licenses')
             lic_text = 'NOASSERTION'
             if licenses:
-                for l in licenses:
-                    lc_id = l.get('id')
+                for lic in licenses:
+                    lc_id = lic.get('id')
                     spdx_id = self.get_spdx_license_id(lc_id)
-                    lic.append(spdx_id if spdx_id else lc_id)
-                lic_text = ' AND '.join(lic)
-                if len(lic) > 1:
+                    lic_names.append(spdx_id if spdx_id else lc_id)
+                lic_text = ' AND '.join(lic_names)
+                if len(lic_names) > 1:
                     lic_text = f'({lic_text})'  # wrap the names in () if there is more than one
             comp_name = comp.get('component')
-            comp_ver  = comp.get('version')
-            purl_ver  = f'{purl}@{comp_ver}'
+            comp_ver = comp.get('version')
+            purl_ver = f'{purl}@{comp_ver}'
             purl_hash = hashlib.md5(f'{purl_ver}'.encode('utf-8')).hexdigest()
             data['packages'].append({
                 'name': comp_name,
@@ -192,7 +183,7 @@ class SpdxLite:
                 'licenseConcluded': 'NOASSERTION',
                 'filesAnalyzed': False,
                 'copyrightText': 'NOASSERTION',
-                'externalRefs': [ {
+                'externalRefs': [{
                     'referenceCategory': 'PACKAGE_MANAGER',
                     'referenceLocator': purl_ver,
                     'referenceType': 'purl'
@@ -219,15 +210,12 @@ class SpdxLite:
         if not json_str:
             self.print_stderr('ERROR: No JSON string provided to parse.')
             return False
-        data = None
         try:
             data = json.loads(json_str)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
             return False
-        else:
-            return self.produce_from_json(data, output_file)
-        return False
+        return self.produce_from_json(data, output_file)
 
     def load_license_data(self) -> None:
         """
@@ -235,11 +223,10 @@ class SpdxLite:
         Parse its contents to provide a lookup for valid name
         """
         self._spdx_licenses = {}
-        self._spdx_lic_names= {}
+        self._spdx_lic_names = {}
         self.print_debug('Loading SPDX License details...')
         self.load_license_data_file('data/spdx-licenses.json')
         self.load_license_data_file('data/spdx-exceptions.json', 'licenseExceptionId')
-
 
     def load_license_data_file(self, filename: str, lic_field: str = 'licenseId') -> bool:
         """
@@ -249,7 +236,6 @@ class SpdxLite:
         :param lic_field: license id field name (default: licenseId)
         :return: True if successful, False otherwise
         """
-        data = None
         try:
             f_name = pkg_resources.resource_filename(__name__, filename)
             with open(f_name, 'r') as f:
@@ -260,9 +246,9 @@ class SpdxLite:
         else:
             licenses = data.get('licenses')
             if licenses:
-                for l in licenses:
-                    lic_name = re.sub('\s+', '', l.get('name')).lower()
-                    lic_id = l.get(lic_field)
+                for lic in licenses:
+                    lic_name = re.sub('\\s+', '', lic.get('name')).lower()
+                    lic_id = lic.get(lic_field)
                     if lic_id:
                         lic_id_lc = lic_id.lower()
                         self._spdx_licenses[lic_id_lc] = lic_id
@@ -283,9 +269,9 @@ class SpdxLite:
         """
         if not lic_name:
             return None
-        search_name_no_spaces = re.sub('\s+', '', lic_name).lower()  # Remove spaces and lowercase the name
-        search_name_dashes = re.sub('\s+', '-', lic_name).lower()    # Replace spaces with dashes and lowercase
-        lic_id = self._spdx_licenses.get(search_name_no_spaces)      # Lookup based on license id
+        search_name_no_spaces = re.sub('\\s+', '', lic_name).lower()  # Remove spaces and lowercase the name
+        search_name_dashes = re.sub('\\s+', '-', lic_name).lower()  # Replace spaces with dashes and lowercase
+        lic_id = self._spdx_licenses.get(search_name_no_spaces)  # Lookup based on license id
         if lic_id:
             return lic_id
         lic_id = self._spdx_licenses.get(search_name_dashes)
