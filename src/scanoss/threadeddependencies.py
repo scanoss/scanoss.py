@@ -33,6 +33,7 @@ from dataclasses import dataclass
 
 from .scancodedeps import ScancodeDeps
 from .scanossbase import ScanossBase
+from .scanossgrpc import ScanossGrpc
 
 @dataclass
 class ThreadedDependencies(ScanossBase):
@@ -42,13 +43,14 @@ class ThreadedDependencies(ScanossBase):
     inputs: queue.Queue = queue.Queue()
     output: queue.Queue = queue.Queue()
 
-    def __init__(self, sc_deps: ScancodeDeps, what_to_scan: str = None, debug: bool = False, trace: bool = False,
+    def __init__(self, sc_deps: ScancodeDeps, grpc_api: ScanossGrpc, what_to_scan: str = None, debug: bool = False, trace: bool = False,
                  quiet: bool = False
                  ) -> None:
         """
 
         """
         self.sc_deps = sc_deps
+        self.grpc_api = grpc_api
         self.what_to_scan = what_to_scan
         self.debug = debug
         self.trace = trace
@@ -104,8 +106,11 @@ class ThreadedDependencies(ScanossBase):
                 if not deps:
                     self._errors = True
                 else:                         # TODO add API call to get dep data
-                    self.print_stderr(f'TODO Need to add gRPC call to get dep data.')
-                    self.output.put(deps)
+                    decorated_deps = self.grpc_api.get_dependencies(deps)
+                    if decorated_deps:
+                        self.output.put(decorated_deps)
+                    else:
+                        self._errors = True
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered running dependency scan: {e}')
             self._errors = True

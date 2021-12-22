@@ -35,6 +35,7 @@ from .spdxlite import SpdxLite
 from .threadedscanning import ThreadedScanning
 from .scancodedeps import ScancodeDeps
 from .threadeddependencies import ThreadedDependencies
+from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
 
@@ -112,7 +113,8 @@ class Scanner(ScanossBase):
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout
                                       )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout)
-        self.threaded_deps = ThreadedDependencies(sc_deps, debug=debug, quiet=quiet, trace=trace)
+        grpc_api = ScanossGrpc(debug=debug, quiet=quiet, trace=trace)
+        self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads
         if nb_threads and nb_threads > 0:
             self.threaded_scan = ThreadedScanning(self.scanoss_api, debug=debug, trace=trace, quiet=quiet,
@@ -422,19 +424,28 @@ class Scanner(ScanossBase):
             self.print_msg('Retrieving dependency data...')
             self.threaded_deps.complete()
             dep_responses = self.threaded_deps.responses
-            self.print_stderr(f'Dep Data: {dep_responses}')
+            # self.print_stderr(f'Dep Data: {dep_responses}')
         raw_output = "{\n"
-        if responses:
+        if responses or dep_responses:
             first = True
-            for scan_resp in responses:
-                if scan_resp is not None:
-                    for key, value in scan_resp.items():
-                        if first:
-                            raw_output += "  \"%s\":%s" % (key, json.dumps(value, indent=2))
-                            first = False
-                        else:
-                            raw_output += ",\n  \"%s\":%s" % (key, json.dumps(value, indent=2))
-            # End for loop
+            if responses:
+                for scan_resp in responses:
+                    if scan_resp is not None:
+                        for key, value in scan_resp.items():
+                            if first:
+                                raw_output += "  \"%s\":%s" % (key, json.dumps(value, indent=2))
+                                first = False
+                            else:
+                                raw_output += ",\n  \"%s\":%s" % (key, json.dumps(value, indent=2))
+                # End for loop
+            if dep_responses:
+                for key, value in dep_responses.items():
+                    if first:
+                        raw_output += "  \"%s\":%s" % (key, json.dumps(value, indent=2))
+                        first = False
+                    else:
+                        raw_output += ",\n  \"%s\":%s" % (key, json.dumps(value, indent=2))
+                # End for loop
         else:
             success = False
         raw_output += "\n}"
