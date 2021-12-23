@@ -113,10 +113,8 @@ class Winnowing(ScanossBase):
             size_limit: bool
                 Limit the size of a fingerprint to 64k (post size) - Default True
         """
+        super().__init__(debug, trace, quiet)
         self.size_limit    = size_limit
-        self.debug         = debug
-        self.trace         = trace
-        self.quiet         = quiet
         self.skip_snippets = skip_snippets
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE
         self.all_extensions = all_extensions

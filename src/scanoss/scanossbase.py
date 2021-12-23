@@ -25,7 +25,7 @@
 import sys
 
 
-class ScanossBase():
+class ScanossBase:
     """
     SCANOSS base class containing default properties and methods to be shared
     """

@@ -24,6 +24,7 @@
 
 from enum import Enum
 
+
 class ScanType(Enum):
     """
     Octal Enum class describing all the scanning options
