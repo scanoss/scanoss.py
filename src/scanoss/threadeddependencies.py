@@ -22,18 +22,15 @@
    THE SOFTWARE.
 """
 
-import os
-import sys
 import threading
 import queue
-import time
-
-from typing import Dict, List
+from typing import Dict
 from dataclasses import dataclass
 
 from .scancodedeps import ScancodeDeps
 from .scanossbase import ScanossBase
 from .scanossgrpc import ScanossGrpc
+
 
 @dataclass
 class ThreadedDependencies(ScanossBase):
@@ -43,18 +40,15 @@ class ThreadedDependencies(ScanossBase):
     inputs: queue.Queue = queue.Queue()
     output: queue.Queue = queue.Queue()
 
-    def __init__(self, sc_deps: ScancodeDeps, grpc_api: ScanossGrpc, what_to_scan: str = None, debug: bool = False, trace: bool = False,
-                 quiet: bool = False
-                 ) -> None:
+    def __init__(self, sc_deps: ScancodeDeps, grpc_api: ScanossGrpc, what_to_scan: str = None, debug: bool = False,
+                 trace: bool = False, quiet: bool = False) -> None:
         """
 
         """
+        super().__init__(debug, trace, quiet)
         self.sc_deps = sc_deps
         self.grpc_api = grpc_api
         self.what_to_scan = what_to_scan
-        self.debug = debug
-        self.trace = trace
-        self.quiet = quiet
         self._thread = None
         self._errors = False
 
@@ -64,9 +58,9 @@ class ThreadedDependencies(ScanossBase):
         Get all responses back from the completed threads
         :return: JSON object
         """
-        resps = list(self.output.queue)
-        if resps:
-            for resp in resps:
+        responses = list(self.output.queue)
+        if responses:
+            for resp in responses:
                 return resp
         return None
 
@@ -81,7 +75,7 @@ class ThreadedDependencies(ScanossBase):
         self._errors = False
         try:
             self.print_msg(f'Searching {what_to_scan} for dependencies...')
-            self.inputs.put(what_to_scan)   # Setup an input queue to enable the parent to wait for completion
+            self.inputs.put(what_to_scan)   # Set up an input queue to enable the parent to wait for completion
             self._thread = threading.Thread(target=self.scan_dependencies, daemon=True)
             self._thread.start()
         except Exception as e:
@@ -103,8 +97,11 @@ class ThreadedDependencies(ScanossBase):
                 self._errors = True
             else:
                 deps = self.sc_deps.produce_from_file()
-                if not deps:
+                if deps is None:
+                    self.print_stderr(f'Problem searching for dependencies for: {what_to_scan}')
                     self._errors = True
+                elif not deps:
+                    self.print_trace(f'No dependencies found to decorate for: {what_to_scan}')
                 else:                         # TODO add API call to get dep data
                     decorated_deps = self.grpc_api.get_dependencies(deps)
                     if decorated_deps:
@@ -119,7 +116,7 @@ class ThreadedDependencies(ScanossBase):
             self.inputs.task_done()
         self.print_trace(f'Dependency thread complete ({current_thread}).')
 
-    def complete(self) -> None:
+    def complete(self) -> bool:
         """
         Wait for input queue to complete processing and complete the worker thread
         """
@@ -128,6 +125,8 @@ class ThreadedDependencies(ScanossBase):
             self._thread.join(timeout=5)
         except Exception as e:
             self.print_stderr(f'WARNING: Issue encountered terminating dependency worker thread: {e}')
+            self._errors = True
+        return True if not self._errors else False
 
 #
 # End of ThreadedDependencies Class

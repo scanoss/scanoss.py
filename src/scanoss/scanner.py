@@ -87,14 +87,12 @@ class Scanner(ScanossBase):
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
                  post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
-                 scan_options: int = 7, sc_timeout: int = 600
+                 scan_options: int = 7, sc_timeout: int = 600, grpc_url: str = None
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
         """
-        self.quiet = quiet
-        self.debug = debug
-        self.trace = trace
+        super().__init__(debug, trace, quiet)
         self.wfp = wfp if wfp else "scanner_output.wfp"
         self.scan_output = scan_output
         self.output_format = output_format
@@ -113,7 +111,7 @@ class Scanner(ScanossBase):
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout
                                       )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout)
-        grpc_api = ScanossGrpc(debug=debug, quiet=quiet, trace=trace)
+        grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace)
         self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads
         if nb_threads and nb_threads > 0:
@@ -417,12 +415,16 @@ class Scanner(ScanossBase):
         responses = None
         dep_responses = None
         if self.is_file_or_snippet_scan():
-            self.threaded_scan.complete()               # Wait for the scans to complete
+            if not self.threaded_scan.complete():               # Wait for the scans to complete
+                self.print_stderr(f'Warning: Scanning analysis ran into some trouble.')
+                success = False
             self.threaded_scan.complete_bar()
             responses = self.threaded_scan.responses
         if self.is_dependency_scan():
             self.print_msg('Retrieving dependency data...')
-            self.threaded_deps.complete()
+            if not self.threaded_deps.complete():
+                self.print_stderr(f'Warning: Dependency analysis ran into some trouble.')
+                success = False
             dep_responses = self.threaded_deps.responses
             # self.print_stderr(f'Dep Data: {dep_responses}')
         raw_output = "{\n"

@@ -59,10 +59,8 @@ class ThreadedScanning(ScanossBase):
         :param quiet: enable quiet mode (default False)
         :param nb_threads: Number of thread to run (default 5)
         """
+        super().__init__(debug, trace, quiet)
         self.scanapi = scanapi
-        self.debug = debug
-        self.trace = trace
-        self.quiet = quiet
         self.nb_threads = nb_threads
         self._isatty = sys.stderr.isatty()
         self._bar_count = 0
@@ -164,7 +162,7 @@ class ThreadedScanning(ScanossBase):
             self.complete()
         return False if self._errors else True
 
-    def complete(self) -> None:
+    def complete(self) -> bool:
         """
         Wait for input queue to complete processing and complete the worker threads
         """
@@ -175,6 +173,8 @@ class ThreadedScanning(ScanossBase):
                 t.join(timeout=5)
         except Exception as e:
             self.print_stderr(f'WARNING: Issue encountered terminating scanning worker threads: {e}')
+            self._errors = True
+        return False if self._errors else True
 
     def worker_post(self) -> None:
         """
