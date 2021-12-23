@@ -125,6 +125,9 @@ def setup_args() -> None:
         p.add_argument('--apiurl', type=str,
                        help='SCANOSS API URL (optional - default: https://osskb.org/api/scan/direct)'
                        )
+    p.add_argument('--api2url', type=str,
+                   help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
+                   )
     for p in [p_scan, p_wfp, p_dep]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -288,7 +291,7 @@ def scan(parser, args):
                       flags=flags, nb_threads=args.threads, post_size=args.post_size,
                       timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
-                      scan_options=scan_options, sc_timeout=args.sc_timeout
+                      scan_options=scan_options, sc_timeout=args.sc_timeout, grpc_url=args.api2url
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
