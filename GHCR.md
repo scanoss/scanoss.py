@@ -1,7 +1,7 @@
 # SCANOSS GitHub Container Repository - GHCR
 The SCANOSS python package provides a simple easy to consume library for interacting with SCANOSS APIs/Engine.
 
-This Github Container Package repo provides this package in an easy to install/run image.
+This GitHub Container Package repo provides this package in an easy to install/run image.
 
 ## Installation
 To install (from [GHCR](https://github.com/scanoss/scanoss.py/pkgs/container/scanoss-py)), please run:

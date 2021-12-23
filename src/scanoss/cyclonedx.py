@@ -29,22 +29,24 @@ import time
 
 from .scanossbase import ScanossBase
 
+
 class CycloneDx(ScanossBase):
     """
     CycloneDX management class
     Handle all interaction with CycloneDX formatting
     """
+
     def __init__(self, debug: bool = False, output_file: str = None):
         """
         Initialise the CycloneDX class
         """
+        super().__init__(debug)
         self.output_file = output_file
         self.debug = debug
 
     def parse(self, data: json):
         """
         Parse the given input (raw/plain) JSON string and return CycloneDX summary
-
         :param data: json - JSON object
         :return: CycloneDX dictionary
         """
@@ -85,9 +87,9 @@ class CycloneDx(ScanossBase):
                 fdl = []
                 for lic in licenses:
                     # print(f'License: {lic.get("name")}')
-                    fdl.append({'id':lic.get("name")})
+                    fdl.append({'id': lic.get("name")})
                 fd['licenses'] = fdl
-                cdx[p] = fd
+                cdx[purl] = fd
         # print(f'License summary: {cdx}')
         return cdx
 
@@ -104,7 +106,6 @@ class CycloneDx(ScanossBase):
         if not os.path.isfile(json_file):
             self.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
             return False
-        success = True
         with open(json_file, 'r') as f:
             success = self.produce_from_str(f.read(), output_file)
         return success
@@ -121,19 +122,20 @@ class CycloneDx(ScanossBase):
             self.print_stderr('ERROR: No CycloneDX data returned for the JSON string provided.')
             return False
         md5hex = hashlib.md5(f'{time.time()}'.encode('utf-8')).hexdigest()
-        data = {}
-        data['bomFormat'] = 'CycloneDX'
-        data['specVersion'] = '1.2'
-        data['serialNumber'] = f'scanoss:SCANOSS-PY - SCANOSS CLI-{md5hex}'
-        data['version'] = '1'
-        data['components'] = []
+        data = {
+            'bomFormat': 'CycloneDX',
+            'specVersion': '1.2',
+            'serialNumber': f'scanoss:SCANOSS-PY - SCANOSS CLI-{md5hex}',
+            'version': '1',
+            'components': []
+        }
         for purl in cdx:
             comp = cdx.get(purl)
-            lic = []
+            lic_text = []
             licenses = comp.get('licenses')
             if licenses:
-                for l in licenses:
-                    lic.append({'license': { 'id': l.get('id')}})
+                for lic in licenses:
+                    lic_text.append({'license': {'id': lic.get('id')}})
             m_type = 'Snippet' if comp.get('id') == 'snippet' else 'Library'
             data['components'].append({
                 'type': m_type,
@@ -141,7 +143,7 @@ class CycloneDx(ScanossBase):
                 'publisher': comp.get('vendor'),
                 'version': comp.get('version'),
                 'purl': purl,
-                'licenses': lic
+                'licenses': lic_text
                 # 'licenses': [{
                 #     'license': {
                 #         'id': comp.get('license')
@@ -170,15 +172,12 @@ class CycloneDx(ScanossBase):
         if not json_str:
             self.print_stderr('ERROR: No JSON string provided to parse.')
             return False
-        data = None
         try:
             data = json.loads(json_str)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
             return False
-        else:
-            return self.produce_from_json(data, output_file)
-        return False
+        return self.produce_from_json(data, output_file)
 #
 # End of CycloneDX Class
 #

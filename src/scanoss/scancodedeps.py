@@ -24,7 +24,6 @@
 
 import json
 import os.path
-import sys
 import subprocess
 
 from .scanossbase import ScanossBase
@@ -34,13 +33,12 @@ class ScancodeDeps(ScanossBase):
     """
     SCANOSS dependency scanning class
     """
-    def __init__(self, debug: bool = False, quiet: bool = False, trace: bool = False,
-                 output_file: str = None, scan_output: str = None, timeout: int = 600,
-                 sc_command: str = None
-                 ):
+    def __init__(self, debug: bool = False, quiet: bool = False, trace: bool = False, output_file: str = None,
+                 scan_output: str = None, timeout: int = 600, sc_command: str = None):
         """
         Initialise ScancodeDeps class
         """
+        super().__init__(debug, trace, quiet)
         self.quiet = quiet
         self.debug = debug
         self.trace = trace
@@ -64,7 +62,7 @@ class ScancodeDeps(ScanossBase):
     def remove_interim_file(self, output_file: str = None):
         """
         Remove the temporary Scancode interim file
-        :param output_file: file to remove (optiona)
+        :param output_file: file to remove (optional)
         """
         if not output_file and self.output_file:
             output_file = self.output_file
@@ -91,9 +89,9 @@ class ScancodeDeps(ScanossBase):
                 files_details = data.get(t)
                 if not files_details or files_details == '':
                     continue
-                #print(f'File: {t}: {file_details}')
+                # print(f'File: {t}: {file_details}')
                 for fd in files_details:
-                    #print(f'FD: {fd}')
+                    # print(f'FD: {fd}')
                     f_path = fd.get('path')
                     if not f_path or f_path == '':
                         continue
@@ -108,14 +106,13 @@ class ScancodeDeps(ScanossBase):
                         pk_deps = pkgs.get('dependencies')
                         if not pk_deps or pk_deps == '':
                             continue
-                        #print(f'Path: {f_path}, Deps: {pk_deps}')
+                        # print(f'Path: {f_path}, Deps: {pk_deps}')
                         purls = []
                         for d in pk_deps:
                             dp = d.get('purl')
                             if not dp or dp == '':
                                 continue
-                            dp_data = {}
-                            dp_data['purl'] = dp
+                            dp_data = {'purl': dp}
                             rq = d.get('requirement')
                             if rq and rq != '' and not dp.endswith(rq):
                                 dp_data['requirement'] = rq
@@ -156,15 +153,12 @@ class ScancodeDeps(ScanossBase):
         if not json_str:
             self.print_stderr('ERROR: No JSON string provided to parse.')
             return None
-        data = None
         try:
             data = json.loads(json_str)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
             return None
-        else:
-            return self.produce_from_json(data)
-        return None
+        return self.produce_from_json(data)
 
     def get_dependencies(self, output_file: str = None, what_to_scan: str = None, result_output: str = None) -> bool:
         """
@@ -188,7 +182,7 @@ class ScancodeDeps(ScanossBase):
     def run_scan(self, output_file: str = None, what_to_scan: str = None) -> bool:
         """
         Run a scan of the specified file/folder and output the results to temporary file
-        :param outputfile: temporary scancode output file
+        :param output_file: temporary scancode output file
         :param what_to_scan: file/directory to scan
         :return: True on success, False otherwise
         """
@@ -196,8 +190,8 @@ class ScancodeDeps(ScanossBase):
             output_file = self.output_file
         try:
             open(output_file, 'w').close()
-            self.print_trace(f'About to execute {self.sc_command} -p --only-findings --quiet --json {output_file} {what_to_scan}')
-
+            self.print_trace(f'About to execute {self.sc_command} -p --only-findings --quiet --json {output_file}'
+                             f' {what_to_scan}')
             result = subprocess.run([self.sc_command, '-p', '--only-findings', '--quiet', '--json',
                                      output_file, what_to_scan],
                                     cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,

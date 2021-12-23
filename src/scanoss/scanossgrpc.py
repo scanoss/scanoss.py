@@ -23,7 +23,6 @@
 """
 
 import os
-import logging
 import grpc
 import json
 
@@ -50,9 +49,7 @@ class ScanossGrpc(ScanossBase):
         :param trace:
         :param quiet:
         """
-        self.debug = debug
-        self.quiet = quiet
-        self.trace = trace
+        super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL
         self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))
 
@@ -124,4 +121,6 @@ class ScanossGrpc(ScanossBase):
             self.print_stderr(f'Not such a success: {status_response.message}')
             return False
         return True
-
+#
+# End of ScanossGrpc Class
+#
