@@ -83,7 +83,7 @@ class ScancodeDeps(ScanossBase):
             self.print_stderr('ERROR: No JSON data provided to parse.')
             return None
         self.print_debug(f'Processing Scancode results into Dependency data...')
-        deps = {}
+        files = []
         for t in data:
             if t == 'files':    # Only interested in 'files' details
                 files_details = data.get(t)
@@ -119,11 +119,12 @@ class ScancodeDeps(ScanossBase):
                             purls.append(dp_data)
                         # print(f'Path: {f_path}, Purls: {purls}')
                         if len(purls) > 0:
-                            deps[f_path] = {}
-                            deps[f_path] = {'purls': purls}
+                            file = {'file': f_path, 'purls': purls}
+                            files.append(file)
                     # End packages
                 # End file details
         # End dependencies json
+        deps = {'files': files}
         # self.print_debug(f'Dep Data: {deps}')
         return deps
 
@@ -144,7 +145,7 @@ class ScancodeDeps(ScanossBase):
         with open(json_file, 'r') as f:
             return self.produce_from_str(f.read())
 
-    def produce_from_str(self, json_str: str) -> json:
+    def produce_from_str(self, json_str: str) -> dict:
         """
         Parse input JSON dependencies string and produce SCANOSS dependency JSON output
         :param json_str: input JSON string

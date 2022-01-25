@@ -427,7 +427,9 @@ class Scanner(ScanossBase):
                 success = False
             dep_responses = self.threaded_deps.responses
             # self.print_stderr(f'Dep Data: {dep_responses}')
+        # TODO change to dictionary
         raw_output = "{\n"
+        # TODO look into merging the two dictionaries. See https://favtutor.com/blogs/merge-dictionaries-python
         if responses or dep_responses:
             first = True
             if responses:
@@ -441,13 +443,17 @@ class Scanner(ScanossBase):
                                 raw_output += ",\n  \"%s\":%s" % (key, json.dumps(value, indent=2))
                 # End for loop
             if dep_responses:
-                for key, value in dep_responses.items():
-                    if first:
-                        raw_output += "  \"%s\":%s" % (key, json.dumps(value, indent=2))
-                        first = False
-                    else:
-                        raw_output += ",\n  \"%s\":%s" % (key, json.dumps(value, indent=2))
-                # End for loop
+                dep_files = dep_responses.get("files")
+                if dep_files and len(dep_files) > 0:
+                    for dep_file in dep_files:
+                        file = dep_file.pop("file", None)
+                        if file is not None:
+                            if first:
+                                raw_output += "  \"%s\":%s" % (file, json.dumps(dep_file, indent=2))
+                                first = False
+                            else:
+                                raw_output += ",\n  \"%s\":%s" % (file, json.dumps(dep_file, indent=2))
+                    # End for loop
         else:
             success = False
         raw_output += "\n}"

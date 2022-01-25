@@ -25,10 +25,11 @@
 import os
 import grpc
 import json
+from google.protobuf.json_format import MessageToDict, ParseDict
 
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
 from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, DependencyResponse
-from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, Status, StatusCode
+from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode
 from .scanossbase import ScanossBase
 
 # DEFAULT_URL      = "https://osskb.org/api/scan/direct"
@@ -74,16 +75,12 @@ class ScanossGrpc(ScanossBase):
         if not dependencies:
             self.print_stderr('ERROR: No dependency data supplied to submit to the API.')
             return None
-        resp = self.get_dependencies_str(json.dumps(dependencies), depth)
-        data = None
-        if resp:
-            try:
-                data = json.loads(resp)
-            except Exception as e:
-                print(f'ERROR: Problem parsing dependency response JSON: {e} - {resp}')
-        return data
+        resp = self.get_dependencies_json(dependencies, depth)
+        if not resp:
+            self.print_stderr(f'ERROR: No response for dependency request: {dependencies}')
+        return resp
 
-    def get_dependencies_str(self, dependencies: str, depth: int = 1) -> str:
+    def get_dependencies_json(self, dependencies: dict, depth: int = 1) -> dict:
         """
         Client function to call the rpc for GetDependencies
         :param dependencies: Message to send to the service
@@ -95,7 +92,41 @@ class ScanossGrpc(ScanossBase):
             return None
         resp: DependencyResponse
         try:
-            resp = self.dependencies_stub.GetDependencies(DependencyRequest(dependencies=dependencies, depth=depth))
+            files_json = dependencies.get("files")
+            if files_json is None or len(files_json) == 0:
+                self.print_stderr(f'ERROR: No dependency data supplied to send to gRPC service.')
+                return None
+            request = ParseDict(dependencies, DependencyRequest())  # Parse the JSON/Dict into the dependency object
+            request.depth = depth
+            resp = self.dependencies_stub.GetDependencies(request)
+        except Exception as e:
+            self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
+        else:
+            if resp:
+                if not self._check_status_response(resp.status):
+                    return None
+                return MessageToDict(resp)  # Convert the gRPC response to a dictionary
+        return None
+
+    def get_dependencies_str(self, dependencies: str, depth: int = 1) -> str:  # TODO remove?
+        """
+        Client function to call the rpc for GetDependencies
+        :param dependencies: Message to send to the service
+        :param depth: depth of sub-dependencies to search (default: 1)
+        :return: Server response or None
+        """
+        if not dependencies:
+            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            return None
+        resp: DependencyResponse
+        try:
+            purl = DependencyRequest.Purls(purl="pkg", requirement="^1.0")
+            purls = [purl]
+            dep_req = DependencyRequest.Files(file="package.json", purls=purls)
+            files = [dep_req]
+            resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=files, depth=depth))
+            # resp = self.dependencies_stub.GetDependencies(dependencies)
+            # resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=dependencies, depth=depth))
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
         else:
@@ -105,7 +136,7 @@ class ScanossGrpc(ScanossBase):
             return resp.dependencies
         return None
 
-    def _check_status_response(self, status_response: Status) -> bool:
+    def _check_status_response(self, status_response: StatusResponse) -> bool:
         """
         Check the response object to see if the command was successful or not
         :param status_response: Status Response
