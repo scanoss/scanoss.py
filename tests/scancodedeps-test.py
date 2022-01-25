@@ -24,6 +24,7 @@
 import unittest
 
 from scanoss.scancodedeps import ScancodeDeps
+from scanoss.scanossgrpc import ScanossGrpc
 from scanoss.threadeddependencies import ThreadedDependencies
 
 
@@ -57,11 +58,10 @@ class MyTestCase(unittest.TestCase):
         """
         Run a dependency scan of the current directory, then parse those results
         """
+        grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
         sc_deps = ScancodeDeps(debug=True)
-        threaded_deps = ThreadedDependencies(sc_deps, ".", debug=True, trace=True)
-
-        self.assertTrue(threaded_deps.run(wait=True))
-
+        threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
+        self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True))
         deps = threaded_deps.responses
         print(f'Dependency results: {deps}')
         self.assertIsNotNone(deps)

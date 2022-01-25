@@ -20,12 +20,93 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z9github.com/scanoss/papi/api/dependenciesv2;dependenciesv2',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n6scanoss/api/dependencies/v2/scanoss-dependencies.proto\x12\x1bscanoss.api.dependencies.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\"8\n\x11\x44\x65pendencyRequest\x12\x14\n\x0c\x64\x65pendencies\x18\x01 \x01(\t\x12\r\n\x05\x64\x65pth\x18\x02 \x01(\x05\"Y\n\x12\x44\x65pendencyResponse\x12\x14\n\x0c\x64\x65pendencies\x18\x01 \x01(\t\x12-\n\x06status\x18\x02 \x01(\x0b\x32\x1d.scanoss.api.common.v2.Status2\xd3\x01\n\x0c\x44\x65pendencies\x12O\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\x12r\n\x0fGetDependencies\x12..scanoss.api.dependencies.v2.DependencyRequest\x1a/.scanoss.api.dependencies.v2.DependencyResponseB;Z9github.com/scanoss/papi/api/dependenciesv2;dependenciesv2b\x06proto3'
+  serialized_pb=b'\n6scanoss/api/dependencies/v2/scanoss-dependencies.proto\x12\x1bscanoss.api.dependencies.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\"\x84\x02\n\x11\x44\x65pendencyRequest\x12\x43\n\x05\x66iles\x18\x01 \x03(\x0b\x32\x34.scanoss.api.dependencies.v2.DependencyRequest.Files\x12\r\n\x05\x64\x65pth\x18\x02 \x01(\x05\x1a?\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x18\n\x0brequirement\x18\x02 \x01(\tH\x00\x88\x01\x01\x42\x0e\n\x0c_requirement\x1aZ\n\x05\x46iles\x12\x0c\n\x04\x66ile\x18\x01 \x01(\t\x12\x43\n\x05purls\x18\x02 \x03(\x0b\x32\x34.scanoss.api.dependencies.v2.DependencyRequest.Purls\"\xc2\x03\n\x12\x44\x65pendencyResponse\x12\x44\n\x05\x66iles\x18\x01 \x03(\x0b\x32\x35.scanoss.api.dependencies.v2.DependencyResponse.Files\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x18\n\x08Licenses\x12\x0c\n\x04name\x18\x01 \x01(\t\x1a\x8c\x01\n\x0c\x44\x65pendencies\x12\x11\n\tcomponent\x18\x01 \x01(\t\x12\x0c\n\x04purl\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\x12J\n\x08licenses\x18\x04 \x03(\x0b\x32\x38.scanoss.api.dependencies.v2.DependencyResponse.Licenses\x1a\x85\x01\n\x05\x46iles\x12\x0c\n\x04\x66ile\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x0e\n\x06status\x18\x03 \x01(\t\x12R\n\x0c\x64\x65pendencies\x18\x04 \x03(\x0b\x32<.scanoss.api.dependencies.v2.DependencyResponse.Dependencies2\xd3\x01\n\x0c\x44\x65pendencies\x12O\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\x12r\n\x0fGetDependencies\x12..scanoss.api.dependencies.v2.DependencyRequest\x1a/.scanoss.api.dependencies.v2.DependencyResponseB;Z9github.com/scanoss/papi/api/dependenciesv2;dependenciesv2b\x06proto3'
   ,
   dependencies=[scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.DESCRIPTOR,])
 
 
 
+
+_DEPENDENCYREQUEST_PURLS = _descriptor.Descriptor(
+  name='Purls',
+  full_name='scanoss.api.dependencies.v2.DependencyRequest.Purls',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='purl', full_name='scanoss.api.dependencies.v2.DependencyRequest.Purls.purl', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='requirement', full_name='scanoss.api.dependencies.v2.DependencyRequest.Purls.requirement', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
+      name='_requirement', full_name='scanoss.api.dependencies.v2.DependencyRequest.Purls._requirement',
+      index=0, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
+  ],
+  serialized_start=237,
+  serialized_end=300,
+)
+
+_DEPENDENCYREQUEST_FILES = _descriptor.Descriptor(
+  name='Files',
+  full_name='scanoss.api.dependencies.v2.DependencyRequest.Files',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='file', full_name='scanoss.api.dependencies.v2.DependencyRequest.Files.file', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='purls', full_name='scanoss.api.dependencies.v2.DependencyRequest.Files.purls', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=302,
+  serialized_end=392,
+)
 
 _DEPENDENCYREQUEST = _descriptor.Descriptor(
   name='DependencyRequest',
@@ -36,9 +117,9 @@ _DEPENDENCYREQUEST = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='dependencies', full_name='scanoss.api.dependencies.v2.DependencyRequest.dependencies', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
+      name='files', full_name='scanoss.api.dependencies.v2.DependencyRequest.files', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -52,7 +133,7 @@ _DEPENDENCYREQUEST = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[],
+  nested_types=[_DEPENDENCYREQUEST_PURLS, _DEPENDENCYREQUEST_FILES, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -61,30 +142,23 @@ _DEPENDENCYREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=131,
-  serialized_end=187,
+  serialized_start=132,
+  serialized_end=392,
 )
 
 
-_DEPENDENCYRESPONSE = _descriptor.Descriptor(
-  name='DependencyResponse',
-  full_name='scanoss.api.dependencies.v2.DependencyResponse',
+_DEPENDENCYRESPONSE_LICENSES = _descriptor.Descriptor(
+  name='Licenses',
+  full_name='scanoss.api.dependencies.v2.DependencyResponse.Licenses',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='dependencies', full_name='scanoss.api.dependencies.v2.DependencyResponse.dependencies', index=0,
+      name='name', full_name='scanoss.api.dependencies.v2.DependencyResponse.Licenses.name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='status', full_name='scanoss.api.dependencies.v2.DependencyResponse.status', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -100,28 +174,223 @@ _DEPENDENCYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=189,
-  serialized_end=278,
+  serialized_start=542,
+  serialized_end=566,
 )
 
-_DEPENDENCYRESPONSE.fields_by_name['status'].message_type = scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2._STATUS
+_DEPENDENCYRESPONSE_DEPENDENCIES = _descriptor.Descriptor(
+  name='Dependencies',
+  full_name='scanoss.api.dependencies.v2.DependencyResponse.Dependencies',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='component', full_name='scanoss.api.dependencies.v2.DependencyResponse.Dependencies.component', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='purl', full_name='scanoss.api.dependencies.v2.DependencyResponse.Dependencies.purl', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='version', full_name='scanoss.api.dependencies.v2.DependencyResponse.Dependencies.version', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='licenses', full_name='scanoss.api.dependencies.v2.DependencyResponse.Dependencies.licenses', index=3,
+      number=4, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=569,
+  serialized_end=709,
+)
+
+_DEPENDENCYRESPONSE_FILES = _descriptor.Descriptor(
+  name='Files',
+  full_name='scanoss.api.dependencies.v2.DependencyResponse.Files',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='file', full_name='scanoss.api.dependencies.v2.DependencyResponse.Files.file', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='id', full_name='scanoss.api.dependencies.v2.DependencyResponse.Files.id', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='scanoss.api.dependencies.v2.DependencyResponse.Files.status', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='dependencies', full_name='scanoss.api.dependencies.v2.DependencyResponse.Files.dependencies', index=3,
+      number=4, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=712,
+  serialized_end=845,
+)
+
+_DEPENDENCYRESPONSE = _descriptor.Descriptor(
+  name='DependencyResponse',
+  full_name='scanoss.api.dependencies.v2.DependencyResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='files', full_name='scanoss.api.dependencies.v2.DependencyResponse.files', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='scanoss.api.dependencies.v2.DependencyResponse.status', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[_DEPENDENCYRESPONSE_LICENSES, _DEPENDENCYRESPONSE_DEPENDENCIES, _DEPENDENCYRESPONSE_FILES, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=395,
+  serialized_end=845,
+)
+
+_DEPENDENCYREQUEST_PURLS.containing_type = _DEPENDENCYREQUEST
+_DEPENDENCYREQUEST_PURLS.oneofs_by_name['_requirement'].fields.append(
+  _DEPENDENCYREQUEST_PURLS.fields_by_name['requirement'])
+_DEPENDENCYREQUEST_PURLS.fields_by_name['requirement'].containing_oneof = _DEPENDENCYREQUEST_PURLS.oneofs_by_name['_requirement']
+_DEPENDENCYREQUEST_FILES.fields_by_name['purls'].message_type = _DEPENDENCYREQUEST_PURLS
+_DEPENDENCYREQUEST_FILES.containing_type = _DEPENDENCYREQUEST
+_DEPENDENCYREQUEST.fields_by_name['files'].message_type = _DEPENDENCYREQUEST_FILES
+_DEPENDENCYRESPONSE_LICENSES.containing_type = _DEPENDENCYRESPONSE
+_DEPENDENCYRESPONSE_DEPENDENCIES.fields_by_name['licenses'].message_type = _DEPENDENCYRESPONSE_LICENSES
+_DEPENDENCYRESPONSE_DEPENDENCIES.containing_type = _DEPENDENCYRESPONSE
+_DEPENDENCYRESPONSE_FILES.fields_by_name['dependencies'].message_type = _DEPENDENCYRESPONSE_DEPENDENCIES
+_DEPENDENCYRESPONSE_FILES.containing_type = _DEPENDENCYRESPONSE
+_DEPENDENCYRESPONSE.fields_by_name['files'].message_type = _DEPENDENCYRESPONSE_FILES
+_DEPENDENCYRESPONSE.fields_by_name['status'].message_type = scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2._STATUSRESPONSE
 DESCRIPTOR.message_types_by_name['DependencyRequest'] = _DEPENDENCYREQUEST
 DESCRIPTOR.message_types_by_name['DependencyResponse'] = _DEPENDENCYRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 DependencyRequest = _reflection.GeneratedProtocolMessageType('DependencyRequest', (_message.Message,), {
+
+  'Purls' : _reflection.GeneratedProtocolMessageType('Purls', (_message.Message,), {
+    'DESCRIPTOR' : _DEPENDENCYREQUEST_PURLS,
+    '__module__' : 'scanoss.api.dependencies.v2.scanoss_dependencies_pb2'
+    # @@protoc_insertion_point(class_scope:scanoss.api.dependencies.v2.DependencyRequest.Purls)
+    })
+  ,
+
+  'Files' : _reflection.GeneratedProtocolMessageType('Files', (_message.Message,), {
+    'DESCRIPTOR' : _DEPENDENCYREQUEST_FILES,
+    '__module__' : 'scanoss.api.dependencies.v2.scanoss_dependencies_pb2'
+    # @@protoc_insertion_point(class_scope:scanoss.api.dependencies.v2.DependencyRequest.Files)
+    })
+  ,
   'DESCRIPTOR' : _DEPENDENCYREQUEST,
   '__module__' : 'scanoss.api.dependencies.v2.scanoss_dependencies_pb2'
   # @@protoc_insertion_point(class_scope:scanoss.api.dependencies.v2.DependencyRequest)
   })
 _sym_db.RegisterMessage(DependencyRequest)
+_sym_db.RegisterMessage(DependencyRequest.Purls)
+_sym_db.RegisterMessage(DependencyRequest.Files)
 
 DependencyResponse = _reflection.GeneratedProtocolMessageType('DependencyResponse', (_message.Message,), {
+
+  'Licenses' : _reflection.GeneratedProtocolMessageType('Licenses', (_message.Message,), {
+    'DESCRIPTOR' : _DEPENDENCYRESPONSE_LICENSES,
+    '__module__' : 'scanoss.api.dependencies.v2.scanoss_dependencies_pb2'
+    # @@protoc_insertion_point(class_scope:scanoss.api.dependencies.v2.DependencyResponse.Licenses)
+    })
+  ,
+
+  'Dependencies' : _reflection.GeneratedProtocolMessageType('Dependencies', (_message.Message,), {
+    'DESCRIPTOR' : _DEPENDENCYRESPONSE_DEPENDENCIES,
+    '__module__' : 'scanoss.api.dependencies.v2.scanoss_dependencies_pb2'
+    # @@protoc_insertion_point(class_scope:scanoss.api.dependencies.v2.DependencyResponse.Dependencies)
+    })
+  ,
+
+  'Files' : _reflection.GeneratedProtocolMessageType('Files', (_message.Message,), {
+    'DESCRIPTOR' : _DEPENDENCYRESPONSE_FILES,
+    '__module__' : 'scanoss.api.dependencies.v2.scanoss_dependencies_pb2'
+    # @@protoc_insertion_point(class_scope:scanoss.api.dependencies.v2.DependencyResponse.Files)
+    })
+  ,
   'DESCRIPTOR' : _DEPENDENCYRESPONSE,
   '__module__' : 'scanoss.api.dependencies.v2.scanoss_dependencies_pb2'
   # @@protoc_insertion_point(class_scope:scanoss.api.dependencies.v2.DependencyResponse)
   })
 _sym_db.RegisterMessage(DependencyResponse)
+_sym_db.RegisterMessage(DependencyResponse.Licenses)
+_sym_db.RegisterMessage(DependencyResponse.Dependencies)
+_sym_db.RegisterMessage(DependencyResponse.Files)
 
 
 DESCRIPTOR._options = None
@@ -133,8 +402,8 @@ _DEPENDENCIES = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=281,
-  serialized_end=492,
+  serialized_start=848,
+  serialized_end=1059,
   methods=[
   _descriptor.MethodDescriptor(
     name='Echo',

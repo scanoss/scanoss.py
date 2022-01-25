@@ -35,16 +35,15 @@ class MyTestCase(unittest.TestCase):
 
     def test_grpc_dep_echo(self):
         """
-
-        :return:
+        Test the basic echo rpc call on the local server
         """
         grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
         echo_resp = grpc_client.deps_echo('testing dep echo')
         self.assertIsNotNone(echo_resp)
 
-    def test_grpc_connection(self):
+    def test_grpc_get_dependencies(self):
         """
-        ?
+        Test getting dependencies from the local gRPC server
         """
         sc_deps = ScancodeDeps(debug=True)
         dep_file = "data/scancode-deps.json"
@@ -53,13 +52,12 @@ class MyTestCase(unittest.TestCase):
         self.assertIsNotNone(deps)
         grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
         resp = grpc_client.get_dependencies(deps)
-        self.assertIsNotNone(resp)
         print(f'Resp: {resp}')
-        # data = None
-        # try:
-        #     data = json.loads(resp.message)
-        # except Exception as e:
-        #     print(f'ERROR: Problem parsing input JSON: {e}')
-        # self.assertIsNotNone(data)
-        # print(f'Dep Resp: {data}')
+        self.assertIsNotNone(resp)
+
+        dep_files = resp.get("files")
+        if dep_files and len(dep_files) > 0:
+            for dep_file in dep_files:
+                file = dep_file.pop("file", None)
+                print(f'File: {file} - {dep_file}')
 

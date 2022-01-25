@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z-github.com/scanoss/papi/api/commonv2;commonv2',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n*scanoss/api/common/v2/scanoss-common.proto\x12\x15scanoss.api.common.v2\"L\n\x06Status\x12\x31\n\x06status\x18\x01 \x01(\x0e\x32!.scanoss.api.common.v2.StatusCode\x12\x0f\n\x07message\x18\x02 \x01(\t\"\x1e\n\x0b\x45\x63hoRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x1f\n\x0c\x45\x63hoResponse\x12\x0f\n\x07message\x18\x01 \x01(\t*C\n\nStatusCode\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x0b\n\x07SUCCESS\x10\x01\x12\x0b\n\x07WARNING\x10\x02\x12\n\n\x06\x46\x41ILED\x10\x03\x42/Z-github.com/scanoss/papi/api/commonv2;commonv2b\x06proto3'
+  serialized_pb=b'\n*scanoss/api/common/v2/scanoss-common.proto\x12\x15scanoss.api.common.v2\"T\n\x0eStatusResponse\x12\x31\n\x06status\x18\x01 \x01(\x0e\x32!.scanoss.api.common.v2.StatusCode\x12\x0f\n\x07message\x18\x02 \x01(\t\"\x1e\n\x0b\x45\x63hoRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x1f\n\x0c\x45\x63hoResponse\x12\x0f\n\x07message\x18\x01 \x01(\t*`\n\nStatusCode\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x0b\n\x07SUCCESS\x10\x01\x12\x1b\n\x17SUCCEEDED_WITH_WARNINGS\x10\x02\x12\x0b\n\x07WARNING\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\x42/Z-github.com/scanoss/papi/api/commonv2;commonv2b\x06proto3'
 )
 
 _STATUSCODE = _descriptor.EnumDescriptor(
@@ -41,48 +41,54 @@ _STATUSCODE = _descriptor.EnumDescriptor(
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='WARNING', index=2, number=2,
+      name='SUCCEEDED_WITH_WARNINGS', index=2, number=2,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='FAILED', index=3, number=3,
+      name='WARNING', index=3, number=3,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='FAILED', index=4, number=4,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=212,
-  serialized_end=279,
+  serialized_start=220,
+  serialized_end=316,
 )
 _sym_db.RegisterEnumDescriptor(_STATUSCODE)
 
 StatusCode = enum_type_wrapper.EnumTypeWrapper(_STATUSCODE)
 UNSPECIFIED = 0
 SUCCESS = 1
-WARNING = 2
-FAILED = 3
+SUCCEEDED_WITH_WARNINGS = 2
+WARNING = 3
+FAILED = 4
 
 
 
-_STATUS = _descriptor.Descriptor(
-  name='Status',
-  full_name='scanoss.api.common.v2.Status',
+_STATUSRESPONSE = _descriptor.Descriptor(
+  name='StatusResponse',
+  full_name='scanoss.api.common.v2.StatusResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='status', full_name='scanoss.api.common.v2.Status.status', index=0,
+      name='status', full_name='scanoss.api.common.v2.StatusResponse.status', index=0,
       number=1, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='message', full_name='scanoss.api.common.v2.Status.message', index=1,
+      name='message', full_name='scanoss.api.common.v2.StatusResponse.message', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -101,7 +107,7 @@ _STATUS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=69,
-  serialized_end=145,
+  serialized_end=153,
 )
 
 
@@ -132,8 +138,8 @@ _ECHOREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=147,
-  serialized_end=177,
+  serialized_start=155,
+  serialized_end=185,
 )
 
 
@@ -164,23 +170,23 @@ _ECHORESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=179,
-  serialized_end=210,
+  serialized_start=187,
+  serialized_end=218,
 )
 
-_STATUS.fields_by_name['status'].enum_type = _STATUSCODE
-DESCRIPTOR.message_types_by_name['Status'] = _STATUS
+_STATUSRESPONSE.fields_by_name['status'].enum_type = _STATUSCODE
+DESCRIPTOR.message_types_by_name['StatusResponse'] = _STATUSRESPONSE
 DESCRIPTOR.message_types_by_name['EchoRequest'] = _ECHOREQUEST
 DESCRIPTOR.message_types_by_name['EchoResponse'] = _ECHORESPONSE
 DESCRIPTOR.enum_types_by_name['StatusCode'] = _STATUSCODE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Status = _reflection.GeneratedProtocolMessageType('Status', (_message.Message,), {
-  'DESCRIPTOR' : _STATUS,
+StatusResponse = _reflection.GeneratedProtocolMessageType('StatusResponse', (_message.Message,), {
+  'DESCRIPTOR' : _STATUSRESPONSE,
   '__module__' : 'scanoss.api.common.v2.scanoss_common_pb2'
-  # @@protoc_insertion_point(class_scope:scanoss.api.common.v2.Status)
+  # @@protoc_insertion_point(class_scope:scanoss.api.common.v2.StatusResponse)
   })
-_sym_db.RegisterMessage(Status)
+_sym_db.RegisterMessage(StatusResponse)
 
 EchoRequest = _reflection.GeneratedProtocolMessageType('EchoRequest', (_message.Message,), {
   'DESCRIPTOR' : _ECHOREQUEST,
