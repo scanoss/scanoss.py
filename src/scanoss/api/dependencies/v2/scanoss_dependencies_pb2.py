@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z9github.com/scanoss/papi/api/dependenciesv2;dependenciesv2',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n6scanoss/api/dependencies/v2/scanoss-dependencies.proto\x12\x1bscanoss.api.dependencies.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\"\x84\x02\n\x11\x44\x65pendencyRequest\x12\x43\n\x05\x66iles\x18\x01 \x03(\x0b\x32\x34.scanoss.api.dependencies.v2.DependencyRequest.Files\x12\r\n\x05\x64\x65pth\x18\x02 \x01(\x05\x1a?\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x18\n\x0brequirement\x18\x02 \x01(\tH\x00\x88\x01\x01\x42\x0e\n\x0c_requirement\x1aZ\n\x05\x46iles\x12\x0c\n\x04\x66ile\x18\x01 \x01(\t\x12\x43\n\x05purls\x18\x02 \x03(\x0b\x32\x34.scanoss.api.dependencies.v2.DependencyRequest.Purls\"\xc2\x03\n\x12\x44\x65pendencyResponse\x12\x44\n\x05\x66iles\x18\x01 \x03(\x0b\x32\x35.scanoss.api.dependencies.v2.DependencyResponse.Files\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x18\n\x08Licenses\x12\x0c\n\x04name\x18\x01 \x01(\t\x1a\x8c\x01\n\x0c\x44\x65pendencies\x12\x11\n\tcomponent\x18\x01 \x01(\t\x12\x0c\n\x04purl\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\x12J\n\x08licenses\x18\x04 \x03(\x0b\x32\x38.scanoss.api.dependencies.v2.DependencyResponse.Licenses\x1a\x85\x01\n\x05\x46iles\x12\x0c\n\x04\x66ile\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x0e\n\x06status\x18\x03 \x01(\t\x12R\n\x0c\x64\x65pendencies\x18\x04 \x03(\x0b\x32<.scanoss.api.dependencies.v2.DependencyResponse.Dependencies2\xd3\x01\n\x0c\x44\x65pendencies\x12O\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\x12r\n\x0fGetDependencies\x12..scanoss.api.dependencies.v2.DependencyRequest\x1a/.scanoss.api.dependencies.v2.DependencyResponseB;Z9github.com/scanoss/papi/api/dependenciesv2;dependenciesv2b\x06proto3'
+  serialized_pb=b'\n6scanoss/api/dependencies/v2/scanoss-dependencies.proto\x12\x1bscanoss.api.dependencies.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\"\xef\x01\n\x11\x44\x65pendencyRequest\x12\x43\n\x05\x66iles\x18\x01 \x03(\x0b\x32\x34.scanoss.api.dependencies.v2.DependencyRequest.Files\x12\r\n\x05\x64\x65pth\x18\x02 \x01(\x05\x1a*\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x13\n\x0brequirement\x18\x02 \x01(\t\x1aZ\n\x05\x46iles\x12\x0c\n\x04\x66ile\x18\x01 \x01(\t\x12\x43\n\x05purls\x18\x02 \x03(\x0b\x32\x34.scanoss.api.dependencies.v2.DependencyRequest.Purls\"\xed\x03\n\x12\x44\x65pendencyResponse\x12\x44\n\x05\x66iles\x18\x01 \x03(\x0b\x32\x35.scanoss.api.dependencies.v2.DependencyResponse.Files\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x43\n\x08Licenses\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07spdx_id\x18\x02 \x01(\t\x12\x18\n\x10is_spdx_approved\x18\x03 \x01(\x08\x1a\x8c\x01\n\x0c\x44\x65pendencies\x12\x11\n\tcomponent\x18\x01 \x01(\t\x12\x0c\n\x04purl\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\x12J\n\x08licenses\x18\x04 \x03(\x0b\x32\x38.scanoss.api.dependencies.v2.DependencyResponse.Licenses\x1a\x85\x01\n\x05\x46iles\x12\x0c\n\x04\x66ile\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x0e\n\x06status\x18\x03 \x01(\t\x12R\n\x0c\x64\x65pendencies\x18\x04 \x03(\x0b\x32<.scanoss.api.dependencies.v2.DependencyResponse.Dependencies2\xd3\x01\n\x0c\x44\x65pendencies\x12O\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\x12r\n\x0fGetDependencies\x12..scanoss.api.dependencies.v2.DependencyRequest\x1a/.scanoss.api.dependencies.v2.DependencyResponseB;Z9github.com/scanoss/papi/api/dependenciesv2;dependenciesv2b\x06proto3'
   ,
   dependencies=[scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.DESCRIPTOR,])
 
@@ -60,14 +60,9 @@ _DEPENDENCYREQUEST_PURLS = _descriptor.Descriptor(
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
-    _descriptor.OneofDescriptor(
-      name='_requirement', full_name='scanoss.api.dependencies.v2.DependencyRequest.Purls._requirement',
-      index=0, containing_type=None,
-      create_key=_descriptor._internal_create_key,
-    fields=[]),
   ],
   serialized_start=237,
-  serialized_end=300,
+  serialized_end=279,
 )
 
 _DEPENDENCYREQUEST_FILES = _descriptor.Descriptor(
@@ -104,8 +99,8 @@ _DEPENDENCYREQUEST_FILES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=302,
-  serialized_end=392,
+  serialized_start=281,
+  serialized_end=371,
 )
 
 _DEPENDENCYREQUEST = _descriptor.Descriptor(
@@ -143,7 +138,7 @@ _DEPENDENCYREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=132,
-  serialized_end=392,
+  serialized_end=371,
 )
 
 
@@ -162,6 +157,20 @@ _DEPENDENCYRESPONSE_LICENSES = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='spdx_id', full_name='scanoss.api.dependencies.v2.DependencyResponse.Licenses.spdx_id', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='is_spdx_approved', full_name='scanoss.api.dependencies.v2.DependencyResponse.Licenses.is_spdx_approved', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -174,8 +183,8 @@ _DEPENDENCYRESPONSE_LICENSES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=542,
-  serialized_end=566,
+  serialized_start=521,
+  serialized_end=588,
 )
 
 _DEPENDENCYRESPONSE_DEPENDENCIES = _descriptor.Descriptor(
@@ -226,8 +235,8 @@ _DEPENDENCYRESPONSE_DEPENDENCIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=569,
-  serialized_end=709,
+  serialized_start=591,
+  serialized_end=731,
 )
 
 _DEPENDENCYRESPONSE_FILES = _descriptor.Descriptor(
@@ -278,8 +287,8 @@ _DEPENDENCYRESPONSE_FILES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=712,
-  serialized_end=845,
+  serialized_start=734,
+  serialized_end=867,
 )
 
 _DEPENDENCYRESPONSE = _descriptor.Descriptor(
@@ -316,14 +325,11 @@ _DEPENDENCYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=395,
-  serialized_end=845,
+  serialized_start=374,
+  serialized_end=867,
 )
 
 _DEPENDENCYREQUEST_PURLS.containing_type = _DEPENDENCYREQUEST
-_DEPENDENCYREQUEST_PURLS.oneofs_by_name['_requirement'].fields.append(
-  _DEPENDENCYREQUEST_PURLS.fields_by_name['requirement'])
-_DEPENDENCYREQUEST_PURLS.fields_by_name['requirement'].containing_oneof = _DEPENDENCYREQUEST_PURLS.oneofs_by_name['_requirement']
 _DEPENDENCYREQUEST_FILES.fields_by_name['purls'].message_type = _DEPENDENCYREQUEST_PURLS
 _DEPENDENCYREQUEST_FILES.containing_type = _DEPENDENCYREQUEST
 _DEPENDENCYREQUEST.fields_by_name['files'].message_type = _DEPENDENCYREQUEST_FILES
@@ -402,8 +408,8 @@ _DEPENDENCIES = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=848,
-  serialized_end=1059,
+  serialized_start=870,
+  serialized_end=1081,
   methods=[
   _descriptor.MethodDescriptor(
     name='Echo',
