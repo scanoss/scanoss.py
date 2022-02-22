@@ -105,7 +105,7 @@ class ScanossGrpc(ScanossBase):
             if resp:
                 if not self._check_status_response(resp.status):
                     return None
-                return MessageToDict(resp)  # Convert the gRPC response to a dictionary
+                return MessageToDict(resp, preserving_proto_field_name=True)  # Convert the gRPC response to a dictionary
         return None
 
     def get_dependencies_str(self, dependencies: str, depth: int = 1) -> str:  # TODO remove?
@@ -125,8 +125,6 @@ class ScanossGrpc(ScanossBase):
             dep_req = DependencyRequest.Files(file="package.json", purls=purls)
             files = [dep_req]
             resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=files, depth=depth))
-            # resp = self.dependencies_stub.GetDependencies(dependencies)
-            # resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=dependencies, depth=depth))
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
         else:
