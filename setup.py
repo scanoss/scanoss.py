@@ -1,8 +1,13 @@
 import codecs
 import os
-from setuptools import setup
+from setuptools import setup, Extension
 
 
+winnowingmod_ext = Extension('_winnowing',
+                       language='c',
+                       sources=['src/scanoss/_winnowing.c'],
+                       include_dirs=['.'],
+                       extra_compile_args=["-O3"])
 def read(rel_path):
     here = os.path.abspath(os.path.dirname(__file__))
     with codecs.open(os.path.join(here, rel_path), 'r') as fp:
@@ -35,5 +40,6 @@ setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent"
     ],
-    python_requires='>=3.7'
+    python_requires='>=3.7',
+    ext_modules = [winnowingmod_ext]
 )

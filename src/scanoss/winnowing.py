@@ -102,7 +102,8 @@ class Winnowing:
     """
 
     def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 skip_snippets: bool = False, post_size: int = 64, all_extensions: bool = False
+                 skip_snippets: bool = False, post_size: int = 64, all_extensions: bool = False,
+                 c_accelerated: bool = True,
                  ):
         """
         Instantiate Winnowing class
@@ -118,9 +119,10 @@ class Winnowing:
         self.skip_snippets = skip_snippets
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE
         self.all_extensions = all_extensions
+        self.c_accelerated = c_accelerated
 
     @staticmethod
-    def __normalize(byte):
+    def _normalize(byte):
         """
         Normalise a given byte as an ASCII character
         Parameters
@@ -226,8 +228,13 @@ class Winnowing:
         # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
         if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
+        if self.c_accelerated:
+            import _winnowing
+            res = _winnowing.compute_wfd(contents, crc32c)
+            return wfp + b''.join(res).decode('ascii') + "\n"
+
         # Initialize variables
-        gram = ""
+        gram = bytearray()
         window = []
         line = 1
         last_hash = MAX_CRC32
@@ -239,13 +246,13 @@ class Winnowing:
                 line += 1
                 normalized = 0
             else:
-                normalized = self.__normalize(byte)
+                normalized = self._normalize(byte)
             # Is it a useful byte?
             if normalized:
-                gram += chr(normalized)  # Add byte to gram
+                gram.append(normalized)  # Add byte to gram
                 # Do we have a full gram?
                 if len(gram) >= GRAM:
-                    gram_crc32 = crc32c(gram.encode('ascii'))
+                    gram_crc32 = crc32c(gram)
                     window.append(gram_crc32)
                     # Do we have a full window?
                     if len(window) >= WINDOW:
@@ -256,7 +263,8 @@ class Winnowing:
                             # Hashing the hash will result in a better balanced resulting data set
                             # as it will counter the winnowing effect which selects the "minimum"
                             # hash in each window
-                            crc = crc32c(min_hash.to_bytes(4, byteorder='little'))
+                            min_hash_s = min_hash.to_bytes(4, byteorder='little')
+                            crc = crc32c(min_hash_s)
                             crc_hex = '{:08x}'.format(crc)
                             if last_line != line:
                                 if output:
