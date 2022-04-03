@@ -21,6 +21,7 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 """
+import os
 import unittest
 
 from scanoss.scancodedeps import ScancodeDeps
@@ -32,6 +33,8 @@ class MyTestCase(unittest.TestCase):
     """
     Unit test cases for Scancode Dependency analysis
     """
+    TEST_LOCAL = os.getenv("SCANOSS_TEST_LOCAL", 'True').lower() in ('true', '1', 't', 'yes', 'y')
+
     def test_deps_parse(self):
         """
         Parse the saved scancode dependency data file
@@ -58,7 +61,12 @@ class MyTestCase(unittest.TestCase):
         """
         Run a dependency scan of the current directory, then parse those results
         """
-        grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        # with open('scanoss-com.pem', 'rb') as f:
+        #     root_certs = f.read()
+        if MyTestCase.TEST_LOCAL:
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            grpc_client = ScanossGrpc(debug=True)
         sc_deps = ScancodeDeps(debug=True)
         threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
         self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True))
