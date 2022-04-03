@@ -21,8 +21,8 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 """
+import os
 import unittest
-import json
 
 from scanoss.scancodedeps import ScancodeDeps
 from scanoss.scanossgrpc import ScanossGrpc
@@ -32,13 +32,18 @@ class MyTestCase(unittest.TestCase):
     """
     Unit test cases for GRPC comms
     """
+    TEST_LOCAL = os.getenv("SCANOSS_TEST_LOCAL", 'True').lower() in ('true', '1', 't', 'yes', 'y')
 
     def test_grpc_dep_echo(self):
         """
         Test the basic echo rpc call on the local server
         """
-        grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        if MyTestCase.TEST_LOCAL:
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            grpc_client = ScanossGrpc(debug=True)
         echo_resp = grpc_client.deps_echo('testing dep echo')
+        print(f'Echo Resp: {echo_resp}')
         self.assertIsNotNone(echo_resp)
 
     def test_grpc_get_dependencies(self):
@@ -50,7 +55,10 @@ class MyTestCase(unittest.TestCase):
         deps = sc_deps.produce_from_file(dep_file)
         print(f'Dependency JSON: {deps}')
         self.assertIsNotNone(deps)
-        grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        if MyTestCase.TEST_LOCAL:
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            grpc_client = ScanossGrpc(debug=True)
         resp = grpc_client.get_dependencies(deps)
         print(f'Resp: {resp}')
         self.assertIsNotNone(resp)
