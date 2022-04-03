@@ -25,6 +25,7 @@
 import os
 import grpc
 import json
+from urllib.parse import urlparse
 from google.protobuf.json_format import MessageToDict, ParseDict
 
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
@@ -32,8 +33,9 @@ from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, Dep
 from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode
 from .scanossbase import ScanossBase
 
-# DEFAULT_URL      = "https://osskb.org/api/scan/direct"
-DEFAULT_URL = "localhost:50051"
+# DEFAULT_URL      = "https://osskb.org"
+# DEFAULT_URL = "localhost:50051"
+DEFAULT_URL = "https://scanoss.com"
 SCANOSS_GRPC_URL = os.environ.get("SCANOSS_GRPC_URL") if os.environ.get("SCANOSS_GRPC_URL") else DEFAULT_URL
 
 
@@ -42,17 +44,37 @@ class ScanossGrpc(ScanossBase):
     Client for gRPC functionality
     """
 
-    def __init__(self, url: str = None, debug: bool = False, trace: bool = False, quiet: bool = False):
+    def __init__(self, url: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
+                 cert: bytes = None):
         """
 
         :param url:
         :param debug:
         :param trace:
         :param quiet:
+        :param cert:
         """
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL
-        self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))
+        self.url = self.url.lower()
+        secure = True if self.url.startswith('https:') else False  # Is it a secure connection?
+        if self.url.startswith('http'):
+            u = urlparse(self.url)
+            port = u.port
+            if port is None:
+                port = 443 if u.scheme == 'https' else 80  # Set the default port number if it's not available
+            self.url = f'{u.hostname}:{port}'
+        if cert is not None:
+            secure = True
+        self.print_debug(f'Setting up (secure: {secure}) connection to {self.url}...')
+        if secure is False:
+            self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))  # insecure connection
+        else:
+            if cert is not None:
+                credentials = grpc.ssl_channel_credentials(cert)  # secure with specified certificate
+            else:
+                credentials = grpc.ssl_channel_credentials()      # secure connection with default certificate
+            self.dependencies_stub = DependenciesStub(grpc.secure_channel(self.url, credentials))
 
     def deps_echo(self, message: str = 'Hello there!') -> str:
         """
