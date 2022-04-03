@@ -90,7 +90,7 @@ def setup_args() -> None:
     p_scan.add_argument('--all-extensions', action='store_true', help='Scan all file extensions')
     p_scan.add_argument('--all-folders', action='store_true', help='Scan all folders')
     p_scan.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
-    p_scan.add_argument('--no-dependencies', action='store_true', help='Skip Dependency scanning')
+    p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)'
@@ -192,11 +192,11 @@ def get_scan_options(args):
     """
     scan_files = ScanType.SCAN_FILES.value
     scan_snippets = ScanType.SCAN_SNIPPETS.value
-    scan_dependencies = ScanType.SCAN_DEPENDENCIES.value
+    scan_dependencies = 0
     if args.skip_snippets:
         scan_snippets = 0
-    if args.no_dependencies:
-        scan_dependencies = 0
+    if args.dependencies:
+        scan_dependencies = ScanType.SCAN_DEPENDENCIES.value
     if args.dependencies_only:
         scan_files = scan_snippets = 0
         scan_dependencies = ScanType.SCAN_DEPENDENCIES.value
