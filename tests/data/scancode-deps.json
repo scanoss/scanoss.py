@@ -95,6 +95,14 @@
               "is_runtime": true,
               "is_optional": false,
               "is_resolved": false
+            },
+            {
+              "purl": "pkg:pypi/keyring",
+              "requirement": ">=4.1.1",
+              "scope": "install",
+              "is_runtime": true,
+              "is_optional": false,
+              "is_resolved": false
             }
           ],
           "contains_source_code": null,
