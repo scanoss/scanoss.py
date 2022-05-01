@@ -24,10 +24,15 @@ Python 3.7 or higher.
 The dependencies can be found in the [requirements.txt](requirements.txt) and [requirements-dev.txt](requirements-dev.txt) files.
 
 To install dependencies, run:
-
 ```bash
 pip3 install -r requirements.txt
 pip3 install -r requirements-dev.txt
+```
+
+To enable dependency scanning an extra tool is required: scancode-toolkit
+```bash
+pip3 install typecode-libmagic
+pip3 install scancode-toolkit-mini
 ```
 
 ### Package Development
@@ -44,6 +49,7 @@ There is also a [Makefile](Makefile) in the repository, which provide helpers to
 ```bash
 make dev_setup
 ```
+The client now makes use of REST & gRPC. For gRPC specific environment variables please look [here](https://github.com/grpc/grpc/blob/master/doc/environment_variables.md).
 
 ### Package Deployment
 Packaging the library for deployment is done using [setup](https://docs.python.org/3/distutils/setupscript.html).

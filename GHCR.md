@@ -26,6 +26,19 @@ To redirect output to a file run:
 ```bash
 docker run -i -v "$(pwd)":"/scanoss" ghcr.io/scanoss/scanoss-py scan . > output.json
 ```
+To scan for dependencies and output the results to a file run:
+```bash
+docker run -it -v "$(pwd)":"/scanoss" ghcr.io/scanoss/scanoss-py scan -D -o results.json .
+```
+
+## Scancode
+To support dependency scanning, this container contains the Python [scancode-toolkit](https://pypi.org/project/scancode-toolkit/).
+While scanning the source paths, the SCANOSS CLI can (if requested) use ``scancode`` to search for dependency files. SCANOSS then takes this output and decorates it with license information, etc.
+
+To run scancode standalone from this image please run:
+```bash
+docker run -it -v "$(pwd)":"/scanoss" --entrypoint scancode ghcr.io/scanoss/scanoss-py --help
+```
 
 ## Source code
 The source for this repo can be found [here](https://github.com/scanoss/scanoss.py).

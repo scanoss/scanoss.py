@@ -14,10 +14,10 @@ RUN mkdir /install
 WORKDIR /install
 ENV PATH=/root/.local/bin:$PATH
 
-COPY ./dist/scanoss-0.8.1-py3-none-any.whl /install/scanoss-0.8.1-py3-none-any.whl
+COPY ./dist/scanoss-*-py3-none-any.whl /install/
 
 #RUN pip3 install --user scanoss
-RUN pip3 install --user /install/scanoss-0.8.1-py3-none-any.whl
+RUN pip3 install --user /install/scanoss-*-py3-none-any.whl
 RUN pip3 install --user scancode-toolkit-mini
 RUN pip3 install --user typecode-libmagic
 
