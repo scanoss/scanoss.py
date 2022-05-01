@@ -52,6 +52,17 @@ From there it is possible to scan a source code folder:
 ````bash
 > scanoss-py scan -o scan-output.json <source-folder>
 ````
+
+#### Scanning for Dependencies
+The SCANOSS CLI supports dependency decoration. In order for this to work, it requires the installation of scancode:
+```python
+pip install scancode-toolkit
+```
+Dependencies can then be decorated by adding the ``--dependencies`` option to the scanner:
+```bash
+> scanoss-py scan --dependencies -o scan-output.json <source-folder>
+```
+
 ### Package Usage
 The **scanoss** package can also be used in other Python projects/scripts. A good example of how to consume it can be found [here](https://github.com/scanoss/scanoss.py/blob/main/src/scanoss/cli.py).
 
@@ -68,7 +79,7 @@ if __name__ == "__main__":
 ```
 
 ## Scanning URL and API Key
-By Default, scanoss uses the API URL endpoint for SCANOSS OSS KB: https://osskb.or/api/scan/direct.
+By Default, scanoss uses the API URL endpoint for SCANOSS OSS KB: https://osskb.org/api/scan/direct.
 This API does not require an API key.
 
 These values can be changed from the command line using:

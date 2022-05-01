@@ -92,6 +92,7 @@ def setup_args() -> None:
     p_scan.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
+    p_scan.add_argument('--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).' )
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)'
                         )
@@ -291,7 +292,7 @@ def scan(parser, args):
                       flags=flags, nb_threads=args.threads, post_size=args.post_size,
                       timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
-                      scan_options=scan_options, sc_timeout=args.sc_timeout, grpc_url=args.api2url
+                      scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command, grpc_url=args.api2url
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
@@ -309,7 +310,7 @@ def scan(parser, args):
             if not scanner.scan_folder_with_options(args.scan_dir):
                 exit(1)
         elif os.path.isfile(args.scan_dir):
-            if not scanner.scan_file(args.scan_dir):
+            if not scanner.scan_file_with_options(args.scan_dir):
                 exit(1)
         else:
             print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')

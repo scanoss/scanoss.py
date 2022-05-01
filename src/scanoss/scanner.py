@@ -87,7 +87,7 @@ class Scanner(ScanossBase):
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
                  post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
-                 scan_options: int = 7, sc_timeout: int = 600, grpc_url: str = None
+                 scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -110,7 +110,7 @@ class Scanner(ScanossBase):
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout
                                       )
-        sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout)
+        sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
         grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace)
         self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads
@@ -289,15 +289,14 @@ class Scanner(ScanossBase):
         if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
             raise Exception(f"ERROR: No scan options defined to scan folder: {scan_dir}")
 
+        if self.scan_output:
+            self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
             if not self.threaded_deps.run(what_to_scan=scan_dir, wait=False):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_folder(scan_dir):
                 success = False
-
-        if self.scan_output:
-            self.print_msg(f'Writing results to {self.scan_output}...')
         if self.threaded_scan:
             if not self.__finish_scan_threaded():
                 success = False
@@ -381,12 +380,6 @@ class Scanner(ScanossBase):
             wfp_list = None
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
-            # if self.scan_output:
-            #     self.print_msg(f'Writing results to {self.scan_output}...')
-            # if self.threaded_scan:
-            #     success = self.__finish_scan_threaded(scan_started, file_count)
-            # else:
-            #     success = self.scan_wfp_file()
         else:
             Scanner.print_stderr(f'Warning: No files found to scan in folder: {scan_dir}')
         return success
@@ -486,6 +479,34 @@ class Scanner(ScanossBase):
         return success
 
 
+    def scan_file_with_options(self, file: str) -> bool:
+        """
+        Scan the given file for whatever scaning options that have been configured
+        :param file: file to scan
+        :return: True if successful, False otherwise
+        """
+        success = True
+        if not file:
+            raise Exception(f"ERROR: Please specify a file to scan")
+        if not os.path.exists(file) or not os.path.isfile(file):
+            raise Exception(f"ERROR: Specified file does not exist or is not a file: {file}")
+        if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
+            raise Exception(f"ERROR: No scan options defined to scan file: {file}")
+
+        if self.scan_output:
+            self.print_msg(f'Writing results to {self.scan_output}...')
+        if self.is_dependency_scan():
+            if not self.threaded_deps.run(what_to_scan=file, wait=False):  # Kick off a background dependency scan
+                success = False
+        if self.is_file_or_snippet_scan():
+            if not self.scan_file(file):
+                success = False
+        if self.threaded_scan:
+            if not self.__finish_scan_threaded():
+                success = False
+        return success
+
+
     def scan_file(self, file: str) -> bool:
         """
         Scan the specified file and produce a result
@@ -503,13 +524,13 @@ class Scanner(ScanossBase):
         self.print_debug(f'Fingerprinting {file}...')
         wfp = self.winnowing.wfp_for_file(file, file)
         if wfp:
+            if self.threaded_scan:
+                self.threaded_scan.queue_add(wfp)  # Submit the WFP for scanning
             self.print_debug(f'Scanning {file}...')
-            if self.scan_output:
-                self.print_msg(f'Writing results to {self.scan_output}...')
-            success = self.scan_wfp(wfp)
+            if self.threaded_scan:
+                success = self.__run_scan_threaded(False, 1)
         else:
             success = False
-
         return success
 
     def scan_wfp_file(self, file: str = None) -> bool:

@@ -81,7 +81,7 @@
               "is_resolved": false
             },
             {
-              "purl": "pkg:pypi/binaryornot",
+              "purl": "pkg:pypi/binaryornot@0.4.2",
               "requirement": "binaryornot",
               "scope": "install",
               "is_runtime": true,
