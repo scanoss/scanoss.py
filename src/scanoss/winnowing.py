@@ -57,8 +57,9 @@ SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
                 ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
                 ".lst", ".dat", ".json", ".htm", ".html", ".xml", ".md", ".txt",
                 ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
-                ".pdf", ".min.js", ".mf"
+                ".pdf", ".min.js", ".mf", ".sum"
 }
+
 
 class Winnowing(ScanossBase):
     """
