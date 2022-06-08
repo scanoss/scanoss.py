@@ -442,10 +442,10 @@ class Scanner(ScanossBase):
                         file = dep_file.pop("file", None)
                         if file is not None:
                             if first:
-                                raw_output += "  \"%s\":%s" % (file, json.dumps(dep_file, indent=2))
+                                raw_output += "  \"%s\":[%s]" % (file, json.dumps(dep_file, indent=2))
                                 first = False
                             else:
-                                raw_output += ",\n  \"%s\":%s" % (file, json.dumps(dep_file, indent=2))
+                                raw_output += ",\n  \"%s\":[%s]" % (file, json.dumps(dep_file, indent=2))
                     # End for loop
         else:
             success = False
