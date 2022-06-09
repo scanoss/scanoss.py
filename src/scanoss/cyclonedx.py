@@ -61,36 +61,58 @@ class CycloneDx(ScanossBase):
             for d in file_details:
                 id_details = d.get("id")
                 if not id_details or id_details == 'none':
-                    # print(f'No ID for {f}')
                     continue
                 purl = None
-                purls = d.get('purl')
-                if not purls:
-                    self.print_stderr(f'Purl block missing for {f}: {file_details}')
-                    continue
-                for p in purls:
-                    self.print_debug(f'Purl: {p}')
-                    purl = p
-                    break
-                if not purl:
-                    self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
-                    continue
-                if cdx.get(purl):
-                    self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
-                    continue
-                fd = {}
-                # print(f'Vendor: {d.get("vendor")}, Comp: {d.get("component")}, Ver: {d.get("version")},'
-                #       f' Latest: {d.get("latest")} ID: {d.get("id")}')
-                for field in ['id', 'vendor', 'component', 'version', 'latest']:
-                    fd[field] = d.get(field)
-                licenses = d.get('licenses')
-                fdl = []
-                for lic in licenses:
-                    # print(f'License: {lic.get("name")}')
-                    fdl.append({'id': lic.get("name")})
-                fd['licenses'] = fdl
-                cdx[purl] = fd
-        # print(f'License summary: {cdx}')
+                if id_details == 'dependency':
+                    dependencies = d.get("dependencies")
+                    if not dependencies:
+                        self.print_stderr(f'Warning: No Dependencies found for {f}: {file_details}')
+                        continue
+                    for deps in dependencies:
+                        purl = deps.get("purl")
+                        if not purl:
+                            self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
+                            continue
+                        if cdx.get(purl):
+                            self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                            continue
+                        fd = {}
+                        for field in ['component', 'version']:
+                            fd[field] = deps.get(field, '')
+                        licenses = deps.get('licenses')
+                        fdl = []
+                        dc = []
+                        for lic in licenses:
+                            name = lic.get("name")
+                            if name not in dc:  # Only save the license name once
+                                fdl.append({'id': name})
+                                dc.append(name)
+                        fd['licenses'] = fdl
+                        cdx[purl] = fd
+                else:
+                    purls = d.get('purl')
+                    if not purls:
+                        self.print_stderr(f'Purl block missing for {f}: {file_details}')
+                        continue
+                    for p in purls:
+                        self.print_debug(f'Purl: {p}')
+                        purl = p
+                        break
+                    if not purl:
+                        self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
+                        continue
+                    if cdx.get(purl):
+                        self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                        continue
+                    fd = {}
+                    for field in ['id', 'vendor', 'component', 'version', 'latest']:
+                        fd[field] = d.get(field)
+                    licenses = d.get('licenses')
+                    fdl = []
+                    for lic in licenses:
+                        fdl.append({'id': lic.get("name")})
+                    fd['licenses'] = fdl
+                    cdx[purl] = fd
         return cdx
 
     def produce_from_file(self, json_file: str, output_file: str = None) -> bool:
@@ -140,7 +162,7 @@ class CycloneDx(ScanossBase):
             data['components'].append({
                 'type': m_type,
                 'name': comp.get('component'),
-                'publisher': comp.get('vendor'),
+                'publisher': comp.get('vendor', ''),
                 'version': comp.get('version'),
                 'purl': purl,
                 'licenses': lic_text

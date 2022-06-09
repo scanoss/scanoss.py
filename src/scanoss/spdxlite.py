@@ -75,39 +75,67 @@ class SpdxLite:
         summary = {}
         for f in data:
             file_details = data.get(f)
-            # print(f'File: {f}: {file_details}')
+            # print(f'File: {f}: {file_details}\n')
             for d in file_details:
                 id_details = d.get("id")
                 if not id_details or id_details == 'none':  # Ignore files with no ids
                     continue
                 purl = None
-                purls = d.get('purl')
-                if not purls:
-                    self.print_stderr(f'Purl block missing for {f}: {file_details}')
-                    continue
-                for p in purls:
-                    self.print_debug(f'Purl: {p}')
-                    purl = p
-                    break
-                if not purl:
-                    self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
-                    continue
-                if summary.get(purl):
-                    self.print_debug(f'Component {purl} already stored: {summary.get(purl)}')
-                    continue
-                fd = {}
-                for field in ['id', 'vendor', 'component', 'version', 'latest', 'url']:
-                    fd[field] = d.get(field)
-                licenses = d.get('licenses')
-                fdl = []
-                dc = []
-                for lic in licenses:
-                    name = lic.get("name")
-                    if name not in dc:  # Only save the license name once
-                        fdl.append({'id': name})
-                        dc.append(name)
-                fd['licenses'] = fdl
-                summary[purl] = fd
+                if id_details == 'dependency':  # Process dependency data
+                    dependencies = d.get("dependencies")
+                    if not dependencies:
+                        self.print_stderr(f'Warning: No Dependencies found for {f}: {file_details}')
+                        continue
+                    for deps in dependencies:
+                        # print(f'File: {f} Deps: {deps}')
+                        purl = deps.get("purl")
+                        if not purl:
+                            self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
+                            continue
+                        if summary.get(purl):
+                            self.print_debug(f'Component {purl} already stored: {summary.get(purl)}')
+                            continue
+                        fd = {}
+                        for field in ['component', 'version', 'url']:
+                            fd[field] = deps.get(field, '')
+                        licenses = deps.get('licenses')
+                        fdl = []
+                        dc = []
+                        for lic in licenses:
+                            name = lic.get("name")
+                            if name not in dc:  # Only save the license name once
+                                fdl.append({'id': name})
+                                dc.append(name)
+                        fd['licenses'] = fdl
+                        summary[purl] = fd
+                else:  # Normal file id type
+                    purls = d.get('purl')
+                    if not purls:
+                        self.print_stderr(f'Purl block missing for {f}: {file_details}')
+                        continue
+                    for p in purls:
+                        self.print_debug(f'Purl: {p}')
+                        purl = p
+                        break
+                    if not purl:
+                        self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
+                        continue
+                    if summary.get(purl):
+                        self.print_debug(f'Component {purl} already stored: {summary.get(purl)}')
+                        continue
+                    fd = {}
+                    for field in ['id', 'vendor', 'component', 'version', 'latest', 'url']:
+                        fd[field] = d.get(field)
+                    licenses = d.get('licenses')
+                    fdl = []
+                    dc = []
+                    for lic in licenses:
+                        name = lic.get("name")
+                        if name not in dc:  # Only save the license name once
+                            fdl.append({'id': name})
+                            dc.append(name)
+                    fd['licenses'] = fdl
+                    summary[purl] = fd
         return summary
 
     def produce_from_file(self, json_file: str, output_file: str = None) -> bool:
@@ -178,7 +206,7 @@ class SpdxLite:
                 'SPDXID': f'SPDXRef-{purl_hash}',
                 'versionInfo': comp_ver,
                 'downloadLocation': 'NOASSERTION',  # TODO Add actual download location
-                'homepage': comp.get('url'),
+                'homepage': comp.get('url', ''),
                 'licenseDeclared': lic_text,
                 'licenseConcluded': 'NOASSERTION',
                 'filesAnalyzed': False,
