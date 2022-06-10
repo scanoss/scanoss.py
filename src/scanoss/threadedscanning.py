@@ -32,12 +32,13 @@ from dataclasses import dataclass
 from progress.bar import Bar
 
 from .scanossapi import ScanossApi
+from .scanossbase import ScanossBase
 
 WFP_FILE_START = "file="
 MAX_ALLOWED_THREADS = 30
 
 @dataclass
-class ThreadedScanning(object):
+class ThreadedScanning(ScanossBase):
     """
     Threaded class for running Scanning in parallel (from a queue)
     WFP scan requests are loaded into the input queue.
@@ -58,10 +59,8 @@ class ThreadedScanning(object):
         :param quiet: enable quiet mode (default False)
         :param nb_threads: Number of thread to run (default 5)
         """
+        super().__init__(debug, trace, quiet)
         self.scanapi = scanapi
-        self.debug = debug
-        self.trace = trace
-        self.quiet = quiet
         self.nb_threads = nb_threads
         self._isatty = sys.stderr.isatty()
         self._bar_count = 0
@@ -72,13 +71,6 @@ class ThreadedScanning(object):
         if nb_threads > MAX_ALLOWED_THREADS:
             self.print_msg(f'Warning: Requested threads too large: {nb_threads}. Reducing to {MAX_ALLOWED_THREADS}')
             self.nb_threads = MAX_ALLOWED_THREADS
-
-    @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
 
     @staticmethod
     def __count_files_in_wfp(wfp: str):
@@ -93,27 +85,6 @@ class ThreadedScanning(object):
                 if WFP_FILE_START in line:
                     count += 1
         return count
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs):
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
 
     def create_bar(self, file_count: int):
         if not self.quiet and self._isatty and not self.bar:
@@ -191,7 +162,7 @@ class ThreadedScanning(object):
             self.complete()
         return False if self._errors else True
 
-    def complete(self) -> None:
+    def complete(self) -> bool:
         """
         Wait for input queue to complete processing and complete the worker threads
         """
@@ -202,6 +173,8 @@ class ThreadedScanning(object):
                 t.join(timeout=5)
         except Exception as e:
             self.print_stderr(f'WARNING: Issue encountered terminating scanning worker threads: {e}')
+            self._errors = True
+        return False if self._errors else True
 
     def worker_post(self) -> None:
         """

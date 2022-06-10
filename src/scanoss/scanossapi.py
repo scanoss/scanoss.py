@@ -30,16 +30,19 @@ import requests
 import uuid
 import http.client as http_client
 
-DEFAULT_URL      = "https://osskb.org/api/scan/direct"
+from .scanossbase import ScanossBase
+
+DEFAULT_URL = "https://osskb.org/api/scan/direct"
 SCANOSS_SCAN_URL = os.environ.get("SCANOSS_SCAN_URL") if os.environ.get("SCANOSS_SCAN_URL") else DEFAULT_URL
-SCANOSS_API_KEY  = os.environ.get("SCANOSS_API_KEY")  if os.environ.get("SCANOSS_API_KEY")  else ''
+SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
 
 
-class ScanossApi:
+class ScanossApi(ScanossBase):
     """
     ScanOSS REST API client class
     Currently support posting scan requests to the SCANOSS streaming API
     """
+
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
                  timeout: int = 120):
@@ -55,9 +58,7 @@ class ScanossApi:
         :param trace: Enable trace (default False)
         :param quiet: Enable quite mode (default False)
         """
-        self.quiet = quiet
-        self.debug = debug
-        self.trace = trace
+        super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_SCAN_URL
         self.api_key = api_key
         self.scan_type = scan_type
@@ -69,7 +70,7 @@ class ScanossApi:
         if self.api_key:
             self.headers['X-Session'] = self.api_key
         self.sbom = None
-        self.load_sbom()     # Load an input SBOM if one is specified
+        self.load_sbom()  # Load an input SBOM if one is specified
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
             http_client.HTTPConnection.debuglevel = 1
@@ -80,17 +81,17 @@ class ScanossApi:
         """
         if self.sbom_path:
             if not self.scan_type:
-                self.scan_type = 'identify'  # Default to the identify SBOM type if it's not set
+                self.scan_type = 'identify'  # Default to identify SBOM type if it's not set
             self.print_debug(f'Loading {self.scan_type} SBOM {self.sbom_path}...')
             with open(self.sbom_path) as f:
                 self.sbom = f.read()
 
     def scan(self, wfp: str, context: str = None, scan_id: int = None):
         """
-        Scan the specifid WFP and return the JSON object
-
+        Scan the specified WFP and return the JSON object
         :param wfp: WFP to scan
-        :param context: Context to help with idenification
+        :param context: Context to help with identification
+        :param scan_id: ID of the scan being run (usually thread id)
         :return: JSON result object
         """
         form_data = {}
@@ -104,15 +105,16 @@ class ScanossApi:
         if context:
             form_data['context'] = context
         scan_files = {'file': ("%s.wfp" % uuid.uuid1().hex, wfp)}
-        r     = None
-        retry = 0    # Add some retry logic to cater for timeouts, etc.
+        r = None
+        retry = 0  # Add some retry logic to cater for timeouts, etc.
         while retry <= 5:
             retry += 1
             try:
                 r = None
-                r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers, timeout=self.timeout)
+                r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers,
+                                  timeout=self.timeout)
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-                if retry > 5:   # Timed out 5 or more times, fail
+                if retry > 5:  # Timed out 5 or more times, fail
                     self.print_stderr(f'ERROR: Timeout/Connection Error POSTing data: {scan_files}')
                     raise Exception(f"ERROR: The SCANOSS API request timed out for {self.url}") from e
                 else:
@@ -123,20 +125,20 @@ class ScanossApi:
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             else:
                 if not r:
-                    if retry > 5:   # No response 5 or more times, fail
+                    if retry > 5:  # No response 5 or more times, fail
                         raise Exception(f"ERROR: The SCANOSS API request response object is empty for {self.url}")
                     else:
                         self.print_stderr(f'Warning: No response received from {self.url}. Retrying...')
                         time.sleep(5)
                 elif r.status_code >= 400:
-                    if retry > 5:   # No response 5 or more times, fail
-                        raise Exception(f"ERROR: The SCANOSS API returned the following error: HTTP {r.status_code}, {r.text}")
+                    if retry > 5:  # No response 5 or more times, fail
+                        raise Exception(
+                            f"ERROR: The SCANOSS API returned the following error: HTTP {r.status_code}, {r.text}")
                     else:
                         self.print_stderr(f'Warning: Error response code {r.status_code} from {self.url}. Retrying...')
                         time.sleep(5)
                 else:
-                    retry = 6
-                    break     # Valid response, break out of the retry loop
+                    break  # Valid response, break out of the retry loop
         # End of while loop
         if not r:
             raise Exception(f"ERROR: The SCANOSS API request response object is empty for {self.url}")
@@ -158,34 +160,6 @@ class ScanossApi:
             except Exception as ee:
                 self.print_stderr(f'Warning: Issue writing bad json file - {bad_json_file}: {ee}')
             return None
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs):
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
-
-    @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
 
 #
 # End of ScanossApi Class
