@@ -27,44 +27,26 @@ import sys
 import hashlib
 import time
 
+from .scanossbase import ScanossBase
 
-class CycloneDx:
+
+class CycloneDx(ScanossBase):
     """
     CycloneDX management class
     Handle all interaction with CycloneDX formatting
     """
+
     def __init__(self, debug: bool = False, output_file: str = None):
         """
         Initialise the CycloneDX class
         """
+        super().__init__(debug)
         self.output_file = output_file
         self.debug = debug
-
-    @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
 
     def parse(self, data: json):
         """
         Parse the given input (raw/plain) JSON string and return CycloneDX summary
-
         :param data: json - JSON object
         :return: CycloneDX dictionary
         """
@@ -79,36 +61,58 @@ class CycloneDx:
             for d in file_details:
                 id_details = d.get("id")
                 if not id_details or id_details == 'none':
-                    # print(f'No ID for {f}')
                     continue
                 purl = None
-                purls = d.get('purl')
-                if not purls:
-                    self.print_stderr(f'Purl block missing for {f}: {file_details}')
-                    continue
-                for p in purls:
-                    self.print_debug(f'Purl: {p}')
-                    purl = p
-                    break
-                if not purl:
-                    self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
-                    continue
-                if cdx.get(purl):
-                    self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
-                    continue
-                fd = {}
-                # print(f'Vendor: {d.get("vendor")}, Comp: {d.get("component")}, Ver: {d.get("version")},'
-                #       f' Latest: {d.get("latest")} ID: {d.get("id")}')
-                for field in ['id', 'vendor', 'component', 'version', 'latest']:
-                    fd[field] = d.get(field)
-                licenses = d.get('licenses')
-                fdl = []
-                for lic in licenses:
-                    # print(f'License: {lic.get("name")}')
-                    fdl.append({'id':lic.get("name")})
-                fd['licenses'] = fdl
-                cdx[p] = fd
-        # print(f'License summary: {cdx}')
+                if id_details == 'dependency':
+                    dependencies = d.get("dependencies")
+                    if not dependencies:
+                        self.print_stderr(f'Warning: No Dependencies found for {f}: {file_details}')
+                        continue
+                    for deps in dependencies:
+                        purl = deps.get("purl")
+                        if not purl:
+                            self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
+                            continue
+                        if cdx.get(purl):
+                            self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                            continue
+                        fd = {}
+                        for field in ['component', 'version']:
+                            fd[field] = deps.get(field, '')
+                        licenses = deps.get('licenses')
+                        fdl = []
+                        dc = []
+                        for lic in licenses:
+                            name = lic.get("name")
+                            if name not in dc:  # Only save the license name once
+                                fdl.append({'id': name})
+                                dc.append(name)
+                        fd['licenses'] = fdl
+                        cdx[purl] = fd
+                else:
+                    purls = d.get('purl')
+                    if not purls:
+                        self.print_stderr(f'Purl block missing for {f}: {file_details}')
+                        continue
+                    for p in purls:
+                        self.print_debug(f'Purl: {p}')
+                        purl = p
+                        break
+                    if not purl:
+                        self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
+                        continue
+                    if cdx.get(purl):
+                        self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                        continue
+                    fd = {}
+                    for field in ['id', 'vendor', 'component', 'version', 'latest']:
+                        fd[field] = d.get(field)
+                    licenses = d.get('licenses')
+                    fdl = []
+                    for lic in licenses:
+                        fdl.append({'id': lic.get("name")})
+                    fd['licenses'] = fdl
+                    cdx[purl] = fd
         return cdx
 
     def produce_from_file(self, json_file: str, output_file: str = None) -> bool:
@@ -124,7 +128,6 @@ class CycloneDx:
         if not os.path.isfile(json_file):
             self.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
             return False
-        success = True
         with open(json_file, 'r') as f:
             success = self.produce_from_str(f.read(), output_file)
         return success
@@ -141,27 +144,28 @@ class CycloneDx:
             self.print_stderr('ERROR: No CycloneDX data returned for the JSON string provided.')
             return False
         md5hex = hashlib.md5(f'{time.time()}'.encode('utf-8')).hexdigest()
-        data = {}
-        data['bomFormat'] = 'CycloneDX'
-        data['specVersion'] = '1.2'
-        data['serialNumber'] = f'scanoss:SCANOSS-PY - SCANOSS CLI-{md5hex}'
-        data['version'] = '1'
-        data['components'] = []
+        data = {
+            'bomFormat': 'CycloneDX',
+            'specVersion': '1.2',
+            'serialNumber': f'scanoss:SCANOSS-PY - SCANOSS CLI-{md5hex}',
+            'version': '1',
+            'components': []
+        }
         for purl in cdx:
             comp = cdx.get(purl)
-            lic = []
+            lic_text = []
             licenses = comp.get('licenses')
             if licenses:
-                for l in licenses:
-                    lic.append({'license': { 'id': l.get('id')}})
+                for lic in licenses:
+                    lic_text.append({'license': {'id': lic.get('id')}})
             m_type = 'Snippet' if comp.get('id') == 'snippet' else 'Library'
             data['components'].append({
                 'type': m_type,
                 'name': comp.get('component'),
-                'publisher': comp.get('vendor'),
+                'publisher': comp.get('vendor', ''),
                 'version': comp.get('version'),
                 'purl': purl,
-                'licenses': lic
+                'licenses': lic_text
                 # 'licenses': [{
                 #     'license': {
                 #         'id': comp.get('license')
@@ -190,15 +194,12 @@ class CycloneDx:
         if not json_str:
             self.print_stderr('ERROR: No JSON string provided to parse.')
             return False
-        data = None
         try:
             data = json.loads(json_str)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
             return False
-        else:
-            return self.produce_from_json(data, output_file)
-        return False
+        return self.produce_from_json(data, output_file)
 #
 # End of CycloneDX Class
 #

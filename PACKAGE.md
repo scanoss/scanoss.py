@@ -11,6 +11,10 @@ To upgrade an existing installation please run:
 pip3 install --upgrade scanoss
 ```
 
+### Docker
+Alternatively, there is a docker image of the compiled package. It can be found [here](https://github.com/scanoss/scanoss.py/pkgs/container/scanoss-py).
+Details of how to run it can be found [here](https://github.com/scanoss/scanoss.py/blob/main/GHCR.md).
+
 ## Usage
 The package can be run from the command line, or consumed from another Python script.
 
@@ -28,9 +32,9 @@ Running the bare command will list the available sub-commands:
 ```bash
 > scanoss-py
 
-usage: scanoss-py [-h] {version,ver,scan,sc,fingerprint,fp,wfp} ...
+usage: scanoss-py [-h] {version,ver,scan,sc,fingerprint,fp,wfp,dependencies,dp,dep} ...
 
-SCANOSS Python CLI. Ver: 0.7.0, License: MIT
+SCANOSS Python CLI. Ver: 0.9.0, License: MIT
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -38,13 +42,14 @@ optional arguments:
 Sub Commands:
   valid subcommands
 
-  {version,ver,scan,sc,fingerprint,fp,wfp}
+  {version,ver,scan,sc,fingerprint,fp,wfp,dependencies,dp,dep}
                         sub-command help
     version (ver)       SCANOSS version
     scan (sc)           Scan source code
     fingerprint (fp, wfp)
                         Fingerprint source code
-
+    dependencies (dp, dep)
+                        Scan source code for dependencies
 ```
 
 From there it is possible to scan a source code folder:
@@ -52,6 +57,17 @@ From there it is possible to scan a source code folder:
 ````bash
 > scanoss-py scan -o scan-output.json <source-folder>
 ````
+
+#### Scanning for Dependencies
+The SCANOSS CLI supports dependency decoration. In order for this to work, it requires the installation of scancode:
+```python
+pip install scancode-toolkit
+```
+Dependencies can then be decorated by adding the ``--dependencies`` option to the scanner:
+```bash
+> scanoss-py scan --dependencies -o scan-output.json <source-folder>
+```
+
 ### Package Usage
 The **scanoss** package can also be used in other Python projects/scripts. A good example of how to consume it can be found [here](https://github.com/scanoss/scanoss.py/blob/main/src/scanoss/cli.py).
 

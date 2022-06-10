@@ -33,6 +33,8 @@ import sys
 from crc32c import crc32c
 from binaryornot.check import is_binary
 
+from .scanossbase import ScanossBase
+
 # Winnowing configuration. DO NOT CHANGE.
 GRAM = 30
 WINDOW = 64
@@ -55,10 +57,11 @@ SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
                 ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
                 ".lst", ".dat", ".json", ".htm", ".html", ".xml", ".md", ".txt",
                 ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
-                ".pdf", ".min.js", ".mf"
+                ".pdf", ".min.js", ".mf", ".sum"
 }
 
-class Winnowing:
+
+class Winnowing(ScanossBase):
     """
     Winnowing Algorithm implementation for SCANOSS.
 
@@ -111,10 +114,8 @@ class Winnowing:
             size_limit: bool
                 Limit the size of a fingerprint to 64k (post size) - Default True
         """
+        super().__init__(debug, trace, quiet)
         self.size_limit    = size_limit
-        self.debug         = debug
-        self.trace         = trace
-        self.quiet         = quiet
         self.skip_snippets = skip_snippets
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE
         self.all_extensions = all_extensions
@@ -280,34 +281,6 @@ class Winnowing:
             wfp += output + '\n'
 
         return wfp
-
-    def print_msg(self, *args, **kwargs):
-        """
-        Print message if quite mode is not enabled
-        """
-        if not self.quiet:
-            self.print_stderr(*args, **kwargs)
-
-    def print_debug(self, *args, **kwargs):
-        """
-        Print debug message if enabled
-        """
-        if self.debug:
-            self.print_stderr(*args, **kwargs)
-
-    def print_trace(self, *args, **kwargs):
-        """
-        Print trace message if enabled
-        """
-        if self.trace:
-            self.print_stderr(*args, **kwargs)
-
-    @staticmethod
-    def print_stderr(*args, **kwargs):
-        """
-        Print the given message to STDERR
-        """
-        print(*args, file=sys.stderr, **kwargs)
 
 #
 # End of Winnowing Class
