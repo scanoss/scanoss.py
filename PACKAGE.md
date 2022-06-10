@@ -11,6 +11,10 @@ To upgrade an existing installation please run:
 pip3 install --upgrade scanoss
 ```
 
+### Docker
+Alternatively, there is a docker image of the compiled package. It can be found [here](https://github.com/scanoss/scanoss.py/pkgs/container/scanoss-py).
+Details of how to run it can be found [here](https://github.com/scanoss/scanoss.py/blob/main/GHCR.md).
+
 ## Usage
 The package can be run from the command line, or consumed from another Python script.
 
@@ -28,9 +32,9 @@ Running the bare command will list the available sub-commands:
 ```bash
 > scanoss-py
 
-usage: scanoss-py [-h] {version,ver,scan,sc,fingerprint,fp,wfp} ...
+usage: scanoss-py [-h] {version,ver,scan,sc,fingerprint,fp,wfp,dependencies,dp,dep} ...
 
-SCANOSS Python CLI. Ver: 0.7.0, License: MIT
+SCANOSS Python CLI. Ver: 0.9.0, License: MIT
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -38,13 +42,14 @@ optional arguments:
 Sub Commands:
   valid subcommands
 
-  {version,ver,scan,sc,fingerprint,fp,wfp}
+  {version,ver,scan,sc,fingerprint,fp,wfp,dependencies,dp,dep}
                         sub-command help
     version (ver)       SCANOSS version
     scan (sc)           Scan source code
     fingerprint (fp, wfp)
                         Fingerprint source code
-
+    dependencies (dp, dep)
+                        Scan source code for dependencies
 ```
 
 From there it is possible to scan a source code folder:

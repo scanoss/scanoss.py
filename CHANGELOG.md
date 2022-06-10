@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [0.9.0] - 2022-06-09
+### Added
+- Added support for dependency scanning (--dependencies)
+  - This depends on scancode to search for dependency files
+- Added dependency data to output reports
+
 ## [0.7.4] - 2021-12-15
 ### Changed
 - Updated SPDX Lite report output data (--format spdxlite)
@@ -85,3 +91,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.2]: https://github.com/scanoss/scanoss.py/compare/v0.7.1...v0.7.2
 [0.7.3]: https://github.com/scanoss/scanoss.py/compare/v0.7.2...v0.7.3
 [0.7.4]: https://github.com/scanoss/scanoss.py/compare/v0.7.3...v0.7.4
+[0.9.0]: https://github.com/scanoss/scanoss.py/compare/v0.7.4...v0.9.0
