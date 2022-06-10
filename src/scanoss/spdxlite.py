@@ -172,16 +172,19 @@ class SpdxLite:
         # Validate using:
         # pip3 install jsonschema
         # jsonschema -i spdxlite.json  <(curl https://raw.githubusercontent.com/spdx/spdx-spec/v2.2/schemas/spdx-schema.json)
+        # Validation can also be done online here: https://tools.spdx.org/app/validate/
         now = datetime.datetime.utcnow()
         md5hex = hashlib.md5(f'{raw_data}-{now}'.encode('utf-8')).hexdigest()
         data = {
             'spdxVersion': 'SPDX-2.2',
             'dataLicense': 'CC0-1.0',
             'SPDXID': f'SPDXRef-{md5hex}',
-            'name': 'SCANOSS-SBOM', 'creationInfo': {
+            'name': 'SCANOSS-SBOM',
+            'creationInfo': {
                 'created': now.strftime('%Y-%m-%dT%H:%M:%S') + now.strftime('.%f')[:4] + 'Z',
                 'creators': [f'Tool: SCANOSS-PY: {__version__}', f'User: {getpass.getuser()}']
             },
+            'documentNamespace': f'https://spdx.org/spdxdocs/scanoss-py-{__version__}-{md5hex}',
             'packages': []
         }
         for purl in raw_data:
@@ -192,9 +195,11 @@ class SpdxLite:
             if licenses:
                 for lic in licenses:
                     lc_id = lic.get('id')
-                    spdx_id = self.get_spdx_license_id(lc_id)
-                    lic_names.append(spdx_id if spdx_id else lc_id)
-                lic_text = ' AND '.join(lic_names)
+                    if lc_id:
+                        spdx_id = self.get_spdx_license_id(lc_id)
+                        lic_names.append(spdx_id if spdx_id else lc_id)
+                if len(lic_names) > 0:
+                    lic_text = ' AND '.join(lic_names)
                 if len(lic_names) > 1:
                     lic_text = f'({lic_text})'  # wrap the names in () if there is more than one
             comp_name = comp.get('component')
