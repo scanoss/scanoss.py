@@ -182,7 +182,7 @@ class SpdxLite:
             'name': 'SCANOSS-SBOM',
             'creationInfo': {
                 'created': now.strftime('%Y-%m-%dT%H:%M:%S') + now.strftime('.%f')[:4] + 'Z',
-                'creators': [f'Tool: SCANOSS-PY: {__version__}', f'User: {getpass.getuser()}']
+                'creators': [f'Tool: SCANOSS-PY: {__version__}', f'Person: {getpass.getuser()}']
             },
             'documentNamespace': f'https://spdx.org/spdxdocs/scanoss-py-{__version__}-{md5hex}',
             'packages': []
