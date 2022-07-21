@@ -30,6 +30,8 @@
 import hashlib
 import sys
 
+from crccheck.crc import Crc8, Crc8MaximDow
+from crccheck.checksum import Checksum8
 from crc32c import crc32c
 from binaryornot.check import is_binary
 
@@ -105,7 +107,7 @@ class Winnowing(ScanossBase):
     """
 
     def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 skip_snippets: bool = False, post_size: int = 64, all_extensions: bool = False
+                 skip_snippets: bool = False, post_size: int = 64, all_extensions: bool = False, hpsm: bool = False
                  ):
         """
         Instantiate Winnowing class
@@ -119,6 +121,7 @@ class Winnowing(ScanossBase):
         self.skip_snippets = skip_snippets
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE
         self.all_extensions = all_extensions
+        self.hpsm = hpsm
 
     @staticmethod
     def __normalize(byte):
@@ -224,6 +227,9 @@ class Winnowing(ScanossBase):
         # Print file line
         content_length = len(contents)
         wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, file)
+        # HPSM
+        lines_crc = []
+        line_bytes: bytes = bytearray()
         # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
         if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
@@ -237,12 +243,20 @@ class Winnowing(ScanossBase):
         # Otherwise recurse src_content and calculate Winnowing hashes
         for byte in contents:
             if byte == ASCII_LF:
+                crcinst = Crc8MaximDow()
+                if(self.hpsm):
+                    for byte in line_bytes:
+                        crcinst.process(bytes([byte]))
+                    lines_crc.append(crcinst.finalhex())
+                    line_bytes = bytearray()
                 line += 1
                 normalized = 0
             else:
                 normalized = self.__normalize(byte)
             # Is it a useful byte?
             if normalized:
+                if (self.hpsm):
+                    line_bytes.append(normalized)
                 gram += chr(normalized)  # Add byte to gram
                 # Do we have a full gram?
                 if len(gram) >= GRAM:
@@ -262,7 +276,7 @@ class Winnowing(ScanossBase):
                             if last_line != line:
                                 if output:
                                     if self.size_limit and \
-                                            (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) > self.max_post_size:
+                                            (len(wfp.encode("utf-8")) + len(output.encode("utf-8")) + len(''.join('{0}'.format(x) for x in lines_crc))) > self.max_post_size:
                                         self.print_debug(f'Truncating WFP (64k limit) for: {file}')
                                         output = ''
                                         break               # Stop collecting snippets as it's over 64k
@@ -277,8 +291,11 @@ class Winnowing(ScanossBase):
                         window.pop(0)
                     # Shift gram
                     gram = gram[1:]
-        if output and (not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) < self.max_post_size):
+        if output and (not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8")) + len(''.join('{0}'.format(x) for x in lines_crc))) < self.max_post_size):
             wfp += output + '\n'
+        if (self.hpsm):
+            hpsm = ''.join('{0}'.format(x) for x in lines_crc)
+            wfp += 'hpsm={0}\n'.format(hpsm)
 
         return wfp
 

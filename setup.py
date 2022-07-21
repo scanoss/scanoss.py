@@ -27,7 +27,7 @@ setup(
     description='Simple Python library to use the SCANOSS APIs.',
     long_description=read("PACKAGE.md"),
     long_description_content_type='text/markdown',
-    install_requires=["requests", "crc32c>=2.2", "binaryornot", "progress", "grpcio<=1.42.0", "protobuf<=3.19.1"],
+    install_requires=["requests", "crc32c>=2.2", "binaryornot", "progress", "grpcio<=1.42.0", "protobuf<=3.19.1", "crccheck"],
     include_package_data=True,
     package_data={'': ['data/*.json']},
     classifiers=[

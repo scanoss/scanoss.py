@@ -96,6 +96,7 @@ def setup_args() -> None:
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)'
                         )
+    p_scan.add_argument('--hpsm', '-H', action='store_true', help='Scan using High Performance Snippet Matching')
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -105,6 +106,7 @@ def setup_args() -> None:
     p_wfp.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?',
                        help='A file or folder to scan')
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_wfp.add_argument('--hpsm', '-H', action='store_true', help='Add HPSM file CRC to output.')
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser('dependencies', aliases=['dp', 'dep'],
@@ -172,7 +174,7 @@ def wfp(parser, args):
     if args.output:
         scan_output = args.output
         open(scan_output, 'w').close()
-    scanner = Scanner(debug=args.debug, quiet=args.quiet)
+    scanner = Scanner(debug=args.debug, quiet=args.quiet, hpsm=args.hpsm)
 
     if not os.path.exists(args.scan_dir):
         print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
@@ -277,6 +279,8 @@ def scan(parser, args):
             print_stderr(f'Changing scanning POST size to: {args.post_size}k...')
         if args.timeout != 120:
             print_stderr(f'Changing scanning POST timeout to: {args.timeout}...')
+        if args.hpsm:
+            print_stderr("Setting HPSM mode...")
     elif not args.quiet:
         if args.timeout < 5:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
@@ -292,7 +296,8 @@ def scan(parser, args):
                       flags=flags, nb_threads=args.threads, post_size=args.post_size,
                       timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
-                      scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command, grpc_url=args.api2url
+                      scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
+                      grpc_url=args.api2url, hpsm=args.hpsm
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
