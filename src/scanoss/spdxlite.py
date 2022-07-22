@@ -185,6 +185,7 @@ class SpdxLite:
                 'creators': [f'Tool: SCANOSS-PY: {__version__}', f'Person: {getpass.getuser()}']
             },
             'documentNamespace': f'https://spdx.org/spdxdocs/scanoss-py-{__version__}-{md5hex}',
+            'documentDescribes': [],
             'packages': []
         }
         for purl in raw_data:
@@ -206,9 +207,11 @@ class SpdxLite:
             comp_ver = comp.get('version')
             purl_ver = f'{purl}@{comp_ver}'
             purl_hash = hashlib.md5(f'{purl_ver}'.encode('utf-8')).hexdigest()
+            purl_spdx = f'SPDXRef-{purl_hash}'
+            data['documentDescribes'].append(purl_spdx)
             data['packages'].append({
                 'name': comp_name,
-                'SPDXID': f'SPDXRef-{purl_hash}',
+                'SPDXID': purl_spdx,
                 'versionInfo': comp_ver,
                 'downloadLocation': 'NOASSERTION',  # TODO Add actual download location
                 'homepage': comp.get('url', ''),
