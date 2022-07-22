@@ -67,7 +67,7 @@ def setup_args() -> None:
     p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file' )
     p_scan.add_argument('--ignore',   '-n', type=str, help='Ignore components specified in the SBOM file' )
     p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).' )
-    p_scan.add_argument('--format',   '-f', type=str, choices=['plain', 'cyclonedx', 'spdxlite'],
+    p_scan.add_argument('--format',   '-f', type=str, choices=['plain', 'cyclonedx', 'spdxlite', 'csv'],
                         help='Result output format (optional - default: plain)'
                         )
     p_scan.add_argument('--threads', '-T', type=int, default=10,
