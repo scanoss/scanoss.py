@@ -107,11 +107,11 @@ class CsvOutput(ScanossBase):
                             dc.append(lic.get("name"))
                     detected['licenses'] = ';'.join(dc)
                 # inventory_id,path,usage,detected_component,detected_license,detected_version,detected_latest,purl
-                csv_dict.append({'inventory_id': row_id, 'path': f, 'usage': id_details,
+                csv_dict.append({'inventory_id': row_id, 'path': f, 'detected_usage': id_details,
                                  'detected_component': detected.get('component'),
                                  'detected_license': detected.get('licenses'),
                                  'detected_version': detected.get('version'), 'detected_latest': detected.get('latest'),
-                                 'purls': detected.get('purls')
+                                 'detected_purls': detected.get('purls')
                                  })
                 row_id = row_id + 1
         return csv_dict
