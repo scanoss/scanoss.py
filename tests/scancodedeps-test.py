@@ -64,14 +64,16 @@ class MyTestCase(unittest.TestCase):
         # with open('scanoss-com.pem', 'rb') as f:
         #     root_certs = f.read()
         if MyTestCase.TEST_LOCAL:
+            server_type = "local"
             grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
         else:
+            server_type = "remote"
             grpc_client = ScanossGrpc(debug=True)
         sc_deps = ScancodeDeps(debug=True)
         threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
         self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True))
         deps = threaded_deps.responses
-        print(f'Dependency results: {deps}')
+        print(f'Dependency results ({server_type}): {deps}')
         self.assertIsNotNone(deps)
 
 

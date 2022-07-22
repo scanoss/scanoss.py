@@ -39,11 +39,13 @@ class MyTestCase(unittest.TestCase):
         Test the basic echo rpc call on the local server
         """
         if MyTestCase.TEST_LOCAL:
+            server_type = "local"
             grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
         else:
+            server_type = "remote"
             grpc_client = ScanossGrpc(debug=True)
-        echo_resp = grpc_client.deps_echo('testing dep echo')
-        print(f'Echo Resp: {echo_resp}')
+        echo_resp = grpc_client.deps_echo(f'testing dep echo ({server_type})')
+        print(f'Echo Resp ({server_type}): {echo_resp}')
         self.assertIsNotNone(echo_resp)
 
     def test_grpc_get_dependencies(self):
@@ -56,11 +58,13 @@ class MyTestCase(unittest.TestCase):
         print(f'Dependency JSON: {deps}')
         self.assertIsNotNone(deps)
         if MyTestCase.TEST_LOCAL:
+            server_type = "local"
             grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
         else:
+            server_type = "remote"
             grpc_client = ScanossGrpc(debug=True)
         resp = grpc_client.get_dependencies(deps)
-        print(f'Resp: {resp}')
+        print(f'Resp ({server_type}): {resp}')
         self.assertIsNotNone(resp)
 
         dep_files = resp.get("files")
