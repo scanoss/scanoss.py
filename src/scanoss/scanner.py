@@ -24,6 +24,8 @@
 import json
 import os
 import sys
+import datetime
+import pkg_resources
 
 from progress.bar import Bar
 from progress.spinner import Spinner
@@ -32,12 +34,15 @@ from .scanossapi import ScanossApi
 from .winnowing import Winnowing
 from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite
+from .csvoutput import CsvOutput
 from .threadedscanning import ThreadedScanning
 from .scancodedeps import ScancodeDeps
 from .threadeddependencies import ThreadedDependencies
 from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
+
+from . import __version__
 
 FILTERED_DIRS = {  # Folders to skip
                  "nbproject", "nbbuild", "nbdist", "__pycache__", "venv", "_yardoc", "eggs", "wheels", "htmlcov",
@@ -103,15 +108,19 @@ class Scanner(ScanossBase):
         self.hidden_files_folders = hidden_files_folders
         self.scan_options = scan_options
         self._skip_snippets = True if not scan_options & ScanType.SCAN_SNIPPETS.value else False
+        ver_details = self.__version_details()
 
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
                                    all_extensions=all_extensions
                                    )
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
-                                      sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout
+                                      sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,
+                                      ver_details=ver_details
                                       )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
-        grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace)
+        grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace, api_key=api_key,
+                               ver_details=ver_details
+                               )
         self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads
         if nb_threads and nb_threads > 0:
@@ -226,6 +235,24 @@ class Scanner(ScanossBase):
             Scanner.print_stderr(f'Problem parsing JSON file "{json_file}": {e}')
             return False
         return True
+
+    @staticmethod
+    def __version_details() -> str:
+        data = None
+        try:
+            f_name = pkg_resources.resource_filename(__name__, 'data/build_date.txt')
+            with open(f_name, 'r') as f:
+                data = f.read().rstrip()
+        except Exception as e:
+            Scanner.print_stderr(f'Warning: Problem loading build time details: {e}')
+        if not data or len(data) == 0:
+            now = datetime.datetime.now()
+            data = f'date: {now.strftime("%Y%m%d%H%M%S")}, utime: {int(now.timestamp())}'
+
+        Scanner.print_stderr(f'Ver Data2: {data}')
+
+        return f'tool: scanoss-py, version: {__version__}, {data}'
+
 
     def __log_result(self, string, outfile=None):
         """
@@ -473,6 +500,12 @@ class Scanner(ScanossBase):
                 success = spdxlite.produce_from_json(parsed_json)
             else:
                 success = spdxlite.produce_from_str(raw_output)
+        elif self.output_format == 'csv':
+                csvo = CsvOutput(self.debug, self.scan_output)
+                if parsed_json:
+                    success = csvo.produce_from_json(parsed_json)
+                else:
+                    success = csvo.produce_from_str(raw_output)
         else:
             self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
             success = False
@@ -627,6 +660,9 @@ class Scanner(ScanossBase):
         elif self.output_format == 'spdxlite':
             spdxlite = SpdxLite(self.debug, self.scan_output)
             success = spdxlite.produce_from_str(raw_output)
+        elif self.output_format == 'csv':
+            csvo = CsvOutput(self.debug, self.scan_output)
+            csvo.produce_from_str(raw_output)
         else:
             self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
             success = False
@@ -717,6 +753,9 @@ class Scanner(ScanossBase):
         elif self.output_format == 'spdxlite':
             spdxlite = SpdxLite(self.debug, self.scan_output)
             success = spdxlite.produce_from_str(raw_output)
+        elif self.output_format == 'csv':
+            csvo = CsvOutput(self.debug, self.scan_output)
+            csvo.produce_from_str(raw_output)
         else:
             self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
             success = False
