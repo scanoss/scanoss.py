@@ -45,7 +45,7 @@ class ScanossApi(ScanossBase):
 
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 timeout: int = 120):
+                 timeout: int = 120, ver_details: str = None):
         """
         Initialise the SCANOSS API
         :param scan_type: Scan type (default identify)
@@ -60,15 +60,18 @@ class ScanossApi(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_SCAN_URL
-        self.api_key = api_key
+        self.api_key = api_key if api_key else SCANOSS_API_KEY
         self.scan_type = scan_type
         self.sbom_path = sbom_path
         self.scan_format = scan_format if scan_format else 'plain'
         self.flags = flags
         self.timeout = timeout if timeout > 5 else 120
         self.headers = {}
+        if ver_details:
+            self.headers['x-scanoss-client'] = ver_details
         if self.api_key:
             self.headers['X-Session'] = self.api_key
+            self.headers['x-api-key'] = self.api_key
         self.sbom = None
         self.load_sbom()  # Load an input SBOM if one is specified
         if self.trace:

@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 """
  SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+   Copyright (c) 2022, SCANOSS
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -21,5 +22,13 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 """
+import datetime
 
-__version__ = '1.0.0'
+"""
+Store the current date/time into a data field for processing
+"""
+if __name__ == "__main__":
+    now = datetime.datetime.now()
+    data = f'date: {now.strftime("%Y%m%d%H%M%S")}, utime: {int(now.timestamp())}'
+    with open('src/scanoss/data/build_date.txt', 'w') as f:
+        f.write(f'{data}\n')

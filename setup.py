@@ -29,7 +29,7 @@ setup(
     long_description_content_type='text/markdown',
     install_requires=["requests", "crc32c>=2.2", "binaryornot", "progress", "grpcio<=1.42.0", "protobuf<=3.19.1"],
     include_package_data=True,
-    package_data={'': ['data/*.json']},
+    package_data={'': ['data/*.json', 'data/*.txt']},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",

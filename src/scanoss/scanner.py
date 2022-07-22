@@ -238,6 +238,10 @@ class Scanner(ScanossBase):
 
     @staticmethod
     def __version_details() -> str:
+        """
+        Extract the date this version was produced
+        :return: version creation date string
+        """
         data = None
         try:
             f_name = pkg_resources.resource_filename(__name__, 'data/build_date.txt')
@@ -248,9 +252,6 @@ class Scanner(ScanossBase):
         if not data or len(data) == 0:
             now = datetime.datetime.now()
             data = f'date: {now.strftime("%Y%m%d%H%M%S")}, utime: {int(now.timestamp())}'
-
-        Scanner.print_stderr(f'Ver Data2: {data}')
-
         return f'tool: scanoss-py, version: {__version__}, {data}'
 
 

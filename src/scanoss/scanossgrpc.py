@@ -37,6 +37,7 @@ from .scanossbase import ScanossBase
 # DEFAULT_URL = "localhost:50051"
 DEFAULT_URL = "https://scanoss.com"
 SCANOSS_GRPC_URL = os.environ.get("SCANOSS_GRPC_URL") if os.environ.get("SCANOSS_GRPC_URL") else DEFAULT_URL
+SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
 
 
 class ScanossGrpc(ScanossBase):
@@ -45,7 +46,7 @@ class ScanossGrpc(ScanossBase):
     """
 
     def __init__(self, url: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 cert: bytes = None):
+                 cert: bytes = None, api_key: str = None, ver_details: str = None):
         """
 
         :param url:
@@ -57,6 +58,12 @@ class ScanossGrpc(ScanossBase):
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL
         self.url = self.url.lower()
+        self.api_key = api_key if api_key else SCANOSS_API_KEY
+        self.metadata = []
+        if self.api_key:
+            self.metadata.append(('x-api-key', api_key))  # Set API key if we have one
+        if ver_details:
+            self.metadata.append(('x-scanoss-client', ver_details))
         secure = True if self.url.startswith('https:') else False  # Is it a secure connection?
         if self.url.startswith('http'):
             u = urlparse(self.url)
@@ -84,7 +91,7 @@ class ScanossGrpc(ScanossBase):
         """
         resp: EchoResponse
         try:
-            resp = self.dependencies_stub.Echo(EchoRequest(message=message))
+            resp = self.dependencies_stub.Echo(EchoRequest(message=message), metadata=self.metadata)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
         else:
@@ -120,7 +127,7 @@ class ScanossGrpc(ScanossBase):
                 return None
             request = ParseDict(dependencies, DependencyRequest())  # Parse the JSON/Dict into the dependency object
             request.depth = depth
-            resp = self.dependencies_stub.GetDependencies(request)
+            resp = self.dependencies_stub.GetDependencies(request, metadata=self.metadata)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
         else:
@@ -146,7 +153,7 @@ class ScanossGrpc(ScanossBase):
             purls = [purl]
             dep_req = DependencyRequest.Files(file="package.json", purls=purls)
             files = [dep_req]
-            resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=files, depth=depth))
+            resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=files, depth=depth), metadata=self.metadata)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
         else:
