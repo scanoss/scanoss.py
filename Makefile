@@ -16,11 +16,19 @@ help: ## This help
 
 .DEFAULT_GOAL := help
 
-clean:  ## Clean all dev data
+clean: date_time_clean ## Clean all dev data
 	@echo "Removing dev and distribution data..."
 	@rm -rf dist/* build/* venv/bin/scanoss-py src/scanoss.egg-info
 
-dev_setup:  ## Setup Python dev env for the current user
+date_time_clean:  ## Setup blank datetime data field
+	@rm -rf src/scanoss/data/build_date.txt
+	@echo "" > src/scanoss/data/build_date.txt
+
+date_time:  ## Setup package build date
+	@rm -rf src/scanoss/data/build_date.txt
+	python3 date_time.py
+
+dev_setup: date_time_clean  ## Setup Python dev env for the current user
 	@echo "Setting up dev env for the current user..."
 	python3 setup.py develop --user
 
@@ -30,7 +38,7 @@ dev_uninstall:  ## Uninstall Python dev setup for the current user
 	@rm -f venv/bin/scanoss-py
 	@rm -rf src/scanoss.egg-info
 
-dist: clean dev_uninstall  ## Prepare Python package into a distribution
+dist: clean dev_uninstall date_time  ## Prepare Python package into a distribution
 	@echo "Build deployable package for distribution $(VERSION)..."
 	python3 setup.py sdist bdist_wheel
 	twine check dist/*

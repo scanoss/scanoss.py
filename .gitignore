@@ -11,3 +11,4 @@ build/
 __pycache__
 venv/
 .idea
+src/scanoss/data/build_date.txt
