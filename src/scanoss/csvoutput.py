@@ -78,12 +78,15 @@ class CsvOutput(ScanossBase):
                             detected[field] = deps.get(field, '')
                         licenses = deps.get('licenses')
                         dc = []
-                        for lic in licenses:
-                            name = lic.get("name")
-                            if name not in dc:  # Only save the license name once
-                                dc.append(name)
-                        detected['licenses'] = ';'.join(dc)
-
+                        if licenses:
+                            for lic in licenses:
+                                name = lic.get("name")
+                                if name and name not in dc:  # Only save the license name once
+                                    dc.append(name)
+                        if not dc or len(dc) == 0:
+                            detected['licenses'] = ''
+                        else:
+                            detected['licenses'] = ';'.join(dc)
                 else:
                     purls = d.get('purl')
                     if not purls:
@@ -93,7 +96,7 @@ class CsvOutput(ScanossBase):
                     for p in purls:
                         self.print_debug(f'Purl: {p}')
                         pa.append(p)
-                    if not pa:
+                    if not pa or len(pa) == 0:
                         self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
                         continue
                     detected['purls'] = ';'.join(pa)
@@ -101,11 +104,15 @@ class CsvOutput(ScanossBase):
                         detected[field] = d.get(field, '')
                     licenses = d.get('licenses')
                     dc = []
-                    for lic in licenses:
-                        name = lic.get("name")
-                        if name not in dc:  # Only save the license name once
-                            dc.append(lic.get("name"))
-                    detected['licenses'] = ';'.join(dc)
+                    if licenses:
+                        for lic in licenses:
+                            name = lic.get("name")
+                            if name and name not in dc:  # Only save the license name once
+                                dc.append(lic.get("name"))
+                    if not dc or len(dc) == 0:
+                        detected['licenses'] = ''
+                    else:
+                        detected['licenses'] = ';'.join(dc)
                 # inventory_id,path,usage,detected_component,detected_license,detected_version,detected_latest,purl
                 csv_dict.append({'inventory_id': row_id, 'path': f, 'detected_usage': id_details,
                                  'detected_component': detected.get('component'),
