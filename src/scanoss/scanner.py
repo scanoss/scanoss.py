@@ -365,8 +365,8 @@ class Scanner(ScanossBase):
                 f_size = 0
                 try:
                     f_size = os.stat(path).st_size
-                except:
-                    self.print_trace(f'Ignoring missing symlink file: {file}') # Can fail if there is a broken symlink
+                except Exception as e:
+                    self.print_trace(f'Ignoring missing symlink file: {file} ({e})') # Can fail if there is a broken symlink
                 if f_size > 0:                                                 # Ignore broken links and empty files
                     self.print_trace(f'Fingerprinting {path}...')
                     if spinner:
@@ -801,8 +801,12 @@ class Scanner(ScanossBase):
             self.print_trace(f'Root: {root}, Dirs: {dirs}, Files {filtered_files}')
             for file in filtered_files:
                 path = os.path.join(root, file)
-                file_stat = os.stat(path)
-                if file_stat.st_size > 0:            # Ignore empty files
+                f_size = 0
+                try:
+                    f_size = os.stat(path).st_size
+                except Exception as e:
+                    self.print_trace(f'Ignoring missing symlink file: {file} ({e})') # Can fail if there is a broken symlink
+                if f_size > 0:            # Ignore empty files
                     self.print_debug(f'Fingerprinting {path}...')
                     wfps += self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
         if wfps:
