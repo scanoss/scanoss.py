@@ -220,7 +220,7 @@ class SpdxLite:
                 'filesAnalyzed': False,
                 'copyrightText': 'NOASSERTION',
                 'externalRefs': [{
-                    'referenceCategory': 'PACKAGE_MANAGER',
+                    'referenceCategory': 'PACKAGE-MANAGER',
                     'referenceLocator': purl_ver,
                     'referenceType': 'purl'
                 }]
