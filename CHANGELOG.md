@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.0.4] - 2022-09-07
+### Fixed
+- Fixed spelling mistake in SPDX output
+- Adjusted protobuf module requirements
+
 ## [1.0.0] - 2022-07-22
 ### Added
 - Added support for CSV output (--format csv)
@@ -98,3 +103,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.4]: https://github.com/scanoss/scanoss.py/compare/v0.7.3...v0.7.4
 [0.9.0]: https://github.com/scanoss/scanoss.py/compare/v0.7.4...v0.9.0
 [1.0.0]: https://github.com/scanoss/scanoss.py/compare/v0.9.0...v1.0.0
+[1.0.4]: https://github.com/scanoss/scanoss.py/compare/v1.0.0...v1.0.4
