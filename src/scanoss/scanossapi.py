@@ -62,8 +62,8 @@ class ScanossApi(ScanossBase):
         self.url = url if url else SCANOSS_SCAN_URL
         self.api_key = api_key if api_key else SCANOSS_API_KEY
         self.scan_type = scan_type
-        self.sbom_path = sbom_path
         self.scan_format = scan_format if scan_format else 'plain'
+        self.sbom_path = sbom_path
         self.flags = flags
         self.timeout = timeout if timeout > 5 else 120
         self.headers = {}

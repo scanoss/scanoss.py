@@ -91,7 +91,7 @@ class ScanossGrpc(ScanossBase):
         """
         resp: EchoResponse
         try:
-            resp = self.dependencies_stub.Echo(EchoRequest(message=message), metadata=self.metadata)
+            resp = self.dependencies_stub.Echo(EchoRequest(message=message), metadata=self.metadata, timeout=3)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
         else:
@@ -127,7 +127,7 @@ class ScanossGrpc(ScanossBase):
                 return None
             request = ParseDict(dependencies, DependencyRequest())  # Parse the JSON/Dict into the dependency object
             request.depth = depth
-            resp = self.dependencies_stub.GetDependencies(request, metadata=self.metadata)
+            resp = self.dependencies_stub.GetDependencies(request, metadata=self.metadata, timeout=600)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
         else:
@@ -153,7 +153,7 @@ class ScanossGrpc(ScanossBase):
             purls = [purl]
             dep_req = DependencyRequest.Files(file="package.json", purls=purls)
             files = [dep_req]
-            resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=files, depth=depth), metadata=self.metadata)
+            resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=files, depth=depth), metadata=self.metadata, timeout=600)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
         else:
