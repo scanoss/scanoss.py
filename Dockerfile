@@ -36,5 +36,8 @@ ENV GRPC_POLL_STRATEGY=poll
 VOLUME /scanoss
 WORKDIR /scanoss
 
+# Run scancode once to setup any initial files, etc. so that it'll run faster later
+RUN scancode -p --only-findings --quiet --json /scanoss/scancode-dependencies.json /scanoss && rm -f /scanoss/scancode-dependencies.json
+
 ENTRYPOINT ["scanoss-py"]
 CMD ["--help"]
