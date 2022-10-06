@@ -610,7 +610,7 @@ class Scanner(ScanossBase):
                 if l_size >= self.max_post_size and wfp:
                     self.print_debug(f'Sending {batch_files} ({cur_files}) of'
                                      f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.')
-                    if cur_size > self.max_post_size:
+                    if self.debug and cur_size > self.max_post_size:
                         Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
                     scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
                     if bar:
@@ -703,7 +703,7 @@ class Scanner(ScanossBase):
                 l_size = cur_size + len(scan_block.encode('utf-8'))
                 # Hit the max post size, so sending the current batch and continue processing
                 if l_size >= self.max_post_size and wfp:
-                    if cur_size > self.max_post_size:
+                    if self.debug and cur_size > self.max_post_size:
                         Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
                     self.threaded_scan.queue_add(wfp)
                     queue_size += 1
