@@ -98,9 +98,11 @@ class ScancodeDeps(ScanossBase):
                     f_type = fd.get('type')
                     if not f_type or f_type == '' or f_type != 'file':  # Only process files
                         continue
-                    f_packages = fd.get('packages')
+                    f_packages = fd.get('package_data')  # scancode format 2.0
                     if not f_packages or f_packages == '':
-                        continue
+                        f_packages = fd.get('packages')  # scancode formate 1.0
+                        if not f_packages or f_packages == '':
+                            continue
                     # print(f'Path: {f_path}, Packages: {f_packages}')
                     for pkgs in f_packages:
                         pk_deps = pkgs.get('dependencies')
@@ -113,7 +115,9 @@ class ScancodeDeps(ScanossBase):
                             if not dp or dp == '':
                                 continue
                             dp_data = {'purl': dp}
-                            rq = d.get('requirement')
+                            rq = d.get('extracted_requirement')  # scancode format 2.0
+                            if not rq or rq == '':
+                                rq = d.get('requirement')        # scancode format 1.0
                             if rq and rq != '' and not dp.endswith(rq):
                                 dp_data['requirement'] = rq
                             purls.append(dp_data)
@@ -193,7 +197,7 @@ class ScancodeDeps(ScanossBase):
             open(output_file, 'w').close()
             self.print_trace(f'About to execute {self.sc_command} -p --only-findings --quiet --json {output_file}'
                              f' {what_to_scan}')
-            result = subprocess.run([self.sc_command, '-p', '--only-findings', '--quiet', '--json',
+            result = subprocess.run([self.sc_command, '-p', '--only-findings', '--quiet', '--strip-root', '--json',
                                      output_file, what_to_scan],
                                     cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                     text=True, timeout=self.timeout
