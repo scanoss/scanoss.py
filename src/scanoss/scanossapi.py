@@ -118,13 +118,13 @@ class ScanossApi(ScanossBase):
                                   timeout=self.timeout)
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
                 if retry > 5:  # Timed out 5 or more times, fail
-                    self.print_stderr(f'ERROR: Timeout/Connection Error POSTing data: {scan_files}')
-                    raise Exception(f"ERROR: The SCANOSS API request timed out for {self.url}") from e
+                    self.print_stderr(f'ERROR: {e.__class__.__name__} POSTing data: {scan_files}')
+                    raise Exception(f"ERROR: The SCANOSS API request timed out ({e.__class__.__name__}) for {self.url}") from e
                 else:
-                    self.print_stderr(f'Warning: Timeout/Connection Error communicating with {self.url}. Retrying...')
+                    self.print_stderr(f'Warning: {e.__class__.__name__} communicating with {self.url}. Retrying...')
                     time.sleep(5)
             except Exception as e:
-                self.print_stderr(f'ERROR: Exception POSTing data: {scan_files}')
+                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data: {scan_files}')
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             else:
                 if not r:
@@ -151,7 +151,7 @@ class ScanossApi(ScanossBase):
             json_resp = r.json()
             return json_resp
         except (JSONDecodeError, Exception) as e:
-            self.print_stderr(f'ERROR: The SCANOSS API returned an invalid JSON: {e}')
+            self.print_stderr(f'ERROR: The SCANOSS API returned an invalid JSON ({e.__class__.__name__}): {e}')
             ctime = int(time.time())
             bad_json_file = f'bad_json-{scan_id}-{ctime}.txt' if scan_id else f'bad_json-{ctime}.txt'
             self.print_stderr(f'Ignoring result. Please look in "{bad_json_file}" for more details.')
@@ -161,7 +161,8 @@ class ScanossApi(ScanossBase):
                     f.write(r.text)
                     f.write("---Bad JSON End---\n")
             except Exception as ee:
-                self.print_stderr(f'Warning: Issue writing bad json file - {bad_json_file}: {ee}')
+                self.print_stderr(f'Warning: Issue writing bad json file - {bad_json_file} ({ee.__class__.__name__}):'
+                                  f' {ee}')
             return None
 
 #
