@@ -23,6 +23,8 @@
 """
 
 import os
+import uuid
+
 import grpc
 import json
 from urllib.parse import urlparse
@@ -89,15 +91,31 @@ class ScanossGrpc(ScanossBase):
         :param message: Message to send (default: Hello there!)
         :return: echo or None
         """
+        request_id = str(uuid.uuid4())
         resp: EchoResponse
         try:
-            resp = self.dependencies_stub.Echo(EchoRequest(message=message), metadata=self.metadata, timeout=3)
+            metadata = self.metadata[:]
+            metadata.append(('x-request-id', request_id))  # Set a Request ID
+            # resp, call = self.dependencies_stub.Echo.with_call(EchoRequest(message=message), metadata=metadata, timeout=3)
+            resp = self.dependencies_stub.Echo(EchoRequest(message=message), metadata=metadata, timeout=3)
         except Exception as e:
-            self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
+            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
+                              f'(rqId: {request_id}): {e}')
         else:
+            # self.print_stderr(f'resp: {resp} - call: {call}')
+            # response_id = ""
+            # if not call:
+            #     self.print_stderr(f'No call to leverage.')
+            # for key, value in call.trailing_metadata():
+            #     print('Greeter client received trailing metadata: key=%s value=%s' % (key, value))
+            #
+            # for key, value in call.trailing_metadata():
+            #     if key == 'x-response-id':
+            #         response_id = value
+            # self.print_stderr(f'Response ID: {response_id}. Metadata: {call.trailing_metadata()}')
             if resp:
                 return resp.message
-            self.print_stderr(f'ERROR: Problem sending Echo request ({message}) to {self.url}')
+            self.print_stderr(f'ERROR: Problem sending Echo request ({message}) to {self.url}. rqId: {request_id}')
         return None
 
     def get_dependencies(self, dependencies: json, depth: int = 1) -> dict:
@@ -119,6 +137,7 @@ class ScanossGrpc(ScanossBase):
         if not dependencies:
             self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
             return None
+        request_id = str(uuid.uuid4())
         resp: DependencyResponse
         try:
             files_json = dependencies.get("files")
@@ -127,56 +146,33 @@ class ScanossGrpc(ScanossBase):
                 return None
             request = ParseDict(dependencies, DependencyRequest())  # Parse the JSON/Dict into the dependency object
             request.depth = depth
-            resp = self.dependencies_stub.GetDependencies(request, metadata=self.metadata, timeout=600)
+            metadata = self.metadata[:]
+            metadata.append(('x-request-id', request_id))  # Set a Request ID
+            self.print_debug(f'Sending dependency data for decoration (rqId: {request_id})...')
+            resp = self.dependencies_stub.GetDependencies(request, metadata=metadata, timeout=600)
         except Exception as e:
-            self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
+            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
+                              f'(rqId: {request_id}): {e}')
         else:
             if resp:
-                if not self._check_status_response(resp.status):
+                if not self._check_status_response(resp.status, request_id):
                     return None
-                return MessageToDict(resp, preserving_proto_field_name=True)  # Convert the gRPC response to a dictionary
+                return MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dictionary
         return None
 
-    def get_dependencies_str(self, dependencies: str, depth: int = 1) -> str:  # TODO remove?
-        """
-        Client function to call the rpc for GetDependencies
-        :param dependencies: Message to send to the service
-        :param depth: depth of sub-dependencies to search (default: 1)
-        :return: Server response or None
-        """
-        if not dependencies:
-            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
-            return None
-        resp: DependencyResponse
-        try:
-            purl = DependencyRequest.Purls(purl="pkg", requirement="^1.0")
-            purls = [purl]
-            dep_req = DependencyRequest.Files(file="package.json", purls=purls)
-            files = [dep_req]
-            resp = self.dependencies_stub.GetDependencies(DependencyRequest(files=files, depth=depth), metadata=self.metadata, timeout=600)
-        except Exception as e:
-            self.print_stderr(f'ERROR: Problem encountered sending gRPC message: {e}')
-        else:
-            if resp:
-                if not self._check_status_response(resp.status):
-                    return None
-            return resp.dependencies
-        return None
-
-    def _check_status_response(self, status_response: StatusResponse) -> bool:
+    def _check_status_response(self, status_response: StatusResponse, request_id: str = None) -> bool:
         """
         Check the response object to see if the command was successful or not
         :param status_response: Status Response
         :return: True if successful, False otherwise
         """
         if not status_response:
-            self.print_stderr('Warning: No status response supplied. Assuming it was ok.')
+            self.print_stderr(f'Warning: No status response supplied (rqId: {request_id}). Assuming it was ok.')
             return True
-        self.print_debug(f'Checking response status: {status_response}')
+        self.print_debug(f'Checking response status (rqId: {request_id}): {status_response}')
         status_code: StatusCode = status_response.status
-        # self.print_stderr(f'Status Code: {status_code}, Message: {status_response.message}')
         if status_code > 1:
-            self.print_stderr(f'Not such a success: {status_response.message}')
+            self.print_stderr(f'Not such a success (rqId: {request_id}): {status_response.message}')
             return False
         return True
 #
