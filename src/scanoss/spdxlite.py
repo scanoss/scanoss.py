@@ -186,22 +186,28 @@ class SpdxLite:
             },
             'documentNamespace': f'https://spdx.org/spdxdocs/scanoss-py-{__version__}-{md5hex}',
             'documentDescribes': [],
+            'hasExtractedLicensingInfos': [],
             'packages': []
         }
+        lic_refs = set()  # Hash Set of non-SPDX license references
         for purl in raw_data:
             comp = raw_data.get(purl)
-            lic_names = []
             licenses = comp.get('licenses')
             lic_text = 'NOASSERTION'
             if licenses:
+                lic_set = set()
                 for lic in licenses:
                     lc_id = lic.get('id')
                     if lc_id:
                         spdx_id = self.get_spdx_license_id(lc_id)
-                        lic_names.append(spdx_id if spdx_id else lc_id)
-                if len(lic_names) > 0:
-                    lic_text = ' AND '.join(lic_names)
-                if len(lic_names) > 1:
+                        if not spdx_id:
+                            if not lc_id.startswith('LicenseRef'):
+                                lc_id = f'LicenseRef-{lc_id}'  # Make sure it has a license ref in its name
+                            lic_refs.add(lc_id)  # save non-SPDX license for later reference
+                        lic_set.add(spdx_id if spdx_id else lc_id)
+                if len(lic_set) > 0:
+                    lic_text = ' AND '.join(lic_set)
+                if len(lic_set) > 1:
                     lic_text = f'({lic_text})'  # wrap the names in () if there is more than one
             comp_name = comp.get('component')
             comp_ver = comp.get('version')
@@ -225,7 +231,24 @@ class SpdxLite:
                     'referenceType': 'purl'
                 }]
             })
-        # End for loop
+        # End purls for loop
+        for lic_ref in lic_refs:  # Insert all the non-SPDX license references
+            source = ''
+            match = re.search(r'^LicenseRef-(scancode-|scanoss-|)(\S+)$', lic_ref, re.IGNORECASE)
+            if match:
+                source = match.group(1).replace('-', '')  # source for the custom license
+                name = match.group(2)  # license name (without references, etc.)
+            else:
+                name = lic_ref
+            name = name.replace('-', ' ')
+            source = f' by {source}.' if source else '.'
+            data['hasExtractedLicensingInfos'].append({
+                'licenseId': lic_ref,
+                'name': name,
+                'extractedText': 'Detected license, please review component source code.',
+                'comment': f'Detected license{source}'
+            })
+        # End license refs for loop
         file = sys.stdout
         if not output_file and self.output_file:
             output_file = self.output_file
@@ -258,6 +281,8 @@ class SpdxLite:
         Load the embedded SPDX valid license JSON files
         Parse its contents to provide a lookup for valid name
         """
+        # SPDX license files details from: https://spdx.org/licenses/
+        # Specifically the JSON files come from GitHub: https://github.com/spdx/license-list-data/tree/master/json
         self._spdx_licenses = {}
         self._spdx_lic_names = {}
         self.print_debug('Loading SPDX License details...')
@@ -319,7 +344,7 @@ class SpdxLite:
         lic_id = self._spdx_lic_names.get(search_name_dashes)
         if lic_id:
             return lic_id
-        self.print_stderr(f'Warning: Failed to find valid SPDX license identifier for: {lic_name}')
+        self.print_debug(f'Warning: Failed to find valid SPDX license identifier for: {lic_name}')
         return None
 #
 # End of SpdxLite Class
