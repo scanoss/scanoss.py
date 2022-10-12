@@ -24,10 +24,10 @@
 import json
 import os.path
 import sys
-import hashlib
-import time
+import uuid
 
 from .scanossbase import ScanossBase
+from .spdxlite import SpdxLite
 
 
 class CycloneDx(ScanossBase):
@@ -40,9 +40,9 @@ class CycloneDx(ScanossBase):
         """
         Initialise the CycloneDX class
         """
-        super().__init__(debug)
         self.output_file = output_file
         self.debug = debug
+        self._spdx = SpdxLite(debug=debug)
 
     def parse(self, data: json):
         """
@@ -143,12 +143,17 @@ class CycloneDx(ScanossBase):
         if not cdx:
             self.print_stderr('ERROR: No CycloneDX data returned for the JSON string provided.')
             return False
-        md5hex = hashlib.md5(f'{time.time()}'.encode('utf-8')).hexdigest()
+        self._spdx.load_license_data()  # Load SPDX license name data for later reference
+        #
+        # Using CDX version 1.4: https://cyclonedx.org/docs/1.4/json/
+        # Validate using: https://github.com/CycloneDX/cyclonedx-cli
+        # cyclonedx-cli validate --input-format json --input-version v1_4 --fail-on-errors --input-file cdx.json
+        #
         data = {
             'bomFormat': 'CycloneDX',
-            'specVersion': '1.2',
-            'serialNumber': f'scanoss:SCANOSS-PY - SCANOSS CLI-{md5hex}',
-            'version': '1',
+            'specVersion': '1.4',
+            'serialNumber': f'urn:uuid:{uuid.uuid4()}',
+            'version': 1,
             'components': []
         }
         for purl in cdx:
@@ -156,9 +161,18 @@ class CycloneDx(ScanossBase):
             lic_text = []
             licenses = comp.get('licenses')
             if licenses:
-                for lic in licenses:
-                    lic_text.append({'license': {'id': lic.get('id')}})
-            m_type = 'Snippet' if comp.get('id') == 'snippet' else 'Library'
+                lic_set = set()
+                for lic in licenses:  # Get a unique set of licenses
+                    lc_id = lic.get('id')
+                    spdx_id = self._spdx.get_spdx_license_id(lc_id)
+                    lic_set.add(spdx_id if spdx_id else lc_id)
+                for lc_id in lic_set:  # Store licenses for later inclusion
+                    spdx_id = self._spdx.get_spdx_license_id(lc_id)
+                    if not spdx_id:
+                        lic_text.append({'license': {'name': lc_id}})  # Not an SPDX license, so store it by name
+                    else:
+                        lic_text.append({'license': {'id': spdx_id}})
+            m_type = 'library'
             data['components'].append({
                 'type': m_type,
                 'name': comp.get('component'),
@@ -166,11 +180,6 @@ class CycloneDx(ScanossBase):
                 'version': comp.get('version'),
                 'purl': purl,
                 'licenses': lic_text
-                # 'licenses': [{
-                #     'license': {
-                #         'id': comp.get('license')
-                #     }
-                # }]
             })
         # End for loop
         file = sys.stdout
