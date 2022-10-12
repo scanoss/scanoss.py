@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.1.0] - 2022-10-12
+### Fixed
+- Added LicenseRef info to SPDX Lite output
+- Updated CycloneDX output format to support version 1.4
+### Added
+- Added request id to gRPC requests
+
 ## [1.0.6] - 2022-09-19
 ### Added
 - Added support for scancode 2.0 output format
@@ -109,3 +116,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.0]: https://github.com/scanoss/scanoss.py/compare/v0.9.0...v1.0.0
 [1.0.4]: https://github.com/scanoss/scanoss.py/compare/v1.0.0...v1.0.4
 [1.0.5]: https://github.com/scanoss/scanoss.py/compare/v1.0.4...v1.0.6
+[1.0.6]: https://github.com/scanoss/scanoss.py/compare/v1.0.6...v1.1.0
