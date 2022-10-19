@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.1.1] - 2022-10-19
+### Fixed
+- Fixed issue with dependency parsing of yarn.lock files
+
 ## [1.1.0] - 2022-10-12
 ### Fixed
 - Added LicenseRef info to SPDX Lite output
@@ -115,5 +119,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.9.0]: https://github.com/scanoss/scanoss.py/compare/v0.7.4...v0.9.0
 [1.0.0]: https://github.com/scanoss/scanoss.py/compare/v0.9.0...v1.0.0
 [1.0.4]: https://github.com/scanoss/scanoss.py/compare/v1.0.0...v1.0.4
-[1.0.5]: https://github.com/scanoss/scanoss.py/compare/v1.0.4...v1.0.6
-[1.0.6]: https://github.com/scanoss/scanoss.py/compare/v1.0.6...v1.1.0
+[1.0.6]: https://github.com/scanoss/scanoss.py/compare/v1.0.4...v1.0.6
+[1.1.0]: https://github.com/scanoss/scanoss.py/compare/v1.0.6...v1.1.0
+[1.1.1]: https://github.com/scanoss/scanoss.py/compare/v1.1.0...v1.1.1

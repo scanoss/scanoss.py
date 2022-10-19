@@ -103,28 +103,29 @@ class ScancodeDeps(ScanossBase):
                         f_packages = fd.get('packages')  # scancode formate 1.0
                         if not f_packages or f_packages == '':
                             continue
-                    # print(f'Path: {f_path}, Packages: {f_packages}')
+                    self.print_debug(f'Path: {f_path}, Packages: {len(f_packages)}')
+                    purls = []
                     for pkgs in f_packages:
                         pk_deps = pkgs.get('dependencies')
                         if not pk_deps or pk_deps == '':
                             continue
-                        # print(f'Path: {f_path}, Deps: {pk_deps}')
-                        purls = []
+                        self.print_debug(f'Path: {f_path}, Dependencies: {len(pk_deps)}')
                         for d in pk_deps:
                             dp = d.get('purl')
                             if not dp or dp == '':
                                 continue
+                            dp = dp.replace('"', '').replace('%22', '')  # remove unwanted quotes on purls
                             dp_data = {'purl': dp}
                             rq = d.get('extracted_requirement')  # scancode format 2.0
                             if not rq or rq == '':
                                 rq = d.get('requirement')        # scancode format 1.0
-                            if rq and rq != '' and not dp.endswith(rq):
+                            # skip requirement if it ends with the purl (i.e. exact version) or if it's local (file)
+                            if rq and rq != '' and not dp.endswith(rq) and not rq.startswith('file:'):
                                 dp_data['requirement'] = rq
                             purls.append(dp_data)
-                        # print(f'Path: {f_path}, Purls: {purls}')
-                        if len(purls) > 0:
-                            file = {'file': f_path, 'purls': purls}
-                            files.append(file)
+                        # self.print_stderr(f'Path: {f_path}, Purls: {purls}')
+                    if len(purls) > 0:
+                        files.append({'file': f_path, 'purls': purls})
                     # End packages
                 # End file details
         # End dependencies json
