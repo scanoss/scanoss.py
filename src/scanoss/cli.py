@@ -109,7 +109,7 @@ def setup_args() -> None:
     # Sub-command: dependency
     p_dep = subparsers.add_parser('dependencies', aliases=['dp', 'dep'],
                                    description=f'Produce dependency file summary: {__version__}',
-                                   help='Scan source code for dependencies')
+                                   help='Scan source code for dependencies, but do not decorate them')
     p_dep.set_defaults(func=dependency)
     p_dep.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
     p_dep.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
