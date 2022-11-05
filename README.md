@@ -29,10 +29,9 @@ pip3 install -r requirements.txt
 pip3 install -r requirements-dev.txt
 ```
 
-To enable dependency scanning an extra tool is required: scancode-toolkit
+To enable dependency scanning, an extra tool is required: scancode-toolkit
 ```bash
-pip3 install typecode-libmagic
-pip3 install scancode-toolkit-mini
+pip3 install -r requirements-scancode.txt
 ```
 
 ### Package Development

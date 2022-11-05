@@ -1,0 +1,2 @@
+typecode-libmagic
+scancode-toolkit-mini
