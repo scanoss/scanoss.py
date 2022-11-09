@@ -51,6 +51,8 @@ publish:  ## Publish Python package to PyPI
 	@echo "Publishing package to PyPI..."
 	twine upload dist/*
 
+package_all: dist publish ## Build & Publish Python package to PyPI
+
 ghcr_build: dist ## Build GitHub container image
 	@echo "Building GHCR container image..."
 	docker build --no-cache -t $(GHCR_FULLNAME) --platform linux/amd64 .
