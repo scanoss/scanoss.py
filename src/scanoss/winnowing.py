@@ -28,7 +28,7 @@
    https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf
 """
 import hashlib
-import sys
+import pathlib
 
 from crc32c import crc32c
 from binaryornot.check import is_binary
@@ -53,11 +53,11 @@ MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 MIN_FILE_SIZE = 256
 
 SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
-                ".exe", ".zip", ".tar", ".tgz", ".gz", ".7z", ".rar", ".jar", ".war", ".ear", ".class", ".pyc",
-                ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
-                ".lst", ".dat", ".json", ".htm", ".html", ".xml", ".md", ".txt",
-                ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
-                ".pdf", ".min.js", ".mf", ".sum"
+    ".exe", ".zip", ".tar", ".tgz", ".gz", ".7z", ".rar", ".jar", ".war", ".ear", ".class", ".pyc",
+    ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
+    ".lst", ".dat", ".json", ".htm", ".html", ".xml", ".md", ".txt",
+    ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
+    ".pdf", ".min.js", ".mf", ".sum"
 }
 
 
@@ -105,7 +105,7 @@ class Winnowing(ScanossBase):
     """
 
     def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 skip_snippets: bool = False, post_size: int = 64, all_extensions: bool = False
+                 skip_snippets: bool = False, post_size: int = 64, all_extensions: bool = False, obfuscate: bool = False
                  ):
         """
         Instantiate Winnowing class
@@ -115,10 +115,13 @@ class Winnowing(ScanossBase):
                 Limit the size of a fingerprint to 64k (post size) - Default True
         """
         super().__init__(debug, trace, quiet)
-        self.size_limit    = size_limit
+        self.size_limit = size_limit
         self.skip_snippets = skip_snippets
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE
         self.all_extensions = all_extensions
+        self.obfuscate = obfuscate
+        self.ob_count = 1
+        self.file_map = {} if obfuscate else None
 
     @staticmethod
     def __normalize(byte):
@@ -162,18 +165,19 @@ class Winnowing(ScanossBase):
                     self.print_trace(f'Skipping snippets due to file ending: {file} - {ending}')
                     return True;
         src_len = len(src)
-        if src_len == 0 or src_len <= MIN_FILE_SIZE:                  # Ignore empty or files that are too small
+        if src_len == 0 or src_len <= MIN_FILE_SIZE:  # Ignore empty or files that are too small
             self.print_trace(f'Skipping snippets as the file is too small: {file} - {src_len}')
             return True
-        prefix = src[0:(MIN_FILE_SIZE-1)].lower().strip()
-        if len(prefix) > 0 and (prefix[0] == "{" or prefix[0] == "["):    # Ignore json
+        prefix = src[0:(MIN_FILE_SIZE - 1)].lower().strip()
+        if len(prefix) > 0 and (prefix[0] == "{" or prefix[0] == "["):  # Ignore json
             self.print_trace(f'Skipping snippets as the file appears to be JSON: {file}')
             return True
-        if prefix.startswith("<?xml") or prefix.startswith("<html") or prefix.startswith("<ac3d") or prefix.startswith("<!doc"):
+        if prefix.startswith("<?xml") or prefix.startswith("<html") or prefix.startswith("<ac3d") or prefix.startswith(
+                "<!doc"):
             self.print_trace(f'Skipping snippets as the file appears to be xml/html/binary: {file}')
-            return True                                               # Ignore xml & html & ac3d
-        index = src.index('\n') if '\n' in src else (src_len-1) # TODO is this still necessary if we hav a binary check?
-        if len(src[0:index]) > MAX_LONG_LINE_CHARS:                   # Ignore long lines
+            return True  # Ignore xml & html & ac3d
+        index = src.index('\n') if '\n' in src else (src_len - 1)  # TODO still necessary if we have a binary check?
+        if len(src[0:index]) > MAX_LONG_LINE_CHARS:  # Ignore long lines
             self.print_trace(f'Skipping snippets due to file line being too long: {file} - {MAX_LONG_LINE_CHARS}')
             return True
         return False
@@ -212,10 +216,9 @@ class Winnowing(ScanossBase):
         Generate a Winnowing Finger Print (WFP) for the given file contents
         Parameters
         ----------
-            file: str
-                file to fingerprint
-            contents: bytes
-                file contents
+            :param file: file to fingerprint
+            :param bin_file: binary file or not
+            :param contents: file contents
         Return
         ------
             WFP string
@@ -223,7 +226,13 @@ class Winnowing(ScanossBase):
         file_md5 = hashlib.md5(contents).hexdigest()
         # Print file line
         content_length = len(contents)
-        wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, file)
+        wfp_filename = file
+        if self.obfuscate:  # hide the real size of the file and its name, but keep the suffix
+            wfp_filename = f'{self.ob_count}{pathlib.Path(file).suffix}'
+            self.ob_count = self.ob_count + 1
+            self.file_map[wfp_filename] = file  # Save the file name map for later (reverse lookup)
+
+        wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, wfp_filename)
         # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
         if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
@@ -234,7 +243,7 @@ class Winnowing(ScanossBase):
         last_hash = MAX_CRC32
         last_line = 0
         output = ""
-        # Otherwise recurse src_content and calculate Winnowing hashes
+        # Otherwise, recurse src_content and calculate Winnowing hashes
         for byte in contents:
             if byte == ASCII_LF:
                 line += 1
@@ -262,10 +271,11 @@ class Winnowing(ScanossBase):
                             if last_line != line:
                                 if output:
                                     if self.size_limit and \
-                                            (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) > self.max_post_size:
+                                            (len(wfp.encode("utf-8")) + len(
+                                                output.encode("utf-8"))) > self.max_post_size:
                                         self.print_debug(f'Truncating WFP (64k limit) for: {file}')
                                         output = ''
-                                        break               # Stop collecting snippets as it's over 64k
+                                        break  # Stop collecting snippets as it's over 64k
                                     wfp += output + '\n'
                                 output = "%d=%s" % (line, crc_hex)
                             else:
@@ -277,7 +287,8 @@ class Winnowing(ScanossBase):
                         window.pop(0)
                     # Shift gram
                     gram = gram[1:]
-        if output and (not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) < self.max_post_size):
+        if output and (
+                not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) < self.max_post_size):
             wfp += output + '\n'
 
         return wfp
