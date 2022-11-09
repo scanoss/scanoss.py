@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.2.0] - 2022-11-08
+### Added
+- Added vulnerability reporting to CycloneDX output
+- Added obfuscation to fingerprinting (--obfuscate)
+- Added obfuscation to scanning (--obfuscate)
+
 ## [1.1.1] - 2022-10-19
 ### Fixed
 - Fixed issue with dependency parsing of yarn.lock files
@@ -122,3 +128,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.6]: https://github.com/scanoss/scanoss.py/compare/v1.0.4...v1.0.6
 [1.1.0]: https://github.com/scanoss/scanoss.py/compare/v1.0.6...v1.1.0
 [1.1.1]: https://github.com/scanoss/scanoss.py/compare/v1.1.0...v1.1.1
+[1.2.0]: https://github.com/scanoss/scanoss.py/compare/v1.1.1...v1.2.0
