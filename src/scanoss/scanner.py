@@ -92,7 +92,8 @@ class Scanner(ScanossBase):
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
                  post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
-                 scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None
+                 scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
+                 obfuscate: bool = False
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -111,7 +112,7 @@ class Scanner(ScanossBase):
         ver_details = self.__version_details()
 
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
-                                   all_extensions=all_extensions
+                                   all_extensions=all_extensions, obfuscate=obfuscate
                                    )
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,
@@ -303,10 +304,11 @@ class Scanner(ScanossBase):
             return True
         return False
 
-    def scan_folder_with_options(self, scan_dir: str) -> bool:
+    def scan_folder_with_options(self, scan_dir: str, file_map: dict = None) -> bool:
         """
         Scan the given folder for whatever scaning options that have been configured
         :param scan_dir: directory to scan
+        :param file_map: mapping of obfuscated files back into originals
         :return: True if successful, False otherwise
         """
         success = True
@@ -326,7 +328,7 @@ class Scanner(ScanossBase):
             if not self.scan_folder(scan_dir):
                 success = False
         if self.threaded_scan:
-            if not self.__finish_scan_threaded():
+            if not self.__finish_scan_threaded(file_map):
                 success = False
         return success
 
@@ -427,9 +429,10 @@ class Scanner(ScanossBase):
                 success = False
         return success
 
-    def __finish_scan_threaded(self) -> bool:
+    def __finish_scan_threaded(self, file_map: dict = None) -> bool:
         """
         Wait for the threaded scans to complete
+        :param file_map: mapping of obfuscated files back into originals
         :return: True if successful, False otherwise
         """
         success = True
@@ -457,6 +460,10 @@ class Scanner(ScanossBase):
                 for scan_resp in responses:
                     if scan_resp is not None:
                         for key, value in scan_resp.items():
+                            if file_map:  # We have a map for obfuscated files. Check if we can revert it
+                                fm = file_map.get(key)
+                                if fm:
+                                    key = fm  # Replace the obfuscated filename
                             if first:
                                 raw_output += "  \"%s\":%s" % (key, json.dumps(value, indent=2))
                                 first = False
@@ -513,10 +520,11 @@ class Scanner(ScanossBase):
         return success
 
 
-    def scan_file_with_options(self, file: str) -> bool:
+    def scan_file_with_options(self, file: str, file_map: dict = None) -> bool:
         """
         Scan the given file for whatever scaning options that have been configured
         :param file: file to scan
+        :param file_map: mapping of obfuscated files back into originals
         :return: True if successful, False otherwise
         """
         success = True
@@ -536,7 +544,7 @@ class Scanner(ScanossBase):
             if not self.scan_file(file):
                 success = False
         if self.threaded_scan:
-            if not self.__finish_scan_threaded():
+            if not self.__finish_scan_threaded(file_map):
                 success = False
         return success
 
@@ -670,13 +678,11 @@ class Scanner(ScanossBase):
 
         return success
 
-    def scan_wfp_file_threaded(self, file: str = None) -> bool:
+    def scan_wfp_file_threaded(self, file: str = None, file_map: dict = None) -> bool:
         """
         Scan the contents of the specified WFP file (threaded)
-        Parameters
-        ----------
-            file: str
-                WFP file to scan (optional)
+        :param file: WFP file to scan (optional)
+        :param file_map: mapping of obfuscated files back into originals (optional)
         return: True if successful, False otherwise
         """
         success = True
@@ -723,7 +729,7 @@ class Scanner(ScanossBase):
 
         if not self.__run_scan_threaded(scan_started, file_count):
             success = False
-        elif not self.__finish_scan_threaded():
+        elif not self.__finish_scan_threaded(file_map):
             success = False
         return success
 

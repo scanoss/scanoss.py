@@ -90,6 +90,7 @@ def setup_args() -> None:
     p_scan.add_argument('--all-extensions', action='store_true', help='Scan all file extensions')
     p_scan.add_argument('--all-folders', action='store_true', help='Scan all folders')
     p_scan.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
+    p_scan.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
     p_scan.add_argument('--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).' )
@@ -105,6 +106,8 @@ def setup_args() -> None:
     p_wfp.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?',
                        help='A file or folder to scan')
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_wfp.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
+    p_wfp.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser('dependencies', aliases=['dp', 'dep'],
@@ -172,7 +175,9 @@ def wfp(parser, args):
     if args.output:
         scan_output = args.output
         open(scan_output, 'w').close()
-    scanner = Scanner(debug=args.debug, quiet=args.quiet)
+
+    scan_options = 0 if args.skip_snippets else ScanType.SCAN_SNIPPETS.value  # Skip snippet generation or not
+    scanner = Scanner(debug=args.debug, quiet=args.quiet, obfuscate=args.obfuscate, scan_options=scan_options)
 
     if not os.path.exists(args.scan_dir):
         print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
@@ -277,6 +282,8 @@ def scan(parser, args):
             print_stderr(f'Changing scanning POST size to: {args.post_size}k...')
         if args.timeout != 120:
             print_stderr(f'Changing scanning POST timeout to: {args.timeout}...')
+        if args.obfuscate:
+            print_stderr("Obfuscating file fingerprints...")
     elif not args.quiet:
         if args.timeout < 5:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
@@ -292,7 +299,8 @@ def scan(parser, args):
                       flags=flags, nb_threads=args.threads, post_size=args.post_size,
                       timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
-                      scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command, grpc_url=args.api2url
+                      scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
+                      grpc_url=args.api2url, obfuscate=args.obfuscate
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
@@ -307,10 +315,10 @@ def scan(parser, args):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
             exit(1)
         if os.path.isdir(args.scan_dir):
-            if not scanner.scan_folder_with_options(args.scan_dir):
+            if not scanner.scan_folder_with_options(args.scan_dir, scanner.winnowing.file_map):
                 exit(1)
         elif os.path.isfile(args.scan_dir):
-            if not scanner.scan_file_with_options(args.scan_dir):
+            if not scanner.scan_file_with_options(args.scan_dir, scanner.winnowing.file_map):
                 exit(1)
         else:
             print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
