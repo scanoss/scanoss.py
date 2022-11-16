@@ -30,6 +30,7 @@ from .scanner import Scanner
 from .winnowing import Winnowing
 from .scancodedeps import ScancodeDeps
 from .scantype import ScanType
+from .filecount import FileCount
 from . import __version__
 
 
@@ -111,8 +112,8 @@ def setup_args() -> None:
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser('dependencies', aliases=['dp', 'dep'],
-                                   description=f'Produce dependency file summary: {__version__}',
-                                   help='Scan source code for dependencies, but do not decorate them')
+                                  description=f'Produce dependency file summary: {__version__}',
+                                  help='Scan source code for dependencies, but do not decorate them')
     p_dep.set_defaults(func=dependency)
     p_dep.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
     p_dep.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
@@ -120,6 +121,15 @@ def setup_args() -> None:
     p_dep.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)'
                         )
+
+    # Sub-command: file_count
+    p_fc = subparsers.add_parser('file_count', aliases=['fc'],
+                                 description=f'Produce a file type count summary: {__version__}',
+                                 help='Search the source tree and produce a file type summary')
+    p_fc.set_defaults(func=file_count)
+    p_fc.add_argument('scan_dir', metavar='DIR', type=str, nargs='?', help='A folder to search')
+    p_fc.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_fc.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
 
     # Global command options
     for p in [p_scan]:
@@ -129,10 +139,12 @@ def setup_args() -> None:
         p.add_argument('--apiurl', type=str,
                        help='SCANOSS API URL (optional - default: https://osskb.org/api/scan/direct)'
                        )
-    p.add_argument('--api2url', type=str,
-                   help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
-                   )
-    for p in [p_scan, p_wfp, p_dep]:
+        p.add_argument('--api2url', type=str,
+                       help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
+                       )
+        p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
+
+    for p in [p_scan, p_wfp, p_dep, p_fc]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
@@ -156,6 +168,36 @@ def ver(parser, args):
     """
     print(f'Version: {__version__}')
 
+def file_count(parser, args):
+    """
+    Run the "file_count" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if not args.scan_dir:
+        print_stderr('Please specify a folder')
+        parser.parse_args([args.subparser, '-h'])
+        exit(1)
+    scan_output: str = None
+    if args.output:
+        scan_output = args.output
+        open(scan_output, 'w').close()
+
+    counter = FileCount(debug=args.debug, quiet=args.quiet, trace=args.trace, scan_output=scan_output,
+                        hidden_files_folders=args.all_hidden
+                        )
+    if not os.path.exists(args.scan_dir):
+        print_stderr(f'Error: Folder specified does not exist: {args.scan_dir}.')
+        exit(1)
+    if os.path.isdir(args.scan_dir):
+        counter.count_files(args.scan_dir)
+    else:
+        print_stderr(f'Error: Path specified is not a folder: {args.scan_dir}.')
+        exit(1)
 
 def wfp(parser, args):
     """
@@ -300,7 +342,7 @@ def scan(parser, args):
                       timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
                       scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
-                      grpc_url=args.api2url, obfuscate=args.obfuscate
+                      grpc_url=args.api2url, obfuscate=args.obfuscate, ignore_cert_errors=args.ignore_cert_errors
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
