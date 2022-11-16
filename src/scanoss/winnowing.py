@@ -213,7 +213,7 @@ class Winnowing(ScanossBase):
 
     def wfp_for_contents(self, file: str, bin_file: bool, contents: bytes) -> str:
         """
-        Generate a Winnowing Finger Print (WFP) for the given file contents
+        Generate a Winnowing fingerprint (WFP) for the given file contents
         Parameters
         ----------
             :param file: file to fingerprint
