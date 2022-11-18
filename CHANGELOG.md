@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.2.2] - 2022-11-18
+### Added
+- Added SSL cert error ignore option (--ignore-cert-errors) for REST calls
+  Custom certificates can be supplied using environment variables
+- Added multi-platform Docker images (AMD64 & ARM64)
+
 ## [1.2.1] - 2022-11-11
 ### Added
 - Added sub-command (file_count)to produce a file summary (extensions & size) into a CSV
@@ -134,3 +140,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.1.1]: https://github.com/scanoss/scanoss.py/compare/v1.1.0...v1.1.1
 [1.2.0]: https://github.com/scanoss/scanoss.py/compare/v1.1.1...v1.2.0
 [1.2.1]: https://github.com/scanoss/scanoss.py/compare/v1.2.0...v1.2.1
+[1.2.2]: https://github.com/scanoss/scanoss.py/compare/v1.2.1...v1.2.2
