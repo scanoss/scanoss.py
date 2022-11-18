@@ -56,6 +56,10 @@ class ScanossGrpc(ScanossBase):
         :param trace:
         :param quiet:
         :param cert:
+
+        To set a custom certificate use:
+            GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/certs/cert.pem
+        More details here: https://grpc.github.io/grpc/cpp/grpc__security__constants_8h.html
         """
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL

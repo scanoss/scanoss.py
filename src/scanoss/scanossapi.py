@@ -31,6 +31,7 @@ import uuid
 import http.client as http_client
 
 from .scanossbase import ScanossBase
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 DEFAULT_URL = "https://osskb.org/api/scan/direct"
 SCANOSS_SCAN_URL = os.environ.get("SCANOSS_SCAN_URL") if os.environ.get("SCANOSS_SCAN_URL") else DEFAULT_URL
@@ -45,7 +46,7 @@ class ScanossApi(ScanossBase):
 
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 timeout: int = 120, ver_details: str = None):
+                 timeout: int = 120, ver_details: str = None, ignore_cert_errors: bool = False):
         """
         Initialise the SCANOSS API
         :param scan_type: Scan type (default identify)
@@ -57,6 +58,10 @@ class ScanossApi(ScanossBase):
         :param debug: Enable debug (default False)
         :param trace: Enable trace (default False)
         :param quiet: Enable quite mode (default False)
+
+        To set a custom certificate use:
+            REQUESTS_CA_BUNDLE=/path/to/cert.pem
+            SSL_CERT_FILE=/path/to/cert.pem
         """
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_SCAN_URL
@@ -66,6 +71,7 @@ class ScanossApi(ScanossBase):
         self.sbom_path = sbom_path
         self.flags = flags
         self.timeout = timeout if timeout > 5 else 120
+        self.ignore_cert_errors = ignore_cert_errors
         self.headers = {}
         if ver_details:
             self.headers['x-scanoss-client'] = ver_details
@@ -77,6 +83,9 @@ class ScanossApi(ScanossBase):
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
             http_client.HTTPConnection.debuglevel = 1
+        if self.ignore_cert_errors:
+            self.print_debug(f'Ignoring cert errors...')
+            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     def load_sbom(self):
         """
@@ -115,16 +124,21 @@ class ScanossApi(ScanossBase):
             try:
                 r = None
                 r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers,
-                                  timeout=self.timeout)
+                                  timeout=self.timeout,
+                                  verify=False if self.ignore_cert_errors else None
+                                  )
+            except requests.exceptions.SSLError as e:
+                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}.')
+                raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
                 if retry > 5:  # Timed out 5 or more times, fail
-                    self.print_stderr(f'ERROR: {e.__class__.__name__} POSTing data: {scan_files}')
+                    self.print_stderr(f'ERROR: {e.__class__.__name__} POSTing data - {e}: {scan_files}')
                     raise Exception(f"ERROR: The SCANOSS API request timed out ({e.__class__.__name__}) for {self.url}") from e
                 else:
                     self.print_stderr(f'Warning: {e.__class__.__name__} communicating with {self.url}. Retrying...')
                     time.sleep(5)
             except Exception as e:
-                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data: {scan_files}')
+                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}: {scan_files}')
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             else:
                 if not r:
