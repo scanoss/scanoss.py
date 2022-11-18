@@ -51,11 +51,19 @@ publish:  ## Publish Python package to PyPI
 	@echo "Publishing package to PyPI..."
 	twine upload dist/*
 
-package_all: dist publish ## Build & Publish Python package to PyPI
+package_all: dist publish  ## Build & Publish Python package to PyPI
 
-ghcr_build: dist ## Build GitHub container image
+ghcr_build: dist  ## Build GitHub container image with local arch
 	@echo "Building GHCR container image..."
-	docker build --no-cache -t $(GHCR_FULLNAME) --platform linux/amd64 .
+	docker build -t $(GHCR_FULLNAME) .
+
+ghcr_amd64: dist  ## Build GitHub AMD64 container image
+	@echo "Building GHCR AMD64 container image..."
+	docker build -t $(GHCR_FULLNAME)  --platform linux/amd64 .
+
+ghcr_arm64: dist  ## Build GitHub ARM64 container image
+	@echo "Building GHCR ARM64 container image..."
+	docker build -t $(GHCR_FULLNAME)  --platform linux/arm64 .
 
 ghcr_tag:  ## Tag the latest GH container image with the version from Python
 	@echo "Tagging GHCR latest image with $(VERSION)..."
@@ -66,11 +74,23 @@ ghcr_push:  ## Push the GH container image to GH Packages
 	docker push $(GHCR_FULLNAME):$(VERSION)
 	docker push $(GHCR_FULLNAME):latest
 
-ghcr_all: ghcr_build ghcr_tag ghcr_push  ## Execute all GitHub Package container actions
+ghcr_release: dist  ## Build/Publish GitHub multi-platform container image
+	@echo "Building & Releasing GHCR multi-platform container image $(VERSION)..."
+	docker buildx build --push -t $(GHCR_FULLNAME):$(VERSION) --platform linux/arm64,linux/amd64 .
 
-docker_build:  ## Build Docker container image
+ghcr_all: ghcr_release  ## Execute all GHCR container actions
+
+docker_build:  ## Build Docker container image with local arch
 	@echo "Building Docker image..."
 	docker build --no-cache -t $(DOCKER_FULLNAME) .
+
+docker_amd64: dist  ## Build Docker AMD64 container image
+	@echo "Building Docker AMD64 container image..."
+	docker build -t $(DOCKER_FULLNAME)  --platform linux/amd64 .
+
+docker_arm64: dist  ## Build Docker ARM64 container image
+	@echo "Building Docker ARM64 container image..."
+	docker build -t $(DOCKER_FULLNAME)  --platform linux/arm64 .
 
 docker_tag:  ## Tag the latest Docker container image with the version from Python
 	@echo "Tagging Docker latest image with $(VERSION)..."
@@ -81,4 +101,8 @@ docker_push:  ## Push the Docker container image to DockerHub
 	docker push $(DOCKER_FULLNAME):$(VERSION)
 	docker push $(DOCKER_FULLNAME):latest
 
-docker_all: docker_build docker_tag docker_push  ## Execute all DockerHub container actions
+docker_release: dist  ## Build/Publish Docker multi-platform container image
+	@echo "Building & Releasing Docker multi-platform container image $(VERSION)..."
+	docker buildx build --push -t $(DOCKER_FULLNAME):$(VERSION) --platform linux/arm64,linux/amd64 .
+
+docker_all: docker_release  ## Execute all DockerHub container actions

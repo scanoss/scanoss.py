@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster as base
+FROM python:3.10-slim-buster as base
 
 LABEL maintainer="SCANOSS <infra@scanoss.com>"
 
@@ -16,14 +16,20 @@ ENV PATH=/root/.local/bin:$PATH
 
 COPY ./dist/scanoss-*-py3-none-any.whl /install/
 
-#RUN pip3 install --user scanoss
 RUN pip3 install --user /install/scanoss-*-py3-none-any.whl
 RUN pip3 install --user scancode-toolkit-mini
-RUN pip3 install --user typecode-libmagic
+#RUN pip3 install --user typecode-libmagic
+
+# Download compile and install typecode-libmagic from source (as there is not ARM wheel available)
+ADD https://github.com/nexB/typecode_libmagic_from_sources/archive/refs/tags/v5.39.210212.tar.gz /install/
+RUN tar -xvzf /install/v5.39.210212.tar.gz -C /install \
+    && cd /install/typecode_libmagic_from_sources* \
+    && ./build.sh && python3 setup.py sdist bdist_wheel \
+    && pip3 install --user `ls /install/typecode_libmagic_from_sources*/dist/*.whl`
 
 # Remove license data references as they are not required for dependency scanning (to save space)
-RUN rm -rf /root/.local/lib/python3.8/site-packages/licensedcode/data/rules /root/.local/lib/python3.8/site-packages/licensedcode/data/cache
-RUN mkdir /root/.local/lib/python3.8/site-packages/licensedcode/data/rules /root/.local/lib/python3.8/site-packages/licensedcode/data/cache
+RUN rm -rf /root/.local/lib/python3.10/site-packages/licensedcode/data/rules /root/.local/lib/python3.10/site-packages/licensedcode/data/cache
+RUN mkdir  /root/.local/lib/python3.10/site-packages/licensedcode/data/rules /root/.local/lib/python3.10/site-packages/licensedcode/data/cache
 
 FROM base
 
