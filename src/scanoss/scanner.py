@@ -85,7 +85,7 @@ MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 class Scanner(ScanossBase):
     """
     SCANOSS scanning class
-    Hanlde the scanning of files, snippets and dependencies
+    Handle the scanning of files, snippets and dependencies
     """
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
@@ -93,7 +93,7 @@ class Scanner(ScanossBase):
                  post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
                  scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
-                 obfuscate: bool = False
+                 obfuscate: bool = False, ignore_cert_errors: bool = False
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -116,7 +116,7 @@ class Scanner(ScanossBase):
                                    )
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,
-                                      ver_details=ver_details
+                                      ver_details=ver_details, ignore_cert_errors=ignore_cert_errors
                                       )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
         grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace, api_key=api_key,
