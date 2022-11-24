@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.2.3] - 2022-11-22
+### Added
+- Added Max Threaded scanning override env var (SCANOSS_MAX_ALLOWED_THREADS)
+  If the backend system can handle more than the current maximum (30), then set this env to that number
+  `export SCANOSS_MAX_ALLOWED_THREADS=40`
+
 ## [1.2.2] - 2022-11-18
 ### Added
 - Added SSL cert error ignore option (--ignore-cert-errors) for REST calls
@@ -141,3 +147,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.2.0]: https://github.com/scanoss/scanoss.py/compare/v1.1.1...v1.2.0
 [1.2.1]: https://github.com/scanoss/scanoss.py/compare/v1.2.0...v1.2.1
 [1.2.2]: https://github.com/scanoss/scanoss.py/compare/v1.2.1...v1.2.2
+[1.2.3]: https://github.com/scanoss/scanoss.py/compare/v1.2.2...v1.2.3

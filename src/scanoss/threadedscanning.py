@@ -35,7 +35,7 @@ from .scanossapi import ScanossApi
 from .scanossbase import ScanossBase
 
 WFP_FILE_START = "file="
-MAX_ALLOWED_THREADS = 30
+MAX_ALLOWED_THREADS = int(os.environ.get("SCANOSS_MAX_ALLOWED_THREADS")) if os.environ.get("SCANOSS_MAX_ALLOWED_THREADS") else 30
 
 @dataclass
 class ThreadedScanning(ScanossBase):
