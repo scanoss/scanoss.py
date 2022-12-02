@@ -6,6 +6,7 @@ github_com_*
 master.zip
 dist/
 build/
+tmp/
 .eggs
 *.egg-info
 __pycache__
