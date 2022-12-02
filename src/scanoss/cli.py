@@ -31,6 +31,9 @@ from .winnowing import Winnowing
 from .scancodedeps import ScancodeDeps
 from .scantype import ScanType
 from .filecount import FileCount
+from .cyclonedx import CycloneDx
+from .spdxlite import SpdxLite
+from .csvoutput import CsvOutput
 from . import __version__
 
 
@@ -46,6 +49,8 @@ def setup_args() -> None:
     Setup all the command line arguments for processing
     """
     parser = argparse.ArgumentParser(description=f'SCANOSS Python CLI. Ver: {__version__}, License: MIT')
+    parser.add_argument('--version', '-v', action='store_true', help='Display version details')
+
     subparsers = parser.add_subparsers(title='Sub Commands', dest='subparser', description='valid subcommands',
                                        help='sub-command help'
                                        )
@@ -131,6 +136,35 @@ def setup_args() -> None:
     p_fc.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
     p_fc.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
 
+    # Sub-command: convert
+    p_cnv = subparsers.add_parser('convert', aliases=['cv', 'cnv', 'cvrt'],
+                                   description=f'Convert results files between formats: {__version__}',
+                                   help='Convert file format')
+    p_cnv.set_defaults(func=convert)
+    p_cnv.add_argument('--input', '-i', type=str, required=True, help='Input file name')
+    p_cnv.add_argument('--output','-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_cnv.add_argument('--format','-f', type=str, choices=['cyclonedx', 'spdxlite', 'csv'], default='spdxlite',
+                       help='Output format (optional - default: spdxlite)'
+                       )
+    p_cnv.add_argument('--input-format', type=str, choices=['plain'], default='plain',
+                       help='Input format (optional - default: plain)'
+                       )
+
+    # Sub-command: utils
+    p_util = subparsers.add_parser('utils', aliases=['ut', 'util'],
+                                   description=f'SCANOSS Utility commands: {__version__}',
+                                   help='General utility support commands')
+
+    utils_sub = p_util.add_subparsers(title='Utils Commands', dest='utilsubparser', description='utils sub-commands',
+                                       help='utils sub-commands'
+                                       )
+
+    # Utils Sub-command: utils certloc
+    p_c_loc = utils_sub.add_parser('certloc', aliases=['cl'],
+                                   description=f'Show location of Python CA Certs: {__version__}',
+                                   help='Display the location of Python CA Certs')
+    p_c_loc.set_defaults(func=utils_certloc)
+
     # Global command options
     for p in [p_scan]:
         p.add_argument('--key', '-k', type=str,
@@ -142,16 +176,31 @@ def setup_args() -> None:
         p.add_argument('--api2url', type=str,
                        help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
                        )
+        p.add_argument('--proxy', type=str, help='Proxy URL to use for connections (optional). '
+                                                 'Can also use the environment variable "HTTPS_PROXY=<ip>:<port>" '
+                                                 'and "grcp_proxy=<ip>:<port>" for gRPC'
+                       )
+        p.add_argument('--ca-cert', type=str, help='Alternative certificate PEM file (optional). '
+                                                   'Can also use the environment variable '
+                                                   '"REQUESTS_CA_BUNDLE=/path/to/cacert.pem" and '
+                                                   '"GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/cacert.pem" for gRPC'
+                       )
         p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
 
-    for p in [p_scan, p_wfp, p_dep, p_fc]:
+    for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
 
     args = parser.parse_args()
+    if args.version:
+        ver(parser, args)
+        exit(0)
     if not args.subparser:
-        parser.print_help()
+        parser.print_help()  # No sub command subcommand, print general help
+        exit(1)
+    elif args.subparser == 'utils' and not args.utilsubparser:  # No utils sub command supplied
+        parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
 
@@ -326,6 +375,10 @@ def scan(parser, args):
             print_stderr(f'Changing scanning POST timeout to: {args.timeout}...')
         if args.obfuscate:
             print_stderr("Obfuscating file fingerprints...")
+        if args.proxy:
+            print_stderr(f'Using Proxy {arg.proxy}...')
+        if args.ca_cert:
+            print_stderr(f'Using Certificate {arg.ca_cert}...')
     elif not args.quiet:
         if args.timeout < 5:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
@@ -333,7 +386,9 @@ def scan(parser, args):
     if not os.access( os.getcwd(), os.W_OK ):  # Make sure the current directory is writable. If not disable saving WFP
         print_stderr(f'Warning: Current directory is not writable: {os.getcwd()}')
         args.no_wfp_output = True
-
+    if args.ca_cert and not os.path.exists(args.ca_cert):
+        print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
+        exit(1)
     scan_options = get_scan_options(args)   # Figure out what scanning options we have
 
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
@@ -342,7 +397,8 @@ def scan(parser, args):
                       timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
                       scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
-                      grpc_url=args.api2url, obfuscate=args.obfuscate, ignore_cert_errors=args.ignore_cert_errors
+                      grpc_url=args.api2url, obfuscate=args.obfuscate,
+                      ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, ca_cert=args.ca_cert
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
@@ -396,6 +452,54 @@ def dependency(parser, args):
                            )
     if not sc_deps.get_dependencies(what_to_scan=args.scan_dir, result_output=scan_output):
         exit(1)
+
+def convert(parser, args):
+    """
+    Run the "convert" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if not args.input:
+        print_stderr('Please specify an input file to convert')
+        parser.parse_args([args.subparser, '-h'])
+        exit(1)
+    success = False
+    if args.format == 'cyclonedx':
+        if not args.quiet:
+            print_stderr(f'Producing CycloneDX report...')
+        cdx = CycloneDx(debug=args.debug, output_file=args.output)
+        success = cdx.produce_from_file(args.input)
+    elif args.format == 'spdxlite':
+        if not args.quiet:
+            print_stderr(f'Producing SPDX Lite report...')
+        spdxlite = SpdxLite(debug=args.debug, output_file=args.output)
+        success = spdxlite.produce_from_file(args.input)
+    elif args.format == 'csv':
+        if not args.quiet:
+            print_stderr(f'Producing CSV report...')
+        csvo = CsvOutput(debug=args.debug, output_file=args.output)
+        success = csvo.produce_from_file(args.input)
+    else:
+        print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
+    if not success:
+        exit(1)
+
+def utils_certloc(parser, args):
+    """
+    Run the "utils certloc" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    import certifi
+    print(f'CA Cert File: {certifi.where()}')
 
 def main():
     """
