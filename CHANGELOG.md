@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.3.0] - 2022-12-02
+### Added
+- Added support for proxy (--proxy) and certificates (--ca-certs) while scanning
+  - Certificates can also be supplied using environment variables: REQUESTS_CA_BUNDLE & GRPC_DEFAULT_SSL_ROOTS_FILE_PATH
+  - Proxies can be supplied using: grpc_proxy, https_proxy, http_proxy, HTTPS_PROXY, HTTP_PROXY
+- Added snippet match fields to CSV output
+- Added `convert` command to convert raw JSON reports into CSV, CycloneDX and SPDXLite
+- Added `utils certloc` sub-command to print the location of Python's CA Cert file
+  - This is useful to know where to append custom certificates to if needed
+
 ## [1.2.3] - 2022-11-22
 ### Added
 - Added Max Threaded scanning override env var (SCANOSS_MAX_ALLOWED_THREADS)
@@ -148,3 +158,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.2.1]: https://github.com/scanoss/scanoss.py/compare/v1.2.0...v1.2.1
 [1.2.2]: https://github.com/scanoss/scanoss.py/compare/v1.2.1...v1.2.2
 [1.2.3]: https://github.com/scanoss/scanoss.py/compare/v1.2.2...v1.2.3
+[1.3.0]: https://github.com/scanoss/scanoss.py/compare/v1.2.3...v1.3.0
