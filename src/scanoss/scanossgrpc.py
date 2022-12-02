@@ -36,7 +36,6 @@ from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusR
 from .scanossbase import ScanossBase
 
 # DEFAULT_URL      = "https://osskb.org"
-# DEFAULT_URL = "localhost:50051"
 DEFAULT_URL = "https://scanoss.com"
 SCANOSS_GRPC_URL = os.environ.get("SCANOSS_GRPC_URL") if os.environ.get("SCANOSS_GRPC_URL") else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
@@ -48,7 +47,7 @@ class ScanossGrpc(ScanossBase):
     """
 
     def __init__(self, url: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 cert: bytes = None, api_key: str = None, ver_details: str = None):
+                 ca_cert: str = None, api_key: str = None, ver_details: str = None):
         """
 
         :param url:
@@ -60,6 +59,9 @@ class ScanossGrpc(ScanossBase):
         To set a custom certificate use:
             GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/certs/cert.pem
         More details here: https://grpc.github.io/grpc/cpp/grpc__security__constants_8h.html
+                           https://github.com/grpc/grpc/blob/master/doc/environment_variables.md
+        To enable a Proxy use:
+            grpc_proxy='http://<ip>:<port>'
         """
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL
@@ -77,14 +79,16 @@ class ScanossGrpc(ScanossBase):
             if port is None:
                 port = 443 if u.scheme == 'https' else 80  # Set the default port number if it's not available
             self.url = f'{u.hostname}:{port}'
-        if cert is not None:
+        cert_data = None
+        if ca_cert is not None:
             secure = True
+            cert_data = ScanossGrpc._load_cert(ca_cert)
         self.print_debug(f'Setting up (secure: {secure}) connection to {self.url}...')
         if secure is False:
             self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))  # insecure connection
         else:
-            if cert is not None:
-                credentials = grpc.ssl_channel_credentials(cert)  # secure with specified certificate
+            if ca_cert is not None:
+                credentials = grpc.ssl_channel_credentials(cert_data)  # secure with specified certificate
             else:
                 credentials = grpc.ssl_channel_credentials()      # secure connection with default certificate
             self.dependencies_stub = DependenciesStub(grpc.secure_channel(self.url, credentials))
@@ -179,6 +183,13 @@ class ScanossGrpc(ScanossBase):
             self.print_stderr(f'Not such a success (rqId: {request_id}): {status_response.message}')
             return False
         return True
+
+    @staticmethod
+    def _load_cert(cert_file: str) -> bytes:
+        certificate_chain = None
+        with open(cert_file, 'rb') as f:
+            certificate_chain = f.read()
+        return certificate_chain
 #
 # End of ScanossGrpc Class
 #
