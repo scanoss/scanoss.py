@@ -29,11 +29,13 @@ from json.decoder import JSONDecodeError
 import requests
 import uuid
 import http.client as http_client
+import urllib3
 
+from urllib3.exceptions import InsecureRequestWarning
 from .scanossbase import ScanossBase
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
-DEFAULT_URL = "https://osskb.org/api/scan/direct"
+DEFAULT_URL = "https://osskb.org/api/scan/direct"  # default free service URL
+DEFAULT_URL2 = "https://scanoss.com/api/scan/direct"  # default premium service URL
 SCANOSS_SCAN_URL = os.environ.get("SCANOSS_SCAN_URL") if os.environ.get("SCANOSS_SCAN_URL") else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
 
@@ -46,7 +48,8 @@ class ScanossApi(ScanossBase):
 
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 timeout: int = 120, ver_details: str = None, ignore_cert_errors: bool = False):
+                 timeout: int = 120, ver_details: str = None, ignore_cert_errors: bool = False,
+                 proxy: str = None, ca_cert: str = None):
         """
         Initialise the SCANOSS API
         :param scan_type: Scan type (default identify)
@@ -61,11 +64,15 @@ class ScanossApi(ScanossBase):
 
         To set a custom certificate use:
             REQUESTS_CA_BUNDLE=/path/to/cert.pem
-            SSL_CERT_FILE=/path/to/cert.pem
+        To enable a Proxy use:
+            HTTP_PROXY='http://<ip>:<port>'
+            HTTPS_PROXY='http://<ip>:<port>'
         """
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_SCAN_URL
         self.api_key = api_key if api_key else SCANOSS_API_KEY
+        if self.api_key and not url and not os.environ.get("SCANOSS_SCAN_URL"):
+            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
         self.scan_type = scan_type
         self.scan_format = scan_format if scan_format else 'plain'
         self.sbom_path = sbom_path
@@ -83,9 +90,14 @@ class ScanossApi(ScanossBase):
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
             http_client.HTTPConnection.debuglevel = 1
+        self.verify = None
         if self.ignore_cert_errors:
             self.print_debug(f'Ignoring cert errors...')
-            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+            urllib3.disable_warnings(InsecureRequestWarning)
+            self.verify = False
+        elif ca_cert:
+            self.verify = ca_cert
+        self.proxies = {'https': proxy, 'http': proxy} if proxy else None
 
     def load_sbom(self):
         """
@@ -124,10 +136,9 @@ class ScanossApi(ScanossBase):
             try:
                 r = None
                 r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers,
-                                  timeout=self.timeout,
-                                  verify=False if self.ignore_cert_errors else None
+                                  timeout=self.timeout, verify=self.verify, proxies=self.proxies
                                   )
-            except requests.exceptions.SSLError as e:
+            except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
                 self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}.')
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
