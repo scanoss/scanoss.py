@@ -62,6 +62,9 @@ class CsvOutput(ScanossBase):
                 id_details = d.get("id")
                 if not id_details or id_details == 'none':
                     continue
+                matched = d.get("matched", '')
+                lines = d.get("lines", '')
+                oss_lines = d.get("oss_lines", '')
                 detected = {}
                 if id_details == 'dependency':
                     dependencies = d.get("dependencies")
@@ -118,7 +121,8 @@ class CsvOutput(ScanossBase):
                                  'detected_component': detected.get('component'),
                                  'detected_license': detected.get('licenses'),
                                  'detected_version': detected.get('version'), 'detected_latest': detected.get('latest'),
-                                 'detected_purls': detected.get('purls')
+                                 'detected_purls': detected.get('purls'),
+                                 'detected_match': matched, 'detected_lines': lines, 'detected_oss_lines': oss_lines
                                  })
                 row_id = row_id + 1
         return csv_dict
@@ -153,7 +157,7 @@ class CsvOutput(ScanossBase):
             return False
         # Header row/column details
         fields = ['inventory_id', 'path', 'detected_usage', 'detected_component', 'detected_license', 'detected_version',
-                  'detected_latest', 'detected_purls']
+                  'detected_latest', 'detected_purls', 'detected_match', 'detected_lines', 'detected_oss_lines']
         file = sys.stdout
         if not output_file and self.output_file:
             output_file = self.output_file
