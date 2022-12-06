@@ -1,5 +1,6 @@
 *.wfp
 *-result.json
+*.pem
 .vscode/
 gitee_com_*
 github_com_*
