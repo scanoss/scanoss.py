@@ -83,7 +83,9 @@ def setup_args() -> None:
                         help='Scanning engine flags (1: disable snippet matching, 2 enable snippet ids, '
                              '4: disable dependencies, 8: disable licenses, 16: disable copyrights,'
                              '32: disable vulnerabilities, 64: disable quality, 128: disable cryptography,'
-                             '256: disable best match, 512: Report identified files)'
+                             '256: disable best match only, 512: hide identified files, '
+                             '1024: enable download_url, 2048: enable GitHub full path, '
+                             '4096: disable extended server stats)'
                         )
     p_scan.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
     p_scan.add_argument('--post-size', '-P', type=int, default=64,
@@ -165,6 +167,15 @@ def setup_args() -> None:
                                    help='Display the location of Python CA Certs')
     p_c_loc.set_defaults(func=utils_certloc)
 
+    # Utils Sub-command: utils cert-download
+    p_c_dwnld = utils_sub.add_parser('cert-download', aliases=['cdl', 'cert-dl'],
+                                   description=f'Download Server SSL Cert: {__version__}',
+                                   help='Download the specified server\'s SSL PEM certificate')
+    p_c_dwnld.set_defaults(func=utils_cert_download)
+    p_c_dwnld.add_argument('--hostname', '-n', required=True, type=str, help='Server hostname to download cert from.' )
+    p_c_dwnld.add_argument('--port', '-p', required=False, type=int, default=443, help='Server port number (default: 443).' )
+    p_c_dwnld.add_argument('--output','-o', type=str, help='Output result file name (optional - default stdout).' )
+
     # Global command options
     for p in [p_scan]:
         p.add_argument('--key', '-k', type=str,
@@ -187,7 +198,7 @@ def setup_args() -> None:
                        )
         p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
 
-    for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc]:
+    for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
@@ -500,6 +511,61 @@ def utils_certloc(parser, args):
     """
     import certifi
     print(f'CA Cert File: {certifi.where()}')
+
+def utils_cert_download(parser, args):
+    """
+    Run the "utils cert-download" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    import ssl
+    from urllib.parse import urlparse
+    import socket
+    import traceback
+
+    file = sys.stdout
+    try:
+        if args.output:
+            file = open(args.output, 'w')
+        parsed_url = urlparse(args.hostname)
+        hostname = parsed_url.hostname or args.hostname  # Use the parse hostname, or it None use the supplied one
+        port = int(parsed_url.port or args.port)  # Use the parsed port, if not use the supplied one (default 443)
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        sock = context.wrap_socket(conn, server_hostname=hostname)
+        if not args.quiet or args.debug:
+            print_stderr(f'Attempting to download PEM certificate from {hostname}:{port} ...')
+        if args.debug:
+            print_stderr('Connecting to host...')
+        sock.connect((hostname, port))
+        if args.debug:
+            print_stderr('Getting peer cert...')
+        peer_cert = sock.getpeercert(True)
+        if not peer_cert:
+            print_stderr(f'Error: Failed to download peer certificate data from {hostname}:{port}')
+            exit(1)
+        if args.debug:
+            print_stderr('Converting DER to PEM...')
+        cert_data = ssl.DER_cert_to_PEM_cert(peer_cert)
+        if not cert_data or cert_data == '':
+            print_stderr(f'Error: Failed to convert certificate data to PEM from {hostname}:{port}')
+            exit(1)
+        else:
+            print(cert_data.strip(), file=file)  # Print the downloaded PEM certificate
+    except Exception as e:
+        print_stderr(f'ERROR: Exception ({e.__class__.__name__}) Downloading certificate from {hostname}:{port} - {e}.')
+        if args.debug:
+            traceback.print_exc()
+        exit(1)
+    else:
+        if args.output:
+            if args.debug:
+                print_stderr(f'Saved certificate to {args.output}')
+            file.close()
 
 def main():
     """

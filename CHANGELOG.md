@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.3.1] - 2022-12-07
+### Added
+- Added `utils cert-download` sub-command to help with the use of custom certificates
+  - Included a local certificate download script leveraging openssl too: [cert_download.sh](cert_download.sh)
+- Added [documentation](CLIENT_HELP.md) to help with certificate and proxy configuration
+
 ## [1.3.0] - 2022-12-02
 ### Added
 - Added support for proxy (--proxy) and certificates (--ca-certs) while scanning
@@ -159,3 +165,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.2.2]: https://github.com/scanoss/scanoss.py/compare/v1.2.1...v1.2.2
 [1.2.3]: https://github.com/scanoss/scanoss.py/compare/v1.2.2...v1.2.3
 [1.3.0]: https://github.com/scanoss/scanoss.py/compare/v1.2.3...v1.3.0
+[1.3.1]: https://github.com/scanoss/scanoss.py/compare/v1.3.0...v1.3.1

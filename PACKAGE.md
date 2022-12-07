@@ -110,5 +110,8 @@ Python 3.7 or higher.
 ## Source code
 The source for this package can be found [here](https://github.com/scanoss/scanoss.py).
 
+## Documentation
+For client usage help please look [here](https://github.com/scanoss/scanoss.py/blob/main/CLIENT_HELP.md).
+
 ## Changelog
 Details of each release can be found [here](https://github.com/scanoss/scanoss.py/blob/main/CHANGELOG.md).
