@@ -375,11 +375,14 @@ class Scanner(ScanossBase):
                     if spinner:
                         spinner.next()
                     wfp = self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
+                    if wfp is None or wfp == '':
+                        self.print_stderr(f'Warning: No WFP returned for {path}')
                     wfp_list.append(wfp)
                     file_count += 1
                     if self.threaded_scan:
                         wfp_size = len(wfp.encode("utf-8"))
-                        if (wfp_size + scan_size) >= self.max_post_size:
+                        # If the wfp is bigger than the max post size and we already have something stored in the scan block, add it to the queue
+                        if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
                             self.threaded_scan.queue_add(scan_block)
                             queue_size += 1
                             scan_block = ''
@@ -396,7 +399,7 @@ class Scanner(ScanossBase):
                                     f'Warning: Some errors encounted while scanning. Results might be incomplete.')
                                 success = False
         # End for loop
-        if self.threaded_scan and scan_block:
+        if self.threaded_scan and scan_block != '':
             self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
         if spinner:
             spinner.finish()
@@ -566,7 +569,7 @@ class Scanner(ScanossBase):
             raise Exception(f"ERROR: Specified files does not exist or is not a file: {file}")
         self.print_debug(f'Fingerprinting {file}...')
         wfp = self.winnowing.wfp_for_file(file, file)
-        if wfp:
+        if wfp is not None and wfp != '':
             if self.threaded_scan:
                 self.threaded_scan.queue_add(wfp)  # Submit the WFP for scanning
             self.print_debug(f'Scanning {file}...')
