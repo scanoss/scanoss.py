@@ -125,7 +125,10 @@ class ThreadedScanning(ScanossBase):
         Add requests to the queue
         :param wfp: WFP to add to queue
         """
-        self.inputs.put(wfp)
+        if wfp is None or wfp == '':
+            self.print_stderr(f'Warning: empty WFP. Skipping from scan...')
+        else:
+            self.inputs.put(wfp)
 
     def get_queue_size(self) -> int:
         return self.inputs.qsize()
@@ -190,6 +193,8 @@ class ThreadedScanning(ScanossBase):
                     wfp = self.inputs.get(timeout=5)
                     self.print_trace(f'Processing input request ({current_thread})...')
                     count = self.__count_files_in_wfp(wfp)
+                    if wfp is None or wfp == '':
+                        self.print_stderr(f'Warning: Empty WFP in request input: {wfp}')
                     resp = self.scanapi.scan(wfp, scan_id=current_thread)
                     if resp:
                         self.output.put(resp)  # Store the output response to later collection
