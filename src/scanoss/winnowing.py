@@ -237,12 +237,12 @@ class Winnowing(ScanossBase):
         if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
         # Initialize variables
-        gram = ""
+        gram = ''
         window = []
         line = 1
         last_hash = MAX_CRC32
         last_line = 0
-        output = ""
+        output = ''
         # Otherwise, recurse src_content and calculate Winnowing hashes
         for byte in contents:
             if byte == ASCII_LF:
@@ -269,7 +269,7 @@ class Winnowing(ScanossBase):
                             crc = crc32c(min_hash.to_bytes(4, byteorder='little'))
                             crc_hex = '{:08x}'.format(crc)
                             if last_line != line:
-                                if output:
+                                if output != '':
                                     if self.size_limit and \
                                             (len(wfp.encode("utf-8")) + len(
                                                 output.encode("utf-8"))) > self.max_post_size:
@@ -287,10 +287,14 @@ class Winnowing(ScanossBase):
                         window.pop(0)
                     # Shift gram
                     gram = gram[1:]
-        if output and (
-                not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) < self.max_post_size):
-            wfp += output + '\n'
+        if output != '':
+            if not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) < self.max_post_size:
+                wfp += output + '\n'
+            else:
+                self.print_debug(f'Warning: skipping output in WFP for {file} - "{output}"')
 
+        if wfp is None or wfp == '':
+            self.print_stderr(f'Warning: No WFP content data for {file}')
         return wfp
 
 #
