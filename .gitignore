@@ -14,3 +14,4 @@ __pycache__
 venv/
 .idea
 src/scanoss/data/build_date.txt
+bad*.txt
