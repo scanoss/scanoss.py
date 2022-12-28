@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.3.2] - 2022-12-28
+### Added
+- Added `x-request-id` to all scanning requests
+- Added bad_request error log file to aid debug
+### Fixed
+- Fixed issue when fingerprinting large files with a small POST (`--post-size`)
+
 ## [1.3.1] - 2022-12-07
 ### Added
 - Added `utils cert-download` sub-command to help with the use of custom certificates
@@ -166,3 +173,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.2.3]: https://github.com/scanoss/scanoss.py/compare/v1.2.2...v1.2.3
 [1.3.0]: https://github.com/scanoss/scanoss.py/compare/v1.2.3...v1.3.0
 [1.3.1]: https://github.com/scanoss/scanoss.py/compare/v1.3.0...v1.3.1
+[1.3.2]: https://github.com/scanoss/scanoss.py/compare/v1.3.1...v1.3.2
