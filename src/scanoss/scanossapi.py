@@ -1,7 +1,7 @@
 """
  SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+   Copyright (c) 2022, SCANOSS
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -118,6 +118,7 @@ class ScanossApi(ScanossBase):
         :param scan_id: ID of the scan being run (usually thread id)
         :return: JSON result object
         """
+        request_id = str(uuid.uuid4())
         form_data = {}
         if self.sbom:
             form_data['type'] = self.scan_type
@@ -128,7 +129,9 @@ class ScanossApi(ScanossBase):
             form_data['flags'] = self.flags
         if context:
             form_data['context'] = context
-        scan_files = {'file': ("%s.wfp" % uuid.uuid1().hex, wfp)}
+        scan_files = {'file': ("%s.wfp" % request_id, wfp)}
+        headers = self.headers
+        headers['x-request-id'] = request_id  # send a unique request id for each post
         r = None
         retry = 0  # Add some retry logic to cater for timeouts, etc.
         while retry <= 5:
@@ -143,45 +146,55 @@ class ScanossApi(ScanossBase):
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
                 if retry > 5:  # Timed out 5 or more times, fail
-                    self.print_stderr(f'ERROR: {e.__class__.__name__} POSTing data - {e}: {scan_files}')
-                    raise Exception(f"ERROR: The SCANOSS API request timed out ({e.__class__.__name__}) for {self.url}") from e
+                    self.print_stderr(f'ERROR: {e.__class__.__name__} POSTing data ({request_id}) - {e}: {scan_files}')
+                    raise Exception(f"ERROR: The SCANOSS API request timed out ({e.__class__.__name__}) for"
+                                    f" {self.url}") from e
                 else:
                     self.print_stderr(f'Warning: {e.__class__.__name__} communicating with {self.url}. Retrying...')
                     time.sleep(5)
             except Exception as e:
-                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}: {scan_files}')
+                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data ({request_id}) - {e}:'
+                                  f' {scan_files}')
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             else:
-                if not r:
+                if r is None:
                     if retry > 5:  # No response 5 or more times, fail
-                        raise Exception(f"ERROR: The SCANOSS API request response object is empty for {self.url}")
+                        self.save_bad_req_wfp(scan_files, request_id, scan_id)
+                        raise Exception(f"ERROR: The SCANOSS API request ({request_id}) response object is empty "
+                                        f"for {self.url}")
                     else:
                         self.print_stderr(f'Warning: No response received from {self.url}. Retrying...')
                         time.sleep(5)
                 elif r.status_code >= 400:
                     if retry > 5:  # No response 5 or more times, fail
+                        self.save_bad_req_wfp(scan_files, request_id, scan_id)
                         raise Exception(
-                            f"ERROR: The SCANOSS API returned the following error: HTTP {r.status_code}, {r.text}")
+                            f"ERROR: The SCANOSS API returned the following error: HTTP {r.status_code}, "
+                            f"{r.text.strip()}")
                     else:
-                        self.print_stderr(f'Warning: Error response code {r.status_code} from {self.url}. Retrying...')
+                        self.save_bad_req_wfp(scan_files, request_id, scan_id)
+                        self.print_stderr(f'Warning: Error response code {r.status_code} ({r.text.strip()}) from '
+                                          f'{self.url}. Retrying...')
                         time.sleep(5)
                 else:
                     break  # Valid response, break out of the retry loop
         # End of while loop
-        if not r:
+        if r is None:
+            self.save_bad_req_wfp(scan_files, request_id, scan_id)
             raise Exception(f"ERROR: The SCANOSS API request response object is empty for {self.url}")
         try:
-            if 'xml' in self.scan_format:
+            if 'xml' in self.scan_format:  # TODO remove XML parsing option?
                 return r.text
             json_resp = r.json()
             return json_resp
         except (JSONDecodeError, Exception) as e:
-            self.print_stderr(f'ERROR: The SCANOSS API returned an invalid JSON ({e.__class__.__name__}): {e}')
-            ctime = int(time.time())
-            bad_json_file = f'bad_json-{scan_id}-{ctime}.txt' if scan_id else f'bad_json-{ctime}.txt'
+            self.print_stderr(f'ERROR: The SCANOSS API returned an invalid JSON '
+                              f'({e.__class__.__name__} - {request_id}): {e}')
+            bad_json_file = f'bad_json-{scan_id}-{request_id}.txt' if scan_id else f'bad_json-{request_id}.txt'
             self.print_stderr(f'Ignoring result. Please look in "{bad_json_file}" for more details.')
             try:
                 with open(bad_json_file, 'w') as f:
+                    f.write(f"---Request ID Begin---\n{request_id}\n---Request ID End---\n")
                     f.write(f"---WFP Begin---\n{scan_files}\n---WFP End---\n---Bad JSON Begin---\n")
                     f.write(r.text)
                     f.write("---Bad JSON End---\n")
@@ -189,6 +202,24 @@ class ScanossApi(ScanossBase):
                 self.print_stderr(f'Warning: Issue writing bad json file - {bad_json_file} ({ee.__class__.__name__}):'
                                   f' {ee}')
             return None
+
+    def save_bad_req_wfp(self, scan_files, request_id, scan_id):
+        """
+        Save the given WFP to a bad_request file
+        :param scan_files: WFP
+        :param request_id: request ID
+        :param scan_id: scan thread id (optional)
+        """
+        bad_req_file = f'bad_request-{scan_id}-{request_id}.txt' if scan_id else f'bad_request-{request_id}.txt'
+        try:
+            self.print_stderr(f'No response object returned from API. Please look in "{bad_req_file}" for the '
+                              f'offending WFP.')
+            with open(bad_req_file, 'w') as f:
+                f.write(f"---Request ID Begin---\n{request_id}\n---Request ID End---\n")
+                f.write(f"---WFP Begin---\n{scan_files}\n---WFP End---\n")
+        except Exception as ee:
+            self.print_stderr(f'Warning: Issue writing bad request file - {bad_req_file} ({ee.__class__.__name__}):'
+                              f' {ee}')
 
 #
 # End of ScanossApi Class
