@@ -1,5 +1,6 @@
 *.wfp
 *-result.json
+*-res.json
 *.pem
 .vscode/
 gitee_com_*
@@ -15,3 +16,9 @@ venv/
 .idea
 src/scanoss/data/build_date.txt
 bad*.txt
+*.csv
+*.json
+
+*.tar
+*.tgz
+*.gz
