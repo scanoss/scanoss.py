@@ -390,6 +390,8 @@ def scan(parser, args):
             print_stderr(f'Using Proxy {arg.proxy}...')
         if args.ca_cert:
             print_stderr(f'Using Certificate {arg.ca_cert}...')
+        if flags:
+            print_stderr(f'Using flags {flags}...')
     elif not args.quiet:
         if args.timeout < 5:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
