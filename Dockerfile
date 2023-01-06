@@ -8,7 +8,7 @@ FROM base as builder
 RUN apt-get update \
  && apt-get install -y --no-install-recommends build-essential gcc \
  && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN mkdir /install
 WORKDIR /install
