@@ -360,6 +360,9 @@ class Scanner(ScanossBase):
         scan_started = False
         for root, dirs, files in os.walk(scan_dir):
             self.print_trace(f'U Root: {root}, Dirs: {dirs}, Files {files}')
+            if self.threaded_scan and self.threaded_scan.stop_scanning():
+                self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
+                break
             dirs[:] = self.__filter_dirs(dirs)                             # Strip out unwanted directories
             filtered_files = self.__filter_files(files)                    # Strip out unwanted files
             self.print_debug(f'F Root: {root}, Dirs: {dirs}, Files {filtered_files}')

@@ -66,7 +66,8 @@ class ThreadedScanning(ScanossBase):
         self._bar_count = 0
         self._errors = False
         self._lock = threading.Lock()
-        self._stop_event = threading.Event()
+        self._stop_event = threading.Event()  # Control when scanning threads should terminate
+        self._stop_scanning = threading.Event()  # Control if the parent process should abort scanning
         self._threads = []
         if nb_threads > MAX_ALLOWED_THREADS:
             self.print_msg(f'Warning: Requested threads too large: {nb_threads}. Reducing to {MAX_ALLOWED_THREADS}')
@@ -133,6 +134,12 @@ class ThreadedScanning(ScanossBase):
     def get_queue_size(self) -> int:
         return self.inputs.qsize()
 
+    def stop_scanning(self) -> bool:
+        """
+        Check if we should keep scanning or not
+        """
+        return self._stop_scanning.is_set()
+
     @property
     def responses(self) -> List[Dict]:
         """
@@ -186,28 +193,34 @@ class ThreadedScanning(ScanossBase):
         """
         current_thread = threading.get_ident()
         self.print_trace(f'Starting worker {current_thread}...')
+        api_error = False
         while not self._stop_event.is_set():
             wfp = None
             if not self.inputs.empty():          # Only try to get a message if there is one on the queue
                 try:
                     wfp = self.inputs.get(timeout=5)
-                    self.print_trace(f'Processing input request ({current_thread})...')
-                    count = self.__count_files_in_wfp(wfp)
-                    if wfp is None or wfp == '':
-                        self.print_stderr(f'Warning: Empty WFP in request input: {wfp}')
-                    resp = self.scanapi.scan(wfp, scan_id=current_thread)
-                    if resp:
-                        self.output.put(resp)  # Store the output response to later collection
-                    self.update_bar(count)
-                    self.inputs.task_done()
-                    self.print_trace(f'Request complete ({current_thread}).')
+                    if api_error:  # API error encountered, so stop processing anymore requests
+                        self.inputs.task_done()  # remove request from the queue
+                    else:
+                        self.print_trace(f'Processing input request ({current_thread})...')
+                        count = self.__count_files_in_wfp(wfp)
+                        if wfp is None or wfp == '':
+                            self.print_stderr(f'Warning: Empty WFP in request input: {wfp}')
+                        resp = self.scanapi.scan(wfp, scan_id=current_thread)
+                        if resp:
+                            self.output.put(resp)  # Store the output response to later collection
+                        self.update_bar(count)
+                        self.inputs.task_done()
+                        self.print_trace(f'Request complete ({current_thread}).')
                 except queue.Empty as e:
                     self.print_stderr(f'No message available to process ({current_thread}). Checking again...')
                 except Exception as e:
-                    ThreadedScanning.print_stderr(f'ERROR: Problem encountered running scan: {e}')
+                    self.print_stderr(f'ERROR: Problem encountered running scan: {e}. Aborting current thread.')
                     self._errors = True
                     if wfp:
                         self.inputs.task_done()  # If there was a WFP being processed, remove it from the queue
+                    api_error = True # Stop processing anymore work requests
+                    self._stop_scanning.set()  # Tell the parent process to abort scanning
             else:
                 time.sleep(1)  # Sleep while waiting for the queue depth to build up
         self.print_trace(f'Thread complete ({current_thread}).')

@@ -21,8 +21,6 @@ Want to submit a pull request? Great! But please follow some basic rules:
 - If you are changing a source file please make sure that you only include in the changeset the lines changed by you (beware of your editor reformatting the file)
 - If you are adding functionality, please write a unit test.
 
-When reviewing your pull request, we will follow a checklist similar to this one: https://gist.github.com/audreyr/4feef90445b9680475f2
-
 ### Licensing
 
 The SCANOSS Platform is released under the GPL-2.0 license. If you wish to contribute, you must accept that you are aware of the license under which the project is released, and that your contribution will be released under the same license. Sometimes the GPL-2.0 license is incompatible with other licenses chosen by other projects. Therefore, you must accept that your contribution can also be released under the MIT license, which is the license we choose for those situations. Unless you expressly request otherwise, we may use your name, email address, username or URL for your attribution notice text. The submission of your contribution implies that you agree with these licensing terms.
