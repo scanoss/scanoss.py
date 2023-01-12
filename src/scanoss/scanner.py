@@ -45,39 +45,36 @@ from .scanossbase import ScanossBase
 from . import __version__
 
 FILTERED_DIRS = {  # Folders to skip
-                 "nbproject", "nbbuild", "nbdist", "__pycache__", "venv", "_yardoc", "eggs", "wheels", "htmlcov",
-                "__pypackages__"
-                 }
-FILTERED_DIR_EXT = { # Folder endings to skip
-                    ".egg-info"
-                   }
+    "nbproject", "nbbuild", "nbdist", "__pycache__", "venv", "_yardoc", "eggs", "wheels", "htmlcov", "__pypackages__"
+}
+FILTERED_DIR_EXT = {  # Folder endings to skip
+    ".egg-info"
+}
 FILTERED_EXT = {  # File extensions to skip
-                ".1", ".2", ".3", ".4", ".5", ".6", ".7", ".8", ".9", ".ac", ".adoc", ".am",
-                ".asciidoc", ".bmp", ".build", ".cfg", ".chm", ".class", ".cmake", ".cnf",
-                ".conf", ".config", ".contributors", ".copying", ".crt", ".csproj", ".css",
-                ".csv", ".dat", ".data", ".doc", ".docx", ".dtd", ".dts", ".iws", ".c9", ".c9revisions",
-                ".dtsi", ".dump", ".eot", ".eps", ".geojson", ".gdoc", ".gif",
-                ".glif", ".gmo", ".gradle", ".guess", ".hex", ".htm", ".html", ".ico", ".iml",
-                ".in", ".inc", ".info", ".ini", ".ipynb", ".jpeg", ".jpg", ".json", ".jsonld", ".lock",
-                ".log", ".m4", ".map", ".markdown", ".md", ".md5", ".meta", ".mk", ".mxml",
-                ".o", ".otf", ".out", ".pbtxt", ".pdf", ".pem", ".phtml", ".plist", ".png",
-                ".po", ".ppt", ".prefs", ".properties", ".pyc", ".qdoc", ".result", ".rgb",
-                ".rst", ".scss", ".sha", ".sha1", ".sha2", ".sha256", ".sln", ".spec", ".sql",
-                ".sub", ".svg", ".svn-base", ".tab", ".template", ".test", ".tex", ".tiff",
-                ".toml", ".ttf", ".txt", ".utf-8", ".vim", ".wav", ".whl", ".woff", ".xht",
-                ".xhtml", ".xls", ".xlsx", ".xml", ".xpm", ".xsd", ".xul", ".yaml", ".yml", ".wfp",
-                ".editorconfig", ".dotcover", ".pid", ".lcov", ".egg", ".manifest", ".cache", ".coverage", ".cover",
-                ".gem", ".lst", ".pickle", ".pdb", ".gml", ".pot", ".plt",
-                # File endings
-                "-doc", "changelog", "config", "copying", "license", "authors", "news",
-                "licenses", "notice",
-                "readme", "swiftdoc", "texidoc", "todo", "version", "ignore", "manifest", "sqlite", "sqlite3"
-                }
+    ".1", ".2", ".3", ".4", ".5", ".6", ".7", ".8", ".9", ".ac", ".adoc", ".am",
+    ".asciidoc", ".bmp", ".build", ".cfg", ".chm", ".class", ".cmake", ".cnf",
+    ".conf", ".config", ".contributors", ".copying", ".crt", ".csproj", ".css",
+    ".csv", ".dat", ".data", ".doc", ".docx", ".dtd", ".dts", ".iws", ".c9", ".c9revisions",
+    ".dtsi", ".dump", ".eot", ".eps", ".geojson", ".gdoc", ".gif",
+    ".glif", ".gmo", ".gradle", ".guess", ".hex", ".htm", ".html", ".ico", ".iml",
+    ".in", ".inc", ".info", ".ini", ".ipynb", ".jpeg", ".jpg", ".json", ".jsonld", ".lock",
+    ".log", ".m4", ".map", ".markdown", ".md", ".md5", ".meta", ".mk", ".mxml",
+    ".o", ".otf", ".out", ".pbtxt", ".pdf", ".pem", ".phtml", ".plist", ".png",
+    ".po", ".ppt", ".prefs", ".properties", ".pyc", ".qdoc", ".result", ".rgb",
+    ".rst", ".scss", ".sha", ".sha1", ".sha2", ".sha256", ".sln", ".spec", ".sql",
+    ".sub", ".svg", ".svn-base", ".tab", ".template", ".test", ".tex", ".tiff",
+    ".toml", ".ttf", ".txt", ".utf-8", ".vim", ".wav", ".whl", ".woff", ".xht",
+    ".xhtml", ".xls", ".xlsx", ".xml", ".xpm", ".xsd", ".xul", ".yaml", ".yml", ".wfp",
+    ".editorconfig", ".dotcover", ".pid", ".lcov", ".egg", ".manifest", ".cache", ".coverage", ".cover",
+    ".gem", ".lst", ".pickle", ".pdb", ".gml", ".pot", ".plt",
+    # File endings
+    "-doc", "changelog", "config", "copying", "license", "authors", "news", "licenses", "notice",
+    "readme", "swiftdoc", "texidoc", "todo", "version", "ignore", "manifest", "sqlite", "sqlite3"
+}
 FILTERED_FILES = {  # Files to skip
-                    "gradlew", "gradlew.bat", "mvnw", "mvnw.cmd", "gradle-wrapper.jar", "maven-wrapper.jar",
-                    "thumbs.db", "babel.config.js",
-                    "license.txt", "license.md", "copying.lib", "makefile"
-                }
+    "gradlew", "gradlew.bat", "mvnw", "mvnw.cmd", "gradle-wrapper.jar", "maven-wrapper.jar",
+    "thumbs.db", "babel.config.js", "license.txt", "license.md", "copying.lib", "makefile"
+}
 WFP_FILE_START = "file="
 MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 
@@ -168,9 +165,9 @@ class Scanner(ScanossBase):
         dir_list = []
         for d in dirs:
             ignore = False
-            if d.startswith(".") and not self.hidden_files_folders: # Ignore all . folders unless requested
+            if d.startswith(".") and not self.hidden_files_folders:  # Ignore all . folders unless requested
                 ignore = True
-            if not ignore and not self.all_folders: # Skip this check if we're allowing all folders
+            if not ignore and not self.all_folders:  # Skip this check if we're allowing all folders
                 d_lower = d.lower()
                 if d_lower in FILTERED_DIRS:      # Ignore specific folders
                     ignore = True
@@ -225,14 +222,14 @@ class Scanner(ScanossBase):
         :return bool True if valid, False otherwise
         """
         if not json_file:
-            self.print_stderr('ERROR: No JSON file provided to parse.')
+            Scanner.print_stderr('ERROR: No JSON file provided to parse.')
             return False
         if not os.path.isfile(json_file):
-            self.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
+            Scanner.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
             return False
         try:
             with open(json_file) as f:
-                data = json.load(f)
+                json.load(f)
         except Exception as e:
             Scanner.print_stderr(f'Problem parsing JSON file "{json_file}": {e}')
             return False
@@ -255,7 +252,6 @@ class Scanner(ScanossBase):
             now = datetime.datetime.now()
             data = f'date: {now.strftime("%Y%m%d%H%M%S")}, utime: {int(now.timestamp())}'
         return f'tool: scanoss-py, version: {__version__}, {data}'
-
 
     def __log_result(self, string, outfile=None):
         """
@@ -372,7 +368,7 @@ class Scanner(ScanossBase):
                 try:
                     f_size = os.stat(path).st_size
                 except Exception as e:
-                    self.print_trace(f'Ignoring missing symlink file: {file} ({e})') # Can fail if there is a broken symlink
+                    self.print_trace(f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
                 if f_size > 0:                                                 # Ignore broken links and empty files
                     self.print_trace(f'Fingerprinting {path}...')
                     if spinner:
@@ -384,7 +380,7 @@ class Scanner(ScanossBase):
                     file_count += 1
                     if self.threaded_scan:
                         wfp_size = len(wfp.encode("utf-8"))
-                        # If the wfp is bigger than the max post size and we already have something stored in the scan block, add it to the queue
+                        # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue
                         if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
                             self.threaded_scan.queue_add(scan_block)
                             queue_size += 1
@@ -395,7 +391,7 @@ class Scanner(ScanossBase):
                             self.threaded_scan.queue_add(scan_block)
                             queue_size += 1
                             scan_block = ''
-                        if queue_size > self.nb_threads and not scan_started: # Start scanning if we have something to do
+                        if queue_size > self.nb_threads and not scan_started:  # Start scanning if we have something to do
                             scan_started = True
                             if not self.threaded_scan.run(wait=False):
                                 self.print_stderr(
@@ -408,13 +404,12 @@ class Scanner(ScanossBase):
             spinner.finish()
 
         if wfp_list:
-            if not self.no_wfp_file or not self.threaded_scan:  # Write a WFP file if no threading or not not requested
+            if not self.no_wfp_file or not self.threaded_scan:  # Write a WFP file if no threading is requested
                 self.print_debug(f'Writing fingerprints to {self.wfp}')
                 with open(self.wfp, 'w') as f:
                     f.write(''.join(wfp_list))
             else:
-                self.print_debug( f'Skipping writing WFP file {self.wfp}')
-            wfp_list = None
+                self.print_debug(f'Skipping writing WFP file {self.wfp}')
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
         else:
@@ -423,7 +418,7 @@ class Scanner(ScanossBase):
 
     def __run_scan_threaded(self, scan_started: bool, file_count: int) -> bool:
         """
-        Finish scanning the filtered files and but do not wait for it to complete
+        Start scanning the filtered files but do not wait for it to complete
         :param scan_started: If the scan has already started or not
         :param file_count:  Number of total files to be scanned
         :return: True if successful, False otherwise
@@ -516,16 +511,15 @@ class Scanner(ScanossBase):
             else:
                 success = spdxlite.produce_from_str(raw_output)
         elif self.output_format == 'csv':
-                csvo = CsvOutput(self.debug, self.scan_output)
-                if parsed_json:
-                    success = csvo.produce_from_json(parsed_json)
-                else:
-                    success = csvo.produce_from_str(raw_output)
+            csvo = CsvOutput(self.debug, self.scan_output)
+            if parsed_json:
+                success = csvo.produce_from_json(parsed_json)
+            else:
+                success = csvo.produce_from_str(raw_output)
         else:
             self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
             success = False
         return success
-
 
     def scan_file_with_options(self, file: str, file_map: dict = None) -> bool:
         """
@@ -554,7 +548,6 @@ class Scanner(ScanossBase):
             if not self.__finish_scan_threaded(file_map):
                 success = False
         return success
-
 
     def scan_file(self, file: str) -> bool:
         """
@@ -585,11 +578,8 @@ class Scanner(ScanossBase):
     def scan_wfp_file(self, file: str = None) -> bool:
         """
         Scan the contents of the specified WFP file (in the current process)
-        Parameters
-        ----------
-            file: str
-                WFP file to scan (optional)
-        return: True if successful, False otherwise
+        :param file: Scan the contents of the specified WFP file (in the current process)
+        :return: True if successful, False otherwise
         """
         success = True
         wfp_file = file if file else self.wfp   # If a WFP file is specified, use it, otherwise us the default
@@ -697,7 +687,6 @@ class Scanner(ScanossBase):
         if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
             raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
         cur_size = 0
-        scan_size = 0
         queue_size = 0
         file_count = 0
         scan_started = False
@@ -818,7 +807,7 @@ class Scanner(ScanossBase):
                 try:
                     f_size = os.stat(path).st_size
                 except Exception as e:
-                    self.print_trace(f'Ignoring missing symlink file: {file} ({e})') # Can fail if there is a broken symlink
+                    self.print_trace(f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
                 if f_size > 0:            # Ignore empty files
                     self.print_debug(f'Fingerprinting {path}...')
                     wfps += self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))

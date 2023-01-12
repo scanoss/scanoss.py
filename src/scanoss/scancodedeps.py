@@ -62,7 +62,7 @@ class ScancodeDeps(ScanossBase):
     def remove_interim_file(self, output_file: str = None):
         """
         Remove the temporary Scancode interim file
-        :param output_file: file to remove (optional)
+        :param output_file: filename to remove (optional)
         """
         if not output_file and self.output_file:
             output_file = self.output_file
@@ -188,7 +188,7 @@ class ScancodeDeps(ScanossBase):
     def run_scan(self, output_file: str = None, what_to_scan: str = None) -> bool:
         """
         Run a scan of the specified file/folder and output the results to temporary file
-        :param output_file: temporary scancode output file
+        :param output_file: temporary scancode output filename
         :param what_to_scan: file/directory to scan
         :return: True on success, False otherwise
         """

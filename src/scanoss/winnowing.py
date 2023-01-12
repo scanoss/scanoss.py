@@ -130,7 +130,7 @@ class Winnowing(ScanossBase):
         Parameters
         ----------
         byte : int
-          The byte to normalize
+          The byte to normalise
         """
         if byte < ASCII_0:
             return 0
@@ -163,7 +163,7 @@ class Winnowing(ScanossBase):
             for ending in SKIP_SNIPPET_EXT:
                 if lower_file.endswith(ending):
                     self.print_trace(f'Skipping snippets due to file ending: {file} - {ending}')
-                    return True;
+                    return True
         src_len = len(src)
         if src_len == 0 or src_len <= MIN_FILE_SIZE:  # Ignore empty or files that are too small
             self.print_trace(f'Skipping snippets as the file is too small: {file} - {src_len}')

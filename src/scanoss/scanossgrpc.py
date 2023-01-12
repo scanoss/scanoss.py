@@ -54,7 +54,7 @@ class ScanossGrpc(ScanossBase):
         :param debug:
         :param trace:
         :param quiet:
-        :param cert:
+        :param ca_cert:
 
         To set a custom certificate use:
             GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/certs/cert.pem
@@ -104,7 +104,6 @@ class ScanossGrpc(ScanossBase):
         try:
             metadata = self.metadata[:]
             metadata.append(('x-request-id', request_id))  # Set a Request ID
-            # resp, call = self.dependencies_stub.Echo.with_call(EchoRequest(message=message), metadata=metadata, timeout=3)
             resp = self.dependencies_stub.Echo(EchoRequest(message=message), metadata=metadata, timeout=3)
         except Exception as e:
             self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
@@ -186,10 +185,8 @@ class ScanossGrpc(ScanossBase):
 
     @staticmethod
     def _load_cert(cert_file: str) -> bytes:
-        certificate_chain = None
         with open(cert_file, 'rb') as f:
-            certificate_chain = f.read()
-        return certificate_chain
+            return f.read()
 #
 # End of ScanossGrpc Class
 #

@@ -37,6 +37,7 @@ from .scanossbase import ScanossBase
 WFP_FILE_START = "file="
 MAX_ALLOWED_THREADS = int(os.environ.get("SCANOSS_MAX_ALLOWED_THREADS")) if os.environ.get("SCANOSS_MAX_ALLOWED_THREADS") else 30
 
+
 @dataclass
 class ThreadedScanning(ScanossBase):
     """
@@ -48,7 +49,7 @@ class ThreadedScanning(ScanossBase):
     output: queue.Queue = queue.Queue()
     bar: Bar = None
 
-    def __init__(self, scanapi :ScanossApi, debug: bool = False, trace: bool = False, quiet: bool = False,
+    def __init__(self, scanapi: ScanossApi, debug: bool = False, trace: bool = False, quiet: bool = False,
                  nb_threads: int = 5
                  ) -> None:
         """
@@ -107,6 +108,8 @@ class ThreadedScanning(ScanossBase):
         """
         Update the Progress Bar progress
         :param amount: amount of progress to update
+        :param create: create the bar if requested
+        :param file_count: file count
         """
         try:
             self._lock.acquire()
@@ -212,14 +215,14 @@ class ThreadedScanning(ScanossBase):
                         self.update_bar(count)
                         self.inputs.task_done()
                         self.print_trace(f'Request complete ({current_thread}).')
-                except queue.Empty as e:
+                except queue.Empty:
                     self.print_stderr(f'No message available to process ({current_thread}). Checking again...')
                 except Exception as e:
                     self.print_stderr(f'ERROR: Problem encountered running scan: {e}. Aborting current thread.')
                     self._errors = True
                     if wfp:
                         self.inputs.task_done()  # If there was a WFP being processed, remove it from the queue
-                    api_error = True # Stop processing anymore work requests
+                    api_error = True  # Stop processing anymore work requests
                     self._stop_scanning.set()  # Tell the parent process to abort scanning
             else:
                 time.sleep(1)  # Sleep while waiting for the queue depth to build up
