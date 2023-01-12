@@ -146,7 +146,7 @@ class CsvOutput(ScanossBase):
 
     def produce_from_json(self, data: json, output_file: str = None) -> bool:
         """
-        Produce the CSV output from the input JSON object
+        Produce the CSV output from the input data
         :param data: JSON object
         :param output_file: Output file (optional)
         :return: True if successful, False otherwise
@@ -156,8 +156,9 @@ class CsvOutput(ScanossBase):
             self.print_stderr('ERROR: No CSV data returned for the JSON string provided.')
             return False
         # Header row/column details
-        fields = ['inventory_id', 'path', 'detected_usage', 'detected_component', 'detected_license', 'detected_version',
-                  'detected_latest', 'detected_purls', 'detected_match', 'detected_lines', 'detected_oss_lines']
+        fields = ['inventory_id', 'path', 'detected_usage', 'detected_component', 'detected_license',
+                  'detected_version', 'detected_latest', 'detected_purls', 'detected_match', 'detected_lines',
+                  'detected_oss_lines']
         file = sys.stdout
         if not output_file and self.output_file:
             output_file = self.output_file

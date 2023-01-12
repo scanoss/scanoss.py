@@ -157,7 +157,7 @@ class SpdxLite:
 
     def produce_from_json(self, data: json, output_file: str = None) -> bool:
         """
-        Produce the SPDX Lite output from the input JSON object
+        Produce the SPDX Lite output from the input data
         :param data: JSON object
         :param output_file: Output file (optional)
         :return: True if successful, False otherwise

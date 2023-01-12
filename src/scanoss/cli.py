@@ -27,7 +27,6 @@ import os
 import sys
 
 from .scanner import Scanner
-from .winnowing import Winnowing
 from .scancodedeps import ScancodeDeps
 from .scantype import ScanType
 from .filecount import FileCount
@@ -56,7 +55,7 @@ def setup_args() -> None:
                                        )
     # Sub-command: version
     p_ver = subparsers.add_parser('version', aliases=['ver'],
-                                   description=f'Version of SCANOSS CLI: {__version__}', help='SCANOSS version')
+                                  description=f'Version of SCANOSS CLI: {__version__}', help='SCANOSS version')
     p_ver.set_defaults(func=ver)
     # Sub-command: scan
     p_scan = subparsers.add_parser('scan', aliases=['sc'],
@@ -70,9 +69,9 @@ def setup_args() -> None:
     p_scan.add_argument('--dep', '-p',  type=str,
                         help='Use a dependency file instead of a folder (optional)'
                         )
-    p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file' )
-    p_scan.add_argument('--ignore',   '-n', type=str, help='Ignore components specified in the SBOM file' )
-    p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file')
+    p_scan.add_argument('--ignore',   '-n', type=str, help='Ignore components specified in the SBOM file')
+    p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).')
     p_scan.add_argument('--format',   '-f', type=str, choices=['plain', 'cyclonedx', 'spdxlite', 'csv'],
                         help='Result output format (optional - default: plain)'
                         )
@@ -101,7 +100,8 @@ def setup_args() -> None:
     p_scan.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
-    p_scan.add_argument('--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).' )
+    p_scan.add_argument('--sc-command', type=str,
+                        help='Scancode command and path if required (optional - default scancode).')
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)'
                         )
@@ -113,7 +113,7 @@ def setup_args() -> None:
     p_wfp.set_defaults(func=wfp)
     p_wfp.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?',
                        help='A file or folder to scan')
-    p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_wfp.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
     p_wfp.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
 
@@ -123,11 +123,11 @@ def setup_args() -> None:
                                   help='Scan source code for dependencies, but do not decorate them')
     p_dep.set_defaults(func=dependency)
     p_dep.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
-    p_dep.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
-    p_dep.add_argument('--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).' )
+    p_dep.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
+    p_dep.add_argument('--sc-command', type=str,
+                       help='Scancode command and path if required (optional - default scancode).')
     p_dep.add_argument('--sc-timeout', type=int, default=600,
-                        help='Timeout (in seconds) for scancode to complete (optional - default 600)'
-                        )
+                       help='Timeout (in seconds) for scancode to complete (optional - default 600)')
 
     # Sub-command: file_count
     p_fc = subparsers.add_parser('file_count', aliases=['fc'],
@@ -135,22 +135,20 @@ def setup_args() -> None:
                                  help='Search the source tree and produce a file type summary')
     p_fc.set_defaults(func=file_count)
     p_fc.add_argument('scan_dir', metavar='DIR', type=str, nargs='?', help='A folder to search')
-    p_fc.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_fc.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_fc.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
 
     # Sub-command: convert
     p_cnv = subparsers.add_parser('convert', aliases=['cv', 'cnv', 'cvrt'],
-                                   description=f'Convert results files between formats: {__version__}',
-                                   help='Convert file format')
+                                  description=f'Convert results files between formats: {__version__}',
+                                  help='Convert file format')
     p_cnv.set_defaults(func=convert)
     p_cnv.add_argument('--input', '-i', type=str, required=True, help='Input file name')
-    p_cnv.add_argument('--output','-o', type=str, help='Output result file name (optional - default stdout).' )
-    p_cnv.add_argument('--format','-f', type=str, choices=['cyclonedx', 'spdxlite', 'csv'], default='spdxlite',
-                       help='Output format (optional - default: spdxlite)'
-                       )
+    p_cnv.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
+    p_cnv.add_argument('--format', '-f', type=str, choices=['cyclonedx', 'spdxlite', 'csv'], default='spdxlite',
+                       help='Output format (optional - default: spdxlite)')
     p_cnv.add_argument('--input-format', type=str, choices=['plain'], default='plain',
-                       help='Input format (optional - default: plain)'
-                       )
+                       help='Input format (optional - default: plain)')
 
     # Sub-command: utils
     p_util = subparsers.add_parser('utils', aliases=['ut', 'util'],
@@ -158,8 +156,7 @@ def setup_args() -> None:
                                    help='General utility support commands')
 
     utils_sub = p_util.add_subparsers(title='Utils Commands', dest='utilsubparser', description='utils sub-commands',
-                                       help='utils sub-commands'
-                                       )
+                                      help='utils sub-commands')
 
     # Utils Sub-command: utils certloc
     p_c_loc = utils_sub.add_parser('certloc', aliases=['cl'],
@@ -169,12 +166,13 @@ def setup_args() -> None:
 
     # Utils Sub-command: utils cert-download
     p_c_dwnld = utils_sub.add_parser('cert-download', aliases=['cdl', 'cert-dl'],
-                                   description=f'Download Server SSL Cert: {__version__}',
-                                   help='Download the specified server\'s SSL PEM certificate')
+                                     description=f'Download Server SSL Cert: {__version__}',
+                                     help='Download the specified server\'s SSL PEM certificate')
     p_c_dwnld.set_defaults(func=utils_cert_download)
-    p_c_dwnld.add_argument('--hostname', '-n', required=True, type=str, help='Server hostname to download cert from.' )
-    p_c_dwnld.add_argument('--port', '-p', required=False, type=int, default=443, help='Server port number (default: 443).' )
-    p_c_dwnld.add_argument('--output','-o', type=str, help='Output result file name (optional - default stdout).' )
+    p_c_dwnld.add_argument('--hostname', '-n', required=True, type=str, help='Server hostname to download cert from.')
+    p_c_dwnld.add_argument('--port', '-p', required=False, type=int, default=443,
+                           help='Server port number (default: 443).')
+    p_c_dwnld.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
 
     # Global command options
     for p in [p_scan]:
@@ -216,17 +214,13 @@ def setup_args() -> None:
     args.func(parser, args)  # Execute the function associated with the sub-command
 
 
-def ver(parser, args):
+def ver(*_):
     """
     Run the "ver" sub-command
-    Parameters
-    ----------
-        parser: ArgumentParser
-            command line parser object
-        args: Namespace
-            Parsed arguments
+    :param _: ignored/unused
     """
     print(f'Version: {__version__}')
+
 
 def file_count(parser, args):
     """
@@ -258,6 +252,7 @@ def file_count(parser, args):
     else:
         print_stderr(f'Error: Path specified is not a folder: {args.scan_dir}.')
         exit(1)
+
 
 def wfp(parser, args):
     """
@@ -291,6 +286,7 @@ def wfp(parser, args):
     else:
         print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
         exit(1)
+
 
 def get_scan_options(args):
     """
@@ -387,16 +383,16 @@ def scan(parser, args):
         if args.obfuscate:
             print_stderr("Obfuscating file fingerprints...")
         if args.proxy:
-            print_stderr(f'Using Proxy {arg.proxy}...')
+            print_stderr(f'Using Proxy {args.proxy}...')
         if args.ca_cert:
-            print_stderr(f'Using Certificate {arg.ca_cert}...')
+            print_stderr(f'Using Certificate {args.ca_cert}...')
         if flags:
             print_stderr(f'Using flags {flags}...')
     elif not args.quiet:
         if args.timeout < 5:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
 
-    if not os.access( os.getcwd(), os.W_OK ):  # Make sure the current directory is writable. If not disable saving WFP
+    if not os.access(os.getcwd(), os.W_OK):  # Make sure the current directory is writable. If not disable saving WFP
         print_stderr(f'Warning: Current directory is not writable: {os.getcwd()}')
         args.no_wfp_output = True
     if args.ca_cert and not os.path.exists(args.ca_cert):
@@ -438,6 +434,7 @@ def scan(parser, args):
         print_stderr('No action found to process')
         exit(1)
 
+
 def dependency(parser, args):
     """
     Run the "dependency" sub-command
@@ -465,6 +462,7 @@ def dependency(parser, args):
                            )
     if not sc_deps.get_dependencies(what_to_scan=args.scan_dir, result_output=scan_output):
         exit(1)
+
 
 def convert(parser, args):
     """
@@ -501,28 +499,21 @@ def convert(parser, args):
     if not success:
         exit(1)
 
-def utils_certloc(parser, args):
+
+def utils_certloc(*_):
     """
     Run the "utils certloc" sub-command
-    Parameters
-    ----------
-        parser: ArgumentParser
-            command line parser object
-        args: Namespace
-            Parsed arguments
+    :param _: ignored/unused
     """
     import certifi
     print(f'CA Cert File: {certifi.where()}')
 
-def utils_cert_download(parser, args):
+
+def utils_cert_download(_, args):
     """
     Run the "utils cert-download" sub-command
-    Parameters
-    ----------
-        parser: ArgumentParser
-            command line parser object
-        args: Namespace
-            Parsed arguments
+    :param _: ignore/unused
+    :param args: Parsed arguments
     """
     import ssl
     from urllib.parse import urlparse
@@ -530,6 +521,8 @@ def utils_cert_download(parser, args):
     import traceback
 
     file = sys.stdout
+    hostname = 'unset'
+    port = 'unkown'
     try:
         if args.output:
             file = open(args.output, 'w')
@@ -568,6 +561,7 @@ def utils_cert_download(parser, args):
             if args.debug:
                 print_stderr(f'Saved certificate to {args.output}')
             file.close()
+
 
 def main():
     """

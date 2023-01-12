@@ -40,6 +40,7 @@ class CycloneDx(ScanossBase):
         """
         Initialise the CycloneDX class
         """
+        super().__init__(debug)
         self.output_file = output_file
         self.debug = debug
         self._spdx = SpdxLite(debug=debug)
@@ -163,7 +164,7 @@ class CycloneDx(ScanossBase):
 
     def produce_from_json(self, data: json, output_file: str = None) -> bool:
         """
-        Produce the CycloneDX output from the input JSON object
+        Produce the CycloneDX output from the input data
         :param data: JSON object
         :param output_file: Output file (optional)
         :return: True if successful, False otherwise

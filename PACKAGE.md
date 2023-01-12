@@ -60,7 +60,7 @@ From there it is possible to scan a source code folder:
 
 #### Scanning for Dependencies
 The SCANOSS CLI supports dependency decoration. In order for this to work, it requires the installation of scancode:
-```python
+```bash
 pip install scancode-toolkit
 ```
 Dependencies can then be decorated by adding the ``--dependencies`` option to the scanner:

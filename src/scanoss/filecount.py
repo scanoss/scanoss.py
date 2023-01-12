@@ -91,8 +91,7 @@ class FileCount(ScanossBase):
 
     def count_files(self, scan_dir: str) -> bool:
         """
-        Search the specified folder producing counting the file types found.
-
+        Search the specified folder producing counting the file types found
         :param scan_dir str
                     Directory to scan
         :return True if successful, False otherwise
