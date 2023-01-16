@@ -34,6 +34,7 @@ from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
 from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, DependencyResponse
 from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode
 from .scanossbase import ScanossBase
+from . import __version__
 
 # DEFAULT_URL      = "https://osskb.org"
 DEFAULT_URL = "https://scanoss.com"
@@ -72,6 +73,7 @@ class ScanossGrpc(ScanossBase):
             self.metadata.append(('x-api-key', api_key))  # Set API key if we have one
         if ver_details:
             self.metadata.append(('x-scanoss-client', ver_details))
+        self.metadata.append(('user-agent', f'scanoss-py/{__version__}'))
         secure = True if self.url.startswith('https:') else False  # Is it a secure connection?
         if self.url.startswith('http'):
             u = urlparse(self.url)

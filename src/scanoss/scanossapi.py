@@ -33,6 +33,8 @@ import urllib3
 
 from urllib3.exceptions import InsecureRequestWarning
 from .scanossbase import ScanossBase
+from . import __version__
+
 
 DEFAULT_URL = "https://osskb.org/api/scan/direct"  # default free service URL
 DEFAULT_URL2 = "https://scanoss.com/api/scan/direct"  # default premium service URL
@@ -85,6 +87,8 @@ class ScanossApi(ScanossBase):
         if self.api_key:
             self.headers['X-Session'] = self.api_key
             self.headers['x-api-key'] = self.api_key
+        self.headers['User-Agent'] = f'scanoss-py/{__version__}'
+        self.headers['user-agent'] = f'scanoss-py/{__version__}'
         self.sbom = None
         self.load_sbom()  # Load an input SBOM if one is specified
         if self.trace:
