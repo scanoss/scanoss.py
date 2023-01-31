@@ -63,8 +63,8 @@ class CsvOutput(ScanossBase):
                 if not id_details or id_details == 'none':
                     continue
                 matched = d.get("matched", '')
-                lines = d.get("lines", '')
-                oss_lines = d.get("oss_lines", '')
+                lines = d.get("lines", '').replace(',', ';')  # swap comma with semicolon to help basic parsers
+                oss_lines = d.get("oss_lines", '').replace(',', ';')
                 detected = {}
                 if id_details == 'dependency':
                     dependencies = d.get("dependencies")
@@ -77,7 +77,7 @@ class CsvOutput(ScanossBase):
                             self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
                             continue
                         detected['purls'] = purl
-                        for field in ['component', 'version', 'latest']:
+                        for field in ['component', 'version', 'latest', 'url']:
                             detected[field] = deps.get(field, '')
                         licenses = deps.get('licenses')
                         dc = []
@@ -103,7 +103,7 @@ class CsvOutput(ScanossBase):
                         self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
                         continue
                     detected['purls'] = ';'.join(pa)
-                    for field in ['component', 'version', 'latest']:
+                    for field in ['component', 'version', 'latest', 'url', 'file']:
                         detected[field] = d.get(field, '')
                     licenses = d.get('licenses')
                     dc = []
@@ -121,7 +121,8 @@ class CsvOutput(ScanossBase):
                                  'detected_component': detected.get('component'),
                                  'detected_license': detected.get('licenses'),
                                  'detected_version': detected.get('version'), 'detected_latest': detected.get('latest'),
-                                 'detected_purls': detected.get('purls'),
+                                 'detected_purls': detected.get('purls'), 'detected_url': detected.get('url'),
+                                 'detected_path': detected.get('file', ''),
                                  'detected_match': matched, 'detected_lines': lines, 'detected_oss_lines': oss_lines
                                  })
                 row_id = row_id + 1
@@ -157,8 +158,8 @@ class CsvOutput(ScanossBase):
             return False
         # Header row/column details
         fields = ['inventory_id', 'path', 'detected_usage', 'detected_component', 'detected_license',
-                  'detected_version', 'detected_latest', 'detected_purls', 'detected_match', 'detected_lines',
-                  'detected_oss_lines']
+                  'detected_version', 'detected_latest', 'detected_purls', 'detected_url', 'detected_match',
+                  'detected_lines', 'detected_oss_lines', 'detected_path']
         file = sys.stdout
         if not output_file and self.output_file:
             output_file = self.output_file
