@@ -76,3 +76,29 @@ The proxy for REST based calls can also be configured directly on the `scanoss-p
 ```shell
 scanoss-py scan --proxy "http://<ipaddr>:<port>" -o results.json .
 ```
+If a separate proxy is required for GRPC calls, please use the `--grpc-proxy` option:
+```shell
+scanoss-py scan --proxy "http://<ipaddr>:<port>" --grpc-proxy "http://<ipaddr>:<port>" -D -o results.json .
+```
+
+### Proxy Auto-Config CLI Options
+The `scanoss-py` CLI also supports Proxy Auto-Config (PAC) when scanning using the `--pac` command option.
+
+It supports three options:
+* auto - check the system for a PAC configuration
+  * `scanoss-py scan --pac auto -o results.json .`
+* file - load a local PAC file
+  * `scanoss-py scan --pac file://proxy.pac -o results.json .`
+* url - download a specific PAC file
+  * `scanoss-py scan --pac https://path.to/proxy.pac -o results.json .`
+
+### PAC File Evaluation
+The `scanoss-py` CLI provides a utility command to help identify if traffic to the SCANOSS services is required over a proxy or not.
+
+Simply run the following commands find out:
+* auto
+  * `scanoss-py utils pac-proxy --pac auto --url https://osskb.org`
+* file
+  * `scanoss-py utils pac-proxy --pac file://proxy.pac --url https://osskb.org`
+* url
+  * `scanoss-py utils pac-proxy --pac https://path.to/proxy.pac --url https://osskb.org`

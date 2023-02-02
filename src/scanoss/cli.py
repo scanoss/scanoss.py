@@ -26,6 +26,8 @@ import argparse
 import os
 import sys
 
+import pypac
+
 from .scanner import Scanner
 from .scancodedeps import ScancodeDeps
 from .scantype import ScanType
@@ -174,6 +176,17 @@ def setup_args() -> None:
                            help='Server port number (default: 443).')
     p_c_dwnld.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
 
+    # Utils Sub-command: utils pac-proxy
+    p_p_proxy = utils_sub.add_parser('pac-proxy', aliases=['pac'],
+                                     description=f'Determine Proxy from PAC: {__version__}',
+                                     help='Use Proxy Auto-Config to determine proxy configuration')
+    p_p_proxy.set_defaults(func=utils_pac_proxy)
+    p_p_proxy.add_argument('--pac', required=False, type=str, default="auto",
+                           help='Proxy auto configuration. Specify a file, http url or "auto" to try to discover it.'
+                           )
+    p_p_proxy.add_argument('--url', required=False, type=str, default="https://osskb.org/api",
+                           help='URL to test (default: https://osskb.org/api).')
+
     # Global command options
     for p in [p_scan]:
         p.add_argument('--key', '-k', type=str,
@@ -189,6 +202,12 @@ def setup_args() -> None:
                                                  'Can also use the environment variable "HTTPS_PROXY=<ip>:<port>" '
                                                  'and "grcp_proxy=<ip>:<port>" for gRPC'
                        )
+        p.add_argument('--grpc-proxy', type=str, help='GRPC Proxy URL to use for connections (optional). '
+                                                       'Can also use the environment variable "grcp_proxy=<ip>:<port>"'
+                       )
+        p.add_argument('--pac', type=str, help='Proxy auto configuration (optional). '
+                                               'Specify a file, http url or "auto" to try to discover it.'
+                       )
         p.add_argument('--ca-cert', type=str, help='Alternative certificate PEM file (optional). '
                                                    'Can also use the environment variable '
                                                    '"REQUESTS_CA_BUNDLE=/path/to/cacert.pem" and '
@@ -196,7 +215,7 @@ def setup_args() -> None:
                        )
         p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
 
-    for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld]:
+    for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld, p_p_proxy]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
@@ -334,6 +353,10 @@ def scan(parser, args):
         print_stderr('Please specify a file/folder or fingerprint (--wfp)')
         parser.parse_args([args.subparser, '-h'])
         exit(1)
+    if args.pac and args.proxy:
+        print_stderr('Please specify one of --proxy or --pac, not both')
+        parser.parse_args([args.subparser, '-h'])
+        exit(1)
     scan_type: str = None
     sbom_path: str = None
     if args.identify:
@@ -384,6 +407,10 @@ def scan(parser, args):
             print_stderr("Obfuscating file fingerprints...")
         if args.proxy:
             print_stderr(f'Using Proxy {args.proxy}...')
+        if args.grpc_proxy:
+            print_stderr(f'Using GRPC Proxy {args.grpc_proxy}...')
+        if args.pac:
+            print_stderr(f'Using Proxy Auto-config (PAC) {args.pac}...')
         if args.ca_cert:
             print_stderr(f'Using Certificate {args.ca_cert}...')
         if flags:
@@ -398,6 +425,7 @@ def scan(parser, args):
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
         exit(1)
+    pac_file = get_pac_file(args.pac)
     scan_options = get_scan_options(args)   # Figure out what scanning options we have
 
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
@@ -407,7 +435,8 @@ def scan(parser, args):
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
                       scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
                       grpc_url=args.api2url, obfuscate=args.obfuscate,
-                      ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, ca_cert=args.ca_cert
+                      ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, grpc_proxy=args.grpc_proxy,
+                      pac=pac_file, ca_cert=args.ca_cert
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
@@ -561,6 +590,50 @@ def utils_cert_download(_, args):
             if args.debug:
                 print_stderr(f'Saved certificate to {args.output}')
             file.close()
+
+
+def utils_pac_proxy(_, args):
+    """
+    Run the "utils pac-proxy" sub-command
+    :param _: ignore/unused
+    :param args: Parsed arguments
+    """
+    from pypac.resolver import ProxyResolver
+    if not args.pac:
+        print_stderr(f'Error: No pac file option specified.')
+        exit(1)
+    pac_file = get_pac_file(args.pac)
+    if pac_file is None:
+        print_stderr(f'No proxy configuration for: {args.pac}')
+        exit(1)
+    resolver = ProxyResolver(pac_file)
+    proxies = resolver.get_proxy_for_requests(args.url)
+    print(f'Proxies: {proxies}\n')
+
+
+def get_pac_file(pac: str):
+    """
+    Get a PAC file if requested. Load the system version (auto), specific local file, or download URL
+    :param pac: PAC file (auto, file://..., http...)
+    :return: PAC File object or None
+    """
+    pac_file = None
+    if pac:
+        if pac == 'auto':
+            pac_file = pypac.get_pac()  # try to determine the PAC file
+        elif pac.startswith('file://'):
+            pac_local = pac.strip('file://')
+            if not os.path.exists(pac_local):
+                print_stderr(f'Error: PAC file does not exist: {pac_local}.')
+                exit(1)
+            with open(pac_local) as pf:
+                pac_file = pypac.get_pac(js=pf.read())
+        elif pac.startswith('http'):
+            pac_file = pypac.get_pac(url=pac)
+        else:
+            print_stderr(f'Error: Unknown PAC file option: {pac}. Should be one of "auto", "file://", "https://"')
+            exit(1)
+    return pac_file
 
 
 def main():

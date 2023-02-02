@@ -31,6 +31,8 @@ import uuid
 import http.client as http_client
 import urllib3
 
+from pypac import PACSession
+from pypac.parser import PACFile
 from urllib3.exceptions import InsecureRequestWarning
 from .scanossbase import ScanossBase
 from . import __version__
@@ -51,7 +53,7 @@ class ScanossApi(ScanossBase):
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
                  timeout: int = 120, ver_details: str = None, ignore_cert_errors: bool = False,
-                 proxy: str = None, ca_cert: str = None):
+                 proxy: str = None, ca_cert: str = None, pac: PACFile = None):
         """
         Initialise the SCANOSS API
         :param scan_type: Scan type (default identify)
@@ -94,14 +96,24 @@ class ScanossApi(ScanossBase):
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
             http_client.HTTPConnection.debuglevel = 1
+        if pac and not proxy:  # Setup PAC session if requested (and no proxy has been explicitly set)
+            self.print_debug(f'Setting up PAC session...')
+            self.session = PACSession(pac=pac)
+        else:
+            self.session = requests.sessions.Session()
         self.verify = None
         if self.ignore_cert_errors:
             self.print_debug(f'Ignoring cert errors...')
             urllib3.disable_warnings(InsecureRequestWarning)
             self.verify = False
+            self.session.verify = False
         elif ca_cert:
             self.verify = ca_cert
+            self.session.cert = ca_cert
+            self.session.verify = True
         self.proxies = {'https': proxy, 'http': proxy} if proxy else None
+        if self. proxies:
+            self.session.proxies = self.proxies
 
     def load_sbom(self):
         """
@@ -142,9 +154,12 @@ class ScanossApi(ScanossBase):
             retry += 1
             try:
                 r = None
-                r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers,
-                                  timeout=self.timeout, verify=self.verify, proxies=self.proxies
-                                  )
+                r = self.session.post(self.url, files=scan_files, data=form_data, headers=self.headers,
+                                      timeout=self.timeout
+                                      )
+                # r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers,
+                #                   timeout=self.timeout, verify=self.verify, proxies=self.proxies
+                #                   )
             except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
                 self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}.')
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e

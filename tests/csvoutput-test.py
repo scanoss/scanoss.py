@@ -23,7 +23,7 @@
 """
 import unittest
 
-from scanoss.csvoutput import CsvOutput
+from scanoss.winnowing import Winnowing
 
 
 class MyTestCase(unittest.TestCase):
