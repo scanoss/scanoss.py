@@ -29,6 +29,7 @@ import pkg_resources
 
 from progress.bar import Bar
 from progress.spinner import Spinner
+from pypac.parser import PACFile
 
 from .scanossapi import ScanossApi
 from .winnowing import Winnowing
@@ -90,7 +91,8 @@ class Scanner(ScanossBase):
                  post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
                  scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
-                 obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, ca_cert: str = None
+                 obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, grpc_proxy: str = None,
+                 ca_cert: str = None, pac: PACFile = None
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -114,11 +116,11 @@ class Scanner(ScanossBase):
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,
                                       ver_details=ver_details, ignore_cert_errors=ignore_cert_errors,
-                                      proxy=proxy, ca_cert=ca_cert
+                                      proxy=proxy, ca_cert=ca_cert, pac=pac
                                       )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
         grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace, api_key=api_key,
-                               ver_details=ver_details, ca_cert=ca_cert
+                               ver_details=ver_details, ca_cert=ca_cert, proxy=proxy, pac=pac, grpc_proxy=grpc_proxy
                                )
         self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads

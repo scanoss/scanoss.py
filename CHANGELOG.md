@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.3.6] - 2023-02-02
+### Added
+- Added support for Proxy Auto-Config (--pac) and GRPC proxy (--grpc-proxy)
+- 
+
 ## [1.3.5] - 2023-01-31
 ### Added
 - Added extra fields to CSV output (detected_url, detected_path)
@@ -190,3 +195,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.3.3]: https://github.com/scanoss/scanoss.py/compare/v1.3.2...v1.3.3
 [1.3.4]: https://github.com/scanoss/scanoss.py/compare/v1.3.3...v1.3.4
 [1.3.5]: https://github.com/scanoss/scanoss.py/compare/v1.3.4...v1.3.5
+[1.3.6]: https://github.com/scanoss/scanoss.py/compare/v1.3.5...v1.3.6

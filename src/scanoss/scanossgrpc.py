@@ -27,8 +27,11 @@ import uuid
 
 import grpc
 import json
-from urllib.parse import urlparse
+
 from google.protobuf.json_format import MessageToDict, ParseDict
+from pypac.parser import PACFile
+from pypac.resolver import ProxyResolver
+from urllib.parse import urlparse
 
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
 from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, DependencyResponse
@@ -48,7 +51,8 @@ class ScanossGrpc(ScanossBase):
     """
 
     def __init__(self, url: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 ca_cert: str = None, api_key: str = None, ver_details: str = None):
+                 ca_cert: str = None, api_key: str = None, ver_details: str = None,
+                 proxy: str = None, grpc_proxy: str = None, pac: PACFile = None):
         """
 
         :param url:
@@ -67,7 +71,11 @@ class ScanossGrpc(ScanossBase):
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL
         self.url = self.url.lower()
+        self.orig_url = self.url  # Used for proxy lookup
         self.api_key = api_key if api_key else SCANOSS_API_KEY
+        self.proxy = proxy
+        self.grpc_proxy = grpc_proxy
+        self.pac = pac
         self.metadata = []
         if self.api_key:
             self.metadata.append(('x-api-key', api_key))  # Set API key if we have one
@@ -86,18 +94,25 @@ class ScanossGrpc(ScanossBase):
             secure = True
             cert_data = ScanossGrpc._load_cert(ca_cert)
         self.print_debug(f'Setting up (secure: {secure}) connection to {self.url}...')
+        self._get_proxy_config()
         if secure is False:
             self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))  # insecure connection
         else:
             if ca_cert is not None:
                 credentials = grpc.ssl_channel_credentials(cert_data)  # secure with specified certificate
             else:
-                credentials = grpc.ssl_channel_credentials()      # secure connection with default certificate
+                credentials = grpc.ssl_channel_credentials()  # secure connection with default certificate
             self.dependencies_stub = DependenciesStub(grpc.secure_channel(self.url, credentials))
+
+    @classmethod
+    def _load_cert(cls, cert_file: str) -> bytes:
+        with open(cert_file, 'rb') as f:
+            return f.read()
 
     def deps_echo(self, message: str = 'Hello there!') -> str:
         """
         Send Echo message to the Dependency service
+        :param self:
         :param message: Message to send (default: Hello there!)
         :return: echo or None
         """
@@ -185,10 +200,28 @@ class ScanossGrpc(ScanossBase):
             return False
         return True
 
-    @staticmethod
-    def _load_cert(cert_file: str) -> bytes:
-        with open(cert_file, 'rb') as f:
-            return f.read()
+    def _get_proxy_config(self):
+        """
+        Set the grpc_proxy/http_proxy/https_proxy environment variables if PAC file has been specified
+        or if an explicit proxy has been supplied
+        :param self:
+        """
+        if self.grpc_proxy:
+            self.print_debug(f'Setting GRPC (grpc_proxy) proxy...')
+            os.environ["grpc_proxy"] = self.grpc_proxy
+        elif self.proxy:
+            self.print_debug(f'Setting GRPC (http_proxy/https_proxy) proxies...')
+            os.environ["http_proxy"] = self.proxy
+            os.environ["https_proxy"] = self.proxy
+        elif self.pac:
+            self.print_debug(f'Attempting to get GRPC proxy details from PAC for {self.orig_url}...')
+            resolver = ProxyResolver(self.pac)
+            proxies = resolver.get_proxy_for_requests(self.orig_url)
+            if proxies:
+                self.print_trace(f'Setting proxies: {proxies}')
+            os.environ["http_proxy"] = proxies.get("http") or ""
+            os.environ["https_proxy"] = proxies.get("https") or ""
+
 #
 # End of ScanossGrpc Class
 #
