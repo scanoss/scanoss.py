@@ -1,6 +1,9 @@
 FROM python:3.10-slim-buster as base
 
 LABEL maintainer="SCANOSS <infra@scanoss.com>"
+LABEL org.opencontainers.image.source=https://github.com/scanoss/scanoss.py
+LABEL org.opencontainers.image.description="SCANOSS Python CLI Container"
+LABEL org.opencontainers.image.licenses=MIT
 
 FROM base as builder
 

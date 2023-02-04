@@ -47,8 +47,7 @@ jobs:
       - name: Install cosign
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v2
-        with:
-          cosign-release: 'v1.11.0'
+
       - name: Check Cosign Version
         run: cosign version
 
@@ -60,7 +59,7 @@ jobs:
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@79abd3f86f79a9d68a23c75a09a9a85889262adf
         with:
-          platforms: "linux/amd64,linux/arm64"
+          platforms: "linux/amd64,linux/arm64,linux/arm64/v8,linux/arm64/v7"
 
       # Login against a Docker registry except on PR
       - name: Log into registry ${{ env.REGISTRY }}
@@ -90,23 +89,15 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Sign Docker Image
-        continue-on-error: true
+        if: ${{ github.event_name != 'pull_request' }}
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
-        if: ${{ github.event_name != 'pull_request' }}
-        run: cosign sign --key env://COSIGN_PRIVATE_KEY ${TAGS}
+        run: cosign sign --key env://COSIGN_PRIVATE_KEY --no-tlog-upload=true ${TAGS}
 
-      # Sign the resulting Docker image digest except on PRs.
-      # This will only write to the public Rekor transparency log when the Docker
-      # repository is public to avoid leaking data.  If you would like to publish
-      # transparency data even for private images, pass --force to cosign below.
-      - name: Sign the published Docker image
-        continue-on-error: true
-        if: ${{ github.event_name != 'pull_request' }}
-        env:
-          COSIGN_EXPERIMENTAL: "true"
-          TAGS: ${{ steps.meta.outputs.tags }}
-        # This step uses the identity token to provision an ephemeral certificate against the sigstore community Fulcio instance.
-        run: cosign sign ${TAGS}
+#      - name: Sign the images with GitHub OIDC Token
+#        run: cosign sign ${TAGS}
+#        env:
+#          TAGS: ${{ steps.meta.outputs.tags }}
+#          COSIGN_EXPERIMENTAL: true
