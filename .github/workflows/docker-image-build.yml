@@ -1,4 +1,5 @@
 name: Docker Image Build
+# Build a multi-platform docker image on demand (no publish)
 
 on: [workflow_dispatch]
 
@@ -7,15 +8,14 @@ env:
   IMAGE_NAME: scanoss/scanoss-py
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Setup and build the python package
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
@@ -52,7 +52,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      # Build and push Docker image with Buildx (don't push on PR)
+      # Build Docker image with Buildx
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v4
