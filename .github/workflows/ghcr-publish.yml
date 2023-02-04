@@ -2,6 +2,7 @@ name: Publish GHCR Container
 # Publish a multi-platform container when a package is released (tagged)
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -45,9 +46,11 @@ jobs:
       # Install the cosign tool except on PR
       - name: Install cosign
         if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@f3c664df7af409cb4873aa5068053ba9d61a57b6 #v2.6.0
+        uses: sigstore/cosign-installer@v2
         with:
           cosign-release: 'v1.11.0'
+      - name: Check Cosign Version
+        run: cosign version
 
         # Add support for more platforms with QEMU
       - name: Set up QEMU
@@ -86,6 +89,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Sign Docker Image
+        if: ${{ github.event_name != 'pull_request' }}
+        run: cosign sign --key env://COSIGN_PRIVATE_KEY ${TAGS}
+        env:
+          TAGS: ${{ steps.docker_meta.outputs.tags }}
+          COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
+          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
@@ -95,6 +105,6 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         env:
           COSIGN_EXPERIMENTAL: "true"
-        # This step uses the identity token to provision an ephemeral certificate
-        # against the sigstore community Fulcio instance.
-        run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
+          TAGS: ${{ steps.docker_meta.outputs.tags }}
+        # This step uses the identity token to provision an ephemeral certificate against the sigstore community Fulcio instance.
+        run: cosign sign ${TAGS}
