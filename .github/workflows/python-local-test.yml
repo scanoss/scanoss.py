@@ -18,30 +18,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.10.x'
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10.x'
 
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
 
-    - name: Build Local Package
-      run: make dist
+      - name: Build Local Package
+        run: make dist
 
-    - name: Install Test Package
-      run: |
-        pip install -r requirements.txt
-        pip install dist/scanoss-*-py3-none-any.whl
-        which scanoss-py
+      - name: Install Test Package
+        run: |
+          pip install -r requirements.txt
+          pip install dist/scanoss-*-py3-none-any.whl
+          which scanoss-py
 
-    - name: Run Tests
-      run: |
-        which scanoss-py
-        scanoss-py version
-        scanoss-py scan tests > results.json
-        echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"
+      - name: Run Tests
+        run: |
+          which scanoss-py
+          scanoss-py version
+          scanoss-py scan tests > results.json
+          id_count=$(cat results.json | grep '"id":' | wc -l)
+          echo "ID Count: $id_count"
+          if [[ $id_count -lt 1 ]]; then
+            echo "Error: Scan test did not produce any results. Failing"
+            exit 1
+          fi
