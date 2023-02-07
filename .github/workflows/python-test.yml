@@ -1,0 +1,39 @@
+# This workflow will upload a TestPyPI Python Package using Twine on demand (dispatch)
+
+name: Publish Python Package to TestPyPI
+
+on: [workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+
+    - name: Build Local Package
+      run: make dist
+
+    - name: Test Package
+      run: |
+        pip install -r requirements.txt
+        pip install dist/scanoss-*-py3-none-any.whl
+        which scanoss-py
+        scanoss-py version
+        scanoss-py
+        scanoss-py scan src > result.json
+        echo "ID Count: "
+        cat results.json | grep '"id":' | wc -l
