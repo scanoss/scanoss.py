@@ -1,14 +1,11 @@
 name: Publish GHCR Container
-# Publish a multi-platform container when a package is released (tagged)
+# Publish a multi-platform container when a version is tagged
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*'
-  pull_request:
-    branches:
-      - 'main'
+      - 'v*.*.*'
 #   release:
 #     types: [published]
 
@@ -26,16 +23,16 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
         
       # Setup and build python package
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.x'
+          python-version: '3.10.x'
           
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
@@ -44,12 +41,12 @@ jobs:
         run: make dist
         
       # Install the cosign tool except on PR
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@v2
-
-      - name: Check Cosign Version
-        run: cosign version
+#      - name: Install cosign
+#        if: github.event_name != 'pull_request'
+#        uses: sigstore/cosign-installer@v2
+#
+#      - name: Check Cosign Version
+#        run: cosign version
 
         # Add support for more platforms with QEMU
       - name: Set up QEMU
@@ -93,7 +90,9 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          docker run -it ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} version
+          docker run ${{ env.IMAGE_NAME }} scan -o results.json tests
+          echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"
 
 #      - name: Sign Docker Image
 #        if: ${{ github.event_name != 'pull_request' }}

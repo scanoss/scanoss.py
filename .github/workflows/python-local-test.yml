@@ -1,8 +1,14 @@
+name: Build/Test Local Python Package
 # This workflow will upload a TestPyPI Python Package using Twine on demand (dispatch)
 
-name: Build/Test Local Python Package
-
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+#  push:
+#    branches:
+#      - 'main'
+#  pull_request:
+#    branches:
+#      - 'main'
 
 permissions:
   contents: read
@@ -37,5 +43,5 @@ jobs:
       run: |
         which scanoss-py
         scanoss-py version
-        scanoss-py scan src > results.json
+        scanoss-py scan tests > results.json
         echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"
