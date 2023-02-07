@@ -64,4 +64,4 @@ jobs:
           docker image ls -a
           docker run ${{ env.IMAGE_NAME }} version
           docker run ${{ env.IMAGE_NAME }} scan -o results.json tests
-          cat results.json | grep '"id":' | wc -l
+          echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"

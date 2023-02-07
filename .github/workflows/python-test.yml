@@ -38,5 +38,4 @@ jobs:
         which scanoss-py
         scanoss-py version
         scanoss-py scan src > results.json
-        echo "ID Count: "
-        cat results.json | grep '"id":' | wc -l
+        echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"
