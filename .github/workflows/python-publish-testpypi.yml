@@ -29,6 +29,8 @@ jobs:
       - name: Install Test Package
         run: |
           pip install -r requirements.txt
+          scanoss_version=$(python ./version.py)
+          echo "Local test install of scanoss ${scanoss_version}..."
           pip install dist/scanoss-*-py3-none-any.whl
           which scanoss-py
 
