@@ -1,6 +1,9 @@
 # SCANOSS Python Library
 The SCANOSS python package provides a simple, easy to consume library for interacting with SCANOSS APIs/Engine.
 
+[![Build/Test Local Python Package](https://github.com/scanoss/scanoss.py/actions/workflows/python-local-test.yml/badge.svg)](https://github.com/scanoss/scanoss.py/actions/workflows/python-local-test.yml)
+[![Build/Test Local Container](https://github.com/scanoss/scanoss.py/actions/workflows/container-local-test.yml/badge.svg)](https://github.com/scanoss/scanoss.py/actions/workflows/container-local-test.yml)
+
 # Installation
 To install (from [pypi.org](https://pypi.org/project/scanoss)), please run:
 ```bash
