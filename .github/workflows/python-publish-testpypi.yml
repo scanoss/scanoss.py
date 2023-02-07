@@ -50,7 +50,7 @@ jobs:
 
   test:
     if: success()
-    needs: [ publish-testpypi-package ]
+    needs: [ deploy ]
     runs-on: ubuntu-latest
 
     steps:
