@@ -33,7 +33,6 @@ jobs:
         pip install dist/scanoss-*-py3-none-any.whl
         which scanoss-py
         scanoss-py version
-        scanoss-py
         scanoss-py scan src > result.json
         echo "ID Count: "
         cat results.json | grep '"id":' | wc -l
