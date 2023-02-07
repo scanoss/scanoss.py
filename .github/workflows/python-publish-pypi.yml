@@ -64,7 +64,9 @@ jobs:
 
       - name: Install Remote Package
         run: |
-          pip install --upgrade scanoss
+          scanoss_version=$(python ./version.py)
+          echo "Installing scanoss ${scanoss_version}..."
+          pip install --upgrade scanoss==$scanoss_version
           which scanoss-py
 
       - name: Run Tests

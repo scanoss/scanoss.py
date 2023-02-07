@@ -62,7 +62,9 @@ jobs:
 
       - name: Install Remote Package
         run: |
+          scanoss_version=$(python ./version.py)
           pip install -r requirements.txt
+          echo "Install TestPyPI scanoss ${scanoss_version}..."
           pip install -i https://test.pypi.org/simple/ --upgrade scanoss
           which scanoss-py
 
