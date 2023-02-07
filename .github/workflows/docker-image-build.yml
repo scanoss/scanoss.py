@@ -62,4 +62,4 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Test Image
-        run: docker run -it ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        run: docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
