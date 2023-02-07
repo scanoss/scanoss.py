@@ -1,8 +1,10 @@
 # SCANOSS Python Library
 The SCANOSS python package provides a simple, easy to consume library for interacting with SCANOSS APIs/Engine.
 
-[![Build/Test Local Python Package](https://github.com/scanoss/scanoss.py/actions/workflows/python-local-test.yml/badge.svg)](https://github.com/scanoss/scanoss.py/actions/workflows/python-local-test.yml)
+[![Build/Test Local Package](https://github.com/scanoss/scanoss.py/actions/workflows/python-local-test.yml/badge.svg)](https://github.com/scanoss/scanoss.py/actions/workflows/python-local-test.yml)
 [![Build/Test Local Container](https://github.com/scanoss/scanoss.py/actions/workflows/container-local-test.yml/badge.svg)](https://github.com/scanoss/scanoss.py/actions/workflows/container-local-test.yml)
+[![Publish Package - PyPI](https://github.com/scanoss/scanoss.py/actions/workflows/python-publish-pypi.yml/badge.svg)](https://github.com/scanoss/scanoss.py/actions/workflows/python-publish-pypi.yml)
+[![Publish GHCR Container](https://github.com/scanoss/scanoss.py/actions/workflows/container-publish-ghcr.yml/badge.svg)](https://github.com/scanoss/scanoss.py/actions/workflows/container-publish-ghcr.yml)
 
 # Installation
 To install (from [pypi.org](https://pypi.org/project/scanoss)), please run:
