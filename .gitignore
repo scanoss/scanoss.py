@@ -18,7 +18,8 @@ src/scanoss/data/build_date.txt
 bad*.txt
 *.csv
 *.json
-
 *.tar
 *.tgz
 *.gz
+*.zip
+local-*.txt
