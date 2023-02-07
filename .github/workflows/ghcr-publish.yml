@@ -88,6 +88,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Test the docker image
+      - name: Test Published Image
+        if: github.event_name != 'pull_request'
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker run -it ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
 #      - name: Sign Docker Image
 #        if: ${{ github.event_name != 'pull_request' }}
 #        env:
