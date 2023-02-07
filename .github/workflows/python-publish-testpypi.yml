@@ -41,7 +41,6 @@ jobs:
           pip uninstall -y scanoss
 
       - name: Publish Test Package
-        id: publish-testpypi-package
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__

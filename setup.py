@@ -28,8 +28,8 @@ setup(
     long_description=read("PACKAGE.md"),
     long_description_content_type='text/markdown',
     install_requires=["requests",  # TODO Add min req for python 3.10 here - urllib3>=1.26.8 and requests>=2.27.0?
-                      "crc32c>=2.2", "binaryornot", "progress", "grpcio<=1.42.0",
-                      "protobuf>=3.16.0,<=3.19.1", "pypac"
+                      "crc32c>=2.2", "binaryornot", "progress", "grpcio>1.42.0",
+                      "protobuf>3.19.1", "pypac"
                       ],
     include_package_data=True,
     package_data={'': ['data/*.json', 'data/*.txt']},

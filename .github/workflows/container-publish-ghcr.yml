@@ -83,7 +83,7 @@ jobs:
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} version
-          docker run ${{ env.IMAGE_NAME }} scan -o results.json tests
+          docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} scan -o results.json tests
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
           if [[ $id_count -lt 1 ]]; then
