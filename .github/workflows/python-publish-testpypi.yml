@@ -1,0 +1,72 @@
+name: Publish Python Package - TestPyPI
+# This workflow will upload a TestPyPI Python Package using Twine on demand (dispatch)
+
+on: [workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10.x'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+
+    - name: Build Package
+      run: make dist
+
+    - name: Install Test Package
+      run: |
+        pip install -r requirements.txt
+        pip install dist/scanoss-*-py3-none-any.whl
+        which scanoss-py
+
+    - name: Run Local Tests
+      run: |
+        which scanoss-py
+        scanoss-py version
+        scanoss-py scan tests > results.json
+        echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"
+        pip uninstall scanoss
+
+    - name: Publish Test Package
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10.x'
+
+    - name: Install Remote Package
+      run: |
+        pip install -r requirements.txt
+        pip install -i https://test.pypi.org/simple/ --upgrade scanoss
+        which scanoss-py
+
+    - name: Run Tests
+      run: |
+        which scanoss-py
+        scanoss-py version
+        scanoss-py scan tests > results.json
+        echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"

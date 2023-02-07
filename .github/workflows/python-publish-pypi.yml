@@ -1,0 +1,73 @@
+name: Publish Python Package - PyPI
+# This workflow will upload a Python Package using Twine to PyPI when a release is created
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+
+    - name: Build Package
+      run: make dist
+
+    - name: Install Test Package
+      run: |
+        pip install -r requirements.txt
+        pip install dist/scanoss-*-py3-none-any.whl
+        which scanoss-py
+
+    - name: Run Local Tests
+      run: |
+        which scanoss-py
+        scanoss-py version
+        scanoss-py scan tests > results.json
+        echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"
+        pip uninstall scanoss
+
+    - name: Publish Package
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10.x'
+
+    - name: Install Remote Package
+      run: |
+        pip install --upgrade scanoss
+        which scanoss-py
+
+    - name: Run Tests
+      run: |
+        which scanoss-py
+        scanoss-py version
+        scanoss-py scan tests > results.json
+        echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"
