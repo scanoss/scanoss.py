@@ -1,10 +1,13 @@
 name: Publish Python Package - PyPI
-# This workflow will upload a Python Package using Twine to PyPI when a release is created
+# This workflow will upload a Python Package using Twine to PyPI and create a draft release when a tag is pushed
 
 on:
   workflow_dispatch:
-  release:
-    types: [ published ]
+  push:
+    tags:
+      - 'v*.*.*'
+#  release:
+#    types: [ published ]
 
 permissions:
   contents: read
@@ -40,7 +43,12 @@ jobs:
           which scanoss-py
           scanoss-py version
           scanoss-py scan tests > results.json
-          echo "ID Count: $(cat results.json | grep '"id":' | wc -l)"
+          id_count=$(cat results.json | grep '"id":' | wc -l)
+          echo "ID Count: $id_count"
+          if [[ $id_count -lt 1 ]]; then
+            echo "Error: Scan test did not produce any results. Failing"
+            exit 1
+          fi
           pip uninstall -y scanoss
 
       - name: Publish Package
@@ -48,6 +56,12 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: dist/*
 
   test:
     if: success()

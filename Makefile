@@ -30,17 +30,17 @@ date_time:  ## Setup package build date
 
 dev_setup: date_time_clean  ## Setup Python dev env for the current user
 	@echo "Setting up dev env for the current user..."
-	python3 setup.py develop --user
+	pip3 install -e .
 
 dev_uninstall:  ## Uninstall Python dev setup for the current user
 	@echo "Uninstalling dev env..."
-	python3 setup.py develop --user --uninstall
+	pip3 uninstall -y scanoss
 	@rm -f venv/bin/scanoss-py
 	@rm -rf src/scanoss.egg-info
 
 dist: clean dev_uninstall date_time  ## Prepare Python package into a distribution
 	@echo "Build deployable package for distribution $(VERSION)..."
-	python3 setup.py sdist bdist_wheel
+	python3 -m build
 	twine check dist/*
 
 publish_test:  ## Publish the Python package to TestPyPI
