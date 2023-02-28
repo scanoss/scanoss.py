@@ -72,7 +72,7 @@ jobs:
           scanoss_version=$(python ./version.py)
           pip install -r requirements.txt
           echo "Install TestPyPI scanoss ${scanoss_version}..."
-          pip install -i https://test.pypi.org/simple/ --upgrade scanoss
+          pip install -i https://test.pypi.org/simple/ --upgrade scanoss==${scanoss_version}
           which scanoss-py
 
       - name: Run Tests
