@@ -32,7 +32,6 @@ from progress.spinner import Spinner
 from pypac.parser import PACFile
 
 from .scanossapi import ScanossApi
-from .winnowing import Winnowing
 from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite
 from .csvoutput import CsvOutput
@@ -42,6 +41,13 @@ from .threadeddependencies import ThreadedDependencies
 from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
+FAST_WINNOWING = False
+try:
+    from scanoss_winnowing.winnowing import Winnowing
+    FAST_WINNOWING = True
+except ModuleNotFoundError or ImportError:
+    FAST_WINNOWING = False
+    from .winnowing import Winnowing
 
 from . import __version__
 
@@ -799,6 +805,9 @@ class Scanner(ScanossBase):
         wfps = ''
         scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
+        spinner = None
+        if not self.quiet and self.isatty:
+            spinner = Spinner('Fingerprinting ')
         for root, dirs, files in os.walk(scan_dir):
             dirs[:] = self.__filter_dirs(dirs)                             # Strip out unwanted directories
             filtered_files = self.__filter_files(files)                    # Strip out unwanted files
@@ -812,7 +821,11 @@ class Scanner(ScanossBase):
                     self.print_trace(f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
                 if f_size > 0:            # Ignore empty files
                     self.print_debug(f'Fingerprinting {path}...')
+                    if spinner:
+                        spinner.next()
                     wfps += self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
+        if spinner:
+            spinner.finish()
         if wfps:
             if wfp_file:
                 self.print_stderr(f'Writing fingerprints to {wfp_file}')

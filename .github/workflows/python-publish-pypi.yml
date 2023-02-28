@@ -6,8 +6,6 @@ on:
   push:
     tags:
       - 'v*.*.*'
-#  release:
-#    types: [ published ]
 
 permissions:
   contents: read
@@ -15,7 +13,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
@@ -42,6 +39,7 @@ jobs:
         run: |
           which scanoss-py
           scanoss-py version
+          scanoss-py fast
           scanoss-py scan tests > results.json
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
@@ -54,6 +52,7 @@ jobs:
       - name: Publish Package
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+#          skip_existing: true
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
 
@@ -67,7 +66,6 @@ jobs:
     if: success()
     needs: [ deploy ]
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
@@ -87,6 +85,21 @@ jobs:
         run: |
           which scanoss-py
           scanoss-py version
+          scanoss-py fast
+          scanoss-py scan tests > results.json
+          id_count=$(cat results.json | grep '"id":' | wc -l)
+          echo "ID Count: $id_count"
+          if [[ $id_count -lt 1 ]]; then
+            echo "Error: Scan test did not produce any results. Failing"
+            exit 1
+          fi
+
+      - name: Run Tests (fast winnowing)
+        run: |
+          pip install scanoss_winnowing
+          which scanoss-py
+          scanoss-py version
+          scanoss-py fast
           scanoss-py scan tests > results.json
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"

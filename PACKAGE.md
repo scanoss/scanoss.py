@@ -11,6 +11,16 @@ To upgrade an existing installation please run:
 pip3 install --upgrade scanoss
 ```
 
+### Fast Winnowing
+To take advantage of faster fingerprinting, please install the optional [scanoss_winnowing](https://pypi.org/project/scanoss_winnowing/) package:
+```bash
+pip3 install scanoss_winnowing
+```
+Or directly using:
+```bash
+pip3 install scanoss[fast_winnowing]
+```
+
 ### Docker
 Alternatively, there is a docker image of the compiled package. It can be found [here](https://github.com/scanoss/scanoss.py/pkgs/container/scanoss-py).
 Details of how to run it can be found [here](https://github.com/scanoss/scanoss.py/blob/main/GHCR.md).

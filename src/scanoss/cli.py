@@ -36,6 +36,7 @@ from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite
 from .csvoutput import CsvOutput
 from . import __version__
+from .scanner import FAST_WINNOWING
 
 
 def print_stderr(*args, **kwargs):
@@ -49,7 +50,7 @@ def setup_args() -> None:
     """
     Setup all the command line arguments for processing
     """
-    parser = argparse.ArgumentParser(description=f'SCANOSS Python CLI. Ver: {__version__}, License: MIT')
+    parser = argparse.ArgumentParser(description=f'SCANOSS Python CLI. Ver: {__version__}, License: MIT, Fast Winnowing: {FAST_WINNOWING}')
     parser.add_argument('--version', '-v', action='store_true', help='Display version details')
 
     subparsers = parser.add_subparsers(title='Sub Commands', dest='subparser', description='valid subcommands',
@@ -59,6 +60,12 @@ def setup_args() -> None:
     p_ver = subparsers.add_parser('version', aliases=['ver'],
                                   description=f'Version of SCANOSS CLI: {__version__}', help='SCANOSS version')
     p_ver.set_defaults(func=ver)
+
+    # Sub-command: fast
+    p_ver = subparsers.add_parser('fast',
+                                  description=f'Is fast winnowing enabled: {__version__}', help='SCANOSS fast winnowing')
+    p_ver.set_defaults(func=fast)
+
     # Sub-command: scan
     p_scan = subparsers.add_parser('scan', aliases=['sc'],
                                    description=f'Analyse/scan the given source base: {__version__}',
@@ -118,6 +125,9 @@ def setup_args() -> None:
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_wfp.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
     p_wfp.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
+    p_wfp.add_argument('--all-extensions', action='store_true', help='Fingerprint all file extensions')
+    p_wfp.add_argument('--all-folders', action='store_true', help='Fingerprint all folders')
+    p_wfp.add_argument('--all-hidden', action='store_true', help='Fingerprint all hidden files/folders')
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser('dependencies', aliases=['dp', 'dep'],
@@ -232,7 +242,6 @@ def setup_args() -> None:
         exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
 
-
 def ver(*_):
     """
     Run the "ver" sub-command
@@ -240,6 +249,12 @@ def ver(*_):
     """
     print(f'Version: {__version__}')
 
+def fast(*_):
+    """
+    Run the "fast" sub-command
+    :param _: ignored/unused
+    """
+    print(f'Fast Winnowing: {FAST_WINNOWING}')
 
 def file_count(parser, args):
     """
@@ -293,7 +308,9 @@ def wfp(parser, args):
         open(scan_output, 'w').close()
 
     scan_options = 0 if args.skip_snippets else ScanType.SCAN_SNIPPETS.value  # Skip snippet generation or not
-    scanner = Scanner(debug=args.debug, quiet=args.quiet, obfuscate=args.obfuscate, scan_options=scan_options)
+    scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, obfuscate=args.obfuscate,
+                      scan_options=scan_options, all_extensions=args.all_extensions,
+                      all_folders=args.all_folders, hidden_files_folders=args.all_hidden)
 
     if not os.path.exists(args.scan_dir):
         print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
