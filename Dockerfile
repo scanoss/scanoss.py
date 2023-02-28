@@ -19,7 +19,9 @@ ENV PATH=/root/.local/bin:$PATH
 
 COPY ./dist/scanoss-*-py3-none-any.whl /install/
 
+# Install dependencies
 RUN pip3 install --user /install/scanoss-*-py3-none-any.whl
+RUN pip3 install --user scanoss_winnowing
 RUN pip3 install --user scancode-toolkit-mini
 #RUN pip3 install --user typecode-libmagic
 

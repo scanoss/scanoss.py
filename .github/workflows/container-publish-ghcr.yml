@@ -6,8 +6,6 @@ on:
   push:
     tags:
       - 'v*.*.*'
-#   release:
-#     types: [published]
 
 env:
   REGISTRY: ghcr.io
@@ -83,6 +81,7 @@ jobs:
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} version
+          docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} fast
           docker run -v "$(pwd)":"/scanoss" ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} scan -o results.json tests
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
