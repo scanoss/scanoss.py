@@ -7,9 +7,6 @@ on:
     tags:
       - 'v*.*.*'
 
-permissions:
-  contents: read
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -26,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Build Package
+      - name: Build Package - ${{ github.ref_name }}
         run: make dist
 
       - name: Install Test Package
@@ -49,14 +46,15 @@ jobs:
           fi
           pip uninstall -y scanoss
 
-      - name: Publish Package
+      - name: Publish Package - ${{ github.ref_name }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-#          skip_existing: true
+          skip_existing: true
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-      - name: Create Draft Release
+      - name: Create Draft Release ${{ github.ref_type }} - ${{ github.ref_name }}
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         uses: softprops/action-gh-release@v1
         with:
           draft: true
