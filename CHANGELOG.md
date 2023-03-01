@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.4.0] - 2023-01-01
+### Added
+- Added support for fast winnowing (15x improvement) thanks to a contribution from [tardyp](https://github.com/tardyp)
+  - This is enabled by a supporting package; [scanoss_winnowing](https://github.com/scanoss/scanoss-winnowing.py).
+  - It can be installed using: `pip3 install scanoss_winnowing`
+  - Or using: `pip3 install --upgrade scanoss[fast_winnowing]`
+
 ## [1.3.7] - 2023-02-07
 ### Added
 - Upgrade to the latest protobuf and grpcio packages
@@ -201,3 +208,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.3.5]: https://github.com/scanoss/scanoss.py/compare/v1.3.4...v1.3.5
 [1.3.6]: https://github.com/scanoss/scanoss.py/compare/v1.3.5...v1.3.6
 [1.3.7]: https://github.com/scanoss/scanoss.py/compare/v1.3.6...v1.3.7
+[1.4.0]: https://github.com/scanoss/scanoss.py/compare/v1.3.7...v1.4.0
