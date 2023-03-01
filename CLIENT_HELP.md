@@ -102,3 +102,14 @@ Simply run the following commands find out:
   * `scanoss-py utils pac-proxy --pac file://proxy.pac --url https://osskb.org`
 * url
   * `scanoss-py utils pac-proxy --pac https://path.to/proxy.pac --url https://osskb.org`
+
+## GRPCIO Library installation for Apple Silicon (before 1.5.3)
+Versions of [grpcio](https://pypi.org/project/grpcio) prior to `1.5.3` did not contain a binary wheel for Apple Silicon.
+
+[Pietro De Nicolao](https://github.com/pietrodn) has kindly created a [GitHub repo](https://github.com/pietrodn/grpcio-mac-arm-build) to build the M1/M2 compatible wheels.
+Simply browse to the [releases](https://github.com/pietrodn/grpcio-mac-arm-build/releases) area, choose the desired release version and install the wheel matching your python version:
+```bash
+pip3 install --upgrade https://github.com/pietrodn/grpcio-mac-arm-build/releases/download/1.51.1/grpcio-1.51.1-cp39-cp39-macosx_11_0_arm64.whl
+```
+
+This command above will install `grpcio` `1.5.1` for Python `3.9`. To install for `3.10` simply replace the `cp39` with `cp310`.
