@@ -109,8 +109,7 @@ class ScanossApi(ScanossBase):
             self.session.verify = False
         elif ca_cert:
             self.verify = ca_cert
-            self.session.cert = ca_cert
-            self.session.verify = True
+            self.session.verify = ca_cert
         self.proxies = {'https': proxy, 'http': proxy} if proxy else None
         if self. proxies:
             self.session.proxies = self.proxies
