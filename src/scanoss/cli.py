@@ -561,43 +561,40 @@ def utils_cert_download(_, args):
     :param _: ignore/unused
     :param args: Parsed arguments
     """
-    import ssl
     from urllib.parse import urlparse
     import socket
+    from OpenSSL import SSL, crypto
     import traceback
 
     file = sys.stdout
     hostname = 'unset'
     port = 'unkown'
+    if args.output:
+        file = open(args.output, 'w')
+    parsed_url = urlparse(args.hostname)
+    hostname = parsed_url.hostname or args.hostname  # Use the parse hostname, or it None use the supplied one
+    port = int(parsed_url.port or args.port)  # Use the parsed port, if not use the supplied one (default 443)
+    certs = []
     try:
-        if args.output:
-            file = open(args.output, 'w')
-        parsed_url = urlparse(args.hostname)
-        hostname = parsed_url.hostname or args.hostname  # Use the parse hostname, or it None use the supplied one
-        port = int(parsed_url.port or args.port)  # Use the parsed port, if not use the supplied one (default 443)
-        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        sock = context.wrap_socket(conn, server_hostname=hostname)
-        if not args.quiet or args.debug:
-            print_stderr(f'Attempting to download PEM certificate from {hostname}:{port} ...')
         if args.debug:
-            print_stderr('Connecting to host...')
-        sock.connect((hostname, port))
-        if args.debug:
-            print_stderr('Getting peer cert...')
-        peer_cert = sock.getpeercert(True)
-        if not peer_cert:
-            print_stderr(f'Error: Failed to download peer certificate data from {hostname}:{port}')
-            exit(1)
-        if args.debug:
-            print_stderr('Converting DER to PEM...')
-        cert_data = ssl.DER_cert_to_PEM_cert(peer_cert)
-        if not cert_data or cert_data == '':
-            print_stderr(f'Error: Failed to convert certificate data to PEM from {hostname}:{port}')
-            exit(1)
-        else:
-            print(cert_data.strip(), file=file)  # Print the downloaded PEM certificate
-    except Exception as e:
+            print_stderr(f'Connecting to {hostname} on {port}...')
+        conn = SSL.Connection(SSL.Context(SSL.TLSv1_2_METHOD), socket.socket())
+        conn.connect((hostname, port))
+        conn.do_handshake()
+        certs = conn.get_peer_cert_chain()
+        for index, cert in enumerate(certs):
+            cert_components = dict(cert.get_subject().get_components())
+            if(sys.version_info[0] >= 3):
+                cn = cert_components.get(b'CN')
+            else:
+                cn = cert_components.get('CN')
+            if not args.quiet:
+                print_stderr(f'Centificate {index} - CN: {cn}')
+            if(sys.version_info[0] >= 3):
+                print((crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode('utf-8')).strip(), file=file)  # Print the downloaded PEM certificate
+            else:
+                print((crypto.dump_certificate(crypto.FILETYPE_PEM, cert)).strip(), file=file)
+    except SSL.Error as e:
         print_stderr(f'ERROR: Exception ({e.__class__.__name__}) Downloading certificate from {hostname}:{port} - {e}.')
         if args.debug:
             traceback.print_exc()

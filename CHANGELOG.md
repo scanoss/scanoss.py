@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.4.0] - 2023-01-01
+## [1.4.2] - 2023-03-09
+### Fixed
+- Fixed issue with custom certificate when scanning (--ca-cert)
+### Added
+- Added support to download full certificate chain with:
+  - `cert_download.sh`
+  - `scanoss-py utils cdl`
+
+## [1.4.0] - 2023-03-01
 ### Added
 - Added support for fast winnowing (15x improvement) thanks to a contribution from [tardyp](https://github.com/tardyp)
   - This is enabled by a supporting package; [scanoss_winnowing](https://github.com/scanoss/scanoss-winnowing.py).
@@ -209,3 +217,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.3.6]: https://github.com/scanoss/scanoss.py/compare/v1.3.5...v1.3.6
 [1.3.7]: https://github.com/scanoss/scanoss.py/compare/v1.3.6...v1.3.7
 [1.4.0]: https://github.com/scanoss/scanoss.py/compare/v1.3.7...v1.4.0
+[1.4.2]: https://github.com/scanoss/scanoss.py/compare/v1.4.0...v1.4.2
