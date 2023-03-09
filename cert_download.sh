@@ -100,4 +100,4 @@ if [ $force -eq 0 ] && [ -f "$pemfile" ] ; then
 fi
 echo "Attempting to get PEM certificate from $host:$port and saving to $pemfile ..."
 
-openssl s_client -showcerts -connect "$host:$port" -servername "$host" </dev/null 2>/dev/null | openssl x509 -outform PEM > "$pemfile"
+openssl s_client -showcerts -verify 5 -connect "$host:$port" -servername "$host" < /dev/null 2> /dev/null | awk '/BEGIN/,/END/{ if(/BEGIN/){a++}; print}' > "$pemfile"
