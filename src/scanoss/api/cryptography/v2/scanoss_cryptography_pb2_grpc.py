@@ -3,17 +3,17 @@
 import grpc
 
 from scanoss.api.common.v2 import scanoss_common_pb2 as scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2
-from scanoss.api.dependencies.v2 import scanoss_dependencies_pb2 as scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2
+from scanoss.api.cryptography.v2 import scanoss_cryptography_pb2 as scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2
 
 
-class DependenciesStub(object):
+class CryptographyStub(object):
     """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {
-    title: "SCANOSS Dependency Service";
+    title: "SCANOSS Cryptography Service";
     version: "2.0";
     contact: {
-    name: "scanoss-dependencies";
-    url: "https://github.com/scanoss/dependencies";
+    name: "scanoss-cryptography";
+    url: "https://github.com/scanoss/crpytography";
     email: "support@scanoss.com";
     };
     };
@@ -34,7 +34,7 @@ class DependenciesStub(object):
     };
 
 
-    Expose all of the SCANOSS Dependency RPCs here
+    Expose all of the SCANOSS Cryptography RPCs here
     """
 
     def __init__(self, channel):
@@ -44,25 +44,25 @@ class DependenciesStub(object):
             channel: A grpc.Channel.
         """
         self.Echo = channel.unary_unary(
-                '/scanoss.api.dependencies.v2.Dependencies/Echo',
+                '/scanoss.api.cryptography.v2.Cryptography/Echo',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.FromString,
                 )
-        self.GetDependencies = channel.unary_unary(
-                '/scanoss.api.dependencies.v2.Dependencies/GetDependencies',
-                request_serializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyRequest.SerializeToString,
-                response_deserializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyResponse.FromString,
+        self.GetAlgorithms = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetAlgorithms',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.AlgorithmResponse.FromString,
                 )
 
 
-class DependenciesServicer(object):
+class CryptographyServicer(object):
     """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {
-    title: "SCANOSS Dependency Service";
+    title: "SCANOSS Cryptography Service";
     version: "2.0";
     contact: {
-    name: "scanoss-dependencies";
-    url: "https://github.com/scanoss/dependencies";
+    name: "scanoss-cryptography";
+    url: "https://github.com/scanoss/crpytography";
     email: "support@scanoss.com";
     };
     };
@@ -83,13 +83,13 @@ class DependenciesServicer(object):
     };
 
 
-    Expose all of the SCANOSS Dependency RPCs here
+    Expose all of the SCANOSS Cryptography RPCs here
     """
 
     def Echo(self, request, context):
         """Standard echo
         option (google.api.http) = {
-        post: "/api/v2/dependencies/echo"
+        post: "/api/v2/cryptography/echo"
         body: "*"
         };
         """
@@ -97,10 +97,10 @@ class DependenciesServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetDependencies(self, request, context):
-        """Get dependency details
+    def GetAlgorithms(self, request, context):
+        """Get Cryptographic algorithms associated with a list of PURLs
         option (google.api.http) = {
-        post: "/api/v2/dependencies/dependencies"
+        post: "/api/v2/cryptography/algorithms"
         body: "*"
         };
         """
@@ -109,33 +109,33 @@ class DependenciesServicer(object):
         raise NotImplementedError('Method not implemented!')
 
 
-def add_DependenciesServicer_to_server(servicer, server):
+def add_CryptographyServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Echo': grpc.unary_unary_rpc_method_handler(
                     servicer.Echo,
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.SerializeToString,
             ),
-            'GetDependencies': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetDependencies,
-                    request_deserializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyRequest.FromString,
-                    response_serializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyResponse.SerializeToString,
+            'GetAlgorithms': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetAlgorithms,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.AlgorithmResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'scanoss.api.dependencies.v2.Dependencies', rpc_method_handlers)
+            'scanoss.api.cryptography.v2.Cryptography', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class Dependencies(object):
+class Cryptography(object):
     """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {
-    title: "SCANOSS Dependency Service";
+    title: "SCANOSS Cryptography Service";
     version: "2.0";
     contact: {
-    name: "scanoss-dependencies";
-    url: "https://github.com/scanoss/dependencies";
+    name: "scanoss-cryptography";
+    url: "https://github.com/scanoss/crpytography";
     email: "support@scanoss.com";
     };
     };
@@ -156,7 +156,7 @@ class Dependencies(object):
     };
 
 
-    Expose all of the SCANOSS Dependency RPCs here
+    Expose all of the SCANOSS Cryptography RPCs here
     """
 
     @staticmethod
@@ -170,14 +170,14 @@ class Dependencies(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/scanoss.api.dependencies.v2.Dependencies/Echo',
+        return grpc.experimental.unary_unary(request, target, '/scanoss.api.cryptography.v2.Cryptography/Echo',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.SerializeToString,
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def GetDependencies(request,
+    def GetAlgorithms(request,
             target,
             options=(),
             channel_credentials=None,
@@ -187,8 +187,8 @@ class Dependencies(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/scanoss.api.dependencies.v2.Dependencies/GetDependencies',
-            scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyRequest.SerializeToString,
-            scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/scanoss.api.cryptography.v2.Cryptography/GetAlgorithms',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.AlgorithmResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
