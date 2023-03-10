@@ -41,6 +41,10 @@ class VulnerabilitiesServicer(object):
 
     def Echo(self, request, context):
         """Standard echo
+        option (google.api.http) = {
+        post: "/api/v2/vulnerabilities/echo"
+        body: "*"
+        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -48,6 +52,10 @@ class VulnerabilitiesServicer(object):
 
     def GetCpes(self, request, context):
         """Get CPEs associated with a PURL
+        option (google.api.http) = {
+        post: "/api/v2/vulnerabilities/cpes"
+        body: "*"
+        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -55,6 +63,10 @@ class VulnerabilitiesServicer(object):
 
     def GetVulnerabilities(self, request, context):
         """Get vulnerability details
+        option (google.api.http) = {
+        post: "/api/v2/vulnerabilities/vulnerabilities"
+        body: "*"
+        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
