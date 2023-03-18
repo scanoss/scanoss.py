@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
  SPDX-License-Identifier: MIT
 
@@ -60,11 +59,6 @@ def setup_args() -> None:
     p_ver = subparsers.add_parser('version', aliases=['ver'],
                                   description=f'Version of SCANOSS CLI: {__version__}', help='SCANOSS version')
     p_ver.set_defaults(func=ver)
-
-    # Sub-command: fast
-    p_ver = subparsers.add_parser('fast',
-                                  description=f'Is fast winnowing enabled: {__version__}', help='SCANOSS fast winnowing')
-    p_ver.set_defaults(func=fast)
 
     # Sub-command: scan
     p_scan = subparsers.add_parser('scan', aliases=['sc'],
@@ -162,13 +156,36 @@ def setup_args() -> None:
     p_cnv.add_argument('--input-format', type=str, choices=['plain'], default='plain',
                        help='Input format (optional - default: plain)')
 
+    # Sub-command: component
+    p_comp = subparsers.add_parser('component', aliases=['comp'],
+                                   description=f'SCANOSS Component commands: {__version__}',
+                                   help='Component support commands')
+
+    comp_sub = p_comp.add_subparsers(title='Component Commands', dest='subparsercmd', description='utils sub-commands',
+                                     help='component sub-commands')
+
+    # Component Sub-command: component crypto
+    c_crypto = comp_sub.add_parser('crypto', aliases=['cr'],
+                                   description=f'Show Cryptographic algorithms: {__version__}',
+                                   help='Retreive the cryptographic algorithms for the given components')
+    c_crypto.set_defaults(func=comp_crypto)
+
+    c_crypto.add_argument('--purl',  '-p', type=str, nargs="*", help='Package URL - PURL to process.')
+    c_crypto.add_argument('--input', '-i', type=str, help='Input file name')
+    c_crypto.add_argument('--output','-o', type=str, help='Output result file name (optional - default stdout).')
+
     # Sub-command: utils
-    p_util = subparsers.add_parser('utils', aliases=['ut', 'util'],
+    p_util = subparsers.add_parser('utils', aliases=['ut'],
                                    description=f'SCANOSS Utility commands: {__version__}',
                                    help='General utility support commands')
 
-    utils_sub = p_util.add_subparsers(title='Utils Commands', dest='utilsubparser', description='utils sub-commands',
-                                      help='utils sub-commands')
+    utils_sub = p_util.add_subparsers(title='Utils Commands', dest='subparsercmd', description='component sub-commands',
+                                      help='component sub-commands')
+
+    # Utils Sub-command: utils fast
+    p_f_f = utils_sub.add_parser('fast',
+                                  description=f'Is fast winnowing enabled: {__version__}', help='SCANOSS fast winnowing')
+    p_f_f.set_defaults(func=fast)
 
     # Utils Sub-command: utils certloc
     p_c_loc = utils_sub.add_parser('certloc', aliases=['cl'],
@@ -197,23 +214,21 @@ def setup_args() -> None:
     p_p_proxy.add_argument('--url', required=False, type=str, default="https://osskb.org/api",
                            help='URL to test (default: https://osskb.org/api).')
 
-    # Global command options
+    # Global Scan command options
     for p in [p_scan]:
-        p.add_argument('--key', '-k', type=str,
-                       help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
-                       )
         p.add_argument('--apiurl', type=str,
                        help='SCANOSS API URL (optional - default: https://osskb.org/api/scan/direct)'
                        )
-        p.add_argument('--api2url', type=str,
-                       help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
+        p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
+
+    # Global Scan/GRPC options
+    for p in [p_scan, c_crypto]:
+        p.add_argument('--key', '-k', type=str,
+                       help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
                        )
         p.add_argument('--proxy', type=str, help='Proxy URL to use for connections (optional). '
                                                  'Can also use the environment variable "HTTPS_PROXY=<ip>:<port>" '
                                                  'and "grcp_proxy=<ip>:<port>" for gRPC'
-                       )
-        p.add_argument('--grpc-proxy', type=str, help='GRPC Proxy URL to use for connections (optional). '
-                                                       'Can also use the environment variable "grcp_proxy=<ip>:<port>"'
                        )
         p.add_argument('--pac', type=str, help='Proxy auto configuration (optional). '
                                                'Specify a file, http url or "auto" to try to discover it.'
@@ -223,9 +238,18 @@ def setup_args() -> None:
                                                    '"REQUESTS_CA_BUNDLE=/path/to/cacert.pem" and '
                                                    '"GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/cacert.pem" for gRPC'
                        )
-        p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
 
-    for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld, p_p_proxy]:
+    # Global GRPC options
+    for p in [p_scan, c_crypto]:
+        p.add_argument('--api2url', type=str,
+                       help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
+                       )
+        p.add_argument('--grpc-proxy', type=str, help='GRPC Proxy URL to use for connections (optional). '
+                                                       'Can also use the environment variable "grcp_proxy=<ip>:<port>"'
+                       )
+
+    # Help/Trace command options
+    for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld, p_p_proxy, c_crypto]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
@@ -237,9 +261,12 @@ def setup_args() -> None:
     if not args.subparser:
         parser.print_help()  # No sub command subcommand, print general help
         exit(1)
-    elif args.subparser == 'utils' and not args.utilsubparser:  # No utils sub command supplied
-        parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
-        exit(1)
+    else:
+        if (args.subparser == 'utils' or args.subparser == 'ut' or
+            args.subparser == 'component' or args.subparser == 'comp') \
+                and not args.subparsercmd:
+            parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
+            exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
 
 def ver(*_):
@@ -649,6 +676,64 @@ def get_pac_file(pac: str):
             exit(1)
     return pac_file
 
+
+def comp_crypto(parser, args):
+    """
+    Run the "component crypto" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    from .scanossgrpc import ScanossGrpc
+    import json
+
+    if (not args.purl and not args.input) or (args.purl and args.input):
+        print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        exit(1)
+    if args.ca_cert and not os.path.exists(args.ca_cert):
+        print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
+        exit(1)
+    pac_file = get_pac_file(args.pac)
+    file = sys.stdout
+    if args.output:
+        file = open(args.output, 'w')
+    success = False
+    purl_request = {}
+    if args.input:
+        if not os.path.isfile(args.input):
+            print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
+            exit(1)
+        with open(args.input, 'r') as f:
+            try:
+                purl_request = json.loads(f.read())
+            except Exception as e:
+                print_stderr(f'ERROR: Problem parsing input JSON: {e}')
+    elif args.purl:
+        purls = []
+        for p in args.purl:
+            purls.append({'purl': p})
+        purl_request = {'purls': purls}
+
+    purl_count = len(purl_request.get('purls'))
+    if purl_count == 0:
+        print_stderr('No PURLs supplied to get cryptographic algorithms.')
+
+    grpc_api = ScanossGrpc(url=args.api2url, debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key,
+                           ca_cert=args.ca_cert, proxy=args.proxy, grpc_proxy=args.grpc_proxy, pac=pac_file
+                           )
+    resp = grpc_api.get_crypto_json(purl_request)
+    # print_stderr(f'Crypto Algo Resp: {resp}')
+    if resp:
+        print(json.dumps(resp, indent=2, sort_keys=True), file=file)
+        success = True
+    if args.output:
+        file.close()
+    if not success:
+        exit(1)
 
 def main():
     """

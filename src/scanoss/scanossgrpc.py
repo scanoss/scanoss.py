@@ -33,9 +33,11 @@ from pypac.parser import PACFile
 from pypac.resolver import ProxyResolver
 from urllib.parse import urlparse
 
+from .api.cryptography.v2.scanoss_cryptography_pb2_grpc import CryptographyStub
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
+from .api.cryptography.v2.scanoss_cryptography_pb2 import AlgorithmResponse
 from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, DependencyResponse
-from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode
+from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode, PurlRequest
 from .scanossbase import ScanossBase
 from . import __version__
 
@@ -95,14 +97,16 @@ class ScanossGrpc(ScanossBase):
             cert_data = ScanossGrpc._load_cert(ca_cert)
         self.print_debug(f'Setting up (secure: {secure}) connection to {self.url}...')
         self._get_proxy_config()
-        if secure is False:
-            self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))  # insecure connection
+        if secure is False:  # insecure connection
+            self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))
+            self.crypto_stub = CryptographyStub(grpc.insecure_channel(self.url))
         else:
             if ca_cert is not None:
                 credentials = grpc.ssl_channel_credentials(cert_data)  # secure with specified certificate
             else:
                 credentials = grpc.ssl_channel_credentials()  # secure connection with default certificate
             self.dependencies_stub = DependenciesStub(grpc.secure_channel(self.url, credentials))
+            self.crypto_stub = CryptographyStub(grpc.secure_channel(self.url, credentials))
 
     @classmethod
     def _load_cert(cls, cert_file: str) -> bytes:
@@ -137,6 +141,28 @@ class ScanossGrpc(ScanossBase):
             #     if key == 'x-response-id':
             #         response_id = value
             # self.print_stderr(f'Response ID: {response_id}. Metadata: {call.trailing_metadata()}')
+            if resp:
+                return resp.message
+            self.print_stderr(f'ERROR: Problem sending Echo request ({message}) to {self.url}. rqId: {request_id}')
+        return None
+
+    def crypto_echo(self, message: str = 'Hello there!') -> str:
+        """
+        Send Echo message to the Cryptography service
+        :param self:
+        :param message: Message to send (default: Hello there!)
+        :return: echo or None
+        """
+        request_id = str(uuid.uuid4())
+        resp: EchoResponse
+        try:
+            metadata = self.metadata[:]
+            metadata.append(('x-request-id', request_id))  # Set a Request ID
+            resp = self.crypto_stub.Echo(EchoRequest(message=message), metadata=metadata, timeout=3)
+        except Exception as e:
+            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
+                              f'(rqId: {request_id}): {e}')
+        else:
             if resp:
                 return resp.message
             self.print_stderr(f'ERROR: Problem sending Echo request ({message}) to {self.url}. rqId: {request_id}')
@@ -182,6 +208,35 @@ class ScanossGrpc(ScanossBase):
                 if not self._check_status_response(resp.status, request_id):
                     return None
                 return MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dictionary
+        return None
+
+    def get_crypto_json(self, purls: dict) -> dict:
+        """
+        Client function to call the rpc for Cryptography GetAlgorithms
+        :param purls: Message to send to the service
+        :return: Server response or None
+        """
+        if not purls:
+            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            return None
+        request_id = str(uuid.uuid4())
+        resp: AlgorithmResponse
+        try:
+            request = ParseDict(purls, PurlRequest())  # Parse the JSON/Dict into the purl request object
+            metadata = self.metadata[:]
+            metadata.append(('x-request-id', request_id))  # Set a Request ID
+            self.print_debug(f'Sending crypto data for decoration (rqId: {request_id})...')
+            resp = self.crypto_stub.GetAlgorithms(request, metadata=metadata, timeout=600)
+        except Exception as e:
+            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
+                              f'(rqId: {request_id}): {e}')
+        else:
+            if resp:
+                if not self._check_status_response(resp.status, request_id):
+                    return None
+                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dictionary
+                del resp_dict['status']
+                return resp_dict
         return None
 
     def _check_status_response(self, status_response: StatusResponse, request_id: str = None) -> bool:

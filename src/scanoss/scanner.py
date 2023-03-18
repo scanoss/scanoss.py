@@ -41,9 +41,11 @@ from .threadeddependencies import ThreadedDependencies
 from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
+
 FAST_WINNOWING = False
 try:
     from scanoss_winnowing.winnowing import Winnowing
+
     FAST_WINNOWING = True
 except ModuleNotFoundError or ImportError:
     FAST_WINNOWING = False
@@ -91,6 +93,7 @@ class Scanner(ScanossBase):
     SCANOSS scanning class
     Handle the scanning of files, snippets and dependencies
     """
+
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
@@ -114,7 +117,7 @@ class Scanner(ScanossBase):
         self.hidden_files_folders = hidden_files_folders
         self.scan_options = scan_options
         self._skip_snippets = True if not scan_options & ScanType.SCAN_SNIPPETS.value else False
-        ver_details = self.__version_details()
+        ver_details = Scanner.version_details()
 
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
                                    all_extensions=all_extensions, obfuscate=obfuscate
@@ -138,7 +141,7 @@ class Scanner(ScanossBase):
             self.threaded_scan = None
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE  # Set the max post size (default 64k)
         if self._skip_snippets:
-            self.max_post_size = 8 * 1024          # 8k Max post size if we're skipping snippets
+            self.max_post_size = 8 * 1024  # 8k Max post size if we're skipping snippets
 
     def __filter_files(self, files: list) -> list:
         """
@@ -153,10 +156,10 @@ class Scanner(ScanossBase):
                 ignore = True
             if not ignore and not self.all_extensions:  # Skip this check if we're allowing all extensions
                 f_lower = f.lower()
-                if f_lower in FILTERED_FILES:           # Check for exact files to ignore
+                if f_lower in FILTERED_FILES:  # Check for exact files to ignore
                     ignore = True
                 if not ignore:
-                    for ending in FILTERED_EXT:         # Check for file endings to ignore
+                    for ending in FILTERED_EXT:  # Check for file endings to ignore
                         if f_lower.endswith(ending):
                             ignore = True
                             break
@@ -177,10 +180,10 @@ class Scanner(ScanossBase):
                 ignore = True
             if not ignore and not self.all_folders:  # Skip this check if we're allowing all folders
                 d_lower = d.lower()
-                if d_lower in FILTERED_DIRS:      # Ignore specific folders
+                if d_lower in FILTERED_DIRS:  # Ignore specific folders
                     ignore = True
                 if not ignore:
-                    for de in FILTERED_DIR_EXT:   # Ignore specific folder endings
+                    for de in FILTERED_DIR_EXT:  # Ignore specific folder endings
                         if d_lower.endswith(de):
                             ignore = True
                             break
@@ -244,7 +247,7 @@ class Scanner(ScanossBase):
         return True
 
     @staticmethod
-    def __version_details() -> str:
+    def version_details() -> str:
         """
         Extract the date this version was produced
         :return: version creation date string
@@ -351,7 +354,7 @@ class Scanner(ScanossBase):
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f"ERROR: Specified folder does not exist or is not a folder: {scan_dir}")
 
-        scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
+        scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir) + 1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
         if not self.quiet and self.isatty:
@@ -367,17 +370,18 @@ class Scanner(ScanossBase):
             if self.threaded_scan and self.threaded_scan.stop_scanning():
                 self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
                 break
-            dirs[:] = self.__filter_dirs(dirs)                             # Strip out unwanted directories
-            filtered_files = self.__filter_files(files)                    # Strip out unwanted files
+            dirs[:] = self.__filter_dirs(dirs)  # Strip out unwanted directories
+            filtered_files = self.__filter_files(files)  # Strip out unwanted files
             self.print_debug(f'F Root: {root}, Dirs: {dirs}, Files {filtered_files}')
-            for file in filtered_files:                                       # Cycle through each filtered file
+            for file in filtered_files:  # Cycle through each filtered file
                 path = os.path.join(root, file)
                 f_size = 0
                 try:
                     f_size = os.stat(path).st_size
                 except Exception as e:
-                    self.print_trace(f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
-                if f_size > 0:                                                 # Ignore broken links and empty files
+                    self.print_trace(
+                        f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
+                if f_size > 0:  # Ignore broken links and empty files
                     self.print_trace(f'Fingerprinting {path}...')
                     if spinner:
                         spinner.next()
@@ -434,7 +438,7 @@ class Scanner(ScanossBase):
         success = True
         self.threaded_scan.update_bar(create=True, file_count=file_count)
         if not scan_started:
-            if not self.threaded_scan.run(wait=False):           # Run the scan but do not wait for it to complete
+            if not self.threaded_scan.run(wait=False):  # Run the scan but do not wait for it to complete
                 self.print_stderr(f'Warning: Some errors encounted while scanning. Results might be incomplete.')
                 success = False
         return success
@@ -449,7 +453,7 @@ class Scanner(ScanossBase):
         responses = None
         dep_responses = None
         if self.is_file_or_snippet_scan():
-            if not self.threaded_scan.complete():               # Wait for the scans to complete
+            if not self.threaded_scan.complete():  # Wait for the scans to complete
                 self.print_stderr(f'Warning: Scanning analysis ran into some trouble.')
                 success = False
             self.threaded_scan.complete_bar()
@@ -590,7 +594,7 @@ class Scanner(ScanossBase):
         :return: True if successful, False otherwise
         """
         success = True
-        wfp_file = file if file else self.wfp   # If a WFP file is specified, use it, otherwise us the default
+        wfp_file = file if file else self.wfp  # If a WFP file is specified, use it, otherwise us the default
         if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
             raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
         file_count = Scanner.__count_files_in_wfp_file(wfp_file)
@@ -611,13 +615,13 @@ class Scanner(ScanossBase):
             for line in f:
                 if line.startswith(WFP_FILE_START):
                     if file_print:
-                        wfp += file_print         # Store the WFP for the current file
+                        wfp += file_print  # Store the WFP for the current file
                         cur_size = len(wfp.encode("utf-8"))
-                    file_print = line             # Start storing the next file
+                    file_print = line  # Start storing the next file
                     cur_files += 1
                     batch_files += 1
                 else:
-                    file_print += line             # Store the rest of the WFP for this file
+                    file_print += line  # Store the rest of the WFP for this file
                 l_size = cur_size + len(file_print.encode('utf-8'))
                 # Hit the max post size, so sending the current batch and continue processing
                 if l_size >= self.max_post_size and wfp:
@@ -691,7 +695,7 @@ class Scanner(ScanossBase):
         return: True if successful, False otherwise
         """
         success = True
-        wfp_file = file if file else self.wfp   # If a WFP file is specified, use it, otherwise us the default
+        wfp_file = file if file else self.wfp  # If a WFP file is specified, use it, otherwise us the default
         if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
             raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
         cur_size = 0
@@ -700,16 +704,16 @@ class Scanner(ScanossBase):
         scan_started = False
         wfp = ''
         scan_block = ''
-        with open(wfp_file) as f:   # Parse the WFP file
+        with open(wfp_file) as f:  # Parse the WFP file
             for line in f:
                 if line.startswith(WFP_FILE_START):
                     if scan_block:
-                        wfp += scan_block         # Store the WFP for the current file
+                        wfp += scan_block  # Store the WFP for the current file
                         cur_size = len(wfp.encode("utf-8"))
-                    scan_block = line             # Start storing the next file
+                    scan_block = line  # Start storing the next file
                     file_count += 1
                 else:
-                    scan_block += line             # Store the rest of the WFP for this file
+                    scan_block += line  # Store the rest of the WFP for this file
                 l_size = cur_size + len(scan_block.encode('utf-8'))
                 # Hit the max post size, so sending the current batch and continue processing
                 if l_size >= self.max_post_size and wfp:
@@ -722,7 +726,7 @@ class Scanner(ScanossBase):
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
                             self.print_stderr(
-                                        f'Warning: Some errors encounted while scanning. Results might be incomplete.')
+                                f'Warning: Some errors encounted while scanning. Results might be incomplete.')
                             success = False
             # End for loop
         if scan_block:
@@ -803,14 +807,14 @@ class Scanner(ScanossBase):
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f"ERROR: Specified folder does not exist or is not a folder: {scan_dir}")
         wfps = ''
-        scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir)+1
+        scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir) + 1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
         for root, dirs, files in os.walk(scan_dir):
-            dirs[:] = self.__filter_dirs(dirs)                             # Strip out unwanted directories
-            filtered_files = self.__filter_files(files)                    # Strip out unwanted files
+            dirs[:] = self.__filter_dirs(dirs)  # Strip out unwanted directories
+            filtered_files = self.__filter_files(files)  # Strip out unwanted files
             self.print_trace(f'Root: {root}, Dirs: {dirs}, Files {filtered_files}')
             for file in filtered_files:
                 path = os.path.join(root, file)
@@ -818,8 +822,9 @@ class Scanner(ScanossBase):
                 try:
                     f_size = os.stat(path).st_size
                 except Exception as e:
-                    self.print_trace(f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
-                if f_size > 0:            # Ignore empty files
+                    self.print_trace(
+                        f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
+                if f_size > 0:  # Ignore empty files
                     self.print_debug(f'Fingerprinting {path}...')
                     if spinner:
                         spinner.next()
