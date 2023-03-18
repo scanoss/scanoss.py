@@ -53,7 +53,7 @@ class ScanossGrpc(ScanossBase):
     """
 
     def __init__(self, url: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 ca_cert: str = None, api_key: str = None, ver_details: str = None,
+                 ca_cert: str = None, api_key: str = None, ver_details: str = None, timeout: int = 600,
                  proxy: str = None, grpc_proxy: str = None, pac: PACFile = None):
         """
 
@@ -75,6 +75,7 @@ class ScanossGrpc(ScanossBase):
         self.url = self.url.lower()
         self.orig_url = self.url  # Used for proxy lookup
         self.api_key = api_key if api_key else SCANOSS_API_KEY
+        self.timeout = timeout
         self.proxy = proxy
         self.grpc_proxy = grpc_proxy
         self.pac = pac
@@ -199,7 +200,7 @@ class ScanossGrpc(ScanossBase):
             metadata = self.metadata[:]
             metadata.append(('x-request-id', request_id))  # Set a Request ID
             self.print_debug(f'Sending dependency data for decoration (rqId: {request_id})...')
-            resp = self.dependencies_stub.GetDependencies(request, metadata=metadata, timeout=600)
+            resp = self.dependencies_stub.GetDependencies(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
             self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
                               f'(rqId: {request_id}): {e}')
@@ -226,7 +227,7 @@ class ScanossGrpc(ScanossBase):
             metadata = self.metadata[:]
             metadata.append(('x-request-id', request_id))  # Set a Request ID
             self.print_debug(f'Sending crypto data for decoration (rqId: {request_id})...')
-            resp = self.crypto_stub.GetAlgorithms(request, metadata=metadata, timeout=600)
+            resp = self.crypto_stub.GetAlgorithms(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
             self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
                               f'(rqId: {request_id}): {e}')
