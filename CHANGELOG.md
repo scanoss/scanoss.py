@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.5.0] - 2023-03-21
+### Added
+- Added support for component cryptographic reporting
+  - `scanoss-py component crypto ...`
+
 ## [1.4.2] - 2023-03-09
 ### Fixed
 - Fixed issue with custom certificate when scanning (--ca-cert)
@@ -218,3 +223,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.3.7]: https://github.com/scanoss/scanoss.py/compare/v1.3.6...v1.3.7
 [1.4.0]: https://github.com/scanoss/scanoss.py/compare/v1.3.7...v1.4.0
 [1.4.2]: https://github.com/scanoss/scanoss.py/compare/v1.4.0...v1.4.2
+[1.5.0]: https://github.com/scanoss/scanoss.py/compare/v1.4.2...v1.5.0

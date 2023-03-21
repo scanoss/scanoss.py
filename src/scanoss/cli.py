@@ -34,6 +34,7 @@ from .filecount import FileCount
 from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite
 from .csvoutput import CsvOutput
+from .components import Components
 from . import __version__
 from .scanner import FAST_WINNOWING
 
@@ -173,6 +174,8 @@ def setup_args() -> None:
     c_crypto.add_argument('--purl',  '-p', type=str, nargs="*", help='Package URL - PURL to process.')
     c_crypto.add_argument('--input', '-i', type=str, help='Input file name')
     c_crypto.add_argument('--output','-o', type=str, help='Output result file name (optional - default stdout).')
+    c_crypto.add_argument('--timeout', '-M', type=int, default=600,
+                          help='Timeout (in seconds) for API communication (optional - default 600)')
 
     # Sub-command: utils
     p_util = subparsers.add_parser('utils', aliases=['ut'],
@@ -687,9 +690,6 @@ def comp_crypto(parser, args):
         args: Namespace
             Parsed arguments
     """
-    from .scanossgrpc import ScanossGrpc
-    import json
-
     if (not args.purl and not args.input) or (args.purl and args.input):
         print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
@@ -698,43 +698,11 @@ def comp_crypto(parser, args):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
         exit(1)
     pac_file = get_pac_file(args.pac)
-    file = sys.stdout
-    if args.output:
-        file = open(args.output, 'w')
-    success = False
-    purl_request = {}
-    if args.input:
-        if not os.path.isfile(args.input):
-            print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
-            exit(1)
-        with open(args.input, 'r') as f:
-            try:
-                purl_request = json.loads(f.read())
-            except Exception as e:
-                print_stderr(f'ERROR: Problem parsing input JSON: {e}')
-    elif args.purl:
-        purls = []
-        for p in args.purl:
-            purls.append({'purl': p})
-        purl_request = {'purls': purls}
-
-    purl_count = len(purl_request.get('purls'))
-    if purl_count == 0:
-        print_stderr('No PURLs supplied to get cryptographic algorithms.')
-
-    grpc_api = ScanossGrpc(url=args.api2url, debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key,
-                           ca_cert=args.ca_cert, proxy=args.proxy, grpc_proxy=args.grpc_proxy, pac=pac_file
-                           )
-    resp = grpc_api.get_crypto_json(purl_request)
-    # print_stderr(f'Crypto Algo Resp: {resp}')
-    if resp:
-        print(json.dumps(resp, indent=2, sort_keys=True), file=file)
-        success = True
-    if args.output:
-        file.close()
-    if not success:
+    comps = Components(debug=args.debug, trace=args.trace, quiet=args.quiet, grpc_url=args.api2url, api_key=args.key,
+                           ca_cert=args.ca_cert, proxy=args.proxy, grpc_proxy=args.grpc_proxy, pac=pac_file,
+                       timeout=args.timeout)
+    if not comps.get_crypto_details(args.input, args.purl, args.output):
         exit(1)
-
 def main():
     """
     Run the ScanOSS CLI

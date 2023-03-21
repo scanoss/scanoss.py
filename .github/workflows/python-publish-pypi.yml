@@ -36,7 +36,7 @@ jobs:
         run: |
           which scanoss-py
           scanoss-py version
-          scanoss-py fast
+          scanoss-py utils fast
           scanoss-py scan tests > results.json
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
@@ -85,7 +85,7 @@ jobs:
         run: |
           which scanoss-py
           scanoss-py version
-          scanoss-py fast
+          scanoss-py utils fast
           scanoss-py scan tests > results.json
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
@@ -99,7 +99,7 @@ jobs:
           pip install scanoss_winnowing
           which scanoss-py
           scanoss-py version
-          scanoss-py fast
+          scanoss-py utils fast
           scanoss-py scan tests > results.json
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
