@@ -73,6 +73,9 @@ def setup_args() -> None:
     p_scan.add_argument('--dep', '-p',  type=str,
                         help='Use a dependency file instead of a folder (optional)'
                         )
+    p_scan.add_argument('--stdin', '-s', metavar='STDIN-FILENAME',  type=str,
+                        help='Scan the file contents supplied via STDIN (optional)'
+                        )
     p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file')
     p_scan.add_argument('--ignore',   '-n', type=str, help='Ignore components specified in the SBOM file')
     p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).')
@@ -117,6 +120,9 @@ def setup_args() -> None:
     p_wfp.set_defaults(func=wfp)
     p_wfp.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?',
                        help='A file or folder to scan')
+    p_wfp.add_argument('--stdin', '-s', metavar='STDIN-FILENAME',  type=str,
+                        help='Fingerprint the file contents supplied via STDIN (optional)'
+                        )
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_wfp.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
     p_wfp.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
@@ -328,8 +334,8 @@ def wfp(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_dir:
-        print_stderr('Please specify a file/folder')
+    if not args.scan_dir and not args.stdin:
+        print_stderr('Please specify a file/folder or STDIN (--stdin)')
         parser.parse_args([args.subparser, '-h'])
         exit(1)
     scan_output: str = None
@@ -342,15 +348,22 @@ def wfp(parser, args):
                       scan_options=scan_options, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden)
 
-    if not os.path.exists(args.scan_dir):
-        print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
-        exit(1)
-    if os.path.isdir(args.scan_dir):
-        scanner.wfp_folder(args.scan_dir, scan_output)
-    elif os.path.isfile(args.scan_dir):
-        scanner.wfp_file(args.scan_dir, scan_output)
+    if args.stdin:
+        contents = sys.stdin.buffer.read()
+        scanner.wfp_contents(args.stdin, contents, scan_output)
+    elif args.scan_dir:
+        if not os.path.exists(args.scan_dir):
+            print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
+            exit(1)
+        if os.path.isdir(args.scan_dir):
+            scanner.wfp_folder(args.scan_dir, scan_output)
+        elif os.path.isfile(args.scan_dir):
+            scanner.wfp_file(args.scan_dir, scan_output)
+        else:
+            print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
+            exit(1)
     else:
-        print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
+        print_stderr('No action found to process')
         exit(1)
 
 
@@ -396,8 +409,8 @@ def scan(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_dir and not args.wfp:
-        print_stderr('Please specify a file/folder or fingerprint (--wfp)')
+    if not args.scan_dir and not args.wfp and not args.stdin:
+        print_stderr('Please specify a file/folder, fingerprint (--wfp) or STDIN (--stdin)')
         parser.parse_args([args.subparser, '-h'])
         exit(1)
     if args.pac and args.proxy:
@@ -493,6 +506,10 @@ def scan(parser, args):
             scanner.scan_wfp_file_threaded(args.wfp)
         else:
             scanner.scan_wfp_file(args.wfp)
+    elif args.stdin:
+        contents = sys.stdin.buffer.read()
+        if not scanner.scan_contents(args.stdin, contents):
+            exit(1)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')

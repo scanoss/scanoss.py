@@ -587,6 +587,35 @@ class Scanner(ScanossBase):
             success = False
         return success
 
+    def scan_contents(self, filename: str, contents: bytes) -> bool:
+        """
+        Scan the given contents as a file
+
+        :param filename: filename to associate with the contents
+        :param contents: file contents
+        :return: True if successful, False otherwise
+        """
+        success = True
+        if not filename:
+            raise Exception(f"ERROR: Please specify a filename to scan")
+        if not contents:
+            raise Exception(f"ERROR: Please specify a file contents to scan")
+
+        self.print_debug(f'Fingerprinting {filename}...')
+        wfp = self.winnowing.wfp_for_contents(filename, False, contents)
+        if wfp is not None and wfp != '':
+            if self.threaded_scan:
+                self.threaded_scan.queue_add(wfp)  # Submit the WFP for scanning
+            self.print_debug(f'Scanning {filename}...')
+            if self.threaded_scan:
+                success = self.__run_scan_threaded(False, 1)
+        else:
+            success = False
+        if self.threaded_scan:
+            if not self.__finish_scan_threaded():
+                success = False
+        return success
+
     def scan_wfp_file(self, file: str = None) -> bool:
         """
         Scan the contents of the specified WFP file (in the current process)
@@ -776,6 +805,32 @@ class Scanner(ScanossBase):
             success = False
 
         return success
+
+    def wfp_contents(self, filename: str, contents: bytes, wfp_file: str = None):
+        """
+        Fingerprint the specified contents as a file
+
+        :param filename: filename to associate with the contents
+        :param contents: file contents
+        :param wfp_file: WFP to write results to (optional)
+        :return:
+        """
+        if not filename:
+            raise Exception(f"ERROR: Please specify a filename to scan")
+        if not contents:
+            raise Exception(f"ERROR: Please specify a file contents to scan")
+
+        self.print_debug(f'Fingerprinting {filename}...')
+        wfp = self.winnowing.wfp_for_contents(filename, False, contents)
+        if wfp:
+            if wfp_file:
+                self.print_stderr(f'Writing fingerprints to {wfp_file}')
+                with open(wfp_file, 'w') as f:
+                    f.write(wfp)
+            else:
+                print(wfp)
+        else:
+            Scanner.print_stderr(f'Warning: No fingerprints generated for: {scan_file}')
 
     def wfp_file(self, scan_file: str, wfp_file: str = None):
         """
