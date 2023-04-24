@@ -54,8 +54,7 @@ def setup_args() -> None:
     parser.add_argument('--version', '-v', action='store_true', help='Display version details')
 
     subparsers = parser.add_subparsers(title='Sub Commands', dest='subparser', description='valid subcommands',
-                                       help='sub-command help'
-                                       )
+                                       help='sub-command help')
     # Sub-command: version
     p_ver = subparsers.add_parser('version', aliases=['ver'],
                                   description=f'Version of SCANOSS CLI: {__version__}', help='SCANOSS version')
@@ -68,50 +67,41 @@ def setup_args() -> None:
     p_scan.set_defaults(func=scan)
     p_scan.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
     p_scan.add_argument('--wfp', '-w',  type=str,
-                        help='Scan a WFP File instead of a folder (optional)'
-                        )
+                        help='Scan a WFP File instead of a folder (optional)')
     p_scan.add_argument('--dep', '-p',  type=str,
-                        help='Use a dependency file instead of a folder (optional)'
-                        )
+                        help='Use a dependency file instead of a folder (optional)')
     p_scan.add_argument('--stdin', '-s', metavar='STDIN-FILENAME',  type=str,
-                        help='Scan the file contents supplied via STDIN (optional)'
-                        )
+                        help='Scan the file contents supplied via STDIN (optional)')
     p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file')
     p_scan.add_argument('--ignore',   '-n', type=str, help='Ignore components specified in the SBOM file')
     p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).')
     p_scan.add_argument('--format',   '-f', type=str, choices=['plain', 'cyclonedx', 'spdxlite', 'csv'],
-                        help='Result output format (optional - default: plain)'
-                        )
+                        help='Result output format (optional - default: plain)')
     p_scan.add_argument('--threads', '-T', type=int, default=10,
-                        help='Number of threads to use while scanning (optional - default 10)'
-                        )
+                        help='Number of threads to use while scanning (optional - default 10)')
     p_scan.add_argument('--flags', '-F', type=int,
                         help='Scanning engine flags (1: disable snippet matching, 2 enable snippet ids, '
                              '4: disable dependencies, 8: disable licenses, 16: disable copyrights,'
                              '32: disable vulnerabilities, 64: disable quality, 128: disable cryptography,'
                              '256: disable best match only, 512: hide identified files, '
                              '1024: enable download_url, 2048: enable GitHub full path, '
-                             '4096: disable extended server stats)'
-                        )
+                             '4096: disable extended server stats)')
     p_scan.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
     p_scan.add_argument('--post-size', '-P', type=int, default=64,
-                        help='Number of kilobytes to limit the post to while scanning (optional - default 64)'
-                        )
+                        help='Number of kilobytes to limit the post to while scanning (optional - default 64)')
     p_scan.add_argument('--timeout', '-M', type=int, default=120,
-                        help='Timeout (in seconds) for API communication (optional - default 120)'
-                        )
+                        help='Timeout (in seconds) for API communication (optional - default 120)')
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
     p_scan.add_argument('--all-extensions', action='store_true', help='Scan all file extensions')
     p_scan.add_argument('--all-folders', action='store_true', help='Scan all folders')
     p_scan.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
-    p_scan.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
+    p_scan.add_argument('--obfuscate', action='store_true', help='Obfuscate file paths and names')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
     p_scan.add_argument('--sc-command', type=str,
                         help='Scancode command and path if required (optional - default scancode).')
     p_scan.add_argument('--sc-timeout', type=int, default=600,
-                        help='Timeout (in seconds) for scancode to complete (optional - default 600)'
-                        )
+                        help='Timeout (in seconds) for scancode to complete (optional - default 600)')
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -121,8 +111,7 @@ def setup_args() -> None:
     p_wfp.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?',
                        help='A file or folder to scan')
     p_wfp.add_argument('--stdin', '-s', metavar='STDIN-FILENAME',  type=str,
-                        help='Fingerprint the file contents supplied via STDIN (optional)'
-                        )
+                        help='Fingerprint the file contents supplied via STDIN (optional)')
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_wfp.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
     p_wfp.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
@@ -226,36 +215,29 @@ def setup_args() -> None:
     # Global Scan command options
     for p in [p_scan]:
         p.add_argument('--apiurl', type=str,
-                       help='SCANOSS API URL (optional - default: https://osskb.org/api/scan/direct)'
-                       )
+                       help='SCANOSS API URL (optional - default: https://osskb.org/api/scan/direct)')
         p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
 
     # Global Scan/GRPC options
     for p in [p_scan, c_crypto]:
         p.add_argument('--key', '-k', type=str,
-                       help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
-                       )
+                       help='SCANOSS API Key token (optional - not required for default OSSKB URL)')
         p.add_argument('--proxy', type=str, help='Proxy URL to use for connections (optional). '
                                                  'Can also use the environment variable "HTTPS_PROXY=<ip>:<port>" '
-                                                 'and "grcp_proxy=<ip>:<port>" for gRPC'
-                       )
+                                                 'and "grcp_proxy=<ip>:<port>" for gRPC')
         p.add_argument('--pac', type=str, help='Proxy auto configuration (optional). '
-                                               'Specify a file, http url or "auto" to try to discover it.'
-                       )
+                                               'Specify a file, http url or "auto" to try to discover it.')
         p.add_argument('--ca-cert', type=str, help='Alternative certificate PEM file (optional). '
                                                    'Can also use the environment variable '
                                                    '"REQUESTS_CA_BUNDLE=/path/to/cacert.pem" and '
-                                                   '"GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/cacert.pem" for gRPC'
-                       )
+                                                   '"GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/cacert.pem" for gRPC')
 
     # Global GRPC options
     for p in [p_scan, c_crypto]:
         p.add_argument('--api2url', type=str,
-                       help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
-                       )
+                       help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)')
         p.add_argument('--grpc-proxy', type=str, help='GRPC Proxy URL to use for connections (optional). '
-                                                       'Can also use the environment variable "grcp_proxy=<ip>:<port>"'
-                       )
+                                                       'Can also use the environment variable "grcp_proxy=<ip>:<port>"')
 
     # Help/Trace command options
     for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld, p_p_proxy, c_crypto]:
