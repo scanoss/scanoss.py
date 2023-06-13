@@ -91,6 +91,8 @@ def setup_args() -> None:
                         help='Number of kilobytes to limit the post to while scanning (optional - default 64)')
     p_scan.add_argument('--timeout', '-M', type=int, default=120,
                         help='Timeout (in seconds) for API communication (optional - default 120)')
+    p_scan.add_argument('--retry', '-R', type=int, default=5,
+                        help='Retry limit for API communication (optional - default 5)')
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
     p_scan.add_argument('--all-extensions', action='store_true', help='Scan all file extensions')
     p_scan.add_argument('--all-folders', action='store_true', help='Scan all folders')
@@ -445,6 +447,8 @@ def scan(parser, args):
             print_stderr(f'Changing scanning POST size to: {args.post_size}k...')
         if args.timeout != 120:
             print_stderr(f'Changing scanning POST timeout to: {args.timeout}...')
+        if args.retry != 5:
+            print_stderr(f'Changing scanning POST retry to: {args.retry}...')
         if args.obfuscate:
             print_stderr("Obfuscating file fingerprints...")
         if args.proxy:
@@ -460,6 +464,8 @@ def scan(parser, args):
     elif not args.quiet:
         if args.timeout < 5:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
+        if args.retry < 0:
+            print_stderr(f'POST retry (--retry) too small: {args.retry}. Reverting to default.')
 
     if not os.access(os.getcwd(), os.W_OK):  # Make sure the current directory is writable. If not disable saving WFP
         print_stderr(f'Warning: Current directory is not writable: {os.getcwd()}')
@@ -478,7 +484,7 @@ def scan(parser, args):
                       scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
                       grpc_url=args.api2url, obfuscate=args.obfuscate,
                       ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, grpc_proxy=args.grpc_proxy,
-                      pac=pac_file, ca_cert=args.ca_cert
+                      pac=pac_file, ca_cert=args.ca_cert, retry=args.retry
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
