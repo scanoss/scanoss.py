@@ -53,7 +53,7 @@ class ScanossApi(ScanossBase):
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
                  timeout: int = 120, ver_details: str = None, ignore_cert_errors: bool = False,
-                 proxy: str = None, ca_cert: str = None, pac: PACFile = None):
+                 proxy: str = None, ca_cert: str = None, pac: PACFile = None, retry: int = 5):
         """
         Initialise the SCANOSS API
         :param scan_type: Scan type (default identify)
@@ -82,6 +82,7 @@ class ScanossApi(ScanossBase):
         self.sbom_path = sbom_path
         self.flags = flags
         self.timeout = timeout if timeout > 5 else 120
+        self.retry_limit = retry if retry >= 0 else 5
         self.ignore_cert_errors = ignore_cert_errors
         self.headers = {}
         if ver_details:
@@ -149,7 +150,7 @@ class ScanossApi(ScanossBase):
         headers['x-request-id'] = request_id  # send a unique request id for each post
         r = None
         retry = 0  # Add some retry logic to cater for timeouts, etc.
-        while retry <= 5:
+        while retry <= self.retry_limit:
             retry += 1
             try:
                 r = None
@@ -163,7 +164,7 @@ class ScanossApi(ScanossBase):
                 self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}.')
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-                if retry > 5:  # Timed out 5 or more times, fail
+                if retry > self.retry_limit:  # Timed out retry_limit or more times, fail
                     self.print_stderr(f'ERROR: {e.__class__.__name__} POSTing data ({request_id}) - {e}: {scan_files}')
                     raise Exception(f"ERROR: The SCANOSS API request timed out ({e.__class__.__name__}) for"
                                     f" {self.url}") from e
@@ -176,7 +177,7 @@ class ScanossApi(ScanossBase):
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e
             else:
                 if r is None:
-                    if retry > 5:  # No response 5 or more times, fail
+                    if retry > self.retry_limit:  # No response retry_limit or more times, fail
                         self.save_bad_req_wfp(scan_files, request_id, scan_id)
                         raise Exception(f"ERROR: The SCANOSS API request ({request_id}) response object is empty "
                                         f"for {self.url}")
@@ -190,7 +191,7 @@ class ScanossApi(ScanossBase):
                     raise Exception(f"ERROR: {r.status_code} - The SCANOSS API request ({request_id}) rejected "
                                     f"for {self.url} due to service limits being exceeded.")
                 elif r.status_code >= 400:
-                    if retry > 5:  # No response 5 or more times, fail
+                    if retry > self.retry_limit:  # No response retry_limit or more times, fail
                         self.save_bad_req_wfp(scan_files, request_id, scan_id)
                         raise Exception(
                             f"ERROR: The SCANOSS API returned the following error: HTTP {r.status_code}, "
