@@ -101,7 +101,7 @@ class Scanner(ScanossBase):
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
                  scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
                  obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, grpc_proxy: str = None,
-                 ca_cert: str = None, pac: PACFile = None, retry: int = 5
+                 ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -117,10 +117,11 @@ class Scanner(ScanossBase):
         self.hidden_files_folders = hidden_files_folders
         self.scan_options = scan_options
         self._skip_snippets = True if not scan_options & ScanType.SCAN_SNIPPETS.value else False
+        self.hpsm = hpsm
         ver_details = Scanner.version_details()
 
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
-                                   all_extensions=all_extensions, obfuscate=obfuscate
+                                   all_extensions=all_extensions, obfuscate=obfuscate, hpsm=self.hpsm
                                    )
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,

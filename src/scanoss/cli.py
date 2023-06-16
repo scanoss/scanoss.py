@@ -104,6 +104,7 @@ def setup_args() -> None:
                         help='Scancode command and path if required (optional - default scancode).')
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)')
+    p_scan.add_argument('--hpsm', '-H', action='store_true', help='Scan using High Precision Snippet Matching')
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -120,6 +121,7 @@ def setup_args() -> None:
     p_wfp.add_argument('--all-extensions', action='store_true', help='Fingerprint all file extensions')
     p_wfp.add_argument('--all-folders', action='store_true', help='Fingerprint all folders')
     p_wfp.add_argument('--all-hidden', action='store_true', help='Fingerprint all hidden files/folders')
+    p_wfp.add_argument('--hpsm', '-H', action='store_true', help='Use High Precision Snippet Matching algorithm.')
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser('dependencies', aliases=['dp', 'dep'],
@@ -330,7 +332,7 @@ def wfp(parser, args):
     scan_options = 0 if args.skip_snippets else ScanType.SCAN_SNIPPETS.value  # Skip snippet generation or not
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, obfuscate=args.obfuscate,
                       scan_options=scan_options, all_extensions=args.all_extensions,
-                      all_folders=args.all_folders, hidden_files_folders=args.all_hidden)
+                      all_folders=args.all_folders, hidden_files_folders=args.all_hidden, hpsm=args.hpsm)
 
     if args.stdin:
         contents = sys.stdin.buffer.read()
@@ -459,6 +461,8 @@ def scan(parser, args):
             print_stderr(f'Using Proxy Auto-config (PAC) {args.pac}...')
         if args.ca_cert:
             print_stderr(f'Using Certificate {args.ca_cert}...')
+        if args.hpsm:
+            print_stderr("Setting HPSM mode...")
         if flags:
             print_stderr(f'Using flags {flags}...')
     elif not args.quiet:
@@ -484,7 +488,7 @@ def scan(parser, args):
                       scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
                       grpc_url=args.api2url, obfuscate=args.obfuscate,
                       ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, grpc_proxy=args.grpc_proxy,
-                      pac=pac_file, ca_cert=args.ca_cert, retry=args.retry
+                      pac=pac_file, ca_cert=args.ca_cert, retry=args.retry, hpsm=args.hpsm
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():

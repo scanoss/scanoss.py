@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.6.0] - 2023-06-16
+### Added
+- Added support for High Precision Snippet Matching (`--hpsm` or `-H`) while scanning
+  - `scanoss-py scan --hpsm ...` 
+
 ## [1.5.2] - 2023-06-13
 ### Added
 - Added retry limit option (`--retry`) while scanning 
