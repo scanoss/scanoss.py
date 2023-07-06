@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.6.1] - 2023-07-06
+### Fixed
+- Fixed issue with CSV dependency generation
+- Increased `scanoss-winnowing` minimum requirement to match HPSM support
+
 ## [1.6.0] - 2023-06-16
 ### Added
 - Added support for High Precision Snippet Matching (`--hpsm` or `-H`) while scanning
@@ -242,3 +247,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.5.0]: https://github.com/scanoss/scanoss.py/compare/v1.4.2...v1.5.0
 [1.5.1]: https://github.com/scanoss/scanoss.py/compare/v1.5.0...v1.5.1
 [1.5.2]: https://github.com/scanoss/scanoss.py/compare/v1.5.1...v1.5.2
+[1.6.0]: https://github.com/scanoss/scanoss.py/compare/v1.5.2...v1.6.0
+[1.6.1]: https://github.com/scanoss/scanoss.py/compare/v1.6.0...v1.6.1
