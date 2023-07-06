@@ -72,6 +72,7 @@ class CsvOutput(ScanossBase):
                         self.print_stderr(f'Warning: No Dependencies found for {f}: {file_details}')
                         continue
                     for deps in dependencies:
+                        detected = {}
                         purl = deps.get("purl")
                         if not purl:
                             self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
@@ -90,6 +91,19 @@ class CsvOutput(ScanossBase):
                             detected['licenses'] = ''
                         else:
                             detected['licenses'] = ';'.join(dc)
+                        # inventory_id,path,usage,detected_component,detected_license,detected_version,detected_latest,purl
+                        csv_dict.append({'inventory_id': row_id, 'path': f, 'detected_usage': id_details,
+                                         'detected_component': detected.get('component'),
+                                         'detected_license': detected.get('licenses'),
+                                         'detected_version': detected.get('version'),
+                                         'detected_latest': detected.get('latest'),
+                                         'detected_purls': detected.get('purls'),
+                                         'detected_url': detected.get('url'),
+                                         'detected_path': detected.get('file', ''),
+                                         'detected_match': matched, 'detected_lines': lines,
+                                         'detected_oss_lines': oss_lines
+                                         })
+                        row_id = row_id + 1
                 else:
                     purls = d.get('purl')
                     if not purls:
@@ -116,16 +130,19 @@ class CsvOutput(ScanossBase):
                         detected['licenses'] = ''
                     else:
                         detected['licenses'] = ';'.join(dc)
-                # inventory_id,path,usage,detected_component,detected_license,detected_version,detected_latest,purl
-                csv_dict.append({'inventory_id': row_id, 'path': f, 'detected_usage': id_details,
-                                 'detected_component': detected.get('component'),
-                                 'detected_license': detected.get('licenses'),
-                                 'detected_version': detected.get('version'), 'detected_latest': detected.get('latest'),
-                                 'detected_purls': detected.get('purls'), 'detected_url': detected.get('url'),
-                                 'detected_path': detected.get('file', ''),
-                                 'detected_match': matched, 'detected_lines': lines, 'detected_oss_lines': oss_lines
-                                 })
-                row_id = row_id + 1
+                    # inventory_id,path,usage,detected_component,detected_license,detected_version,detected_latest,purl
+                    csv_dict.append({'inventory_id': row_id, 'path': f, 'detected_usage': id_details,
+                                     'detected_component': detected.get('component'),
+                                     'detected_license': detected.get('licenses'),
+                                     'detected_version': detected.get('version'),
+                                     'detected_latest': detected.get('latest'),
+                                     'detected_purls': detected.get('purls'),
+                                     'detected_url': detected.get('url'),
+                                     'detected_path': detected.get('file', ''),
+                                     'detected_match': matched, 'detected_lines': lines,
+                                     'detected_oss_lines': oss_lines
+                                     })
+                    row_id = row_id + 1
         return csv_dict
 
     def produce_from_file(self, json_file: str, output_file: str = None) -> bool:
