@@ -1,6 +1,22 @@
 # SCANOSS Client Usage Help
 This file contains useful tips/tricks for getting the most out of the SCANOSS platform using the Python client/SDK.
 
+## Installation
+### Externally Managed Environments Error
+If installing on Ubuntu 2023.04, Fedora 38, Debian 11, etc. a few additional steps are required before installing `scanoss-py`. More details can be found [here](https://itsfoss.com/externally-managed-environment/).
+
+The recommended method is to install `pipx` and use it to install `scanoss-py`:
+```bash
+sudo apt install pipx
+pipx ensurepath
+```
+
+This will install the `pipx` package manager, which can then be used to install `scanoss-py`:
+```bash
+pipx install scanoss[fast_winnowing]
+```
+This will install the `scanoss-py` app in a separate virtual environment and create a link to the local path for execution.
+
 ## Certificate Management
 The SCANOSS SaaS platform runs over HTTPS with publicly signed SSL certificates.
 However, on-premise installations, or those with a proxy in the middle might be leveraging self-signed versions.

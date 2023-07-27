@@ -25,6 +25,21 @@ pip3 install scanoss[fast_winnowing]
 Alternatively, there is a docker image of the compiled package. It can be found [here](https://github.com/scanoss/scanoss.py/pkgs/container/scanoss-py).
 Details of how to run it can be found [here](https://github.com/scanoss/scanoss.py/blob/main/GHCR.md).
 
+### Externally Managed Environments on Linux
+If installing on Ubuntu 2023.04, Fedora 38, Debian 11, etc. a few additional steps are required before installing `scanoss-py`. More details can be found [here](https://itsfoss.com/externally-managed-environment/).
+
+The recommended method is to install `pipx` and use it to install `scanoss-py`:
+```bash
+sudo apt install pipx
+pipx ensurepath
+```
+
+This will install the `pipx` package manager, which can then be used to install `scanoss-py`:
+```bash
+pipx install scanoss[fast_winnowing]
+```
+This will install the `scanoss-py` app in a separate virtual environment and create a link to the local path for execution.
+
 ## Usage
 The package can be run from the command line, or consumed from another Python script.
 
