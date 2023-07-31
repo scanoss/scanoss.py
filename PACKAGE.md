@@ -57,24 +57,32 @@ Running the bare command will list the available sub-commands:
 ```bash
 > scanoss-py
 
-usage: scanoss-py [-h] {version,ver,scan,sc,fingerprint,fp,wfp,dependencies,dp,dep} ...
+usage: scanoss-py [-h] [--version]
+                  {version,ver,scan,sc,fingerprint,fp,wfp,dependencies,dp,dep,file_count,fc,convert,cv,cnv,cvrt,component,comp,utils,ut}
+                  ...
 
-SCANOSS Python CLI. Ver: 0.9.0, License: MIT
+SCANOSS Python CLI. Ver: 1.6.1, License: MIT, Fast Winnowing: True
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
+  --version, -v         Display version details
 
 Sub Commands:
   valid subcommands
 
-  {version,ver,scan,sc,fingerprint,fp,wfp,dependencies,dp,dep}
+  {version,ver,scan,sc,fingerprint,fp,wfp,dependencies,dp,dep,file_count,fc,convert,cv,cnv,cvrt,component,comp,utils,ut}
                         sub-command help
     version (ver)       SCANOSS version
     scan (sc)           Scan source code
     fingerprint (fp, wfp)
                         Fingerprint source code
     dependencies (dp, dep)
-                        Scan source code for dependencies
+                        Scan source code for dependencies, but do not decorate them
+    file_count (fc)     Search the source tree and produce a file type summary
+    convert (cv, cnv, cvrt)
+                        Convert file format
+    component (comp)    Component support commands
+    utils (ut)          General utility support commands
 ```
 
 From there it is possible to scan a source code folder:
