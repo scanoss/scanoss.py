@@ -52,7 +52,7 @@ class ScanossApi(ScanossBase):
 
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 timeout: int = 120, ver_details: str = None, ignore_cert_errors: bool = False,
+                 timeout: int = 180, ver_details: str = None, ignore_cert_errors: bool = False,
                  proxy: str = None, ca_cert: str = None, pac: PACFile = None, retry: int = 5):
         """
         Initialise the SCANOSS API
@@ -81,7 +81,7 @@ class ScanossApi(ScanossBase):
         self.scan_format = scan_format if scan_format else 'plain'
         self.sbom_path = sbom_path
         self.flags = flags
-        self.timeout = timeout if timeout > 5 else 120
+        self.timeout = timeout if timeout > 5 else 180
         self.retry_limit = retry if retry >= 0 else 5
         self.ignore_cert_errors = ignore_cert_errors
         self.headers = {}
