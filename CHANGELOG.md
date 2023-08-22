@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.6.3] - 2023-08-22
+### Changed
+- Changed default scan POST size to 32k
+- Changed default scanning threads to 5 (and timeout to 180 seconds)
+- Improved HPSM generation performance
+
 ## [1.6.2] - 2023-08-11
 ### Added
 - Added `.woff2` to the list of file type to skip while scanning
@@ -254,3 +260,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.6.0]: https://github.com/scanoss/scanoss.py/compare/v1.5.2...v1.6.0
 [1.6.1]: https://github.com/scanoss/scanoss.py/compare/v1.6.0...v1.6.1
 [1.6.2]: https://github.com/scanoss/scanoss.py/compare/v1.6.1...v1.6.2
+[1.6.3]: https://github.com/scanoss/scanoss.py/compare/v1.6.2...v1.6.3
