@@ -77,8 +77,8 @@ def setup_args() -> None:
     p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).')
     p_scan.add_argument('--format',   '-f', type=str, choices=['plain', 'cyclonedx', 'spdxlite', 'csv'],
                         help='Result output format (optional - default: plain)')
-    p_scan.add_argument('--threads', '-T', type=int, default=10,
-                        help='Number of threads to use while scanning (optional - default 10)')
+    p_scan.add_argument('--threads', '-T', type=int, default=5,
+                        help='Number of threads to use while scanning (optional - default 5)')
     p_scan.add_argument('--flags', '-F', type=int,
                         help='Scanning engine flags (1: disable snippet matching, 2 enable snippet ids, '
                              '4: disable dependencies, 8: disable licenses, 16: disable copyrights,'
@@ -87,10 +87,10 @@ def setup_args() -> None:
                              '1024: enable download_url, 2048: enable GitHub full path, '
                              '4096: disable extended server stats)')
     p_scan.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
-    p_scan.add_argument('--post-size', '-P', type=int, default=64,
-                        help='Number of kilobytes to limit the post to while scanning (optional - default 64)')
-    p_scan.add_argument('--timeout', '-M', type=int, default=120,
-                        help='Timeout (in seconds) for API communication (optional - default 120)')
+    p_scan.add_argument('--post-size', '-P', type=int, default=32,
+                        help='Number of kilobytes to limit the post to while scanning (optional - default 32)')
+    p_scan.add_argument('--timeout', '-M', type=int, default=180,
+                        help='Timeout (in seconds) for API communication (optional - default 180)')
     p_scan.add_argument('--retry', '-R', type=int, default=5,
                         help='Retry limit for API communication (optional - default 5)')
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
@@ -445,9 +445,9 @@ def scan(parser, args):
             print_stderr("Scanning all hidden files/folders...")
         if args.skip_snippets:
             print_stderr("Skipping snippets...")
-        if args.post_size != 64:
+        if args.post_size != 32:
             print_stderr(f'Changing scanning POST size to: {args.post_size}k...')
-        if args.timeout != 120:
+        if args.timeout != 180:
             print_stderr(f'Changing scanning POST timeout to: {args.timeout}...')
         if args.retry != 5:
             print_stderr(f'Changing scanning POST retry to: {args.retry}...')
