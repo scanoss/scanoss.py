@@ -57,13 +57,14 @@ SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
     ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
     ".lst", ".dat", ".json", ".htm", ".html", ".xml", ".md", ".txt",
     ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
-    ".pdf", ".min.js", ".mf", ".sum"
+    ".pdf", ".min.js", ".mf", ".sum", ".woff", ".woff2"
 }
 
 CRC8_MAXIM_DOW_TABLE_SIZE = 0x100
-CRC8_MAXIM_DOW_POLYNOMIAL = 0x8C # 0x31 reflected
-CRC8_MAXIM_DOW_INITIAL = 0x00 # 0x00 reflected
-CRC8_MAXIM_DOW_FINAL = 0x00 # 0x00 reflected
+CRC8_MAXIM_DOW_POLYNOMIAL = 0x8C  # 0x31 reflected
+CRC8_MAXIM_DOW_INITIAL = 0x00  # 0x00 reflected
+CRC8_MAXIM_DOW_FINAL = 0x00  # 0x00 reflected
+
 
 class Winnowing(ScanossBase):
     """
@@ -108,8 +109,8 @@ class Winnowing(ScanossBase):
     a list of WFP fingerprints with their corresponding line numbers.
     """
 
-    def __init__(self, size_limit: bool = True, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 skip_snippets: bool = False, post_size: int = 64, all_extensions: bool = False, 
+    def __init__(self, size_limit: bool = False, debug: bool = False, trace: bool = False, quiet: bool = False,
+                 skip_snippets: bool = False, post_size: int = 32, all_extensions: bool = False,
                  obfuscate: bool = False, hpsm: bool = False
                  ):
         """
@@ -117,7 +118,7 @@ class Winnowing(ScanossBase):
         Parameters
         ----------
             size_limit: bool
-                Limit the size of a fingerprint to 64k (post size) - Default True
+                Limit the size of a fingerprint to 32k (post size) - Default False
         """
         super().__init__(debug, trace, quiet)
         self.size_limit = size_limit
@@ -130,6 +131,7 @@ class Winnowing(ScanossBase):
         self.hpsm = hpsm
         if hpsm:
             self.crc8_maxim_dow_table = []
+            self.crc8_generate_table()
 
     @staticmethod
     def __normalize(byte):
@@ -285,7 +287,7 @@ class Winnowing(ScanossBase):
                                     if self.size_limit and \
                                             (len(wfp.encode("utf-8")) + len(
                                                 output.encode("utf-8"))) > self.max_post_size:
-                                        self.print_debug(f'Truncating WFP (64k limit) for: {file}')
+                                        self.print_debug(f'Truncating WFP ({self.max_post_size} limit) for: {file}')
                                         output = ''
                                         break  # Stop collecting snippets as it's over 64k
                                     wfp += output + '\n'
@@ -310,53 +312,82 @@ class Winnowing(ScanossBase):
         return wfp
 
     def calc_hpsm(self, content):
-        list_normalized = []    #Array of numbers
-        crc_lines = []  #Array of numbers that represent the crc8_maxim for each line of the file
+        """
+        Calculate the HPSM data for this content
+
+        :param content: content bytes to calculate
+        :return: HPSM encoded data
+        """
+        list_normalized = []  # Array of numbers
+        crc_lines = []  # Array of numbers that represent the crc8_maxim for each line of the file
         last_line = 0
-        self.crc8_generate_table()
         for i, byte in enumerate(content):
             c = byte
-            if c == ASCII_LF:   #When there is a new line
+            if c == ASCII_LF:   # When there is a new line
                 if len(list_normalized): 
                     crc_lines.append(self.crc8_buffer(list_normalized))
-                    list_normalized=[]
+                    list_normalized = []
                 elif last_line+1 == i:
                     crc_lines.append(0xFF)
-                elif i-last_line  > 1:
+                elif i-last_line > 1:
                     crc_lines.append(0x00)
                 last_line = i
             else:
                 c_normalized = self.__normalize(c)
                 if c_normalized != 0:
                     list_normalized.append(c_normalized)
-        crc_lines_hex = []
-        for x in crc_lines:
-            crc_lines_hex.append(hex(x))
         hpsm = ''.join('{:02x}'.format(x) for x in crc_lines)
         return hpsm
 
     def crc8_generate_table(self):
-        for i in range(CRC8_MAXIM_DOW_TABLE_SIZE):
-            self.crc8_maxim_dow_table.append(self.crc8_byte_checksum(0, i))
-        
-    def crc8_byte_checksum(self, crc, byte):
+        """
+        Generate the CRC8 maxim dow table
+
+        :return: nothing
+        """
+        if not self.crc8_maxim_dow_table or len(self.crc8_maxim_dow_table) == 0:
+            for i in range(CRC8_MAXIM_DOW_TABLE_SIZE):
+                self.crc8_maxim_dow_table.append(self.crc8_byte_checksum(0, i))
+
+    @staticmethod
+    def crc8_byte_checksum(crc: int, byte):
+        """
+        Calculate the CRC8 checksum for the given byte
+
+        :param crc:
+        :param byte:
+        :return: CRC for the byte
+        """
         crc ^= byte
         for count in range(8):
-            isSet = crc & 0x01
+            is_set = crc & 0x01
             crc >>= 1
-            if isSet:
+            if is_set:
                 crc ^= CRC8_MAXIM_DOW_POLYNOMIAL
         return crc
 
-    def crc8_byte(self, crc, byte):
+    def crc8_byte(self, crc: int, byte):
+        """
+        Calculate the CRC8 for the given CRC & Byte
+
+        :param crc:
+        :param byte:
+        :return:
+        """
         index = byte ^ crc
-        return self.crc8_maxim_dow_table[ index ] ^ ( crc >> 8 )
+        return self.crc8_maxim_dow_table[index] ^ (crc >> 8)
 
     def crc8_buffer(self, buffer):
+        """
+        Calculate the CRC for the given buffer list
+
+        :param buffer:
+        :return:
+        """
         crc = CRC8_MAXIM_DOW_INITIAL
         for index in range(len(buffer)):
             crc = self.crc8_byte(crc, buffer[index])
-        crc ^= CRC8_MAXIM_DOW_FINAL
+        crc ^= CRC8_MAXIM_DOW_FINAL  # Bitwise OR (XOR) of crc in Maxim Dow Final
         return crc
     
 #

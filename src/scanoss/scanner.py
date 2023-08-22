@@ -97,7 +97,7 @@ class Scanner(ScanossBase):
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
                  sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
-                 post_size: int = 64, timeout: int = 120, no_wfp_file: bool = False,
+                 post_size: int = 32, timeout: int = 180, no_wfp_file: bool = False,
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
                  scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
                  obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, grpc_proxy: str = None,
@@ -141,6 +141,7 @@ class Scanner(ScanossBase):
         else:
             self.threaded_scan = None
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE  # Set the max post size (default 64k)
+        self.post_file_count = post_size if post_size > 0 else 32  # Max number of files for any given POST (default 32)
         if self._skip_snippets:
             self.max_post_size = 8 * 1024  # 8k Max post size if we're skipping snippets
 
@@ -360,11 +361,13 @@ class Scanner(ScanossBase):
         spinner = None
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
+        save_wfps_for_print = not self.no_wfp_file or not self.threaded_scan
         wfp_list = []
         scan_block = ''
         scan_size = 0
         queue_size = 0
-        file_count = 0
+        file_count = 0  # count all files fingerprinted
+        wfp_file_count = 0  # count number of files in each queue post
         scan_started = False
         for root, dirs, files in os.walk(scan_dir):
             self.print_trace(f'U Root: {root}, Dirs: {dirs}, Files {files}')
@@ -389,7 +392,9 @@ class Scanner(ScanossBase):
                     wfp = self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
                     if wfp is None or wfp == '':
                         self.print_stderr(f'Warning: No WFP returned for {path}')
-                    wfp_list.append(wfp)
+                        continue
+                    if save_wfps_for_print:
+                        wfp_list.append(wfp)
                     file_count += 1
                     if self.threaded_scan:
                         wfp_size = len(wfp.encode("utf-8"))
@@ -398,13 +403,17 @@ class Scanner(ScanossBase):
                             self.threaded_scan.queue_add(scan_block)
                             queue_size += 1
                             scan_block = ''
+                            wfp_file_count = 0
                         scan_block += wfp
                         scan_size = len(scan_block.encode("utf-8"))
-                        if scan_size >= self.max_post_size:
+                        wfp_file_count += 1
+                        # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue
+                        if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
                             self.threaded_scan.queue_add(scan_block)
                             queue_size += 1
                             scan_block = ''
-                        if queue_size > self.nb_threads and not scan_started:  # Start scanning if we have something to do
+                            wfp_file_count = 0
+                        if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                             scan_started = True
                             if not self.threaded_scan.run(wait=False):
                                 self.print_stderr(
@@ -416,8 +425,8 @@ class Scanner(ScanossBase):
         if spinner:
             spinner.finish()
 
-        if wfp_list:
-            if not self.no_wfp_file or not self.threaded_scan:  # Write a WFP file if no threading is requested
+        if file_count > 0:
+            if save_wfps_for_print:  # Write a WFP file if no threading is requested
                 self.print_debug(f'Writing fingerprints to {self.wfp}')
                 with open(self.wfp, 'w') as f:
                     f.write(''.join(wfp_list))
@@ -730,7 +739,8 @@ class Scanner(ScanossBase):
             raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
         cur_size = 0
         queue_size = 0
-        file_count = 0
+        file_count = 0  # count all files fingerprinted
+        wfp_file_count = 0  # count number of files in each queue post
         scan_started = False
         wfp = ''
         scan_block = ''
@@ -742,17 +752,19 @@ class Scanner(ScanossBase):
                         cur_size = len(wfp.encode("utf-8"))
                     scan_block = line  # Start storing the next file
                     file_count += 1
+                    wfp_file_count += 1
                 else:
                     scan_block += line  # Store the rest of the WFP for this file
                 l_size = cur_size + len(scan_block.encode('utf-8'))
                 # Hit the max post size, so sending the current batch and continue processing
-                if l_size >= self.max_post_size and wfp:
+                if (wfp_file_count > self.post_file_count or l_size >= self.max_post_size) and wfp:
                     if self.debug and cur_size > self.max_post_size:
                         Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
                     self.threaded_scan.queue_add(wfp)
                     queue_size += 1
                     wfp = ''
-                    if queue_size > self.nb_threads and not scan_started:  # Start scanning if we have something to do
+                    wfp_file_count = 0
+                    if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
                             self.print_stderr(
