@@ -101,6 +101,17 @@ Dependencies can then be decorated by adding the ``--dependencies`` option to th
 > scanoss-py scan --dependencies -o scan-output.json <source-folder>
 ```
 
+#### Scanning with the `identify` option
+
+The SBOM Ingestion functionality allows users to influence the matching selection logic by providing an SBOM as input.
+
+This can be done by using the "-i “ or “--Identify" option and passing a SPDX or CycloneDX SBOM. When this option is used, the server will attempt to match the scanned file with one of the components declared in the SBOM, including its version if it has been defined.
+
+If no match is found for the components from the SBOM, the oldest available component in the KB will be selected as the best match.
+```bash
+> scanoss-py scan -i SBOM.json -w test.wfp
+```
+
 ### Package Usage
 The **scanoss** package can also be used in other Python projects/scripts. A good example of how to consume it can be found [here](https://github.com/scanoss/scanoss.py/blob/main/src/scanoss/cli.py).
 
