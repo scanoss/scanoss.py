@@ -148,3 +148,29 @@ class Components(ScanossBase):
                 self.print_msg(f'Results written to: {output_file}')
         self._close_file(output_file, file)
         return success
+
+    def get_vulnerabilities(self, json_file: str = None, purls: [] = None, output_file: str = None) -> bool:
+        """
+        Retrieve any vulnerabilities related to the given PURLs
+
+        :param json_file: PURL JSON request file (optional)
+        :param purls: PURL request array (optional)
+        :param output_file: output filename (optional). Default: STDOUT
+        :return: True on success, False otherwise
+        """
+        success = False
+        purls_request = self.load_purls(json_file, purls)
+        if purls_request is None or len(purls_request) == 0:
+            return False
+        file = self._open_file_or_sdtout(output_file)
+        if file is None:
+            return False
+        self.print_msg('Sending PURLs to Vulnerability API for decoration...')
+        response = self.grpc_api.get_vulnerabilities_json(purls_request)
+        if response:
+            print(json.dumps(response, indent=2, sort_keys=True), file=file)
+            success = True
+            if output_file:
+                self.print_msg(f'Results written to: {output_file}')
+        self._close_file(output_file, file)
+        return success
