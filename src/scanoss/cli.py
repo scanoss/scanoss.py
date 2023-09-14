@@ -161,7 +161,7 @@ def setup_args() -> None:
                                    description=f'SCANOSS Component commands: {__version__}',
                                    help='Component support commands')
 
-    comp_sub = p_comp.add_subparsers(title='Component Commands', dest='subparsercmd', description='utils sub-commands',
+    comp_sub = p_comp.add_subparsers(title='Component Commands', dest='subparsercmd', description='component sub-commands',
                                      help='component sub-commands')
 
     # Component Sub-command: component crypto
@@ -210,8 +210,8 @@ def setup_args() -> None:
                                    description=f'SCANOSS Utility commands: {__version__}',
                                    help='General utility support commands')
 
-    utils_sub = p_util.add_subparsers(title='Utils Commands', dest='subparsercmd', description='component sub-commands',
-                                      help='component sub-commands')
+    utils_sub = p_util.add_subparsers(title='Utils Commands', dest='subparsercmd', description='utils sub-commands',
+                                      help='utils sub-commands')
 
     # Utils Sub-command: utils fast
     p_f_f = utils_sub.add_parser('fast',
