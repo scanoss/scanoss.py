@@ -1,0 +1,21 @@
+{
+  "name": "vue",
+  "version": "2.6.12",
+  "description": "Reactive, component-oriented view layer for modern web interfaces.",
+  "main": "dist/vue.runtime.common.js",
+  "module": "dist/vue.runtime.esm.js",
+  "unpkg": "dist/vue.js",
+  "jsdelivr": "dist/vue.js",
+  "typings": "types/index.d.ts",
+  "files": [
+    "src",
+    "dist/*.js",
+    "types/*.d.ts"
+  ],
+  "author": "Evan You",
+  "license": "MIT",
+  "homepage": "https://github.com/vuejs/vue#readme",
+  "devDependencies": {
+    "@babel/core": ">0.2.0"
+  }
+}
