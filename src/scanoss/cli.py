@@ -717,6 +717,7 @@ def get_pac_file(pac: str):
             exit(1)
     return pac_file
 
+
 def comp_crypto(parser, args):
     """
     Run the "component crypto" sub-command
@@ -765,6 +766,7 @@ def comp_vulns(parser, args):
                        timeout=args.timeout)
     if not comps.get_vulnerabilities(args.input, args.purl, args.output):
         exit(1)
+
 
 def comp_search(parser, args):
     """
