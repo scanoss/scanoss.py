@@ -45,8 +45,8 @@ from .api.components.v2.scanoss_components_pb2 import CompSearchRequest, CompSea
 from .scanossbase import ScanossBase
 from . import __version__
 
-# DEFAULT_URL      = "https://osskb.org"
-DEFAULT_URL = "https://scanoss.com"
+DEFAULT_URL = "https://osskb.org"  # default free service URL
+DEFAULT_URL2 = "https://scanoss.com"  # default premium service URL
 SCANOSS_GRPC_URL = os.environ.get("SCANOSS_GRPC_URL") if os.environ.get("SCANOSS_GRPC_URL") else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
 
@@ -76,9 +76,11 @@ class ScanossGrpc(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL
+        self.api_key = api_key if api_key else SCANOSS_API_KEY
+        if self.api_key and not url and not os.environ.get("SCANOSS_GRPC_URL"):
+            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
         self.url = self.url.lower()
         self.orig_url = self.url  # Used for proxy lookup
-        self.api_key = api_key if api_key else SCANOSS_API_KEY
         self.timeout = timeout
         self.proxy = proxy
         self.grpc_proxy = grpc_proxy
