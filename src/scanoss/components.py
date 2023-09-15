@@ -95,6 +95,24 @@ class Components(ScanossBase):
             return None
         return purl_request
 
+    def load_json(self, json_file: str = None) -> dict:
+        """
+        Load the specified json and return a dictionary
+
+        :param json_file: JSON PURL file
+        :return: PURL Request dictionary
+        """
+        if json_file:
+            if not os.path.isfile(json_file) or not os.access(json_file, os.R_OK):
+                self.print_stderr(f'ERROR: JSON file does not exist, is not a file, or is not readable: {json_file}')
+                return None
+            with open(json_file, 'r') as f:
+                try:
+                    return json.loads(f.read())
+                except Exception as e:
+                    self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
+        return None
+
     def _open_file_or_sdtout(self, filename):
         """
         Open the given filename if requested, otherwise return STDOUT
@@ -141,6 +159,116 @@ class Components(ScanossBase):
             return False
         self.print_msg('Sending PURLs to Crypto API for decoration...')
         response = self.grpc_api.get_crypto_json(purls_request)
+        if response:
+            print(json.dumps(response, indent=2, sort_keys=True), file=file)
+            success = True
+            if output_file:
+                self.print_msg(f'Results written to: {output_file}')
+        self._close_file(output_file, file)
+        return success
+
+    def get_vulnerabilities(self, json_file: str = None, purls: [] = None, output_file: str = None) -> bool:
+        """
+        Retrieve any vulnerabilities related to the given PURLs
+
+        :param json_file: PURL JSON request file (optional)
+        :param purls: PURL request array (optional)
+        :param output_file: output filename (optional). Default: STDOUT
+        :return: True on success, False otherwise
+        """
+        success = False
+        purls_request = self.load_purls(json_file, purls)
+        if purls_request is None or len(purls_request) == 0:
+            return False
+        file = self._open_file_or_sdtout(output_file)
+        if file is None:
+            return False
+        self.print_msg('Sending PURLs to Vulnerability API for decoration...')
+        response = self.grpc_api.get_vulnerabilities_json(purls_request)
+        if response:
+            print(json.dumps(response, indent=2, sort_keys=True), file=file)
+            success = True
+            if output_file:
+                self.print_msg(f'Results written to: {output_file}')
+        self._close_file(output_file, file)
+        return success
+
+    def search_components(self, output_file: str = None, json_file: str = None,
+                          search: str = None, vendor: str = None, comp: str = None, package: str = None,
+                          limit: int = None, offset: int = None) -> bool:
+        """
+        Search for a component based on the given search criteria
+
+        :param output_file: output filename (optional). Default: STDOUT
+        :param json_file: Search JSON request file (optional)
+        :param search: Search for (vendor/component/purl) for a component (overrides vendor/component)
+        :param vendor: Vendor to search for
+        :param comp: Component to search for
+        :param package: Package (purl type) to search for. i.e. github/maven/maven/npn/all - default github
+        :param limit: Number of matches to return
+        :param offset: Offset to submit to return next (limit) of component matches
+        :return: True on success, False otherwise
+        """
+        success = False
+        request: dict
+        if json_file:  # Parse the json file to extract the search details
+            request = self.load_json(json_file)
+            if request is None:
+                return False
+        else:  # Construct a query dictionary from parameters
+            request = {
+                "search": search,
+                "vendor": vendor,
+                "component": comp,
+                "package": package
+            }
+            if limit is not None and limit > 0:
+                request["limit"] = limit
+            if offset is not None and offset > 0:
+                request["offset"] = offset
+
+        file = self._open_file_or_sdtout(output_file)
+        if file is None:
+            return False
+        self.print_msg('Sending search data to Components API...')
+        response = self.grpc_api.search_components_json(request)
+        if response:
+            print(json.dumps(response, indent=2, sort_keys=True), file=file)
+            success = True
+            if output_file:
+                self.print_msg(f'Results written to: {output_file}')
+        self._close_file(output_file, file)
+        return success
+
+    def get_component_versions(self, output_file: str = None, json_file: str = None,
+                               purl: str = None, limit: int = None) -> bool:
+        """
+        Search for a component versions based on the given search criteria
+
+        :param output_file: output filename (optional). Default: STDOUT
+        :param json_file: Search JSON request file (optional)
+        :param purl: PURL to retrieve versions for
+        :param limit: Number of version to return
+        :return: True on success, False otherwise
+        """
+        success = False
+        request: dict
+        if json_file:  # Parse the json file to extract the search details
+            request = self.load_json(json_file)
+            if request is None:
+                return False
+        else:  # Construct a query dictionary from parameters
+            request = {
+                "purl": purl
+            }
+            if limit is not None and limit > 0:
+                request["limit"] = limit
+
+        file = self._open_file_or_sdtout(output_file)
+        if file is None:
+            return False
+        self.print_msg('Sending PURLs to Component Versions API...')
+        response = self.grpc_api.get_component_versions_json(request)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True
