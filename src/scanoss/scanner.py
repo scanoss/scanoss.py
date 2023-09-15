@@ -41,6 +41,7 @@ from .threadeddependencies import ThreadedDependencies
 from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
+from . import __version__
 
 FAST_WINNOWING = False
 try:
@@ -50,8 +51,6 @@ try:
 except ModuleNotFoundError or ImportError:
     FAST_WINNOWING = False
     from .winnowing import Winnowing
-
-from . import __version__
 
 FILTERED_DIRS = {  # Folders to skip
     "nbproject", "nbbuild", "nbdist", "__pycache__", "venv", "_yardoc", "eggs", "wheels", "htmlcov", "__pypackages__"
@@ -843,7 +842,7 @@ class Scanner(ScanossBase):
             else:
                 print(wfp)
         else:
-            Scanner.print_stderr(f'Warning: No fingerprints generated for: {scan_file}')
+            Scanner.print_stderr(f'Warning: No fingerprints generated for: {wfp_file}')
 
     def wfp_file(self, scan_file: str, wfp_file: str = None):
         """

@@ -1,0 +1,8 @@
+{
+  "purls": [
+    {
+      "purl": "pkg:github/torvalds/linux",
+      "requirement": ">v5.13"
+    }
+  ]
+}

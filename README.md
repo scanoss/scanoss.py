@@ -89,6 +89,19 @@ The package will then be available to install using:
 pip3 install scanoss
 ```
 
+##### GitHub Actions
+There are a number of [workflows](.github/workflows) setup for this repository. They provide the following:
+* [Local build/test](.github/workflows/python-local-test.yml)
+  * Automatically triggered on pushes or PRs to main. Can also be run manually for other branches
+* [Local container build/test](.github/workflows/container-local-test.yml)
+  * Automatically triggered on pushes or PRs to main. Can also be run manually for other branches
+* [Publish to Test PyPI](.github/workflows/python-publish-testpypi.yml)
+  * Can be manually triggered to push a test version from any branch
+* [Publish to PyPI](.github/workflows/python-publish-pypi.yml)
+  * Build and publish the Python package to PyPI (triggered by v*.*.* tag)
+* [Publish container to GHCR](.github/workflows/container-publish-ghcr.yml)
+  * Build and publish the Python container to GHCR (triggered by v*.*.* tag)
+
 ## Bugs/Features
 To request features or alert about bugs, please do so [here](https://github.com/scanoss/scanoss.py/issues).
 

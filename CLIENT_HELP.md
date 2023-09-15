@@ -129,3 +129,110 @@ pip3 install --upgrade https://github.com/pietrodn/grpcio-mac-arm-build/releases
 ```
 
 This command above will install `grpcio` `1.5.1` for Python `3.9`. To install for `3.10` simply replace the `cp39` with `cp310`.
+
+## Command Execution
+There are multiple commands (and sub commands) available through `scanoss-py`.
+Detailed help is available for all directly from the CLI itself:
+```bash
+scanoss-py --help
+scanoss-py scan --help
+scanoss-py comp
+scanoss-py comp vulns --help
+scanoss-py utils
+```
+
+### Fingerprint a project folder
+The following command provides the capability to fingerprint (generate WFPs) for a given file/folder:
+```bash
+scanoss-py wfp --help
+```
+The following command fingerprints the `src` folder and writes the output to `src-fingers.wfp`:
+```bash
+scanoss-py wfp -o src-fingers.wfp src
+```
+
+This fingerprint (WFP) can then be sent to the SCANOSS engine using the scanning command:
+```bash
+scanoss-py scan -w src-fingers.wfp -o scan-results.json
+```
+
+### Scan a project folder
+The following command provides the capability to scan a given file/folder:
+```bash
+scanoss-py scan --help
+```
+
+The following command scans the `src` folder and writes the output to `scan-results.json`:
+```bash
+scanoss-py scan -o scan-results.json src
+```
+
+### Converting RAW results into other formats
+The following command provides the capability to convert the RAW scan results from a SCANOSS scan into multiple different formats, including CycloneDX, SPDX Lite, CSV, etc.
+For the full set of formats, please run:
+```bash
+scanoss-py cnv --help
+```
+
+The following command converts `scan-results.json` to SPDX Lite:
+```bash
+scanoss-py cnv --input scan-results.json --format spdxlite --output scan-results-spdxlite.json
+```
+
+### Component Commands
+The `component` command has a suite of sub-commands designed to operate on OSS components. For example:
+* Vulnerabilities (`vulns`)
+* Search (`search`)
+* Version Details (`versions`)
+* Cryptography (`crypto`)
+
+For the latest list of sub-commands, please run:
+```bash
+scanoss-py comp --help
+```
+
+#### Component Vulnerabilities
+The following command provides the capability to search the SCANOSS KB for component vulnerabilities:
+```bash
+scanoss-py comp vulns -p "pkg:github/unoconv/unoconv"
+```
+It is possible to supply multiple PURLs by repeating the `-p pkg` option, or providing a purl input file `-i purl-input.json` ([for example](tests/data/purl-input.json)):
+```bash
+scanoss-py comp vulns -i purl-input.json -o vulnernable-comps.json
+```
+
+
+#### Component Search
+The following command provides the capability to search the SCANOSS KB for an Open Source component:
+```bash
+scanoss-py comp search -s "unoconv"
+```
+This command will search through different combinations to retrieve a proposed list of components (i.e. vendor/component, component, vendor, purl).
+
+It is also possible to search by component and vendor, while restricting the package type:
+```bash
+scanoss-py comp search --key $SC_API_KEY -c unoconv -v unoconv -p github
+```
+
+**Note:** This sub-command requires a subscription to SCANOSS premium data.
+
+#### Component Versions
+The following command provides the capability to search the SCANOSS KB for versions of a specified component PURL:
+```bash
+scanoss-py comp versions --key $SC_API_KEY -p "pkg:github/unoconv/unoconv"
+```
+
+**Note:** This sub-command requires a subscription to SCANOSS premium data.
+
+#### Cryptographic Algorithms
+The following command provides the capability to search the SCANOSS KB for any cryptographic algorithms detected in a specified component PURL:
+```bash
+scanoss-py comp crypto --key $SC_API_KEY -p "pkg:github/unoconv/unoconv"
+```
+It is possible to supply multiple PURLs by repeating the `-p pkg` option, or providing a purl input file `-i purl-input.json` ([for example](tests/data/purl-input.json)):
+```bash
+scanoss-py comp crypto --key $SC_API_KEY -i purl-input.json -o crypto-components.json
+```
+
+**Note:** This sub-command requires a subscription to SCANOSS premium data.
+

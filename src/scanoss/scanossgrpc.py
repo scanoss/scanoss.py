@@ -33,16 +33,20 @@ from pypac.parser import PACFile
 from pypac.resolver import ProxyResolver
 from urllib.parse import urlparse
 
+from .api.components.v2.scanoss_components_pb2_grpc import ComponentsStub
 from .api.cryptography.v2.scanoss_cryptography_pb2_grpc import CryptographyStub
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
+from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2_grpc import VulnerabilitiesStub
 from .api.cryptography.v2.scanoss_cryptography_pb2 import AlgorithmResponse
 from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, DependencyResponse
 from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode, PurlRequest
+from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import VulnerabilityResponse
+from .api.components.v2.scanoss_components_pb2 import CompSearchRequest, CompSearchResponse, CompVersionRequest, CompVersionResponse
 from .scanossbase import ScanossBase
 from . import __version__
 
-# DEFAULT_URL      = "https://osskb.org"
-DEFAULT_URL = "https://scanoss.com"
+DEFAULT_URL = "https://osskb.org"  # default free service URL
+DEFAULT_URL2 = "https://scanoss.com"  # default premium service URL
 SCANOSS_GRPC_URL = os.environ.get("SCANOSS_GRPC_URL") if os.environ.get("SCANOSS_GRPC_URL") else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
 
@@ -72,9 +76,11 @@ class ScanossGrpc(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL
+        self.api_key = api_key if api_key else SCANOSS_API_KEY
+        if self.api_key and not url and not os.environ.get("SCANOSS_GRPC_URL"):
+            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
         self.url = self.url.lower()
         self.orig_url = self.url  # Used for proxy lookup
-        self.api_key = api_key if api_key else SCANOSS_API_KEY
         self.timeout = timeout
         self.proxy = proxy
         self.grpc_proxy = grpc_proxy
@@ -99,15 +105,19 @@ class ScanossGrpc(ScanossBase):
         self.print_debug(f'Setting up (secure: {secure}) connection to {self.url}...')
         self._get_proxy_config()
         if secure is False:  # insecure connection
-            self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))
+            self.comp_search_stub = ComponentsStub(grpc.insecure_channel(self.url))
             self.crypto_stub = CryptographyStub(grpc.insecure_channel(self.url))
+            self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))
+            self.vuln_stub = VulnerabilitiesStub(grpc.insecure_channel(self.url))
         else:
             if ca_cert is not None:
                 credentials = grpc.ssl_channel_credentials(cert_data)  # secure with specified certificate
             else:
                 credentials = grpc.ssl_channel_credentials()  # secure connection with default certificate
-            self.dependencies_stub = DependenciesStub(grpc.secure_channel(self.url, credentials))
+            self.comp_search_stub = ComponentsStub(grpc.secure_channel(self.url, credentials))
             self.crypto_stub = CryptographyStub(grpc.secure_channel(self.url, credentials))
+            self.dependencies_stub = DependenciesStub(grpc.secure_channel(self.url, credentials))
+            self.vuln_stub = VulnerabilitiesStub(grpc.secure_channel(self.url, credentials))
 
     @classmethod
     def _load_cert(cls, cert_file: str) -> bytes:
@@ -235,7 +245,94 @@ class ScanossGrpc(ScanossBase):
             if resp:
                 if not self._check_status_response(resp.status, request_id):
                     return None
-                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dictionary
+                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
+                del resp_dict['status']
+                return resp_dict
+        return None
+
+    def get_vulnerabilities_json(self, purls: dict) -> dict:
+        """
+        Client function to call the rpc for Vulnerability GetVulnerabilities
+        :param purls: Message to send to the service
+        :return: Server response or None
+        """
+        if not purls:
+            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            return None
+        request_id = str(uuid.uuid4())
+        resp: VulnerabilityResponse
+        try:
+            request = ParseDict(purls, PurlRequest())  # Parse the JSON/Dict into the purl request object
+            metadata = self.metadata[:]
+            metadata.append(('x-request-id', request_id))  # Set a Request ID
+            self.print_debug(f'Sending crypto data for decoration (rqId: {request_id})...')
+            resp = self.vuln_stub.GetVulnerabilities(request, metadata=metadata, timeout=self.timeout)
+        except Exception as e:
+            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
+                              f'(rqId: {request_id}): {e}')
+        else:
+            if resp:
+                if not self._check_status_response(resp.status, request_id):
+                    return None
+                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
+                del resp_dict['status']
+                return resp_dict
+        return None
+
+    def search_components_json(self, search: dict) -> dict:
+        """
+        Client function to call the rpc for Components SearchComponents
+        :param search: Message to send to the service
+        :return: Server response or None
+        """
+        if not search:
+            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            return None
+        request_id = str(uuid.uuid4())
+        resp: CompSearchResponse
+        try:
+            request = ParseDict(search, CompSearchRequest())  # Parse the JSON/Dict into the purl request object
+            metadata = self.metadata[:]
+            metadata.append(('x-request-id', request_id))  # Set a Request ID
+            self.print_debug(f'Sending component search data (rqId: {request_id})...')
+            resp = self.comp_search_stub.SearchComponents(request, metadata=metadata, timeout=self.timeout)
+        except Exception as e:
+            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
+                              f'(rqId: {request_id}): {e}')
+        else:
+            if resp:
+                if not self._check_status_response(resp.status, request_id):
+                    return None
+                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
+                del resp_dict['status']
+                return resp_dict
+        return None
+
+    def get_component_versions_json(self, search: dict) -> dict:
+        """
+        Client function to call the rpc for Components GetComponentVersions
+        :param search: Message to send to the service
+        :return: Server response or None
+        """
+        if not search:
+            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            return None
+        request_id = str(uuid.uuid4())
+        resp: CompVersionResponse
+        try:
+            request = ParseDict(search, CompVersionRequest())  # Parse the JSON/Dict into the purl request object
+            metadata = self.metadata[:]
+            metadata.append(('x-request-id', request_id))  # Set a Request ID
+            self.print_debug(f'Sending component version data (rqId: {request_id})...')
+            resp = self.comp_search_stub.GetComponentVersions(request, metadata=metadata, timeout=self.timeout)
+        except Exception as e:
+            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
+                              f'(rqId: {request_id}): {e}')
+        else:
+            if resp:
+                if not self._check_status_response(resp.status, request_id):
+                    return None
+                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
                 del resp_dict['status']
                 return resp_dict
         return None
