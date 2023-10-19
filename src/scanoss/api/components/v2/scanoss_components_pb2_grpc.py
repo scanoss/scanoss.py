@@ -32,6 +32,11 @@ class ComponentsStub(object):
                 request_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionResponse.FromString,
                 )
+        self.GetComponentStatistics = channel.unary_unary(
+                '/scanoss.api.components.v2.Components/GetComponentStatistics',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.FromString,
+                )
 
 
 class ComponentsServicer(object):
@@ -72,6 +77,17 @@ class ComponentsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetComponentStatistics(self, request, context):
+        """Get the statistics for the specified components
+        option (google.api.http) = {
+        post: "/api/v2/components/statistics"
+        body: "*"
+        };
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ComponentsServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -89,6 +105,11 @@ def add_ComponentsServicer_to_server(servicer, server):
                     servicer.GetComponentVersions,
                     request_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionResponse.SerializeToString,
+            ),
+            'GetComponentStatistics': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentStatistics,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -150,5 +171,22 @@ class Components(object):
         return grpc.experimental.unary_unary(request, target, '/scanoss.api.components.v2.Components/GetComponentVersions',
             scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionRequest.SerializeToString,
             scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetComponentStatistics(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/scanoss.api.components.v2.Components/GetComponentStatistics',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
+            scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

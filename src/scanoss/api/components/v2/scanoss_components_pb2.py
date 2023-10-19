@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from scanoss.api.common.v2 import scanoss_common_pb2 as scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n2scanoss/api/components/v2/scanoss-components.proto\x12\x19scanoss.api.components.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\"v\n\x11\x43ompSearchRequest\x12\x0e\n\x06search\x18\x01 \x01(\t\x12\x0e\n\x06vendor\x18\x02 \x01(\t\x12\x11\n\tcomponent\x18\x03 \x01(\t\x12\x0f\n\x07package\x18\x04 \x01(\t\x12\r\n\x05limit\x18\x06 \x01(\x05\x12\x0e\n\x06offset\x18\x07 \x01(\x05\"\xd3\x01\n\x12\x43ompSearchResponse\x12K\n\ncomponents\x18\x01 \x03(\x0b\x32\x37.scanoss.api.components.v2.CompSearchResponse.Component\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x39\n\tComponent\x12\x11\n\tcomponent\x18\x01 \x01(\t\x12\x0c\n\x04purl\x18\x02 \x01(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\"1\n\x12\x43ompVersionRequest\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\"\xd6\x03\n\x13\x43ompVersionResponse\x12K\n\tcomponent\x18\x01 \x01(\x0b\x32\x38.scanoss.api.components.v2.CompVersionResponse.Component\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1aO\n\x07License\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07spdx_id\x18\x02 \x01(\t\x12\x18\n\x10is_spdx_approved\x18\x03 \x01(\x08\x12\x0b\n\x03url\x18\x04 \x01(\t\x1a\x64\n\x07Version\x12\x0f\n\x07version\x18\x01 \x01(\t\x12H\n\x08licenses\x18\x04 \x03(\x0b\x32\x36.scanoss.api.components.v2.CompVersionResponse.License\x1a\x83\x01\n\tComponent\x12\x11\n\tcomponent\x18\x01 \x01(\t\x12\x0c\n\x04purl\x18\x02 \x01(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\x12H\n\x08versions\x18\x04 \x03(\x0b\x32\x36.scanoss.api.components.v2.CompVersionResponse.Version2\xcb\x02\n\nComponents\x12Q\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\"\x00\x12q\n\x10SearchComponents\x12,.scanoss.api.components.v2.CompSearchRequest\x1a-.scanoss.api.components.v2.CompSearchResponse\"\x00\x12w\n\x14GetComponentVersions\x12-.scanoss.api.components.v2.CompVersionRequest\x1a..scanoss.api.components.v2.CompVersionResponse\"\x00\x42\x37Z5github.com/scanoss/papi/api/componentsv2;componentsv2b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n2scanoss/api/components/v2/scanoss-components.proto\x12\x19scanoss.api.components.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\"v\n\x11\x43ompSearchRequest\x12\x0e\n\x06search\x18\x01 \x01(\t\x12\x0e\n\x06vendor\x18\x02 \x01(\t\x12\x11\n\tcomponent\x18\x03 \x01(\t\x12\x0f\n\x07package\x18\x04 \x01(\t\x12\r\n\x05limit\x18\x06 \x01(\x05\x12\x0e\n\x06offset\x18\x07 \x01(\x05\"\xca\x01\n\rCompStatistic\x12\x1a\n\x12total_source_files\x18\x01 \x01(\x05\x12\x13\n\x0btotal_lines\x18\x02 \x01(\x05\x12\x19\n\x11total_blank_lines\x18\x03 \x01(\x05\x12\x44\n\tlanguages\x18\x04 \x03(\x0b\x32\x31.scanoss.api.components.v2.CompStatistic.Language\x1a\'\n\x08Language\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05\x66iles\x18\x02 \x01(\x05\"\xfb\x01\n\x15\x43ompStatisticResponse\x12\x45\n\x05purls\x18\x01 \x03(\x0b\x32\x36.scanoss.api.components.v2.CompStatisticResponse.Purls\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x64\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12<\n\nstatistics\x18\x03 \x01(\x0b\x32(.scanoss.api.components.v2.CompStatistic\"\xd3\x01\n\x12\x43ompSearchResponse\x12K\n\ncomponents\x18\x01 \x03(\x0b\x32\x37.scanoss.api.components.v2.CompSearchResponse.Component\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x39\n\tComponent\x12\x11\n\tcomponent\x18\x01 \x01(\t\x12\x0c\n\x04purl\x18\x02 \x01(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\"1\n\x12\x43ompVersionRequest\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\"\xd6\x03\n\x13\x43ompVersionResponse\x12K\n\tcomponent\x18\x01 \x01(\x0b\x32\x38.scanoss.api.components.v2.CompVersionResponse.Component\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1aO\n\x07License\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07spdx_id\x18\x02 \x01(\t\x12\x18\n\x10is_spdx_approved\x18\x03 \x01(\x08\x12\x0b\n\x03url\x18\x04 \x01(\t\x1a\x64\n\x07Version\x12\x0f\n\x07version\x18\x01 \x01(\t\x12H\n\x08licenses\x18\x04 \x03(\x0b\x32\x36.scanoss.api.components.v2.CompVersionResponse.License\x1a\x83\x01\n\tComponent\x12\x11\n\tcomponent\x18\x01 \x01(\t\x12\x0c\n\x04purl\x18\x02 \x01(\t\x12\x0b\n\x03url\x18\x03 \x01(\t\x12H\n\x08versions\x18\x04 \x03(\x0b\x32\x36.scanoss.api.components.v2.CompVersionResponse.Version2\xbd\x03\n\nComponents\x12Q\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\"\x00\x12q\n\x10SearchComponents\x12,.scanoss.api.components.v2.CompSearchRequest\x1a-.scanoss.api.components.v2.CompSearchResponse\"\x00\x12w\n\x14GetComponentVersions\x12-.scanoss.api.components.v2.CompVersionRequest\x1a..scanoss.api.components.v2.CompVersionResponse\"\x00\x12p\n\x16GetComponentStatistics\x12\".scanoss.api.common.v2.PurlRequest\x1a\x30.scanoss.api.components.v2.CompStatisticResponse\"\x00\x42\x37Z5github.com/scanoss/papi/api/componentsv2;componentsv2b\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'scanoss.api.components.v2.scanoss_components_pb2', globals())
@@ -24,20 +24,28 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._serialized_options = b'Z5github.com/scanoss/papi/api/componentsv2;componentsv2'
   _COMPSEARCHREQUEST._serialized_start=125
   _COMPSEARCHREQUEST._serialized_end=243
-  _COMPSEARCHRESPONSE._serialized_start=246
-  _COMPSEARCHRESPONSE._serialized_end=457
-  _COMPSEARCHRESPONSE_COMPONENT._serialized_start=400
-  _COMPSEARCHRESPONSE_COMPONENT._serialized_end=457
-  _COMPVERSIONREQUEST._serialized_start=459
-  _COMPVERSIONREQUEST._serialized_end=508
-  _COMPVERSIONRESPONSE._serialized_start=511
-  _COMPVERSIONRESPONSE._serialized_end=981
-  _COMPVERSIONRESPONSE_LICENSE._serialized_start=666
-  _COMPVERSIONRESPONSE_LICENSE._serialized_end=745
-  _COMPVERSIONRESPONSE_VERSION._serialized_start=747
-  _COMPVERSIONRESPONSE_VERSION._serialized_end=847
-  _COMPVERSIONRESPONSE_COMPONENT._serialized_start=850
-  _COMPVERSIONRESPONSE_COMPONENT._serialized_end=981
-  _COMPONENTS._serialized_start=984
-  _COMPONENTS._serialized_end=1315
+  _COMPSTATISTIC._serialized_start=246
+  _COMPSTATISTIC._serialized_end=448
+  _COMPSTATISTIC_LANGUAGE._serialized_start=409
+  _COMPSTATISTIC_LANGUAGE._serialized_end=448
+  _COMPSTATISTICRESPONSE._serialized_start=451
+  _COMPSTATISTICRESPONSE._serialized_end=702
+  _COMPSTATISTICRESPONSE_PURLS._serialized_start=602
+  _COMPSTATISTICRESPONSE_PURLS._serialized_end=702
+  _COMPSEARCHRESPONSE._serialized_start=705
+  _COMPSEARCHRESPONSE._serialized_end=916
+  _COMPSEARCHRESPONSE_COMPONENT._serialized_start=859
+  _COMPSEARCHRESPONSE_COMPONENT._serialized_end=916
+  _COMPVERSIONREQUEST._serialized_start=918
+  _COMPVERSIONREQUEST._serialized_end=967
+  _COMPVERSIONRESPONSE._serialized_start=970
+  _COMPVERSIONRESPONSE._serialized_end=1440
+  _COMPVERSIONRESPONSE_LICENSE._serialized_start=1125
+  _COMPVERSIONRESPONSE_LICENSE._serialized_end=1204
+  _COMPVERSIONRESPONSE_VERSION._serialized_start=1206
+  _COMPVERSIONRESPONSE_VERSION._serialized_end=1306
+  _COMPVERSIONRESPONSE_COMPONENT._serialized_start=1309
+  _COMPVERSIONRESPONSE_COMPONENT._serialized_end=1440
+  _COMPONENTS._serialized_start=1443
+  _COMPONENTS._serialized_end=1888
 # @@protoc_insertion_point(module_scope)
