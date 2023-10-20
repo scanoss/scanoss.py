@@ -204,7 +204,7 @@ scanoss-py comp vulns -i purl-input.json -o vulnernable-comps.json
 #### Component Search
 The following command provides the capability to search the SCANOSS KB for an Open Source component:
 ```bash
-scanoss-py comp search -s "unoconv"
+scanoss-py comp search --key $SC_API_KEY -s "unoconv"
 ```
 This command will search through different combinations to retrieve a proposed list of components (i.e. vendor/component, component, vendor, purl).
 
