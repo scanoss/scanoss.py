@@ -46,10 +46,6 @@ class ComponentsServicer(object):
 
     def Echo(self, request, context):
         """Standard echo
-        option (google.api.http) = {
-        post: "/api/v2/components/echo"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -57,10 +53,6 @@ class ComponentsServicer(object):
 
     def SearchComponents(self, request, context):
         """Search for components
-        option (google.api.http) = {
-        post: "/api/v2/components/search"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -68,10 +60,6 @@ class ComponentsServicer(object):
 
     def GetComponentVersions(self, request, context):
         """Get all version information for a specific component
-        option (google.api.http) = {
-        post: "/api/v2/components/versions"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -79,10 +67,6 @@ class ComponentsServicer(object):
 
     def GetComponentStatistics(self, request, context):
         """Get the statistics for the specified components
-        option (google.api.http) = {
-        post: "/api/v2/components/statistics"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

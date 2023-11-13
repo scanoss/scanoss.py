@@ -7,33 +7,7 @@ from scanoss.api.cryptography.v2 import scanoss_cryptography_pb2 as scanoss_dot_
 
 
 class CryptographyStub(object):
-    """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
-    info: {
-    title: "SCANOSS Cryptography Service";
-    version: "2.0";
-    contact: {
-    name: "scanoss-cryptography";
-    url: "https://github.com/scanoss/crpytography";
-    email: "support@scanoss.com";
-    };
-    };
-    schemes: HTTP;
-    consumes: "application/json";
-    produces: "application/json";
-    responses: {
-    key: "404";
-    value: {
-    description: "Returned when the resource does not exist.";
-    schema: {
-    json_schema: {
-    type: STRING;
-    }
-    }
-    }
-    }
-    };
-
-
+    """
     Expose all of the SCANOSS Cryptography RPCs here
     """
 
@@ -56,42 +30,12 @@ class CryptographyStub(object):
 
 
 class CryptographyServicer(object):
-    """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
-    info: {
-    title: "SCANOSS Cryptography Service";
-    version: "2.0";
-    contact: {
-    name: "scanoss-cryptography";
-    url: "https://github.com/scanoss/crpytography";
-    email: "support@scanoss.com";
-    };
-    };
-    schemes: HTTP;
-    consumes: "application/json";
-    produces: "application/json";
-    responses: {
-    key: "404";
-    value: {
-    description: "Returned when the resource does not exist.";
-    schema: {
-    json_schema: {
-    type: STRING;
-    }
-    }
-    }
-    }
-    };
-
-
+    """
     Expose all of the SCANOSS Cryptography RPCs here
     """
 
     def Echo(self, request, context):
         """Standard echo
-        option (google.api.http) = {
-        post: "/api/v2/cryptography/echo"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -99,10 +43,6 @@ class CryptographyServicer(object):
 
     def GetAlgorithms(self, request, context):
         """Get Cryptographic algorithms associated with a list of PURLs
-        option (google.api.http) = {
-        post: "/api/v2/cryptography/algorithms"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -129,33 +69,7 @@ def add_CryptographyServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class Cryptography(object):
-    """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
-    info: {
-    title: "SCANOSS Cryptography Service";
-    version: "2.0";
-    contact: {
-    name: "scanoss-cryptography";
-    url: "https://github.com/scanoss/crpytography";
-    email: "support@scanoss.com";
-    };
-    };
-    schemes: HTTP;
-    consumes: "application/json";
-    produces: "application/json";
-    responses: {
-    key: "404";
-    value: {
-    description: "Returned when the resource does not exist.";
-    schema: {
-    json_schema: {
-    type: STRING;
-    }
-    }
-    }
-    }
-    };
-
-
+    """
     Expose all of the SCANOSS Cryptography RPCs here
     """
 
