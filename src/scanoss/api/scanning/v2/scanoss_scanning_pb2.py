@@ -12,16 +12,20 @@ _sym_db = _symbol_database.Default()
 
 
 from scanoss.api.common.v2 import scanoss_common_pb2 as scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2
+from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
+from protoc_gen_swagger.options import annotations_pb2 as protoc__gen__swagger_dot_options_dot_annotations__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n.scanoss/api/scanning/v2/scanoss-scanning.proto\x12\x17scanoss.api.scanning.v2\x1a*scanoss/api/common/v2/scanoss-common.proto2]\n\x08Scanning\x12Q\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\"\x00\x42\x33Z1github.com/scanoss/papi/api/scanningv2;scanningv2b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n.scanoss/api/scanning/v2/scanoss-scanning.proto\x12\x17scanoss.api.scanning.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a,protoc-gen-swagger/options/annotations.proto2}\n\x08Scanning\x12q\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\" \x82\xd3\xe4\x93\x02\x1a\"\x15/api/v2/scanning/echo:\x01*B\x8a\x02Z1github.com/scanoss/papi/api/scanningv2;scanningv2\x92\x41\xd3\x01\x12m\n\x18SCANOSS Scanning Service\"L\n\x10scanoss-scanning\x12#https://github.com/scanoss/scanning\x1a\x13support@scanoss.com2\x03\x32.0*\x01\x01\x32\x10\x61pplication/json:\x10\x61pplication/jsonR;\n\x03\x34\x30\x34\x12\x34\n*Returned when the resource does not exist.\x12\x06\n\x04\x9a\x02\x01\x07\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'scanoss.api.scanning.v2.scanoss_scanning_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'Z1github.com/scanoss/papi/api/scanningv2;scanningv2'
-  _SCANNING._serialized_start=119
-  _SCANNING._serialized_end=212
+  DESCRIPTOR._serialized_options = b'Z1github.com/scanoss/papi/api/scanningv2;scanningv2\222A\323\001\022m\n\030SCANOSS Scanning Service\"L\n\020scanoss-scanning\022#https://github.com/scanoss/scanning\032\023support@scanoss.com2\0032.0*\001\0012\020application/json:\020application/jsonR;\n\003404\0224\n*Returned when the resource does not exist.\022\006\n\004\232\002\001\007'
+  _SCANNING.methods_by_name['Echo']._options = None
+  _SCANNING.methods_by_name['Echo']._serialized_options = b'\202\323\344\223\002\032\"\025/api/v2/scanning/echo:\001*'
+  _SCANNING._serialized_start=195
+  _SCANNING._serialized_end=320
 # @@protoc_insertion_point(module_scope)

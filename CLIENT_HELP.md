@@ -201,11 +201,10 @@ It is possible to supply multiple PURLs by repeating the `-p pkg` option, or pro
 scanoss-py comp vulns -i purl-input.json -o vulnernable-comps.json
 ```
 
-
 #### Component Search
 The following command provides the capability to search the SCANOSS KB for an Open Source component:
 ```bash
-scanoss-py comp search -s "unoconv"
+scanoss-py comp search --key $SC_API_KEY -s "unoconv"
 ```
 This command will search through different combinations to retrieve a proposed list of components (i.e. vendor/component, component, vendor, purl).
 
@@ -213,7 +212,6 @@ It is also possible to search by component and vendor, while restricting the pac
 ```bash
 scanoss-py comp search --key $SC_API_KEY -c unoconv -v unoconv -p github
 ```
-
 **Note:** This sub-command requires a subscription to SCANOSS premium data.
 
 #### Component Versions
@@ -221,7 +219,6 @@ The following command provides the capability to search the SCANOSS KB for versi
 ```bash
 scanoss-py comp versions --key $SC_API_KEY -p "pkg:github/unoconv/unoconv"
 ```
-
 **Note:** This sub-command requires a subscription to SCANOSS premium data.
 
 #### Cryptographic Algorithms
@@ -233,6 +230,16 @@ It is possible to supply multiple PURLs by repeating the `-p pkg` option, or pro
 ```bash
 scanoss-py comp crypto --key $SC_API_KEY -i purl-input.json -o crypto-components.json
 ```
+**Note:** This sub-command requires a subscription to SCANOSS premium data.
 
+#### Semgrep Issues/Findings
+The following command provides the capability to search the SCANOSS KB for any semgrep issues detected in a specified component PURL:
+```bash
+scanoss-py comp semgrep --key $SC_API_KEY -p "pkg:github/spring-projects/spring-data-jpa"
+```
+It is possible to supply multiple PURLs by repeating the `-p pkg` option, or providing a purl input file `-i purl-input.json` ([for example](tests/data/purl-input.json)):
+```bash
+scanoss-py comp semgrep --key $SC_API_KEY -i purl-input.json -o semgrep-issues.json
+```
 **Note:** This sub-command requires a subscription to SCANOSS premium data.
 

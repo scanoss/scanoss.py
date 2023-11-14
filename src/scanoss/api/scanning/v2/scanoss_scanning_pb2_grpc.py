@@ -28,10 +28,6 @@ class ScanningServicer(object):
 
     def Echo(self, request, context):
         """Standard echo
-        option (google.api.http) = {
-        post: "/api/v2/scanning/echo"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

@@ -7,3 +7,4 @@ protobuf>3.19.1
 pypac
 urllib3
 pyOpenSSL
+google-api-core
