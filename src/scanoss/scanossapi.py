@@ -157,9 +157,6 @@ class ScanossApi(ScanossBase):
                 r = self.session.post(self.url, files=scan_files, data=form_data, headers=self.headers,
                                       timeout=self.timeout
                                       )
-                # r = requests.post(self.url, files=scan_files, data=form_data, headers=self.headers,
-                #                   timeout=self.timeout, verify=self.verify, proxies=self.proxies
-                #                   )
             except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
                 self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}.')
                 raise Exception(f"ERROR: The SCANOSS API request failed for {self.url}") from e

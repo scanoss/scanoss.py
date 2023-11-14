@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.8.0] - 2023-11-13
+### Added
+- Added Component Decoration sub-command:
+  - Semgrep (`scanoss-py comp semgrep`)
+
 ## [1.7.0] - 2023-09-15
 ### Added
 - Added Component Decoration sub-commands:
@@ -269,3 +274,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.6.2]: https://github.com/scanoss/scanoss.py/compare/v1.6.1...v1.6.2
 [1.6.3]: https://github.com/scanoss/scanoss.py/compare/v1.6.2...v1.6.3
 [1.7.0]: https://github.com/scanoss/scanoss.py/compare/v1.6.3...v1.7.0
+[1.7.0]: https://github.com/scanoss/scanoss.py/compare/v1.7.0...v1.8.0

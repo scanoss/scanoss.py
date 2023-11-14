@@ -7,33 +7,7 @@ from scanoss.api.dependencies.v2 import scanoss_dependencies_pb2 as scanoss_dot_
 
 
 class DependenciesStub(object):
-    """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
-    info: {
-    title: "SCANOSS Dependency Service";
-    version: "2.0";
-    contact: {
-    name: "scanoss-dependencies";
-    url: "https://github.com/scanoss/dependencies";
-    email: "support@scanoss.com";
-    };
-    };
-    schemes: HTTP;
-    consumes: "application/json";
-    produces: "application/json";
-    responses: {
-    key: "404";
-    value: {
-    description: "Returned when the resource does not exist.";
-    schema: {
-    json_schema: {
-    type: STRING;
-    }
-    }
-    }
-    }
-    };
-
-
+    """
     Expose all of the SCANOSS Dependency RPCs here
     """
 
@@ -56,42 +30,12 @@ class DependenciesStub(object):
 
 
 class DependenciesServicer(object):
-    """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
-    info: {
-    title: "SCANOSS Dependency Service";
-    version: "2.0";
-    contact: {
-    name: "scanoss-dependencies";
-    url: "https://github.com/scanoss/dependencies";
-    email: "support@scanoss.com";
-    };
-    };
-    schemes: HTTP;
-    consumes: "application/json";
-    produces: "application/json";
-    responses: {
-    key: "404";
-    value: {
-    description: "Returned when the resource does not exist.";
-    schema: {
-    json_schema: {
-    type: STRING;
-    }
-    }
-    }
-    }
-    };
-
-
+    """
     Expose all of the SCANOSS Dependency RPCs here
     """
 
     def Echo(self, request, context):
         """Standard echo
-        option (google.api.http) = {
-        post: "/api/v2/dependencies/echo"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -99,10 +43,6 @@ class DependenciesServicer(object):
 
     def GetDependencies(self, request, context):
         """Get dependency details
-        option (google.api.http) = {
-        post: "/api/v2/dependencies/dependencies"
-        body: "*"
-        };
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -129,33 +69,7 @@ def add_DependenciesServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class Dependencies(object):
-    """option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
-    info: {
-    title: "SCANOSS Dependency Service";
-    version: "2.0";
-    contact: {
-    name: "scanoss-dependencies";
-    url: "https://github.com/scanoss/dependencies";
-    email: "support@scanoss.com";
-    };
-    };
-    schemes: HTTP;
-    consumes: "application/json";
-    produces: "application/json";
-    responses: {
-    key: "404";
-    value: {
-    description: "Returned when the resource does not exist.";
-    schema: {
-    json_schema: {
-    type: STRING;
-    }
-    }
-    }
-    }
-    };
-
-
+    """
     Expose all of the SCANOSS Dependency RPCs here
     """
 
