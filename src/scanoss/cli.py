@@ -406,7 +406,7 @@ def get_scan_options(args):
     scan_dependencies = 0
     if args.skip_snippets:
         scan_snippets = 0
-    if args.dependencies:
+    if args.dependencies or args.dep:
         scan_dependencies = ScanType.SCAN_DEPENDENCIES.value
     if args.dependencies_only:
         scan_files = scan_snippets = 0
@@ -437,8 +437,8 @@ def scan(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_dir and not args.wfp and not args.stdin:
-        print_stderr('Please specify a file/folder, fingerprint (--wfp) or STDIN (--stdin)')
+    if not args.scan_dir and not args.wfp and not args.stdin and not args.dep:
+        print_stderr('Please specify a file/folder, fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)')
         parser.parse_args([args.subparser, '-h'])
         exit(1)
     if args.pac and args.proxy:
@@ -536,10 +536,10 @@ def scan(parser, args):
         if not scanner.is_file_or_snippet_scan():
             print_stderr(f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})')
             exit(1)
-        if args.threads > 1:
-            scanner.scan_wfp_file_threaded(args.wfp)
-        else:
-            scanner.scan_wfp_file(args.wfp)
+        if scanner.is_dependency_scan() and not args.dep:
+            print_stderr(f'Error: Cannot specify WFP & Dependency scanning without a dependency file ({--dep})')
+            exit(1)
+        scanner.scan_wfp_with_options(args.wfp, args.dep)
     elif args.stdin:
         contents = sys.stdin.buffer.read()
         if not scanner.scan_contents(args.stdin, contents):
@@ -549,13 +549,19 @@ def scan(parser, args):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
             exit(1)
         if os.path.isdir(args.scan_dir):
-            if not scanner.scan_folder_with_options(args.scan_dir, scanner.winnowing.file_map):
+            if not scanner.scan_folder_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map):
                 exit(1)
         elif os.path.isfile(args.scan_dir):
-            if not scanner.scan_file_with_options(args.scan_dir, scanner.winnowing.file_map):
+            if not scanner.scan_file_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map):
                 exit(1)
         else:
             print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
+            exit(1)
+    elif args.dep:
+        if not args.dependencies_only:
+            print_stderr(f'Error: No file or folder specified to scan. Please add --dependencies-only to decorate dependency file only.')
+            exit(1)
+        if not scanner.scan_folder_with_options(".", args.dep, scanner.winnowing.file_map):
             exit(1)
     else:
         print_stderr('No action found to process')
