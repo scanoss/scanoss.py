@@ -156,6 +156,22 @@ This fingerprint (WFP) can then be sent to the SCANOSS engine using the scanning
 scanoss-py scan -w src-fingers.wfp -o scan-results.json
 ```
 
+### Dependency file parsing
+The dependency files of a project can be fingerprinted/parsed using the `dep` command:
+```bash
+scanoss-py dep -o src-deps.json src
+```
+
+This parsed dependency file can then be sent to the SCANOSS for decoration using the scanning command:
+```bash
+scanoss-py scan --dep src-deps.json --dependencies-only -o scan-results.json
+```
+
+It is possible to combine a WFP & Dependency file into a single scan also:
+```bash
+scanoss-py scan -w src-fingers.wfp --dep src-deps.json -o scan-results.json
+```
+
 ### Scan a project folder
 The following command provides the capability to scan a given file/folder:
 ```bash
@@ -165,6 +181,12 @@ scanoss-py scan --help
 The following command scans the `src` folder and writes the output to `scan-results.json`:
 ```bash
 scanoss-py scan -o scan-results.json src
+```
+
+### Scan a project folder with dependencies
+The following command scans the `src` folder file, snippet & dependency matches, writing the output to `scan-results.json`:
+```bash
+scanoss-py scan -o scan-results.json -D src
 ```
 
 ### Converting RAW results into other formats
