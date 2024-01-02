@@ -31,6 +31,8 @@ from .scancodedeps import ScancodeDeps
 from .scanossbase import ScanossBase
 from .scanossgrpc import ScanossGrpc
 
+DEP_FILE_PREFIX = "file="  # Default prefix to signify an existing parsed dependency file
+
 
 @dataclass
 class ThreadedDependencies(ScanossBase):
@@ -64,18 +66,23 @@ class ThreadedDependencies(ScanossBase):
                 return resp
         return None
 
-    def run(self, what_to_scan: str = None, wait: bool = True) -> bool:
+    def run(self, what_to_scan: str = None, deps_file: str = None, wait: bool = True) -> bool:
         """
         Initiate a background scan for the specified file/dir
         :param what_to_scan: file/folder to scan
+        :param deps_file: file to decorate instead of scan (overrides what_to_scan option)
         :param wait: wait for completion
         :return: True if successful, False if error encountered
         """
         what_to_scan = what_to_scan if what_to_scan else self.what_to_scan
         self._errors = False
         try:
-            self.print_msg(f'Searching {what_to_scan} for dependencies...')
-            self.inputs.put(what_to_scan)   # Set up an input queue to enable the parent to wait for completion
+            if deps_file:                                                  # Decorate the given dependencies file
+                self.print_msg(f'Decorating {deps_file} dependencies...')
+                self.inputs.put(f'{DEP_FILE_PREFIX}{deps_file}')           # Add to queue and have parent wait on it
+            else:                                                          # Search for dependencies to decorate
+                self.print_msg(f'Searching {what_to_scan} for dependencies...')
+                self.inputs.put(what_to_scan)                              # Add to queue and have parent wait on it
             self._thread = threading.Thread(target=self.scan_dependencies, daemon=True)
             self._thread.start()
         except Exception as e:
@@ -87,22 +94,27 @@ class ThreadedDependencies(ScanossBase):
 
     def scan_dependencies(self) -> None:
         """
-        Scan for dependencies from the given file/dir (from the input queue)
+        Scan for dependencies from the given file/dir or from an input file (from the input queue).
         """
         current_thread = threading.get_ident()
         self.print_trace(f'Starting dependency worker {current_thread}...')
         try:
-            what_to_scan = self.inputs.get(timeout=5)                # Begin processing the dependency request
-            if not self.sc_deps.run_scan(what_to_scan=what_to_scan):
-                self._errors = True
-            else:
-                deps = self.sc_deps.produce_from_file()
+            what_to_scan = self.inputs.get(timeout=5)            # Begin processing the dependency request
+            deps = None
+            if what_to_scan.startswith(DEP_FILE_PREFIX):         # We have a pre-parsed dependency file, load it
+                deps = self.sc_deps.load_from_file(what_to_scan.strip(DEP_FILE_PREFIX))
+            else:                                                # Search the file/folder for dependency files to parse
+                if not self.sc_deps.run_scan(what_to_scan=what_to_scan):
+                    self._errors = True
+                else:
+                    deps = self.sc_deps.produce_from_file()
+            if not self._errors:
                 if deps is None:
                     self.print_stderr(f'Problem searching for dependencies for: {what_to_scan}')
                     self._errors = True
                 elif not deps:
                     self.print_trace(f'No dependencies found to decorate for: {what_to_scan}')
-                else:                         # TODO add API call to get dep data
+                else:
                     decorated_deps = self.grpc_api.get_dependencies(deps)
                     if decorated_deps:
                         self.output.put(decorated_deps)

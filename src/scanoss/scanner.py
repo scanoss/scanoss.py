@@ -313,10 +313,11 @@ class Scanner(ScanossBase):
             return True
         return False
 
-    def scan_folder_with_options(self, scan_dir: str, file_map: dict = None) -> bool:
+    def scan_folder_with_options(self, scan_dir: str, deps_file: str = None, file_map: dict = None) -> bool:
         """
         Scan the given folder for whatever scaning options that have been configured
         :param scan_dir: directory to scan
+        :param deps_file: pre-parsed dependency file to decorate
         :param file_map: mapping of obfuscated files back into originals
         :return: True if successful, False otherwise
         """
@@ -331,7 +332,7 @@ class Scanner(ScanossBase):
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
-            if not self.threaded_deps.run(what_to_scan=scan_dir, wait=False):  # Kick off a background dependency scan
+            if not self.threaded_deps.run(what_to_scan=scan_dir, deps_file=deps_file, wait=False):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_folder(scan_dir):
@@ -542,10 +543,11 @@ class Scanner(ScanossBase):
             success = False
         return success
 
-    def scan_file_with_options(self, file: str, file_map: dict = None) -> bool:
+    def scan_file_with_options(self, file: str, deps_file: str = None, file_map: dict = None) -> bool:
         """
         Scan the given file for whatever scaning options that have been configured
         :param file: file to scan
+        :param deps_file: pre-parsed dependency file to decorate
         :param file_map: mapping of obfuscated files back into originals
         :return: True if successful, False otherwise
         """
@@ -560,7 +562,7 @@ class Scanner(ScanossBase):
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
-            if not self.threaded_deps.run(what_to_scan=file, wait=False):  # Kick off a background dependency scan
+            if not self.threaded_deps.run(what_to_scan=file, deps_file=deps_file, wait=False):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_file(file):
@@ -725,6 +727,35 @@ class Scanner(ScanossBase):
 
         return success
 
+    def scan_wfp_with_options(self, wfp: str, deps_file: str, file_map: dict = None) -> bool:
+        """
+        Scan the given WFP file for whatever scaning options that have been configured
+        :param wfp: WFP file to scan
+        :param deps_file: pre-parsed dependency file to decorate
+        :param file_map: mapping of obfuscated files back into originals
+        :return: True if successful, False otherwise
+        """
+        success = True
+        wfp_file = wfp if wfp else self.wfp  # If a WFP file is specified, use it, otherwise us the default
+        if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
+            raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
+
+        if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
+            raise Exception(f"ERROR: No scan options defined to scan folder: {scan_dir}")
+
+        if self.scan_output:
+            self.print_msg(f'Writing results to {self.scan_output}...')
+        if self.is_dependency_scan():
+            if not self.threaded_deps.run(deps_file=deps_file, wait=False):  # Kick off a background dependency scan
+                success = False
+        if self.is_file_or_snippet_scan():
+            if not self.scan_wfp_file_threaded(wfp_file, file_map):
+                success = False
+        if self.threaded_scan:
+            if not self.__finish_scan_threaded(file_map):
+                success = False
+        return success
+
     def scan_wfp_file_threaded(self, file: str = None, file_map: dict = None) -> bool:
         """
         Scan the contents of the specified WFP file (threaded)
@@ -777,8 +808,6 @@ class Scanner(ScanossBase):
             queue_size += 1
 
         if not self.__run_scan_threaded(scan_started, file_count):
-            success = False
-        elif not self.__finish_scan_threaded(file_map):
             success = False
         return success
 

@@ -215,6 +215,26 @@ class ScancodeDeps(ScanossBase):
             self.print_stderr(f'ERROR: Issue running scancode dependency scan on {what_to_scan}: {e}')
             return False
         return True
+
+    def load_from_file(self, json_file: str = None) -> json:
+        """
+        Load the parsed JSON dependencies file and return the json object
+        :param json_file: dependency json file
+        :return: SCANOSS dependency JSON
+        """
+        if not json_file:
+            self.print_stderr('ERROR: No parsed JSON file provided to load.')
+            return None
+        if not os.path.isfile(json_file):
+            self.print_stderr(f'ERROR: parsed JSON file does not exist or is not a file: {json_file}')
+            return None
+        with open(json_file, 'r') as f:
+            try:
+                return json.loads(f.read())
+            except Exception as e:
+                self.print_stderr(f'ERROR: Problem loading input JSON: {e}')
+        return None
+
 #
 # End of ScancodeDeps Class
 #
