@@ -112,8 +112,8 @@ class ThreadedDependencies(ScanossBase):
                 if deps is None:
                     self.print_stderr(f'Problem searching for dependencies for: {what_to_scan}')
                     self._errors = True
-                elif not deps:
-                    self.print_trace(f'No dependencies found to decorate for: {what_to_scan}')
+                elif not deps or len(deps.get("files", [])) == 0:
+                    self.print_debug(f'No dependencies found to decorate for: {what_to_scan}')
                 else:
                     decorated_deps = self.grpc_api.get_dependencies(deps)
                     if decorated_deps:
