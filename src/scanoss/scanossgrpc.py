@@ -43,7 +43,8 @@ from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, Dep
 from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode, PurlRequest
 from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import VulnerabilityResponse
 from .api.semgrep.v2.scanoss_semgrep_pb2 import SemgrepResponse
-from .api.components.v2.scanoss_components_pb2 import CompSearchRequest, CompSearchResponse, CompVersionRequest, CompVersionResponse
+from .api.components.v2.scanoss_components_pb2 import (CompSearchRequest, CompSearchResponse,
+                                                       CompVersionRequest, CompVersionResponse)
 from .scanossbase import ScanossBase
 from . import __version__
 
