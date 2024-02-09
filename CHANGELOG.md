@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.10.0] - 2024-02-09
+### Added
+- Added scan/wfp file filtering options
+  - Exclude file extensions `--skip-extension` (repeat as needed)
+  - Exclude folder `--skip-folder` (repeat as needed)
+  - Exclude files smaller than specified `--skip-size`
+- Added `scan_files_with_options` SDK capability
+  - Enables a programmer to supply a specific list of files to scan
+
 ## [1.9.0] - 2023-12-29
 ### Added
 - Added dependency file decoration option to scanning (`scan`) using `--dep`
@@ -281,3 +290,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.7.0]: https://github.com/scanoss/scanoss.py/compare/v1.6.3...v1.7.0
 [1.8.0]: https://github.com/scanoss/scanoss.py/compare/v1.7.0...v1.8.0
 [1.9.0]: https://github.com/scanoss/scanoss.py/compare/v1.8.0...v1.9.0
+[1.10.0]: https://github.com/scanoss/scanoss.py/compare/v1.9.0...v1.10.0

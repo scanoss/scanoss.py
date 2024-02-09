@@ -64,3 +64,17 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
+
+      - name: Run Tests HPSM (fast winnowing)
+        run: |
+          pip install scanoss_winnowing
+          which scanoss-py
+          scanoss-py version
+          scanoss-py utils fast
+          scanoss-py wfp -H tests > fingers.wfp
+          wfp_count=$(cat fingers.wfp | grep 'file=' | wc -l)
+          echo "WFP Count: $wfp_count"
+          if [[ $wfp_count -lt 1 ]]; then
+            echo "Error: WFP test did not produce any results. Failing"
+            exit 1
+          fi
