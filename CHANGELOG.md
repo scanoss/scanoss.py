@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.10.0] - 2024-02-06
+## [1.10.0] - 2024-02-09
 ### Added
 - Added scan/wfp file filtering options
   - Exclude file extensions `--skip-extension` (repeat as needed)
