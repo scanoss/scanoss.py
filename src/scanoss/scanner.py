@@ -58,7 +58,7 @@ FILTERED_DIRS = {  # Folders to skip
 FILTERED_DIR_EXT = {  # Folder endings to skip
     ".egg-info"
 }
-FILTERED_EXT = {  # File extensions to skip
+FILTERED_EXT = [  # File extensions to skip
     ".1", ".2", ".3", ".4", ".5", ".6", ".7", ".8", ".9", ".ac", ".adoc", ".am",
     ".asciidoc", ".bmp", ".build", ".cfg", ".chm", ".class", ".cmake", ".cnf",
     ".conf", ".config", ".contributors", ".copying", ".crt", ".csproj", ".css",
@@ -78,7 +78,7 @@ FILTERED_EXT = {  # File extensions to skip
     # File endings
     "-doc", "changelog", "config", "copying", "license", "authors", "news", "licenses", "notice",
     "readme", "swiftdoc", "texidoc", "todo", "version", "ignore", "manifest", "sqlite", "sqlite3"
-}
+]
 FILTERED_FILES = {  # Files to skip
     "gradlew", "gradlew.bat", "mvnw", "mvnw.cmd", "gradle-wrapper.jar", "maven-wrapper.jar",
     "thumbs.db", "babel.config.js", "license.txt", "license.md", "copying.lib", "makefile"
@@ -100,12 +100,17 @@ class Scanner(ScanossBase):
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
                  scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
                  obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, grpc_proxy: str = None,
-                 ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False
+                 ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False,
+                 skip_size: int = 0, skip_extensions=None, skip_folders=None
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
         """
         super().__init__(debug, trace, quiet)
+        if skip_folders is None:
+            skip_folders = []
+        if skip_extensions is None:
+            skip_extensions = []
         self.wfp = wfp if wfp else "scanner_output.wfp"
         self.scan_output = scan_output
         self.output_format = output_format
@@ -117,6 +122,8 @@ class Scanner(ScanossBase):
         self.scan_options = scan_options
         self._skip_snippets = True if not scan_options & ScanType.SCAN_SNIPPETS.value else False
         self.hpsm = hpsm
+        self.skip_folders = skip_folders
+        self.skip_size = skip_size
         ver_details = Scanner.version_details()
 
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
@@ -143,6 +150,9 @@ class Scanner(ScanossBase):
         self.post_file_count = post_size if post_size > 0 else 32  # Max number of files for any given POST (default 32)
         if self._skip_snippets:
             self.max_post_size = 8 * 1024  # 8k Max post size if we're skipping snippets
+        self.skip_extensions = FILTERED_EXT
+        if skip_extensions:  # Append extra file extensions to skip
+            self.skip_extensions.extend(skip_extensions)
 
     def __filter_files(self, files: list) -> list:
         """
@@ -160,8 +170,8 @@ class Scanner(ScanossBase):
                 if f_lower in FILTERED_FILES:  # Check for exact files to ignore
                     ignore = True
                 if not ignore:
-                    for ending in FILTERED_EXT:  # Check for file endings to ignore
-                        if f_lower.endswith(ending):
+                    for ending in self.skip_extensions:  # Check for file endings to ignore (static and user supplied)
+                        if ending and f_lower.endswith(ending):
                             ignore = True
                             break
             if not ignore:
@@ -181,10 +191,12 @@ class Scanner(ScanossBase):
                 ignore = True
             if not ignore and not self.all_folders:  # Skip this check if we're allowing all folders
                 d_lower = d.lower()
-                if d_lower in FILTERED_DIRS:  # Ignore specific folders
+                if d_lower in FILTERED_DIRS:  # Ignore specific folders (case insensitive)
+                    ignore = True
+                elif self.skip_folders and d in self.skip_folders:  # Ignore user-supplied folders (case sensitive)
                     ignore = True
                 if not ignore:
-                    for de in FILTERED_DIR_EXT:  # Ignore specific folder endings
+                    for de in FILTERED_DIR_EXT:  # Ignore specific folder endings (case insensitive)
                         if d_lower.endswith(de):
                             ignore = True
                             break
@@ -385,7 +397,8 @@ class Scanner(ScanossBase):
                 except Exception as e:
                     self.print_trace(
                         f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
-                if f_size > 0:  # Ignore broken links and empty files
+                # Ignore broken links and empty files or if a user-specified size limit is supplied
+                if f_size > 0 and (self.skip_size <= 0 or f_size > self.skip_size):
                     self.print_trace(f'Fingerprinting {path}...')
                     if spinner:
                         spinner.next()
@@ -598,7 +611,7 @@ class Scanner(ScanossBase):
             success = False
         return success
 
-    def scan_files(self, files: list[str]) -> bool:
+    def scan_files(self, files: []) -> bool:
         """
         Scan the specified list of files, producing fingerprints, send to the SCANOSS API and return results
         Please note that by providing an explicit list you bypass any exclusions that may be defined on the scanner
@@ -637,7 +650,7 @@ class Scanner(ScanossBase):
                     spinner.next()
                 wfp = self.winnowing.wfp_for_file(file, file)
                 if wfp is None or wfp == '':
-                        self.print_stderr(f'Warning: No WFP returned for {path}')
+                        self.print_stderr(f'Warning: No WFP returned for {file}')
                         continue
                 if save_wfps_for_print:
                         wfp_list.append(wfp)
@@ -681,12 +694,12 @@ class Scanner(ScanossBase):
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
         else:
-            Scanner.print_stderr(f'Warning: No files found to scan in folder: {scan_dir}')
+            Scanner.print_stderr(f'Warning: No files found to scan from: {files}')
         return success
     
-    def scan_files_with_options(self, files: list[str], deps_file: str = None, file_map: dict = None) -> bool:
+    def scan_files_with_options(self, files: [], deps_file: str = None, file_map: dict = None) -> bool:
         """
-        Scan the given folder for whatever scaning options that have been configured
+        Scan the given list of files for whatever scaning options that have been configured
         :param files: list of files to scan
         :param deps_file: pre-parsed dependency file to decorate
         :param file_map: mapping of obfuscated files back into originals
@@ -697,7 +710,7 @@ class Scanner(ScanossBase):
             raise Exception(f"ERROR: Please specify a list of files to scan")
         if not self.is_file_or_snippet_scan():
             raise Exception(f"ERROR: file or snippet scan options have to be set to scan files: {files}")
-        if self.is_dependency_scan():
+        if self.is_dependency_scan() or deps_file:
             raise Exception(f"ERROR: The dependency scan option is currently not supported when scanning a list of files")
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
@@ -852,7 +865,7 @@ class Scanner(ScanossBase):
             raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
 
         if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
-            raise Exception(f"ERROR: No scan options defined to scan folder: {scan_dir}")
+            raise Exception(f"ERROR: No scan options defined to scan WFP: {wfp}")
 
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
@@ -860,18 +873,17 @@ class Scanner(ScanossBase):
             if not self.threaded_deps.run(deps_file=deps_file, wait=False):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
-            if not self.scan_wfp_file_threaded(wfp_file, file_map):
+            if not self.scan_wfp_file_threaded(wfp_file):
                 success = False
         if self.threaded_scan:
             if not self.__finish_scan_threaded(file_map):
                 success = False
         return success
 
-    def scan_wfp_file_threaded(self, file: str = None, file_map: dict = None) -> bool:
+    def scan_wfp_file_threaded(self, file: str = None) -> bool:
         """
         Scan the contents of the specified WFP file (threaded)
         :param file: WFP file to scan (optional)
-        :param file_map: mapping of obfuscated files back into originals (optional)
         return: True if successful, False otherwise
         """
         success = True

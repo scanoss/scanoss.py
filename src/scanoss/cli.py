@@ -86,7 +86,6 @@ def setup_args() -> None:
                              '256: disable best match only, 512: hide identified files, '
                              '1024: enable download_url, 2048: enable GitHub full path, '
                              '4096: disable extended server stats)')
-    p_scan.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
     p_scan.add_argument('--post-size', '-P', type=int, default=32,
                         help='Number of kilobytes to limit the post to while scanning (optional - default 32)')
     p_scan.add_argument('--timeout', '-M', type=int, default=180,
@@ -94,17 +93,12 @@ def setup_args() -> None:
     p_scan.add_argument('--retry', '-R', type=int, default=5,
                         help='Retry limit for API communication (optional - default 5)')
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
-    p_scan.add_argument('--all-extensions', action='store_true', help='Scan all file extensions')
-    p_scan.add_argument('--all-folders', action='store_true', help='Scan all folders')
-    p_scan.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
-    p_scan.add_argument('--obfuscate', action='store_true', help='Obfuscate file paths and names')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
     p_scan.add_argument('--sc-command', type=str,
                         help='Scancode command and path if required (optional - default scancode).')
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)')
-    p_scan.add_argument('--hpsm', '-H', action='store_true', help='Scan using High Precision Snippet Matching')
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -116,12 +110,6 @@ def setup_args() -> None:
     p_wfp.add_argument('--stdin', '-s', metavar='STDIN-FILENAME',  type=str,
                        help='Fingerprint the file contents supplied via STDIN (optional)')
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
-    p_wfp.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
-    p_wfp.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
-    p_wfp.add_argument('--all-extensions', action='store_true', help='Fingerprint all file extensions')
-    p_wfp.add_argument('--all-folders', action='store_true', help='Fingerprint all folders')
-    p_wfp.add_argument('--all-hidden', action='store_true', help='Fingerprint all hidden files/folders')
-    p_wfp.add_argument('--hpsm', '-H', action='store_true', help='Use High Precision Snippet Matching algorithm.')
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser('dependencies', aliases=['dp', 'dep'],
@@ -260,6 +248,19 @@ def setup_args() -> None:
                        help='SCANOSS API URL (optional - default: https://osskb.org/api/scan/direct)')
         p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
 
+    # Global Scan/Fingerprint filter options
+    for p in [p_scan, p_wfp]:
+        p.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
+        p.add_argument('--all-extensions', action='store_true', help='Fingerprint all file extensions')
+        p.add_argument('--all-folders', action='store_true', help='Fingerprint all folders')
+        p.add_argument('--all-hidden', action='store_true', help='Fingerprint all hidden files/folders')
+        p.add_argument('--hpsm', '-H', action='store_true', help='Use High Precision Snippet Matching algorithm.')
+        p.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
+        p.add_argument('--skip-extension', '-E', type=str, action='append', help='File Extension to skip.')
+        p.add_argument('--skip-folder', '-O', type=str, action='append', help='Folder to skip.')
+        p.add_argument('--skip-size', '-Z', type=int, default=0,
+                       help='Minimum file size to consider for fingerprinting (optional - default 0 bytes [unlimited])')
+
     # Global Scan/GRPC options
     for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep]:
         p.add_argument('--key', '-k', type=str,
@@ -374,8 +375,9 @@ def wfp(parser, args):
     scan_options = 0 if args.skip_snippets else ScanType.SCAN_SNIPPETS.value  # Skip snippet generation or not
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, obfuscate=args.obfuscate,
                       scan_options=scan_options, all_extensions=args.all_extensions,
-                      all_folders=args.all_folders, hidden_files_folders=args.all_hidden, hpsm=args.hpsm)
-
+                      all_folders=args.all_folders, hidden_files_folders=args.all_hidden, hpsm=args.hpsm,
+                      skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder
+                      )
     if args.stdin:
         contents = sys.stdin.buffer.read()
         scanner.wfp_contents(args.stdin, contents, scan_output)
@@ -530,14 +532,15 @@ def scan(parser, args):
                       scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
                       grpc_url=args.api2url, obfuscate=args.obfuscate,
                       ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, grpc_proxy=args.grpc_proxy,
-                      pac=pac_file, ca_cert=args.ca_cert, retry=args.retry, hpsm=args.hpsm
+                      pac=pac_file, ca_cert=args.ca_cert, retry=args.retry, hpsm=args.hpsm,
+                      skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
             print_stderr(f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})')
             exit(1)
         if scanner.is_dependency_scan() and not args.dep:
-            print_stderr(f'Error: Cannot specify WFP & Dependency scanning without a dependency file ({--dep})')
+            print_stderr(f'Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)')
             exit(1)
         scanner.scan_wfp_with_options(args.wfp, args.dep)
     elif args.stdin:
