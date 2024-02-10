@@ -260,6 +260,9 @@ def setup_args() -> None:
         p.add_argument('--skip-folder', '-O', type=str, action='append', help='Folder to skip.')
         p.add_argument('--skip-size', '-Z', type=int, default=0,
                        help='Minimum file size to consider for fingerprinting (optional - default 0 bytes [unlimited])')
+        p.add_argument('--skip-md5', '-5', type=str, action='append', help='Skip files matching MD5.')
+        p.add_argument('--strip-hpsm', '-G', type=str, action='append', help='Strip HPSM string from WFP.')
+        p.add_argument('--strip-snippet', '-N', type=str, action='append', help='Strip Snippet ID string from WFP.')
 
     # Global Scan/GRPC options
     for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep]:
@@ -376,7 +379,8 @@ def wfp(parser, args):
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, obfuscate=args.obfuscate,
                       scan_options=scan_options, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden, hpsm=args.hpsm,
-                      skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder
+                      skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder,
+                      skip_md5_ids=args.skip_md5, strip_hpsm_ids=args.strip_hpsm, strip_snippet_ids=args.strip_snippet
                       )
     if args.stdin:
         contents = sys.stdin.buffer.read()
@@ -533,7 +537,8 @@ def scan(parser, args):
                       grpc_url=args.api2url, obfuscate=args.obfuscate,
                       ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, grpc_proxy=args.grpc_proxy,
                       pac=pac_file, ca_cert=args.ca_cert, retry=args.retry, hpsm=args.hpsm,
-                      skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder
+                      skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder,
+                      skip_md5_ids=args.skip_md5, strip_hpsm_ids=args.strip_hpsm, strip_snippet_ids=args.strip_snippet
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():

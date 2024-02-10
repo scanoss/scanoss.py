@@ -101,7 +101,8 @@ class Scanner(ScanossBase):
                  scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
                  obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, grpc_proxy: str = None,
                  ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False,
-                 skip_size: int = 0, skip_extensions=None, skip_folders=None
+                 skip_size: int = 0, skip_extensions=None, skip_folders=None,
+                 strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
@@ -127,7 +128,9 @@ class Scanner(ScanossBase):
         ver_details = Scanner.version_details()
 
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
-                                   all_extensions=all_extensions, obfuscate=obfuscate, hpsm=self.hpsm
+                                   all_extensions=all_extensions, obfuscate=obfuscate, hpsm=self.hpsm,
+                                   strip_hpsm_ids=strip_hpsm_ids, strip_snippet_ids=strip_snippet_ids,
+                                   skip_md5_ids=skip_md5_ids
                                    )
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,
@@ -650,10 +653,10 @@ class Scanner(ScanossBase):
                     spinner.next()
                 wfp = self.winnowing.wfp_for_file(file, file)
                 if wfp is None or wfp == '':
-                        self.print_stderr(f'Warning: No WFP returned for {file}')
-                        continue
+                    self.print_stderr(f'Warning: No WFP returned for {file}')
+                    continue
                 if save_wfps_for_print:
-                        wfp_list.append(wfp)
+                    wfp_list.append(wfp)
                 file_count += 1
                 if self.threaded_scan:
                     wfp_size = len(wfp.encode("utf-8"))

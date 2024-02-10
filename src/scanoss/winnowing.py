@@ -29,6 +29,7 @@
 """
 import hashlib
 import pathlib
+import re
 
 from crc32c import crc32c
 from binaryornot.check import is_binary
@@ -111,7 +112,8 @@ class Winnowing(ScanossBase):
 
     def __init__(self, size_limit: bool = False, debug: bool = False, trace: bool = False, quiet: bool = False,
                  skip_snippets: bool = False, post_size: int = 32, all_extensions: bool = False,
-                 obfuscate: bool = False, hpsm: bool = False
+                 obfuscate: bool = False, hpsm: bool = False,
+                 strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None
                  ):
         """
         Instantiate Winnowing class
@@ -121,6 +123,12 @@ class Winnowing(ScanossBase):
                 Limit the size of a fingerprint to 32k (post size) - Default False
         """
         super().__init__(debug, trace, quiet)
+        if strip_hpsm_ids is None:
+            strip_hpsm_ids = []
+        if strip_snippet_ids is None:
+            strip_snippet_ids = []
+        if skip_md5_ids is None:
+            skip_md5_ids = []
         self.size_limit = size_limit
         self.skip_snippets = skip_snippets
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE
@@ -129,6 +137,9 @@ class Winnowing(ScanossBase):
         self.ob_count = 1
         self.file_map = {} if obfuscate else None
         self.hpsm = hpsm
+        self.skip_md5_ids = skip_md5_ids
+        self.strip_hpsm_ids = strip_hpsm_ids
+        self.strip_snippet_ids = strip_snippet_ids
         if hpsm:
             self.crc8_maxim_dow_table = []
             self.crc8_generate_table()
@@ -234,6 +245,9 @@ class Winnowing(ScanossBase):
             WFP string
         """
         file_md5 = hashlib.md5(contents).hexdigest()
+        if self.skip_md5_ids and file_md5 in self.skip_md5_ids:
+            self.print_debug(f'Skipping MD5 file name for {file_md5}: {file}')
+            return ''
         # Print file line
         content_length = len(contents)
         wfp_filename = file
@@ -249,7 +263,14 @@ class Winnowing(ScanossBase):
         # Add HPSM
         if self.hpsm:
             hpsm = self.calc_hpsm(contents)
-            wfp += 'hpsm={0}\n'.format(hpsm)
+            hpsm_len = len(hpsm)
+            if self.strip_hpsm_ids and hpsm_len > 0:  # Check for HPSM ID strings to remove
+                for hpsm_id in self.strip_hpsm_ids:
+                    hpsm = hpsm.replace(hpsm_id, '')
+                if hpsm_len > len(hpsm):
+                    self.print_debug(f'Stripped HPSM values from {file}')
+            if len(hpsm) > 0:
+                wfp += 'hpsm={0}\n'.format(hpsm)
         # Initialize variables
         gram = ''
         window = []
@@ -309,6 +330,17 @@ class Winnowing(ScanossBase):
 
         if wfp is None or wfp == '':
             self.print_stderr(f'Warning: No WFP content data for {file}')
+        elif self.strip_snippet_ids:
+            wfp_len = len(wfp)
+            for snippet_id in self.strip_snippet_ids:  # Remove exact snippet strings
+                wfp = wfp.replace(snippet_id, '')
+            if wfp_len > len(wfp):
+                wfp = re.sub(r'(,)\1+', ',', wfp)  # Remove multiple 'empty comma' blocks
+                wfp = wfp.replace(',\n', '\n')  # Remove trailing comma
+                wfp = wfp.replace('=,', '=')  # Remove leading comma
+                wfp = re.sub(r'\d+=\s+', '', wfp)  # Cleanup empty lines
+                self.print_debug(f'Stripped snippet ids from {file}')
+
         return wfp
 
     def calc_hpsm(self, content):
