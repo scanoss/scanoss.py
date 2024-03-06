@@ -264,11 +264,21 @@ class Winnowing(ScanossBase):
         if self.hpsm:
             hpsm = self.calc_hpsm(contents)
             hpsm_len = len(hpsm)
-            if self.strip_hpsm_ids and hpsm_len > 0:  # Check for HPSM ID strings to remove
+            if self.strip_hpsm_ids and hpsm_len > 0:  # Check for HPSM ID strings to remove. The size of the sequence must be conserved.
                 for hpsm_id in self.strip_hpsm_ids:
-                    hpsm = hpsm.replace(hpsm_id, '')
-                if hpsm_len > len(hpsm):
-                    self.print_debug(f'Stripped HPSM values from {file}')
+                    replacement = ''
+                    for _ in hpsm_id:
+                        replacement += '1' # prepara te block used as replacement. TODO use a specific symbol to discart, requires change  on the HPSM implementation.
+                    index = hpsm.find(hpsm_id)
+                    hpsm = hpsm.replace(hpsm_id, replacement) #overwrite HPSM bytes to be removed
+                    if index % 2 == 1: # if the position in odd we have to overwrite one byte before
+                        hpsm = hpsm[:index-1] + '1' + hpsm[index:]
+                        if len(hpsm_id) % 2 == 0: # if the size of the sequence is even, we have to overwrite one byte after
+                            hpsm = hpsm[:index + len(hpsm_id)] + '1' + hpsm[index + len(hpsm_id) + 1:]
+                    elif len(hpsm_id) % 2 == 1: # is the position is even and the size is odd we have to overwrite one byte after
+                        hpsm = hpsm[:index + len(hpsm_id)] + '1' + hpsm[index + len(hpsm_id) + 1:]
+                if hpsm_len != len(hpsm):
+                    self.print_stderr(f'wrong HPSM values from {file}')
             if len(hpsm) > 0:
                 wfp += 'hpsm={0}\n'.format(hpsm)
         # Initialize variables
