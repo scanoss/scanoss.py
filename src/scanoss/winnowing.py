@@ -264,19 +264,30 @@ class Winnowing(ScanossBase):
         if self.hpsm:
             hpsm = self.calc_hpsm(contents)
             hpsm_len = len(hpsm)
-            if self.strip_hpsm_ids and hpsm_len > 0:  # Check for HPSM ID strings to remove. The size of the sequence must be conserved.
+            if self.strip_hpsm_ids and hpsm_len > 1:
+                # Check for HPSM ID strings to remove. The size of the sequence must be conserved.
                 for hpsm_id in self.strip_hpsm_ids:
-                    replacement = ''
-                    for _ in hpsm_id:
-                        replacement += '1' # prepara te block used as replacement. TODO use a specific symbol to discart, requires change  on the HPSM implementation.
-                    index = hpsm.find(hpsm_id)
-                    hpsm = hpsm.replace(hpsm_id, replacement) #overwrite HPSM bytes to be removed
-                    if index % 2 == 1: # if the position in odd we have to overwrite one byte before
-                        hpsm = hpsm[:index-1] + '1' + hpsm[index:]
-                        if len(hpsm_id) % 2 == 0: # if the size of the sequence is even, we have to overwrite one byte after
-                            hpsm = hpsm[:index + len(hpsm_id)] + '1' + hpsm[index + len(hpsm_id) + 1:]
-                    elif len(hpsm_id) % 2 == 1: # is the position is even and the size is odd we have to overwrite one byte after
-                        hpsm = hpsm[:index + len(hpsm_id)] + '1' + hpsm[index + len(hpsm_id) + 1:]
+                    hpsm_id_index = hpsm.find(hpsm_id)
+                    hpsm_id_len = len(hpsm_id)
+                    # If the position is odd, we need to overwrite one byte before.
+                    if hpsm_id_index % 2 == 1:
+                        hpsm_id_index = hpsm_id_index - 1
+                         # If the size of the sequence is even, we need to overwrite one byte after.
+                        if hpsm_id_len % 2 == 0:
+                            hpsm_id_len = hpsm_id_len + 1
+                        hpsm_id_len = hpsm_id_len + 1
+                    # If the position is even and the size is odd, we need to overwrite one byte after.
+                    elif hpsm_id_len % 2 == 1:
+                        hpsm_id_len = hpsm_id_len + 1
+                
+                    to_remove = hpsm[hpsm_id_index:hpsm_id_index+hpsm_id_len]
+                    self.print_debug(f'HPSM ID to replace {to_remove}')
+                    # Calculate the XOR of each byte to produce the correct ignore sequence.
+                    replacement = ''.join([format(int(to_remove[i:i+2], 16) ^ 0xFF, '02x') for i in range(0, len(to_remove), 2)])
+                    
+                    self.print_debug(f'HPSM ID replacement {to_remove}')
+                    # Overwrite HPSM bytes to be removed.
+                    hpsm = hpsm.replace(to_remove, replacement)
                 if hpsm_len != len(hpsm):
                     self.print_stderr(f'wrong HPSM values from {file}')
             if len(hpsm) > 0:
