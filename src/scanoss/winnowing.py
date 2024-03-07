@@ -58,7 +58,7 @@ SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
     ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
     ".lst", ".dat", ".json", ".htm", ".html", ".xml", ".md", ".txt",
     ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
-    ".pdf", ".min.js", ".mf", ".sum", ".woff", ".woff2"
+    ".pdf", ".min.js", ".mf", ".sum", ".woff", ".woff2", '.xsd', ".pom"
 }
 
 CRC8_MAXIM_DOW_TABLE_SIZE = 0x100
@@ -136,10 +136,10 @@ class Winnowing(ScanossBase):
         self.obfuscate = obfuscate
         self.ob_count = 1
         self.file_map = {} if obfuscate else None
-        self.hpsm = hpsm
         self.skip_md5_ids = skip_md5_ids
         self.strip_hpsm_ids = strip_hpsm_ids
         self.strip_snippet_ids = strip_snippet_ids
+        self.hpsm = hpsm
         if hpsm:
             self.crc8_maxim_dow_table = []
             self.crc8_generate_table()
@@ -232,6 +232,63 @@ class Winnowing(ScanossBase):
             return binary_path
         return False
 
+    def __strip_hpsm(self, file: str, hpsm: str) -> str:
+        """
+        Strip off request HPSM IDs if requested
+
+        :param file: name of the fingerprinted file
+        :param hpsm:  HPSM string
+        :return: modified HPSM (if necessary)
+        """
+        hpsm_len = len(hpsm)
+        if self.strip_hpsm_ids and hpsm_len > 1:
+            # Check for HPSM ID strings to remove. The size of the sequence must be conserved.
+            for hpsm_id in self.strip_hpsm_ids:
+                hpsm_id_index = hpsm.find(hpsm_id)
+                hpsm_id_len = len(hpsm_id)
+                # If the position is odd, we need to overwrite one byte before.
+                if hpsm_id_index % 2 == 1:
+                    hpsm_id_index = hpsm_id_index - 1
+                    # If the size of the sequence is even, we need to overwrite one byte after.
+                    if hpsm_id_len % 2 == 0:
+                        hpsm_id_len = hpsm_id_len + 1
+                    hpsm_id_len = hpsm_id_len + 1
+                # If the position is even and the size is odd, we need to overwrite one byte after.
+                elif hpsm_id_len % 2 == 1:
+                    hpsm_id_len = hpsm_id_len + 1
+
+                to_remove = hpsm[hpsm_id_index:hpsm_id_index + hpsm_id_len]
+                self.print_debug(f'HPSM ID to replace {to_remove}')
+                # Calculate the XOR of each byte to produce the correct ignore sequence.
+                replacement = ''.join(
+                    [format(int(to_remove[i:i + 2], 16) ^ 0xFF, '02x') for i in range(0, len(to_remove), 2)])
+
+                self.print_debug(f'HPSM ID replacement {to_remove}')
+                # Overwrite HPSM bytes to be removed.
+                hpsm = hpsm.replace(to_remove, replacement)
+            if hpsm_len != len(hpsm):
+                self.print_stderr(f'wrong HPSM values from {file}')
+        return hpsm
+
+    def __strip_snippets(self, file: str, wfp: str) -> str:
+        """
+        Strip snippet IDs from the WFP
+
+        :param file: name of fingerprinted file
+        :param wfp: WFP to clean
+        :return: updated WFP
+        """
+        wfp_len = len(wfp)
+        for snippet_id in self.strip_snippet_ids:  # Remove exact snippet strings
+            wfp = wfp.replace(snippet_id, '')
+        if wfp_len > len(wfp):
+            wfp = re.sub(r'(,)\1+', ',', wfp)  # Remove multiple 'empty comma' blocks
+            wfp = wfp.replace(',\n', '\n')  # Remove trailing comma
+            wfp = wfp.replace('=,', '=')  # Remove leading comma
+            wfp = re.sub(r'\d+=\s+', '', wfp)  # Cleanup empty lines
+            self.print_debug(f'Stripped snippet ids from {file}')
+        return wfp
+
     def wfp_for_contents(self, file: str, bin_file: bool, contents: bytes) -> str:
         """
         Generate a Winnowing fingerprint (WFP) for the given file contents
@@ -262,36 +319,9 @@ class Winnowing(ScanossBase):
             return wfp
         # Add HPSM
         if self.hpsm:
-            hpsm = self.calc_hpsm(contents)
-            hpsm_len = len(hpsm)
-            if self.strip_hpsm_ids and hpsm_len > 1:
-                # Check for HPSM ID strings to remove. The size of the sequence must be conserved.
-                for hpsm_id in self.strip_hpsm_ids:
-                    hpsm_id_index = hpsm.find(hpsm_id)
-                    hpsm_id_len = len(hpsm_id)
-                    # If the position is odd, we need to overwrite one byte before.
-                    if hpsm_id_index % 2 == 1:
-                        hpsm_id_index = hpsm_id_index - 1
-                         # If the size of the sequence is even, we need to overwrite one byte after.
-                        if hpsm_id_len % 2 == 0:
-                            hpsm_id_len = hpsm_id_len + 1
-                        hpsm_id_len = hpsm_id_len + 1
-                    # If the position is even and the size is odd, we need to overwrite one byte after.
-                    elif hpsm_id_len % 2 == 1:
-                        hpsm_id_len = hpsm_id_len + 1
-                
-                    to_remove = hpsm[hpsm_id_index:hpsm_id_index+hpsm_id_len]
-                    self.print_debug(f'HPSM ID to replace {to_remove}')
-                    # Calculate the XOR of each byte to produce the correct ignore sequence.
-                    replacement = ''.join([format(int(to_remove[i:i+2], 16) ^ 0xFF, '02x') for i in range(0, len(to_remove), 2)])
-                    
-                    self.print_debug(f'HPSM ID replacement {to_remove}')
-                    # Overwrite HPSM bytes to be removed.
-                    hpsm = hpsm.replace(to_remove, replacement)
-                if hpsm_len != len(hpsm):
-                    self.print_stderr(f'wrong HPSM values from {file}')
+            hpsm = self.__strip_hpsm(file, self.calc_hpsm(contents))
             if len(hpsm) > 0:
-                wfp += 'hpsm={0}\n'.format(hpsm)
+                wfp += f'hpsm={hpsm}\n'
         # Initialize variables
         gram = ''
         window = []
@@ -352,15 +382,7 @@ class Winnowing(ScanossBase):
         if wfp is None or wfp == '':
             self.print_stderr(f'Warning: No WFP content data for {file}')
         elif self.strip_snippet_ids:
-            wfp_len = len(wfp)
-            for snippet_id in self.strip_snippet_ids:  # Remove exact snippet strings
-                wfp = wfp.replace(snippet_id, '')
-            if wfp_len > len(wfp):
-                wfp = re.sub(r'(,)\1+', ',', wfp)  # Remove multiple 'empty comma' blocks
-                wfp = wfp.replace(',\n', '\n')  # Remove trailing comma
-                wfp = wfp.replace('=,', '=')  # Remove leading comma
-                wfp = re.sub(r'\d+=\s+', '', wfp)  # Cleanup empty lines
-                self.print_debug(f'Stripped snippet ids from {file}')
+            wfp = self.__strip_snippets(file, wfp)
 
         return wfp
 
