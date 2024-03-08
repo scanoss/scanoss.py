@@ -258,12 +258,12 @@ class Winnowing(ScanossBase):
                     hpsm_id_len = hpsm_id_len + 1
 
                 to_remove = hpsm[hpsm_id_index:hpsm_id_index + hpsm_id_len]
-                self.print_debug(f'HPSM ID to replace {to_remove}')
+                self.print_debug(f'HPSM ID {to_remove} to replace')
                 # Calculate the XOR of each byte to produce the correct ignore sequence.
                 replacement = ''.join(
                     [format(int(to_remove[i:i + 2], 16) ^ 0xFF, '02x') for i in range(0, len(to_remove), 2)])
 
-                self.print_debug(f'HPSM ID replacement {to_remove}')
+                self.print_debug(f'HPSM ID replacement {replacement}')
                 # Overwrite HPSM bytes to be removed.
                 hpsm = hpsm.replace(to_remove, replacement)
             if hpsm_len != len(hpsm):
