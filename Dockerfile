@@ -44,6 +44,11 @@ COPY --from=builder /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
 ENV GRPC_POLL_STRATEGY=poll
 
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends jq \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 VOLUME /scanoss
 WORKDIR /scanoss
 
