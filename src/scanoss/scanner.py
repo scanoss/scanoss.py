@@ -407,7 +407,7 @@ class Scanner(ScanossBase):
                         spinner.next()
                     wfp = self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
                     if wfp is None or wfp == '':
-                        self.print_stderr(f'Warning: No WFP returned for {path}')
+                        self.print_debug(f'No WFP returned for {path}. Skipping.')
                         continue
                     if save_wfps_for_print:
                         wfp_list.append(wfp)
@@ -653,7 +653,7 @@ class Scanner(ScanossBase):
                     spinner.next()
                 wfp = self.winnowing.wfp_for_file(file, file)
                 if wfp is None or wfp == '':
-                    self.print_stderr(f'Warning: No WFP returned for {file}')
+                    self.print_debug(f'No WFP returned for {file}. Skipping.')
                     continue
                 if save_wfps_for_print:
                     wfp_list.append(wfp)
