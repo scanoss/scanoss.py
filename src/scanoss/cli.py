@@ -370,6 +370,8 @@ def wfp(parser, args):
         print_stderr('Please specify a file/folder or STDIN (--stdin)')
         parser.parse_args([args.subparser, '-h'])
         exit(1)
+    if args.strip_hpsm and not args.hpsm and not args.quiet:
+        print_stderr(f'Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
     scan_output: str = None
     if args.output:
         scan_output = args.output
@@ -477,6 +479,8 @@ def scan(parser, args):
             exit(1)
         if not Scanner.valid_json_file(args.dep):  # Make sure it's a valid JSON file
             exit(1)
+    if args.strip_hpsm and not args.hpsm and not args.quiet:
+        print_stderr(f'Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
 
     scan_output: str = None
     if args.output:
