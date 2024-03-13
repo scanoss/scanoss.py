@@ -255,7 +255,7 @@ def setup_args() -> None:
         p.add_argument('--all-folders', action='store_true', help='Fingerprint all folders')
         p.add_argument('--all-hidden', action='store_true', help='Fingerprint all hidden files/folders')
         p.add_argument('--hpsm', '-H', action='store_true', help='Use High Precision Snippet Matching algorithm.')
-        p.add_argument('--snippets', '-S', action='store_true', help='Skip the generation of snippets')
+        p.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
         p.add_argument('--skip-extension', '-E', type=str, action='append', help='File Extension to skip.')
         p.add_argument('--skip-folder', '-O', type=str, action='append', help='Folder to skip.')
         p.add_argument('--skip-size', '-Z', type=int, default=0,
