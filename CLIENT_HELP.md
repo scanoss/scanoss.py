@@ -184,9 +184,20 @@ scanoss-py scan -o scan-results.json src
 ```
 
 ### Scan a project folder with dependencies
-The following command scans the `src` folder file, snippet & dependency matches, writing the output to `scan-results.json`:
+The following command scans the `src` folder for file, snippet & dependency matches, writing the output to `scan-results.json`:
 ```bash
 scanoss-py scan -o scan-results.json -D src
+```
+
+### Scan a project folder skipping files and snippets
+The following command scans the `src` folder writing the output to `scan-results.json` skipping the following:
+- MD5 file `37f7cd1e657aa3c30ece35995b4c59e5`
+- Header files `.h`
+- Files smaller than 512 byes
+- Files inside folder `internal`
+- Snippets matching `d5e54c33,b03faabe`
+```bash
+scanoss-py scan -o scan-results.json -5 37f7cd1e657aa3c30ece35995b4c59e5 -E '.h' -Z 512 -O internal -N 'd5e54c33,b03faabe' src
 ```
 
 ### Converting RAW results into other formats

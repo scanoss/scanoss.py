@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.11.0] - 2024-03-13
+### Added
+- Added scan/wfp file filtering options
+  - Exclude files matching MD5 `--skip-md5` (repeat as needed)
+  - Strip code fragments using HPSM `--strip-hpsm` (repeat as needed)
+  - Strip code fragments using snippet IDs `--strip-snippet` (repeat as needed)
+
 ## [1.10.0] - 2024-02-09
 ### Added
 - Added scan/wfp file filtering options
@@ -291,3 +298,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.8.0]: https://github.com/scanoss/scanoss.py/compare/v1.7.0...v1.8.0
 [1.9.0]: https://github.com/scanoss/scanoss.py/compare/v1.8.0...v1.9.0
 [1.10.0]: https://github.com/scanoss/scanoss.py/compare/v1.9.0...v1.10.0
+[1.11.0]: https://github.com/scanoss/scanoss.py/compare/v1.10.0...v1.11.0
