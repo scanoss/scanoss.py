@@ -51,6 +51,30 @@ class MyTestCase(unittest.TestCase):
         wfp = winnowing.wfp_for_contents(filename, False, content_types)
         print(f'WFP for {filename}: {wfp}')
         self.assertIsNotNone(wfp)
+    
+    def test_snippet_strip(self):
+        winnowing = Winnowing(debug=True, hpsm=True,
+                              strip_snippet_ids=['d5e54c33,b03faabe'], 
+                              strip_hpsm_ids=['0d2fffaffc62d18'])
+        filename = "test-file.py"
+        with open(__file__, 'rb') as f:
+            contents = f.read()
+        print('--- Test snippet and HPSM strip ---')
+        wfp = winnowing.wfp_for_contents(filename, False, contents)
+        found = 0
+        print(f'WFP for {filename}: {wfp}')
+        try:
+            found = wfp.index('d5e54c33,b03faabe')
+        except ValueError:
+            found = -1
+        self.assertEqual(found, -1)       
+        
+        try:
+            found = wfp.index('0d2fffaffc62d18')
+        except ValueError:
+            found = -1
+        self.assertEqual(found, -1)
+
 
 
 if __name__ == '__main__':
