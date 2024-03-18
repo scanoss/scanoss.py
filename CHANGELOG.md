@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.11.1] - 2024-03-18
+### Added
+- Integrate CURL and jq
+  - Includes CURL and jq within the Docker image to facilitate seamless interactions with third-party integrations.
+
 ## [1.11.0] - 2024-03-13
 ### Added
 - Added scan/wfp file filtering options
@@ -299,3 +304,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.9.0]: https://github.com/scanoss/scanoss.py/compare/v1.8.0...v1.9.0
 [1.10.0]: https://github.com/scanoss/scanoss.py/compare/v1.9.0...v1.10.0
 [1.11.0]: https://github.com/scanoss/scanoss.py/compare/v1.10.0...v1.11.0
+[1.11.1]: https://github.com/scanoss/scanoss.py/compare/v1.11.0...v1.11.1
