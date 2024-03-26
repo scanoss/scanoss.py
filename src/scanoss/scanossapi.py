@@ -38,7 +38,7 @@ from .scanossbase import ScanossBase
 from . import __version__
 
 
-DEFAULT_URL = "https://osskb.org/api/scan/direct"  # default free service URL
+DEFAULT_URL = "https://api.osskb.org/scan/direct"  # default free service URL
 DEFAULT_URL2 = "https://api.scanoss.com/scan/direct"  # default premium service URL
 SCANOSS_SCAN_URL = os.environ.get("SCANOSS_SCAN_URL") if os.environ.get("SCANOSS_SCAN_URL") else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
