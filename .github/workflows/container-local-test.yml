@@ -1,5 +1,5 @@
 name: Build/Test Local Container
-# Build a docker image on demand and run a local test (connecting to osskb.org)
+# Build a docker image on demand and run a local test (connecting to api.osskb.org)
 
 on:
   workflow_dispatch:

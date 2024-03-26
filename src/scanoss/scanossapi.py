@@ -38,8 +38,8 @@ from .scanossbase import ScanossBase
 from . import __version__
 
 
-DEFAULT_URL = "https://osskb.org/api/scan/direct"  # default free service URL
-DEFAULT_URL2 = "https://scanoss.com/api/scan/direct"  # default premium service URL
+DEFAULT_URL = "https://api.osskb.org/scan/direct"  # default free service URL
+DEFAULT_URL2 = "https://api.scanoss.com/scan/direct"  # default premium service URL
 SCANOSS_SCAN_URL = os.environ.get("SCANOSS_SCAN_URL") if os.environ.get("SCANOSS_SCAN_URL") else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
 
@@ -60,7 +60,7 @@ class ScanossApi(ScanossBase):
         :param sbom_path: Input SBOM file to match scan type (default None)
         :param scan_format: Scan format (default plain)
         :param flags: Scanning flags (default None)
-        :param url: API URL (default https://osskb.org/api/scan/direct)
+        :param url: API URL (default https://api.osskb.org/scan/direct)
         :param api_key: API Key (default None)
         :param debug: Enable debug (default False)
         :param trace: Enable trace (default False)

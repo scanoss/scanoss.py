@@ -117,7 +117,7 @@ if __name__ == "__main__":
 ```
 
 ## Scanning URL and API Key
-By Default, scanoss uses the API URL endpoint for SCANOSS OSS KB: https://osskb.org/api/scan/direct.
+By Default, scanoss uses the API URL endpoint for SCANOSS OSS KB: https://api.osskb.org/scan/direct.
 This API does not require an API key.
 
 These values can be changed from the command line using:

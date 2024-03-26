@@ -113,11 +113,11 @@ The `scanoss-py` CLI provides a utility command to help identify if traffic to t
 
 Simply run the following commands find out:
 * auto
-  * `scanoss-py utils pac-proxy --pac auto --url https://osskb.org`
+  * `scanoss-py utils pac-proxy --pac auto --url https://api.osskb.org`
 * file
-  * `scanoss-py utils pac-proxy --pac file://proxy.pac --url https://osskb.org`
+  * `scanoss-py utils pac-proxy --pac file://proxy.pac --url https://api.osskb.org`
 * url
-  * `scanoss-py utils pac-proxy --pac https://path.to/proxy.pac --url https://osskb.org`
+  * `scanoss-py utils pac-proxy --pac https://path.to/proxy.pac --url https://api.osskb.org`
 
 ## GRPCIO Library installation for Apple Silicon (before 1.5.3)
 Versions of [grpcio](https://pypi.org/project/grpcio) prior to `1.5.3` did not contain a binary wheel for Apple Silicon.
