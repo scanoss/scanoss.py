@@ -60,7 +60,7 @@ class ScanossApi(ScanossBase):
         :param sbom_path: Input SBOM file to match scan type (default None)
         :param scan_format: Scan format (default plain)
         :param flags: Scanning flags (default None)
-        :param url: API URL (default https://osskb.org/api/scan/direct)
+        :param url: API URL (default https://api.osskb.org/scan/direct)
         :param api_key: API Key (default None)
         :param debug: Enable debug (default False)
         :param trace: Enable trace (default False)
