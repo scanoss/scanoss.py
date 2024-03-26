@@ -239,13 +239,13 @@ def setup_args() -> None:
     p_p_proxy.add_argument('--pac', required=False, type=str, default="auto",
                            help='Proxy auto configuration. Specify a file, http url or "auto" to try to discover it.'
                            )
-    p_p_proxy.add_argument('--url', required=False, type=str, default="https://osskb.org/api",
-                           help='URL to test (default: https://osskb.org/api).')
+    p_p_proxy.add_argument('--url', required=False, type=str, default="https://api.osskb.org",
+                           help='URL to test (default: https://api.osskb.org).')
 
     # Global Scan command options
     for p in [p_scan]:
         p.add_argument('--apiurl', type=str,
-                       help='SCANOSS API URL (optional - default: https://osskb.org/api/scan/direct)')
+                       help='SCANOSS API URL (optional - default: https://api.osskb.org/scan/direct)')
         p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
 
     # Global Scan/Fingerprint filter options
@@ -281,7 +281,7 @@ def setup_args() -> None:
     # Global GRPC options
     for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep]:
         p.add_argument('--api2url', type=str,
-                       help='SCANOSS gRPC API 2.0 URL (optional - default: https://osskb.org)')
+                       help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)')
         p.add_argument('--grpc-proxy', type=str, help='GRPC Proxy URL to use for connections (optional). '
                                                        'Can also use the environment variable "grcp_proxy=<ip>:<port>"')
 
