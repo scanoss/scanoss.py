@@ -49,7 +49,7 @@ from .scanossbase import ScanossBase
 from . import __version__
 
 DEFAULT_URL = "https://osskb.org"  # default free service URL
-DEFAULT_URL2 = "https://scanoss.com"  # default premium service URL
+DEFAULT_URL2 = "https://api.scanoss.com"  # default premium service URL
 SCANOSS_GRPC_URL = os.environ.get("SCANOSS_GRPC_URL") if os.environ.get("SCANOSS_GRPC_URL") else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
 
