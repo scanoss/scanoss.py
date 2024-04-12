@@ -58,7 +58,7 @@ SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
     ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
     ".lst", ".dat", ".json", ".htm", ".html", ".xml", ".md", ".txt",
     ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
-    ".pdf", ".min.js", ".mf", ".sum", ".woff", ".woff2", '.xsd', ".pom"
+    ".pdf", ".min.js", ".mf", ".sum", ".woff", ".woff2", '.xsd', ".pom", ".whl",
 }
 
 CRC8_MAXIM_DOW_TABLE_SIZE = 0x100
