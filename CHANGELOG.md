@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.12.1] - 2024-04-12
+### Changed
+- Removed '.whl' file extension from filtered extensions
+
 ## [1.12.0] - 2024-03-26
 ### Changed
 - Updated free default URL to now point to `https://api.osskb.org`
@@ -310,4 +314,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.10.0]: https://github.com/scanoss/scanoss.py/compare/v1.9.0...v1.10.0
 [1.11.0]: https://github.com/scanoss/scanoss.py/compare/v1.10.0...v1.11.0
 [1.11.1]: https://github.com/scanoss/scanoss.py/compare/v1.11.0...v1.11.1
-[1.11.1]: https://github.com/scanoss/scanoss.py/compare/v1.11.1...v1.12.0
+[1.12.0]: https://github.com/scanoss/scanoss.py/compare/v1.11.1...v1.12.0
+[1.12.1]: https://github.com/scanoss/scanoss.py/compare/v1.12.0...v1.12.1
