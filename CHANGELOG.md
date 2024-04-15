@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.12.2] - 2024-04-15
+### Added
+- Added [tagging workflow](.github/workflows/version-tag.yml) to aid release generation
+
 ## [1.12.1] - 2024-04-12
 ### Changed
 - Removed '.whl' file extension from filtered extensions
@@ -316,3 +320,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.11.1]: https://github.com/scanoss/scanoss.py/compare/v1.11.0...v1.11.1
 [1.12.0]: https://github.com/scanoss/scanoss.py/compare/v1.11.1...v1.12.0
 [1.12.1]: https://github.com/scanoss/scanoss.py/compare/v1.12.0...v1.12.1
+[1.12.2]: https://github.com/scanoss/scanoss.py/compare/v1.12.1...v1.12.2
