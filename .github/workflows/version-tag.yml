@@ -32,9 +32,9 @@ jobs:
         id: taggerApply
         run: |
           echo "Applying tag ${{env.python_app_version}} ..."
-          git tag "${{env.python_app_version}}"
-          git status
-          
+          git tag "test-${{env.python_app_version}}"
+          echo "Pushing changes..."
+          git push --tags
 
 #          git config --global user.name 'SCANOSS'
 #          git config --global user.email 'infra@scanoss.com'
