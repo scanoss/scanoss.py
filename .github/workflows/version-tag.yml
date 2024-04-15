@@ -11,7 +11,7 @@ on:
         description: "Apply next tag (or Dry Run)"
 
 jobs:
-  deploy:
+  version-tag:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -25,7 +25,6 @@ jobs:
         id: taggerVersion
         run: |
           app_version=$(tools/get_next_version.sh)
-          echo "tag_ver=$app_version" >> $GITHUB_OUTPUT
 
       - name: Run Tagging
         if: ${{ inputs.run_for_real }}
