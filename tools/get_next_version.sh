@@ -25,12 +25,12 @@
 #
 # Get the defined package version and compare to the latest tag. Echo the new tag if it doesn't already exist.
 #
-export d=`dirname "$0"`
-
+export d=$(dirname "$0")
 if [ "$d" = "" ] ; then
   export d=.
 fi
 
+# Get latest git tagged version
 version=$(git describe --tags --abbrev=0)
 if [[ -z "$version" ]] ; then
   version=$(git describe --tags "$(git rev-list --tags --max-count=1)")
@@ -39,15 +39,18 @@ if [[ -z "$version" ]] ; then
   echo "Error: Failed to determine a valid version number" >&2
   exit 1
 fi
+# Get Python package version
 python_version=$($d/../version.py)
 if [ $? -eq 1 ] || [[ "$python_version" = "" ]]; then
   echo "Error: failed to get python app version."
   exit 1
 fi
+# Convert to semver (with 'v' prefix)
 semver_python="v$python_version"
 
 echo "Latest Tag: $version, Python Version: $python_version" >&2
 
+# If the two versions are the same abort, as we don't want to apply the same tag again
 if [[ "$version" == "$semver_python" ]] ; then
   echo "Latest tag and python version are the same: $version" >&2
   exit 1

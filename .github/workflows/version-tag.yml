@@ -11,7 +11,7 @@ on:
         description: "Apply next tag (or Dry Run)"
 
 jobs:
-  version-tag:
+  version-tagging:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -25,17 +25,15 @@ jobs:
         id: taggerVersion
         run: |
           app_version=$(tools/get_next_version.sh)
+          echo "New Proposed tag: $app_version"
           echo "python_app_version=$app_version" >> $GITHUB_ENV
 
-      - name: Run Tagging
+      - name: Apply Tag
         if: ${{ inputs.run_for_real }}
         id: taggerApply
         run: |
           echo "Applying tag ${{env.python_app_version}} ..."
-          git tag "test-${{env.python_app_version}}"
+          git tag "${{env.python_app_version}}"
           echo "Pushing changes..."
           git push --tags
-
-#          git config --global user.name 'SCANOSS'
-#          git config --global user.email 'infra@scanoss.com'
 
