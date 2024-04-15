@@ -26,14 +26,14 @@ jobs:
         run: |
           app_version=$(tools/get_next_version.sh)
           echo "New Proposed tag: $app_version"
-          echo "python_app_version=$app_version" >> $GITHUB_ENV
+          echo "package_app_version=$app_version" >> $GITHUB_ENV
 
       - name: Apply Tag
         if: ${{ inputs.run_for_real }}
         id: taggerApply
         run: |
-          echo "Applying tag ${{env.python_app_version}} ..."
-          git tag "${{env.python_app_version}}"
+          echo "Applying tag ${{env.package_app_version}} ..."
+          git tag "${{env.package_app_version}}"
           echo "Pushing changes..."
           git push --tags
 
