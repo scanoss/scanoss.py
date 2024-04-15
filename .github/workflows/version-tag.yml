@@ -32,4 +32,6 @@ jobs:
         id: taggerApply
         run: |
           echo "Applying tag ${{env.python_app_version}} ..."
+          git tag ${{env.python_app_version}}
+          git status
           
