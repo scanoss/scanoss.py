@@ -25,10 +25,11 @@ jobs:
         id: taggerVersion
         run: |
           app_version=$(tools/get_next_version.sh)
+          echo "python_app_version=$app_version" >> $GITHUB_ENV
 
       - name: Run Tagging
         if: ${{ inputs.run_for_real }}
         id: taggerApply
         run: |
-          echo "Applying tag $app_version ..."
+          echo "Applying tag ${{env.python_app_version}} ..."
           

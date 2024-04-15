@@ -23,7 +23,7 @@
 #   THE SOFTWARE.
 ###
 #
-# Determine the latest tag associated with this repo and echo to stdout
+# Get the defined package version and compare to the latest tag. Echo the new tag if it doesn't already exist.
 #
 export d=`dirname "$0"`
 
@@ -46,7 +46,7 @@ if [ $? -eq 1 ] || [[ "$python_version" = "" ]]; then
 fi
 semver_python="v$python_version"
 
-echo "Latest Tag: $version, Python: $python_version" >&2
+echo "Latest Tag: $version, Python Version: $python_version" >&2
 
 if [[ "$version" == "$semver_python" ]] ; then
   echo "Latest tag and python version are the same: $version" >&2
