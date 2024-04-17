@@ -10,11 +10,15 @@ on:
         type: boolean
         description: "Apply next tag (or Dry Run)"
 
+concurrency: production
+
 jobs:
   version-tagging:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.SC_GH_TAG_TOKEN }}
         with:
           fetch-depth: '0'
       - name: Set up Python
