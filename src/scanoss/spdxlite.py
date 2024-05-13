@@ -100,12 +100,13 @@ class SpdxLite:
                             fd[field] = deps.get(field, '')
                         licenses = deps.get('licenses')
                         fdl = []
-                        dc = []
-                        for lic in licenses:
-                            name = lic.get("name")
-                            if name not in dc:  # Only save the license name once
-                                fdl.append({'id': name})
-                                dc.append(name)
+                        if licenses:
+                            dc = []
+                            for lic in licenses:
+                                name = lic.get("name")
+                                if name not in dc:  # Only save the license name once
+                                    fdl.append({'id': name})
+                                    dc.append(name)
                         fd['licenses'] = fdl
                         summary[purl] = fd
                 else:  # Normal file id type
@@ -128,12 +129,13 @@ class SpdxLite:
                         fd[field] = d.get(field)
                     licenses = d.get('licenses')
                     fdl = []
-                    dc = []
-                    for lic in licenses:
-                        name = lic.get("name")
-                        if name not in dc:  # Only save the license name once
-                            fdl.append({'id': name})
-                            dc.append(name)
+                    if licenses:
+                        dc = []
+                        for lic in licenses:
+                            name = lic.get("name")
+                            if name not in dc:  # Only save the license name once
+                                fdl.append({'id': name})
+                                dc.append(name)
                     fd['licenses'] = fdl
                     summary[purl] = fd
         return summary
