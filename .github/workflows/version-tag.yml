@@ -17,10 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.SC_GH_TAG_TOKEN }}
         with:
           fetch-depth: '0'
+          token: ${{ secrets.SC_GH_TAG_TOKEN }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
