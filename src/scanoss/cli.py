@@ -72,6 +72,7 @@ def setup_args() -> None:
                         help='Use a dependency file instead of a folder (optional)')
     p_scan.add_argument('--stdin', '-s', metavar='STDIN-FILENAME',  type=str,
                         help='Scan the file contents supplied via STDIN (optional)')
+    p_scan.add_argument('--files',    '-e', type=str, nargs="*", help='List of files to scan.')
     p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file')
     p_scan.add_argument('--ignore',   '-n', type=str, help='Ignore components specified in the SBOM file')
     p_scan.add_argument('--output',   '-o', type=str, help='Output result file name (optional - default stdout).')
@@ -445,8 +446,8 @@ def scan(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_dir and not args.wfp and not args.stdin and not args.dep:
-        print_stderr('Please specify a file/folder, fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)')
+    if not args.scan_dir and not args.wfp and not args.stdin and not args.dep and not args.files:
+        print_stderr('Please specify a file/folder, files (--files), fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)')
         parser.parse_args([args.subparser, '-h'])
         exit(1)
     if args.pac and args.proxy:
@@ -555,6 +556,9 @@ def scan(parser, args):
     elif args.stdin:
         contents = sys.stdin.buffer.read()
         if not scanner.scan_contents(args.stdin, contents):
+            exit(1)
+    elif args.files:
+        if not scanner.scan_files_with_options(args.files, args.dep, scanner.winnowing.file_map):
             exit(1)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):

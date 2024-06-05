@@ -26,7 +26,7 @@
 # Attempt to download an SSL certificate from the specified host and convert to a PEM file
 #
 
-script_name=$(basename $0)
+script_name=$(basename "$0")
 
 help()
 {
@@ -47,7 +47,7 @@ VALID_ARGUMENTS=$#
 if [ "$VALID_ARGUMENTS" -eq 0 ]; then  # No arguments supplied, print help
   help
 fi
-set -- $OPTS
+set -- "$OPTS"
 
 force=0
 while :; do
