@@ -522,8 +522,6 @@ class Scanner(ScanossBase):
                             else:
                                 raw_output += ",\n  \"%s\":[%s]" % (file, json.dumps(dep_file, indent=2))
                     # End for loop
-        else:
-            success = False
         raw_output += "\n}"
         parsed_json = None
         try:
@@ -625,9 +623,6 @@ class Scanner(ScanossBase):
         success = True
         if not files:
             raise Exception(f"ERROR: Please provide a non-empty list of filenames to scan")
-        self.print_msg(f'Scanning {len(files)} files...')
-
-        self.print_debug(f'Files: {files}')
         spinner = None
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
@@ -652,8 +647,8 @@ class Scanner(ScanossBase):
                 filtered_files.append(file)
             else:
                 self.print_debug(f'Skipping filtered (folder) file: {file}')
-        if len(files) != len(filtered_files):
-            self.print_debug(f'Scanning filtered {len(filtered_files)} files...')
+        if len(filtered_files) > 0:
+            self.print_debug(f'Scanning {len(filtered_files)} files...')
         # Process all the requested files
         for file in filtered_files:
             if self.threaded_scan and self.threaded_scan.stop_scanning():
