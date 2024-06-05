@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.13.0] - 2024-06-05
+### Added
+- Added `scan` command option to specify a list of files (`--files`) to analyse
+
 ## [1.12.3] - 2024-05-13
 ### Fixed
 - Fixed export issue when license details are missing (SPDX/CycloneDX)
@@ -326,3 +330,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.12.1]: https://github.com/scanoss/scanoss.py/compare/v1.12.0...v1.12.1
 [1.12.2]: https://github.com/scanoss/scanoss.py/compare/v1.12.1...v1.12.2
 [1.12.3]: https://github.com/scanoss/scanoss.py/compare/v1.12.2...v1.12.3
+[1.13.0]: https://github.com/scanoss/scanoss.py/compare/v1.12.3...v1.13.0
