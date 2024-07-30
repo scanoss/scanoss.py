@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.13.1] - PLACEHOLDER
+### Added
+- Added support for Python3.12
+  - Module `pkg_resources` has been replaced with `importlib_resources` 
+
 ## [1.13.0] - 2024-06-05
 ### Added
 - Added `scan` command option to specify a list of files (`--files`) to analyse
