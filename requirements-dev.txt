@@ -3,4 +3,3 @@ wheel
 twine
 build
 grpcio-tools
-importlib_resources
