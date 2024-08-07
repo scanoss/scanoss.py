@@ -307,6 +307,10 @@ class Winnowing(ScanossBase):
             return ''
         # Print file line
         content_length = len(contents)
+        # Use repr() to get an unambiguous string representation
+        file = repr(file)
+        # Remove the surrounding quotes that repr() adds
+        file = file[1:-1]
         wfp_filename = file
         if self.obfuscate:  # hide the real size of the file and its name, but keep the suffix
             wfp_filename = f'{self.ob_count}{pathlib.Path(file).suffix}'
