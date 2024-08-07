@@ -25,7 +25,7 @@ import json
 import os
 import sys
 import datetime
-import pkg_resources
+import importlib_resources
 
 from progress.bar import Bar
 from progress.spinner import Spinner
@@ -270,9 +270,10 @@ class Scanner(ScanossBase):
         """
         data = None
         try:
-            f_name = pkg_resources.resource_filename(__name__, 'data/build_date.txt')
-            with open(f_name, 'r') as f:
-                data = f.read().rstrip()
+            f_name = importlib_resources.files(__name__) / 'data/build_date.txt'
+            with importlib_resources.as_file(f_name) as f:
+                with open(f, 'r', encoding='utf-8') as file:
+                    data = file.read().rstrip()
         except Exception as e:
             Scanner.print_stderr(f'Warning: Problem loading build time details: {e}')
         if not data or len(data) == 0:

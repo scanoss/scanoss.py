@@ -28,7 +28,7 @@ import hashlib
 import datetime
 import getpass
 import re
-import pkg_resources
+import importlib_resources
 
 from . import __version__
 
@@ -300,9 +300,10 @@ class SpdxLite:
         :return: True if successful, False otherwise
         """
         try:
-            f_name = pkg_resources.resource_filename(__name__, filename)
-            with open(f_name, 'r') as f:
-                data = json.loads(f.read())
+            f_name = importlib_resources.files(__name__) / filename
+            with importlib_resources.as_file(f_name) as f:
+                with open(f, 'r', encoding='utf-8') as file:
+                    data = json.load(file)
         except Exception as e:
             self.print_stderr(f'ERROR: Problem parsing SPDX license input JSON: {e}')
             return False
