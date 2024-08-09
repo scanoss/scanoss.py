@@ -9,10 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.13.1] - PLACEHOLDER
+## [1.14.0] - 2024-08-09
 ### Added
 - Added support for Python3.12
-  - Module `pkg_resources` has been replaced with `importlib_resources` 
+  - Module `pkg_resources` has been replaced with `importlib_resources`
+- Added support for UTF-16 filenames 
 
 ## [1.13.0] - 2024-06-05
 ### Added
@@ -336,3 +337,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.12.2]: https://github.com/scanoss/scanoss.py/compare/v1.12.1...v1.12.2
 [1.12.3]: https://github.com/scanoss/scanoss.py/compare/v1.12.2...v1.12.3
 [1.13.0]: https://github.com/scanoss/scanoss.py/compare/v1.12.3...v1.13.0
+[1.14.0]: https://github.com/scanoss/scanoss.py/compare/v1.13.0...v1.14.0
