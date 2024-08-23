@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'User Guide for scanoss-py'
+project = 'Documentation for scanoss-py'
 copyright = '2024, Scan Open Source Solutions SL'
 author = 'Jeronimo Ortiz'
 
