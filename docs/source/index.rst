@@ -354,4 +354,9 @@ The Scanoss Open Source scanoss-py package is released under the MIT license.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :hidden:
+   :caption: Links
+
+   SCANOSS Website <https://www.scanoss.com/>
+   GitHub <https://github.com/scanoss>
+   Software transparency foundation <https://www.softwaretransparency.org/>
