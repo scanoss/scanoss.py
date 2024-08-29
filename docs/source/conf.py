@@ -8,7 +8,7 @@
 
 project = 'Documentation for scanoss-py'
 copyright = '2024, Scan Open Source Solutions SL'
-author = 'Jeronimo Ortiz'
+author = 'Scan Open Source Solutions SL'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
