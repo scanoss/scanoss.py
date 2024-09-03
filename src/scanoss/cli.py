@@ -930,7 +930,7 @@ def results(parser, args):
     if not os.path.isfile(results_file):
         print_stderr(f"The specified file {args.filepath} does not exist")
         exit(1)
-
+    
     results = Results(
         debug=args.debug,
         trace=args.trace,

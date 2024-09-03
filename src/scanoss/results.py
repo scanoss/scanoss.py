@@ -24,7 +24,7 @@
 
 import json
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from scanoss.utils.colorize import colorize
 
@@ -58,6 +58,11 @@ ARG_TO_FILTER_MAP = {
     FilterKey.STATUS: "status",
 }
 
+DEFAULT_FILTERS = {
+    FilterKey.MATCH_TYPE: ["all"],
+    FilterKey.STATUS: ["pending"],
+}
+
 
 class Results(ScanossBase):
 
@@ -80,6 +85,7 @@ class Results(ScanossBase):
         :param match_type: Comma separated list of match type filters
         :param status: Comma separated list of status filters
         """
+
         super().__init__(debug, trace, quiet)
         self.data = self._load_and_transform(file)
         self.filters = self._load_filters(match_type=match_type, status=status)
@@ -91,7 +97,11 @@ class Results(ScanossBase):
             except Exception as e:
                 self.print_stderr(f"ERROR: Problem parsing input JSON: {e}")
 
-    def _load_and_transform(self, file: str) -> list:
+    def _load_and_transform(self, file: str) -> List[Dict[str, Any]]:
+        """
+        Load the file and transform the data into a list of dictionaries with the filename and the file data
+        """
+
         raw_data = self._load_file(file)
         return self._transform_data(raw_data)
 
@@ -104,19 +114,26 @@ class Results(ScanossBase):
                 result.append(file_obj)
         return result
 
-    def _load_filters(self, **kwargs):
+    def _load_filters(self, **kwargs) -> Dict[FilterKey, List[str]]:
         filters = {key: None for key in kwargs}
 
         for key, value in kwargs.items():
             if value:
                 if key.upper() in FilterKey.__members__:
                     filters[FilterKey[key.upper()]] = (
-                        self.__extract_comma_separated_values(value)
+                        self._extract_comma_separated_values(value)
                     )
+            else:
+                if key == "match_type":
+                    filters[FilterKey.MATCH_TYPE] = DEFAULT_FILTERS[
+                        FilterKey.MATCH_TYPE
+                    ]
+                elif key == "status":
+                    filters[FilterKey.STATUS] = DEFAULT_FILTERS[FilterKey.STATUS]
 
         return filters
 
-    def __extract_comma_separated_values(self, values: str) -> dict:
+    def _extract_comma_separated_values(self, values: str) -> dict:
         return [value.strip() for value in values.split(",")]
 
     def apply_filters(self):
@@ -162,6 +179,7 @@ class Results(ScanossBase):
         Check for precommit and print results if data exists.
         Raises an exception if potential open source results are found.
         """
+
         if self.data:
             self._present_precommit_overview()
             exit(1)
@@ -175,7 +193,6 @@ class Results(ScanossBase):
         )
 
         for item in self.data:
-
             self.print_stderr(f"  - {item['filename']}")
 
         self.print_stderr(
