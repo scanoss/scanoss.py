@@ -269,9 +269,20 @@ def setup_args() -> None:
         help="Filter results by file status (comma-separated, e.g., pending, all)",
     )
     p_results.add_argument(
-        "--prevent-commit",
+        "--has-pending",
         action="store_true",
-        help="Prevents commit if there are any results available",
+        help="Filter results to only include files with pending status",
+    )
+    p_results.add_argument(
+        "--output",
+        "-o",
+        help="Output result file",
+    )
+    p_results.add_argument(
+        "--format",
+        "-f",
+        choices=["json", "plain"],
+        help="Output format",
     )
     p_results.set_defaults(func=results)
 
@@ -938,10 +949,14 @@ def results(parser, args):
         file=results_file,
         match_type=args.match_type,
         status=args.status,
-    ).apply_filters()
+        output_file=args.output,
+        output_format=args.format,
+    )
 
-    if args.prevent_commit:
-        results.check_for_precommit()
+    if args.has_pending:
+        return results.get_pending_identifications().present()
+    
+    results.apply_filters().present()
 
 
 
