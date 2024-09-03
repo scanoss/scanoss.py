@@ -261,12 +261,12 @@ def setup_args() -> None:
     p_results.add_argument(
         "--match-type",
         "-mt",
-        help="Filter results by match type (comma-separated, e.g., file,snippet,all)",
+        help="Filter results by match type (comma-separated, e.g., file,snippet)",
     )
     p_results.add_argument(
         "--status",
         "-s",
-        help="Filter results by file status (comma-separated, e.g., pending, all)",
+        help="Filter results by file status (comma-separated, e.g., pending, identified)",
     )
     p_results.add_argument(
         "--has-pending",
@@ -954,7 +954,9 @@ def results(parser, args):
     )
 
     if args.has_pending:
-        return results.get_pending_identifications().present()
+        results.get_pending_identifications().present()
+        if results.has_results():
+            exit(1)
     
     results.apply_filters().present()
 
