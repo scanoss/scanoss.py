@@ -169,13 +169,12 @@ class Results(ScanossBase):
                 f"ERROR: Invalid output format '{output_format}'. Valid values are: {', '.join(AVAILABLE_OUTPUT_FORMATS)}"
             )
 
-        match fmt:
-            case "json":
-                return self._present_json(file_path)
-            case "plain":
-                return self._present_plain(file_path)
-            case _:
-                return self._present_stdout()
+        if fmt == "json":
+            return self._present_json(file_path)
+        elif fmt == "plain":
+            return self._present_plain(file_path)
+        else:
+            return self._present_stdout()
 
     def _present_json(self, file: str = None):
         if not file:
