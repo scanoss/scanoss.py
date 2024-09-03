@@ -25,8 +25,6 @@
 import json
 from typing import Any, Dict, List
 
-from scanoss.utils.colorize import colorize
-
 from .scanossbase import ScanossBase
 
 MATCH_TYPES = ["file", "snippet"]
