@@ -23,18 +23,44 @@
 """
 
 import json
+from enum import Enum
+from typing import Any, Dict
 
 from scanoss.utils.colorize import colorize
 
 from .scanossbase import ScanossBase
 
+
+class MatchType(Enum):
+    FILE = "file"
+    SNIPPET = "snippet"
+    ALL = "all"
+
+
+class Status(Enum):
+    PENDING = "pending"
+    ALL = "all"
+
+
+class FilterKey(Enum):
+    MATCH_TYPE = "match_type"
+    STATUS = "status"
+
+
+AVAILABLE_FILTER_VALUES = {
+    FilterKey.MATCH_TYPE: [e.value for e in MatchType],
+    FilterKey.STATUS: [e.value for e in Status],
+}
+
+
 ARG_TO_FILTER_MAP = {
-    "match_type": "id",
-    "status": "status",
+    FilterKey.MATCH_TYPE: "id",
+    FilterKey.STATUS: "status",
 }
 
 
 class Results(ScanossBase):
+
     def __init__(
         self,
         debug: bool = False,
@@ -58,7 +84,7 @@ class Results(ScanossBase):
         self.data = self._load_and_transform(file)
         self.filters = self._load_filters(match_type=match_type, status=status)
 
-    def _load_file(self, file: str) -> dict:
+    def _load_file(self, file: str) -> Dict[str, Any]:
         with open(file, "r") as jsonfile:
             try:
                 return json.load(jsonfile)
@@ -83,7 +109,10 @@ class Results(ScanossBase):
 
         for key, value in kwargs.items():
             if value:
-                filters[key] = self.__extract_comma_separated_values(value)
+                if key.upper() in FilterKey.__members__:
+                    filters[FilterKey[key.upper()]] = (
+                        self.__extract_comma_separated_values(value)
+                    )
 
         return filters
 
@@ -104,25 +133,49 @@ class Results(ScanossBase):
             if not filter_value:
                 continue
 
+            self._validate_filter_values(filter_key, filter_value)
+
             item_value = item.get(ARG_TO_FILTER_MAP[filter_key])
             if isinstance(filter_value, list):
+                if filter_value == ["all"]:
+                    continue
                 if item_value not in filter_value:
                     return False
             elif item_value != filter_value:
                 return False
         return True
 
+    def _validate_filter_values(self, filter_key: FilterKey, filter_value: str):
+        if any(
+            value not in AVAILABLE_FILTER_VALUES.get(filter_key, [])
+            for value in filter_value
+        ):
+            valid_values = ", ".join(AVAILABLE_FILTER_VALUES.get(filter_key, []))
+            self.print_stderr(
+                f"ERROR: Invalid filter value '{filter_value}' for filter '{filter_key.value}'. "
+                f"Valid values are: {valid_values}"
+            )
+            exit(1)
+
     def check_for_precommit(self):
+        """
+        Check for precommit and print results if data exists.
+        Raises an exception if potential open source results are found.
+        """
         if self.data:
             self._present_precommit_overview()
             exit(1)
+        else:
+            self.print_stderr("No potential open source results found.")
         return self
 
     def _present_precommit_overview(self):
         self.print_stderr(
             f"{colorize(f"ERROR: Found {len(self.data)} potential open source results that may need your attention:", "RED")}"
         )
+
         for item in self.data:
+
             self.print_stderr(f"  - {item['filename']}")
 
         self.print_stderr(

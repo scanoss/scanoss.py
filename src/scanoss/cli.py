@@ -921,7 +921,7 @@ def results(parser, args):
             Parsed arguments
     """
     if not args.filepath:
-        print_stderr("Please specify a file that contains scan results")
+        print_stderr('ERROR: Please specify a file containing the results')
         parser.parse_args([args.subparser, "-h"])
         exit(1)
 
