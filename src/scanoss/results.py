@@ -23,45 +23,36 @@
 """
 
 import json
-from enum import Enum
 from typing import Any, Dict, List
 
 from scanoss.utils.colorize import colorize
 
 from .scanossbase import ScanossBase
 
-
-class MatchType(Enum):
-    FILE = "file"
-    SNIPPET = "snippet"
-    ALL = "all"
-
-
-class Status(Enum):
-    PENDING = "pending"
-    ALL = "all"
-
-
-class FilterKey(Enum):
-    MATCH_TYPE = "match_type"
-    STATUS = "status"
+MATCH_TYPES = ["file", "snippet"]
+STATUSES = ["pending"]
 
 
 AVAILABLE_FILTER_VALUES = {
-    FilterKey.MATCH_TYPE: [e.value for e in MatchType],
-    FilterKey.STATUS: [e.value for e in Status],
+    "match_type": [e for e in MATCH_TYPES],
+    "status": [e for e in STATUSES],
 }
 
 
 ARG_TO_FILTER_MAP = {
-    FilterKey.MATCH_TYPE: "id",
-    FilterKey.STATUS: "status",
+    "match_type": "id",
+    "status": "status",
 }
 
-DEFAULT_FILTERS = {
-    FilterKey.MATCH_TYPE: ["all"],
-    FilterKey.STATUS: ["pending"],
+PENDING_IDENTIFICATION_FILTERS = {
+    "match_type": ["file", "snippet"],
+    "status": ["pending"],
 }
+
+AVAILABLE_OUTPUT_FORMATS = ["json", "plain"]
+
+NO_RESULTS_MSG = "No potential open source results found."
+FOUND_RESULTS_MSG = f"Run {colorize("scanoss-lui", "GREEN")} in the terminal to view the results in more detail."
 
 
 class Results(ScanossBase):
@@ -74,6 +65,8 @@ class Results(ScanossBase):
         file: str = None,
         match_type: str = None,
         status: str = None,
+        output_file: str = None,
+        output_format: str = None,
     ):
         """
         Handles parsing of scan result file
@@ -89,13 +82,15 @@ class Results(ScanossBase):
         super().__init__(debug, trace, quiet)
         self.data = self._load_and_transform(file)
         self.filters = self._load_filters(match_type=match_type, status=status)
+        self.output_file = output_file
+        self.output_format = output_format
 
     def _load_file(self, file: str) -> Dict[str, Any]:
         with open(file, "r") as jsonfile:
             try:
                 return json.load(jsonfile)
             except Exception as e:
-                self.print_stderr(f"ERROR: Problem parsing input JSON: {e}")
+                print(f"ERROR: Problem parsing input JSON: {e}")
 
     def _load_and_transform(self, file: str) -> List[Dict[str, Any]]:
         """
@@ -114,22 +109,12 @@ class Results(ScanossBase):
                 result.append(file_obj)
         return result
 
-    def _load_filters(self, **kwargs) -> Dict[FilterKey, List[str]]:
+    def _load_filters(self, **kwargs) -> Dict[str, List[str]]:
         filters = {key: None for key in kwargs}
 
         for key, value in kwargs.items():
             if value:
-                if key.upper() in FilterKey.__members__:
-                    filters[FilterKey[key.upper()]] = (
-                        self._extract_comma_separated_values(value)
-                    )
-            else:
-                if key == "match_type":
-                    filters[FilterKey.MATCH_TYPE] = DEFAULT_FILTERS[
-                        FilterKey.MATCH_TYPE
-                    ]
-                elif key == "status":
-                    filters[FilterKey.STATUS] = DEFAULT_FILTERS[FilterKey.STATUS]
+                filters[key] = self._extract_comma_separated_values(value)
 
         return filters
 
@@ -154,47 +139,69 @@ class Results(ScanossBase):
 
             item_value = item.get(ARG_TO_FILTER_MAP[filter_key])
             if isinstance(filter_value, list):
-                if filter_value == ["all"]:
-                    continue
                 if item_value not in filter_value:
                     return False
             elif item_value != filter_value:
                 return False
         return True
 
-    def _validate_filter_values(self, filter_key: FilterKey, filter_value: str):
+    def _validate_filter_values(self, filter_key: str, filter_value: str):
         if any(
             value not in AVAILABLE_FILTER_VALUES.get(filter_key, [])
             for value in filter_value
         ):
             valid_values = ", ".join(AVAILABLE_FILTER_VALUES.get(filter_key, []))
-            self.print_stderr(
+            raise Exception(
                 f"ERROR: Invalid filter value '{filter_value}' for filter '{filter_key.value}'. "
                 f"Valid values are: {valid_values}"
             )
-            exit(1)
 
-    def check_for_precommit(self):
-        """
-        Check for precommit and print results if data exists.
-        Raises an exception if potential open source results are found.
-        """
+    def get_pending_identifications(self):
+        self.filters = PENDING_IDENTIFICATION_FILTERS
+        self.apply_filters()
 
-        if self.data:
-            self._present_precommit_overview()
-            exit(1)
-        else:
-            self.print_stderr("No potential open source results found.")
         return self
 
-    def _present_precommit_overview(self):
-        self.print_stderr(
-            f"{colorize(f"ERROR: Found {len(self.data)} potential open source results that may need your attention:", "RED")}"
-        )
+    def present(self, output_format: str = None, output_file: str = None):
+        file_path = output_file or self.output_file
+        fmt = output_format or self.output_format
+
+        if fmt and fmt not in AVAILABLE_OUTPUT_FORMATS:
+            raise Exception(
+                f"ERROR: Invalid output format '{output_format}'. Valid values are: {', '.join(AVAILABLE_OUTPUT_FORMATS)}"
+            )
+
+        match fmt:
+            case "json":
+                return self._present_json(file_path)
+            case "plain":
+                return self._present_plain(file_path)
+            case _:
+                return self._present_stdout()
+
+    def _present_json(self, file: str = None):
+        if not file:
+            return json.dumps(self.data, indent=4)
+        with open(file, "w") as f:
+            f.write(json.dumps(self.data, indent=4))
+
+    def _present_plain(self, file: str = None):
+        if not file:
+            return self._present_stdout()
+        with open(file, "w") as f:
+            for item in self.data:
+                f.write(f"  - {item['filename']}\n")
+            if len(self.data):
+                f.write(FOUND_RESULTS_MSG)
+            else:
+                f.write(NO_RESULTS_MSG)
+            f.close()
+
+    def _present_stdout(self):
+        if not self.data:
+            print(NO_RESULTS_MSG)
+            return
 
         for item in self.data:
-            self.print_stderr(f"  - {item['filename']}")
-
-        self.print_stderr(
-            f"Run {colorize('scanoss-lui', "GREEN")} in the terminal to view the results in more detail."
-        )
+            print(f"  - {item['filename']}")
+        print(FOUND_RESULTS_MSG)
