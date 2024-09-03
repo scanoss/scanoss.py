@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.15.0] - 2024-09-03
+### Added
+- Added Results sub-command:
+  - Get all results (`scanoss-py results /path/to/file`)
+  - Get filtered results (`scanoss-py results /path/to/file --match-type=file,snippet status=pending`)
+  - Get pending declarations (`scanoss-py results /path/to/file --has-pending`)
+
 ## [1.14.0] - 2024-08-09
 ### Added
 - Added support for Python3.12
@@ -338,3 +345,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.12.3]: https://github.com/scanoss/scanoss.py/compare/v1.12.2...v1.12.3
 [1.13.0]: https://github.com/scanoss/scanoss.py/compare/v1.12.3...v1.13.0
 [1.14.0]: https://github.com/scanoss/scanoss.py/compare/v1.13.0...v1.14.0
+[1.15.0]: https://github.com/scanoss/scanoss.py/compare/v1.14.0...v1.15.0
