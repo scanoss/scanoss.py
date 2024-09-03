@@ -30,7 +30,7 @@ from scanoss.utils.colorize import colorize
 from .scanossbase import ScanossBase
 
 MATCH_TYPES = ["file", "snippet"]
-STATUSES = ["pending"]
+STATUSES = ["pending", "identified"]
 
 
 AVAILABLE_FILTER_VALUES = {
@@ -50,9 +50,6 @@ PENDING_IDENTIFICATION_FILTERS = {
 }
 
 AVAILABLE_OUTPUT_FORMATS = ["json", "plain"]
-
-NO_RESULTS_MSG = "No potential open source results found."
-FOUND_RESULTS_MSG = f"Run {colorize("scanoss-lui", "GREEN")} in the terminal to view the results in more detail."
 
 
 class Results(ScanossBase):
@@ -162,6 +159,9 @@ class Results(ScanossBase):
 
         return self
 
+    def has_results(self):
+        return bool(self.data)
+
     def present(self, output_format: str = None, output_file: str = None):
         file_path = output_file or self.output_file
         fmt = output_format or self.output_format
@@ -181,9 +181,10 @@ class Results(ScanossBase):
 
     def _present_json(self, file: str = None):
         if not file:
-            return json.dumps(self.data, indent=4)
+            print(json.dumps(self.data, indent=2))
+            return json.dumps(self.data, indent=2)
         with open(file, "w") as f:
-            f.write(json.dumps(self.data, indent=4))
+            f.write(json.dumps(self.data, indent=2))
 
     def _present_plain(self, file: str = None):
         if not file:
@@ -191,17 +192,12 @@ class Results(ScanossBase):
         with open(file, "w") as f:
             for item in self.data:
                 f.write(f"  - {item['filename']}\n")
-            if len(self.data):
-                f.write(FOUND_RESULTS_MSG)
-            else:
-                f.write(NO_RESULTS_MSG)
             f.close()
 
     def _present_stdout(self):
         if not self.data:
-            print(NO_RESULTS_MSG)
+            print("No potential open source results found.")
             return
 
         for item in self.data:
             print(f"  - {item['filename']}")
-        print(FOUND_RESULTS_MSG)
