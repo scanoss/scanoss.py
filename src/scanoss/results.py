@@ -85,7 +85,7 @@ class Results(ScanossBase):
             try:
                 return json.load(jsonfile)
             except Exception as e:
-                print(f"ERROR: Problem parsing input JSON: {e}")
+                self.print_stderr(f"ERROR: Problem parsing input JSON: {e}")
 
     def _load_and_transform(self, file: str) -> List[Dict[str, Any]]:
         """
@@ -177,24 +177,58 @@ class Results(ScanossBase):
             return self._present_stdout()
 
     def _present_json(self, file: str = None):
+        formatted_data = self._format_json_output()
+        output = json.dumps(formatted_data, indent=2)
+
         if not file:
-            print(json.dumps(self.data, indent=2))
-            return json.dumps(self.data, indent=2)
+            self.print_msg(output)
+            return output
         with open(file, "w") as f:
-            f.write(json.dumps(self.data, indent=2))
+            f.write(output)
 
     def _present_plain(self, file: str = None):
         if not file:
             return self._present_stdout()
         with open(file, "w") as f:
+            f.write(
+                f"======== Found {len(self.data)} potential open source results ========\n"
+            )
             for item in self.data:
-                f.write(f"  - {item['filename']}\n")
+                f.write("\n")
+                f.write(self._format_plain_output_item(item))
             f.close()
 
     def _present_stdout(self):
         if not self.data:
             print("No potential open source results found.")
             return
-
+        self.print_msg(
+            f"======== Found {len(self.data)} potential open source results ========\n"
+        )
         for item in self.data:
-            print(f"  - {item['filename']}")
+            print(self._format_plain_output_item(item))
+
+    def _format_json_output(self):
+        """
+        Format the output data into a JSON object
+        """
+
+        formatted_data = []
+        for item in self.data:
+            formatted_data.append(
+                {
+                    "file": item["filename"],
+                    "status": item["status"] if "status" in item else None,
+                    "match_type": item["id"],
+                    "matched": item["matched"] if "matched" in item else None,
+                }
+            )
+        return {"results": formatted_data, "total": len(formatted_data)}
+
+    def _format_plain_output_item(self, item):
+        return (
+            f"File: {item['filename']}\n"
+            f"Match type: {item['id']}\n"
+            f"Status: {item.get('status', 'N/A')}\n"
+            f"Matched: {item.get('matched', 'N/A')}\n"
+        )

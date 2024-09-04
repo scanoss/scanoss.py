@@ -941,7 +941,7 @@ def results(parser, args):
     if not os.path.isfile(results_file):
         print_stderr(f"The specified file {args.filepath} does not exist")
         exit(1)
-    
+
     results = Results(
         debug=args.debug,
         trace=args.trace,
@@ -955,11 +955,9 @@ def results(parser, args):
 
     if args.has_pending:
         results.get_pending_identifications().present()
-        if results.has_results():
-            exit(1)
-    
-    results.apply_filters().present()
+        return results.has_results()
 
+    return results.apply_filters().present()
 
 
 def main():
