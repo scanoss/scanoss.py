@@ -151,7 +151,7 @@ class Results(ScanossBase):
                 f"Valid values are: {valid_values}"
             )
 
-    def get_pending_identifications(self):
+    def get_pending_identifications(self) -> bool:
         self.filters = PENDING_IDENTIFICATION_FILTERS
         self.apply_filters()
 
@@ -200,13 +200,13 @@ class Results(ScanossBase):
 
     def _present_stdout(self):
         if not self.data:
-            print("No potential open source results found.")
+            self.print_msg("No potential open source results found.")
             return
         self.print_msg(
             f"======== Found {len(self.data)} potential open source results ========\n"
         )
         for item in self.data:
-            print(self._format_plain_output_item(item))
+            self.print_msg(self._format_plain_output_item(item))
 
     def _format_json_output(self):
         """
