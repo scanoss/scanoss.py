@@ -955,7 +955,8 @@ def results(parser, args):
 
     if args.has_pending:
         results.get_pending_identifications().present()
-        return results.has_results()
+        if results.has_results():
+            exit(1)
 
     return results.apply_filters().present()
 
