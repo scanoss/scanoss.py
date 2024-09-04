@@ -24,7 +24,9 @@
 
 import threading
 import queue
-from typing import Dict
+import json
+from enum import Enum
+from typing import Dict, Optional, Set
 from dataclasses import dataclass
 
 from .scancodedeps import ScancodeDeps
@@ -32,6 +34,14 @@ from .scanossbase import ScanossBase
 from .scanossgrpc import ScanossGrpc
 
 DEP_FILE_PREFIX = "file="  # Default prefix to signify an existing parsed dependency file
+
+PROD_DEPENDENCIES = { "dependencies", "install", "import" }
+DEV_DEPENDENCIES = { "devDependencies" }
+
+# Define an enum class
+class SCOPE(Enum):
+    PRODUCTION = 'prod'
+    DEVELOPMENT = 'dev'
 
 
 @dataclass
@@ -66,9 +76,10 @@ class ThreadedDependencies(ScanossBase):
                 return resp
         return None
 
-    def run(self, what_to_scan: str = None, deps_file: str = None, wait: bool = True) -> bool:
+    def run(self, what_to_scan: str = None, deps_file: str = None, wait: bool = True, dep_scope: SCOPE =  None) -> bool:
         """
         Initiate a background scan for the specified file/dir
+        :param dep_scope:
         :param what_to_scan: file/folder to scan
         :param deps_file: file to decorate instead of scan (overrides what_to_scan option)
         :param wait: wait for completion
@@ -82,8 +93,9 @@ class ThreadedDependencies(ScanossBase):
                 self.inputs.put(f'{DEP_FILE_PREFIX}{deps_file}')           # Add to queue and have parent wait on it
             else:                                                          # Search for dependencies to decorate
                 self.print_msg(f'Searching {what_to_scan} for dependencies...')
-                self.inputs.put(what_to_scan)                              # Add to queue and have parent wait on it
-            self._thread = threading.Thread(target=self.scan_dependencies, daemon=True)
+                self.inputs.put(what_to_scan)
+                # Add to queue and have parent wait on it
+            self._thread = threading.Thread(target=self.scan_dependencies(dep_scope), daemon=True)
             self._thread.start()
         except Exception as e:
             self.print_stderr(f'ERROR: Problem running threaded dependencies: {e}')
@@ -92,7 +104,35 @@ class ThreadedDependencies(ScanossBase):
             self.complete()
         return False if self._errors else True
 
-    def scan_dependencies(self) -> None:
+
+    def filter_dependencies(self,deps: json, dep_scope: SCOPE = None) -> json:
+        # Predefined set of scopes to filter
+        scope_mapping = {
+            SCOPE.PRODUCTION: PROD_DEPENDENCIES,
+            SCOPE.DEVELOPMENT: DEV_DEPENDENCIES
+        }
+
+        # Include all scopes if dep_scope is None or empty
+        include_all = dep_scope is None or dep_scope == ""
+        # Determine which set of dependencies to use based on dep_scope
+        scopes = scope_mapping.get(dep_scope, None)
+
+        # Extract the list of files
+        files = deps.get('files', [])
+        # Iterate over files and their purls
+        for file in files:
+            if 'purls' in file:
+                # Filter purls with scope 'dependencies' and remove the scope field
+                file['purls'] = [
+                    {key: value for key, value in purl.items() if key != 'scope'}
+                    for purl in file['purls']
+                    if include_all or purl.get('scope') in scopes
+                ]
+        return deps
+
+
+
+    def scan_dependencies(self, dep_scope: SCOPE = None) -> None:
         """
         Scan for dependencies from the given file/dir or from an input file (from the input queue).
         """
@@ -108,6 +148,9 @@ class ThreadedDependencies(ScanossBase):
                     self._errors = True
                 else:
                     deps = self.sc_deps.produce_from_file()
+                    if (dep_scope is not None):
+                        self.print_debug(f'Filtering {dep_scope.name} dependencies')
+                    deps = self.filter_dependencies(deps, dep_scope)
             if not self._errors:
                 if deps is None:
                     self.print_stderr(f'Problem searching for dependencies for: {what_to_scan}')

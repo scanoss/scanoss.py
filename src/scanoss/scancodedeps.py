@@ -105,15 +105,17 @@ class ScancodeDeps(ScanossBase):
                             continue
                     self.print_debug(f'Path: {f_path}, Packages: {len(f_packages)}')
                     purls = []
+                    scopes = []
                     for pkgs in f_packages:
                         pk_deps = pkgs.get('dependencies')
+
                         if not pk_deps or pk_deps == '':
                             continue
-                        self.print_debug(f'Path: {f_path}, Dependencies: {len(pk_deps)}')
                         for d in pk_deps:
                             dp = d.get('purl')
                             if not dp or dp == '':
                                 continue
+
                             dp = dp.replace('"', '').replace('%22', '')  # remove unwanted quotes on purls
                             dp_data = {'purl': dp}
                             rq = d.get('extracted_requirement')  # scancode format 2.0
@@ -122,15 +124,21 @@ class ScancodeDeps(ScanossBase):
                             # skip requirement if it ends with the purl (i.e. exact version) or if it's local (file)
                             if rq and rq != '' and not dp.endswith(rq) and not rq.startswith('file:'):
                                 dp_data['requirement'] = rq
+
+                            # Gets dependency scope
+                            scope = d.get('scope')
+                            if scope and scope != '':
+                                dp_data['scope'] = scope
+
                             purls.append(dp_data)
-                        # self.print_stderr(f'Path: {f_path}, Purls: {purls}')
+
+
                     if len(purls) > 0:
                         files.append({'file': f_path, 'purls': purls})
                     # End packages
                 # End file details
         # End dependencies json
         deps = {'files': files}
-        # self.print_debug(f'Dep Data: {deps}')
         return deps
 
     def produce_from_file(self, json_file: str = None) -> json:

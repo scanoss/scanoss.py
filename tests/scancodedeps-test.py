@@ -24,16 +24,16 @@
 import os
 import unittest
 
-from scanoss.scancodedeps import ScancodeDeps
-from scanoss.scanossgrpc import ScanossGrpc
-from scanoss.threadeddependencies import ThreadedDependencies
+from src.scanoss.scancodedeps import ScancodeDeps
+from src.scanoss.scanossgrpc import ScanossGrpc
+from src.scanoss.threadeddependencies import ThreadedDependencies, SCOPE
 
 
 class MyTestCase(unittest.TestCase):
     """
     Unit test cases for Scancode Dependency analysis
     """
-    TEST_LOCAL = os.getenv("SCANOSS_TEST_LOCAL", 'True').lower() in ('true', '1', 't', 'yes', 'y')
+    TEST_LOCAL = os.getenv("SCANOSS_TEST_LOCAL", 'False').lower() in ('true', '1', 't', 'yes', 'y')
 
     def test_deps_parse(self):
         """
@@ -75,6 +75,32 @@ class MyTestCase(unittest.TestCase):
         deps = threaded_deps.responses
         print(f'Dependency results ({server_type}): {deps}')
         self.assertIsNotNone(deps)
+
+    def test_dep_scope(self):
+        """
+        Run a dependency scan of the current directory, then parse those results
+        """
+        # with open('scanoss-com.pem', 'rb') as f:
+        #     root_certs = f.read()
+        if MyTestCase.TEST_LOCAL:
+            server_type = "local"
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            server_type = "remote"
+            grpc_client = ScanossGrpc(debug=True)
+        sc_deps = ScancodeDeps(debug=True)
+        threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
+        self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True, dep_scope=SCOPE.DEVELOPMENT))
+        deps = threaded_deps.responses
+        files = deps.get("files")
+        package_json_dev_deps = files[0]["dependencies"]
+        requirements_txt_dev_deps = files[1].get("dependencies", [])
+        print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_dev_deps}')
+        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_dev_deps}')
+        self.assertNotEquals(len(package_json_dev_deps),len(requirements_txt_dev_deps))
+        self.assertEqual(len(package_json_dev_deps),1)
+        # devDependencies of package.json file: "@babel/core": ">0.2.0"
+        self.assertEqual(package_json_dev_deps[0]["component"], "@babel/core")
 
 
 if __name__ == '__main__':
