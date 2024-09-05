@@ -76,7 +76,32 @@ class MyTestCase(unittest.TestCase):
         print(f'Dependency results ({server_type}): {deps}')
         self.assertIsNotNone(deps)
 
-    def test_dep_scope(self):
+    def test_dep_scope_all(self):
+        """
+        Run a dependency scan of the current directory, then parse those results
+        """
+        # with open('scanoss-com.pem', 'rb') as f:
+        #     root_certs = f.read()
+        if MyTestCase.TEST_LOCAL:
+            server_type = "local"
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            server_type = "remote"
+            grpc_client = ScanossGrpc(debug=True)
+        sc_deps = ScancodeDeps(debug=True)
+        threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
+        self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True))
+        deps = threaded_deps.responses
+        files = deps.get("files")
+        package_json_deps = files[0]["dependencies"]
+        requirements_txt_deps = files[1].get("dependencies", [])
+        print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_deps}')
+        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_deps}')
+        self.assertEqual(len(package_json_deps),3)
+        self.assertEqual(len(requirements_txt_deps), 6)
+
+
+    def test_dep_scope_development(self):
         """
         Run a dependency scan of the current directory, then parse those results
         """
@@ -101,6 +126,123 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(len(package_json_dev_deps),1)
         # devDependencies of package.json file: "@babel/core": ">0.2.0"
         self.assertEqual(package_json_dev_deps[0]["component"], "@babel/core")
+
+    def test_dep_scope_production(self):
+        """
+        Run a dependency scan of the current directory, then parse those results
+        """
+        # with open('scanoss-com.pem', 'rb') as f:
+        #     root_certs = f.read()
+        if MyTestCase.TEST_LOCAL:
+            server_type = "local"
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            server_type = "remote"
+            grpc_client = ScanossGrpc(debug=True)
+        sc_deps = ScancodeDeps(debug=True)
+        threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
+        self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True, dep_scope=SCOPE.PRODUCTION))
+        deps = threaded_deps.responses
+        files = deps.get("files")
+        package_json_deps = files[0]["dependencies"]
+        requirements_txt_deps = files[1].get("dependencies", [])
+        print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_deps}')
+        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_deps}')
+
+        self.assertNotEquals(len(requirements_txt_deps),5)
+        self.assertEqual(len(package_json_deps),2)
+
+        self.assertEqual(package_json_deps[0]["component"], "uuid")
+        self.assertEqual(package_json_deps[1]["component"], "xml-js")
+
+    def test_dep_scope_include(self):
+        """
+        Run a dependency scan of the current directory, then parse those results
+        """
+        # with open('scanoss-com.pem', 'rb') as f:
+        #     root_certs = f.read()
+        if MyTestCase.TEST_LOCAL:
+            server_type = "local"
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            server_type = "remote"
+            grpc_client = ScanossGrpc(debug=True)
+        sc_deps = ScancodeDeps(debug=True)
+        threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
+        self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True, dep_scope_include='dependencies'))
+        deps = threaded_deps.responses
+        files = deps.get("files")
+        package_json_deps = files[0]["dependencies"]
+        requirements_txt_deps = files[1].get("dependencies", [])
+        print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_deps}')
+        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_deps}')
+
+        # requirements.txt dependencies should be empty due to the filter 'dependencies'
+        self.assertEqual(len(requirements_txt_deps), 0)
+        self.assertEqual(len(package_json_deps),2)
+        # Prod dependencies package.json file: "uuid" and "xml-js"
+        self.assertEqual(package_json_deps[0]["component"], "uuid")
+        self.assertEqual(package_json_deps[1]["component"], "xml-js")
+
+    def test_dep_scope_exclude(self):
+        """
+        Run a dependency scan of the current directory, then parse those results
+        """
+        # with open('scanoss-com.pem', 'rb') as f:
+        #     root_certs = f.read()
+        if MyTestCase.TEST_LOCAL:
+            server_type = "local"
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            server_type = "remote"
+            grpc_client = ScanossGrpc(debug=True)
+        sc_deps = ScancodeDeps(debug=True)
+        threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
+        self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True, dep_scope_exclude='dependencies,install'))
+        deps = threaded_deps.responses
+        files = deps.get("files")
+        package_json_deps = files[0]["dependencies"]
+        requirements_txt_deps = files[1].get("dependencies", [])
+        print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_deps}')
+        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_deps}')
+        self.assertEqual(len(requirements_txt_deps), 0)
+
+        ## Only dev dependencies should be presents because 'dependencies' and 'install' scopes are excluded
+        self.assertEqual(len(package_json_deps), 1)
+
+        # Prod dependencies package.json file: "uuid" and "xml-js"
+        self.assertEqual(package_json_deps[0]["component"], "@babel/core")
+
+    def test_dep_scope_override(self):
+        """
+        Run a dependency scan of the current directory, then parse those results
+        """
+        # with open('scanoss-com.pem', 'rb') as f:
+        #     root_certs = f.read()
+        if MyTestCase.TEST_LOCAL:
+            server_type = "local"
+            grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
+        else:
+            server_type = "remote"
+            grpc_client = ScanossGrpc(debug=True)
+        sc_deps = ScancodeDeps(debug=True)
+        threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
+        self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True, dep_scope=SCOPE.PRODUCTION ,dep_scope_exclude='dependencies,install'))
+        deps = threaded_deps.responses
+        files = deps.get("files")
+        package_json_deps = files[0]["dependencies"]
+        requirements_txt_deps = files[1].get("dependencies", [])
+        print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_deps}')
+        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_deps}')
+        self.assertEqual(len(requirements_txt_deps), 0)
+
+        ## Only dev dependencies should be presents because 'dependencies' and 'install' scopes are excluded
+        self.assertEqual(len(package_json_deps), 1)
+
+        # Prod dependencies package.json file: "uuid" and "xml-js"
+        self.assertEqual(package_json_deps[0]["component"], "@babel/core")
+
+
 
 
 if __name__ == '__main__':
