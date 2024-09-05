@@ -76,7 +76,7 @@ class ThreadedDependencies(ScanossBase):
                 return resp
         return None
 
-    def run(self, what_to_scan: str = None, deps_file: str = None, wait: bool = True, dep_scope: SCOPE =  None) -> bool:
+    def run(self, what_to_scan: str = None, deps_file: str = None, wait: bool = True, dep_scope: SCOPE =  None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> bool:
         """
         Initiate a background scan for the specified file/dir
         :param dep_scope:
@@ -95,7 +95,7 @@ class ThreadedDependencies(ScanossBase):
                 self.print_msg(f'Searching {what_to_scan} for dependencies...')
                 self.inputs.put(what_to_scan)
                 # Add to queue and have parent wait on it
-            self._thread = threading.Thread(target=self.scan_dependencies(dep_scope), daemon=True)
+            self._thread = threading.Thread(target=self.scan_dependencies(dep_scope, dep_scope_include, dep_scope_exclude), daemon=True)
             self._thread.start()
         except Exception as e:
             self.print_stderr(f'ERROR: Problem running threaded dependencies: {e}')
@@ -105,17 +105,30 @@ class ThreadedDependencies(ScanossBase):
         return False if self._errors else True
 
 
-    def filter_dependencies(self,deps: json, dep_scope: SCOPE = None) -> json:
+    def filter_dependencies(self,deps: json, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> json:
         # Predefined set of scopes to filter
         scope_mapping = {
             SCOPE.PRODUCTION: PROD_DEPENDENCIES,
             SCOPE.DEVELOPMENT: DEV_DEPENDENCIES
         }
 
-        # Include all scopes if dep_scope is None or empty
-        include_all = dep_scope is None or dep_scope == ""
+        # Include all scopes
+        include_all = (dep_scope is None or dep_scope == "") and dep_scope_include is None and dep_scope_exclude is None
+
         # Determine which set of dependencies to use based on dep_scope
-        scopes = scope_mapping.get(dep_scope, None)
+        scopes = scope_mapping.get(dep_scope, set())
+
+        ## Exclude option overrides default prod and dev scope. Be sure scopes is empty if flag is dep-scope prod or dev is set
+        exclude = set()
+        if dep_scope_exclude is not None:
+            exclude = set(dep_scope_exclude.split(','))
+            scopes = set()
+
+        ## Include option overrides default prod and dev scope.  Be sure scopes is empty if flag is dep-scope prod or dev is set
+        include = set()
+        if dep_scope_include is not None:
+            include = set(dep_scope_include.split(','))
+            scopes = set()
 
         # Extract the list of files
         files = deps.get('files', [])
@@ -126,13 +139,15 @@ class ThreadedDependencies(ScanossBase):
                 file['purls'] = [
                     {key: value for key, value in purl.items() if key != 'scope'}
                     for purl in file['purls']
-                    if include_all or purl.get('scope') in scopes
+                    if (include_all or purl.get('scope') in scopes) or
+                        (exclude and purl.get('scope') not in exclude) or
+                        (not exclude and purl.get('scope') in include)
                 ]
         return deps
 
 
 
-    def scan_dependencies(self, dep_scope: SCOPE = None) -> None:
+    def scan_dependencies(self, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> None:
         """
         Scan for dependencies from the given file/dir or from an input file (from the input queue).
         """
@@ -150,7 +165,12 @@ class ThreadedDependencies(ScanossBase):
                     deps = self.sc_deps.produce_from_file()
                     if (dep_scope is not None):
                         self.print_debug(f'Filtering {dep_scope.name} dependencies')
-                    deps = self.filter_dependencies(deps, dep_scope)
+                    if (dep_scope_include is not None):
+                        self.print_debug(f"Including dependencies with '{dep_scope_include.split(',')}' scopes")
+                    if (dep_scope_exclude is not None):
+                        self.print_debug(f"Excluding dependencies with '{dep_scope_exclude.split(',')}' scopes")
+                    deps = self.filter_dependencies(deps, dep_scope,dep_scope_include, dep_scope_exclude)
+
             if not self._errors:
                 if deps is None:
                     self.print_stderr(f'Problem searching for dependencies for: {what_to_scan}')

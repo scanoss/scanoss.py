@@ -342,7 +342,7 @@ class Scanner(ScanossBase):
             return True
         return False
 
-    def scan_folder_with_options(self, scan_dir: str, deps_file: str = None, file_map: dict = None, dep_scope: SCOPE = None) -> bool:
+    def scan_folder_with_options(self, scan_dir: str, deps_file: str = None, file_map: dict = None, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> bool:
         """
         Scan the given folder for whatever scaning options that have been configured
         :param scan_dir: directory to scan
@@ -362,7 +362,7 @@ class Scanner(ScanossBase):
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
-            if not self.threaded_deps.run(what_to_scan=scan_dir, deps_file=deps_file, wait=False, dep_scope=dep_scope):  # Kick off a background dependency scan
+            if not self.threaded_deps.run(what_to_scan=scan_dir, deps_file=deps_file, wait=False, dep_scope=dep_scope, dep_scope_include= dep_scope_include, dep_scope_exclude=dep_scope_exclude):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_folder(scan_dir):
@@ -561,7 +561,7 @@ class Scanner(ScanossBase):
             success = False
         return success
 
-    def scan_file_with_options(self, file: str, deps_file: str = None, file_map: dict = None, dep_scope: SCOPE = None) -> bool:
+    def scan_file_with_options(self, file: str, deps_file: str = None, file_map: dict = None, dep_scope: SCOPE = None,  dep_scope_include: str = None, dep_scope_exclude: str = None) -> bool:
         """
         Scan the given file for whatever scaning options that have been configured
         :param dep_scope:
@@ -581,7 +581,7 @@ class Scanner(ScanossBase):
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
-            if not self.threaded_deps.run(what_to_scan=file, deps_file=deps_file, wait=False, dep_scope=dep_scope):  # Kick off a background dependency scan
+            if not self.threaded_deps.run(what_to_scan=file, deps_file=deps_file, wait=False, dep_scope=dep_scope, dep_scope_include=dep_scope_include, dep_scope_exclude=dep_scope_exclude):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_file(file):

@@ -107,11 +107,14 @@ def setup_args() -> None:
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)')
     p_scan.add_argument('--dep-scope', '-ds', type=SCOPE, help='Filter dependencies by scope - default all (options: dev/prod)')
+    p_scan.add_argument('--dep-scope-inc', '-dsi', type=str,help='Include dependencies with declared scopes')
+    p_scan.add_argument('--dep-scope-exc', '-dse', type=str, help='Exclude dependencies with declared scopes')
     p_scan.add_argument(
         '--settings',
         type=str,
         help='Settings file to use for scanning (optional - default scanoss.json)',
     )
+
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -685,12 +688,12 @@ def scan(parser, args):
             )
             exit(1)
         if os.path.isdir(args.scan_dir):
-            if not scanner.scan_folder_with_options(
-                args.scan_dir, args.dep, scanner.winnowing.file_map, args.dep_scope
-            ):
+            if not scanner.scan_folder_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map, args.dep_scope,
+                                                    args.dep_scope_inc, args.dep_scope_exc):
                 exit(1)
         elif os.path.isfile(args.scan_dir):
-            if not scanner.scan_file_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map, args.dep_scope):
+            if not scanner.scan_file_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map, args.dep_scope,
+                                                  args.dep_scope_inc, args.dep_scope_exc):
                 exit(1)
         else:
             print_stderr(
