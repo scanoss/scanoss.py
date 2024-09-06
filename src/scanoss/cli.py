@@ -102,6 +102,7 @@ def setup_args() -> None:
                         help='Scancode command and path if required (optional - default scancode).')
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)')
+    p_scan.add_argument('--settings', type=str, help='Settings file to use for scanning (optional - default scanoss.json).')
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -586,7 +587,8 @@ def scan(parser, args):
                       ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, grpc_proxy=args.grpc_proxy,
                       pac=pac_file, ca_cert=args.ca_cert, retry=args.retry, hpsm=args.hpsm,
                       skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder,
-                      skip_md5_ids=args.skip_md5, strip_hpsm_ids=args.strip_hpsm, strip_snippet_ids=args.strip_snippet
+                      skip_md5_ids=args.skip_md5, strip_hpsm_ids=args.strip_hpsm, strip_snippet_ids=args.strip_snippet,
+                      scan_settings_file=args.settings
                       )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():

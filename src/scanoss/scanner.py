@@ -102,10 +102,11 @@ class Scanner(ScanossBase):
                  obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, grpc_proxy: str = None,
                  ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False,
                  skip_size: int = 0, skip_extensions=None, skip_folders=None,
-                 strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None
+                 strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None,
+                 scan_settings_file: str = None
                  ):
         """
-        Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
+        Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
         """
         super().__init__(debug, trace, quiet)
         if skip_folders is None:
@@ -135,7 +136,7 @@ class Scanner(ScanossBase):
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
                                       sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,
                                       ver_details=ver_details, ignore_cert_errors=ignore_cert_errors,
-                                      proxy=proxy, ca_cert=ca_cert, pac=pac, retry=retry
+                                      proxy=proxy, ca_cert=ca_cert, pac=pac, retry=retry, scan_settings_file=scan_settings_file
                                       )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
         grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace, api_key=api_key,

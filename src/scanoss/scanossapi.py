@@ -34,6 +34,8 @@ import urllib3
 from pypac import PACSession
 from pypac.parser import PACFile
 from urllib3.exceptions import InsecureRequestWarning
+
+from scanoss.scansettings import ScanSettings
 from .scanossbase import ScanossBase
 from . import __version__
 
@@ -53,7 +55,7 @@ class ScanossApi(ScanossBase):
     def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
                  timeout: int = 180, ver_details: str = None, ignore_cert_errors: bool = False,
-                 proxy: str = None, ca_cert: str = None, pac: PACFile = None, retry: int = 5):
+                 proxy: str = None, ca_cert: str = None, pac: PACFile = None, retry: int = 5, scan_settings_file: str = None):
         """
         Initialise the SCANOSS API
         :param scan_type: Scan type (default identify)
@@ -65,6 +67,7 @@ class ScanossApi(ScanossBase):
         :param debug: Enable debug (default False)
         :param trace: Enable trace (default False)
         :param quiet: Enable quite mode (default False)
+        :param scan_settings_file: Scan settings json file (default scanoss.json)
 
         To set a custom certificate use:
             REQUESTS_CA_BUNDLE=/path/to/cert.pem
@@ -114,6 +117,7 @@ class ScanossApi(ScanossBase):
         self.proxies = {'https': proxy, 'http': proxy} if proxy else None
         if self. proxies:
             self.session.proxies = self.proxies
+        self.scan_settings = ScanSettings(filepath=scan_settings_file)
 
     def load_sbom(self):
         """
@@ -145,6 +149,12 @@ class ScanossApi(ScanossBase):
             form_data['flags'] = self.flags
         if context:
             form_data['context'] = context
+        
+        form_data['include_purls'] = self.scan_settings.get_bom_include_purls()
+        form_data['remove_purls'] = self.scan_settings.get_bom_remove_purls()
+        print(form_data)
+        print(self.scan_settings.data)
+
         scan_files = {'file': ("%s.wfp" % request_id, wfp)}
         headers = self.headers
         headers['x-request-id'] = request_id  # send a unique request id for each post
