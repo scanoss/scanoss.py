@@ -4,7 +4,7 @@
    Copyright (c) 2021, SCANOSS
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
+   of this software and associated documentation files (the 'Software'), to deal
    in the Software without restriction, including without limitation the rights
    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
    copies of the Software, and to permit persons to whom the Software is
@@ -13,7 +13,7 @@
    The above copyright notice and this permission notice shall be included in
    all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -57,7 +57,7 @@ class ScanossSettings(ScanossBase):
             self.load_json_file(filepath)
 
     def load_json_file(self, filepath: str) -> Dict[str, Any]:
-        file = f"{os.getcwd()}/{filepath}"
+        file = f'{os.getcwd()}/{filepath}'
 
         if not os.path.exists(file):
             self.print_stderr(f'Scan settings file not found: {file}')
@@ -77,7 +77,9 @@ class ScanossSettings(ScanossBase):
         """
         self.settings_file_type = file_type
         if not self.is_valid_sbom_file:
-            raise Exception('Invalid scan settings file, missing "components" or "bom"')
+            raise Exception(
+                'Invalid scan settings file, missing "components" or "bom")'
+            )
         return self
 
     def set_scan_type(self, scan_type: str):
@@ -121,10 +123,10 @@ class ScanossSettings(ScanossBase):
     def get_sbom(self):
         return {
             'scan_type': self.scan_type,
-            'assets': self._get_sbom_assets(),
+            'assets': json.dumps(self._get_sbom_assets()),
         }
 
     def _get_sbom_assets(self):
         if self.scan_type == 'identify':
-            self.get_bom_include()
+            return self.get_bom_include()
         return self.get_bom_remove()
