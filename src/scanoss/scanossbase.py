@@ -68,3 +68,24 @@ class ScanossBase:
         """
         if self.trace:
             self.print_stderr(*args, **kwargs)
+
+    @staticmethod
+    def print_stdout(*args, **kwargs):
+        """
+        Print message to STDOUT
+        """
+        print(
+            *args,
+            file=sys.stdout,
+            **kwargs,
+        )
+
+    def print_to_file_or_stdout(self, msg: str, file: str = None):
+        """
+        Print message to file if provided or stdout
+        """
+        if file:
+            with open(file, "w") as f:
+                f.write(msg)
+        else:
+            self.print_stdout(msg)

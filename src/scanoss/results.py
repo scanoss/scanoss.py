@@ -57,7 +57,7 @@ class Results(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        file: str = None,
+        filepath: str = None,
         match_type: str = None,
         status: str = None,
         output_file: str = None,
@@ -75,7 +75,7 @@ class Results(ScanossBase):
         """
 
         super().__init__(debug, trace, quiet)
-        self.data = self._load_and_transform(file)
+        self.data = self._load_and_transform(filepath)
         self.filters = self._load_filters(match_type=match_type, status=status)
         self.output_file = output_file
         self.output_format = output_format
@@ -95,11 +95,12 @@ class Results(ScanossBase):
         raw_data = self._load_file(file)
         return self._transform_data(raw_data)
 
-    def _transform_data(self, data: dict) -> list:
+    @staticmethod
+    def _transform_data(data: dict) -> list:
         result = []
         for filename, file_data in data.items():
             if file_data:
-                file_obj = {"filename": filename}
+                file_obj = {'filename': filename}
                 file_obj.update(file_data[0])
                 result.append(file_obj)
         return result
@@ -113,7 +114,8 @@ class Results(ScanossBase):
 
         return filters
 
-    def _extract_comma_separated_values(self, values: str) -> dict:
+    @staticmethod
+    def _extract_comma_separated_values(values: str) -> dict:
         return [value.strip() for value in values.split(",")]
 
     def apply_filters(self):
@@ -169,44 +171,17 @@ class Results(ScanossBase):
                 f"ERROR: Invalid output format '{output_format}'. Valid values are: {', '.join(AVAILABLE_OUTPUT_FORMATS)}"
             )
 
-        if fmt == "json":
+        if fmt == 'json':
             return self._present_json(file_path)
-        elif fmt == "plain":
+        elif fmt == 'plain':
             return self._present_plain(file_path)
         else:
             return self._present_stdout()
 
     def _present_json(self, file: str = None):
-        formatted_data = self._format_json_output()
-        output = json.dumps(formatted_data, indent=2)
-
-        if not file:
-            self.print_msg(output)
-            return output
-        with open(file, "w") as f:
-            f.write(output)
-
-    def _present_plain(self, file: str = None):
-        if not file:
-            return self._present_stdout()
-        with open(file, "w") as f:
-            f.write(
-                f"======== Found {len(self.data)} potential open source results ========\n"
-            )
-            for item in self.data:
-                f.write("\n")
-                f.write(self._format_plain_output_item(item))
-            f.close()
-
-    def _present_stdout(self):
-        if not self.data:
-            self.print_msg("No potential open source results found.")
-            return
-        self.print_msg(
-            f"======== Found {len(self.data)} potential open source results ========\n"
+        self.print_to_file_or_stdout(
+            json.dumps(self._format_json_output(), indent=2), file
         )
-        for item in self.data:
-            self.print_msg(self._format_plain_output_item(item))
 
     def _format_json_output(self):
         """
@@ -217,13 +192,33 @@ class Results(ScanossBase):
         for item in self.data:
             formatted_data.append(
                 {
-                    "file": item["filename"],
-                    "status": item["status"] if "status" in item else None,
-                    "match_type": item["id"],
-                    "matched": item["matched"] if "matched" in item else None,
+                    'file': item['filename'],
+                    'status': item['status'] if 'status' in item else None,
+                    'match_type': item['id'],
+                    'matched': item['matched'] if 'matched' in item else None,
                 }
             )
-        return {"results": formatted_data, "total": len(formatted_data)}
+        return {'results': formatted_data, 'total': len(formatted_data)}
+
+    def _present_plain(self, file: str = None):
+        if not self.data:
+            return self.print_stderr("No results to present")
+        self.print_to_file_or_stdout(self._format_plain_output(), file)
+
+    def _present_stdout(self):
+        if not self.data:
+            return self.print_stderr("No results to present")
+        self.print_to_file_or_stdout(self._format_plain_output())
+
+    def _format_plain_output(self):
+        """
+        Format the output data into a plain text
+        """
+
+        formatted = ""
+        for item in self.data:
+            formatted += f"{self._format_plain_output_item(item)} \n"
+        return formatted
 
     def _format_plain_output_item(self, item):
         return (

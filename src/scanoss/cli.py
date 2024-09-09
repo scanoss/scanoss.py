@@ -246,43 +246,43 @@ def setup_args() -> None:
                            help='URL to test (default: https://api.osskb.org).')
 
     p_results = subparsers.add_parser(
-        "results",
-        aliases=["res"],
+        'results',
+        aliases=['res'],
         description=f"SCANOSS Results commands: {__version__}",
-        help="Process scan results",
+        help='Process scan results',
     )
     p_results.add_argument(
-        "filepath",
-        metavar="FILEPATH",
+        'filepath',
+        metavar='FILEPATH',
         type=str,
-        nargs="?",
-        help="Path to the file containing the results",
+        nargs='?',
+        help='Path to the file containing the results',
     )
     p_results.add_argument(
-        "--match-type",
-        "-mt",
-        help="Filter results by match type (comma-separated, e.g., file,snippet)",
+        '--match-type',
+        '-mt',
+        help='Filter results by match type (comma-separated, e.g., file,snippet)',
     )
     p_results.add_argument(
-        "--status",
-        "-s",
-        help="Filter results by file status (comma-separated, e.g., pending, identified)",
+        '--status',
+        '-s',
+        help='Filter results by file status (comma-separated, e.g., pending, identified)',
     )
     p_results.add_argument(
-        "--has-pending",
-        action="store_true",
-        help="Filter results to only include files with pending status",
+        '--has-pending',
+        action='store_true',
+        help='Filter results to only include files with pending status',
     )
     p_results.add_argument(
-        "--output",
-        "-o",
-        help="Output result file",
+        '--output',
+        '-o',
+        help='Output result file',
     )
     p_results.add_argument(
-        "--format",
-        "-f",
-        choices=["json", "plain"],
-        help="Output format",
+        '--format',
+        '-f',
+        choices=['json', 'plain'],
+        help='Output format (default: plain)',
     )
     p_results.set_defaults(func=results)
 
@@ -946,7 +946,7 @@ def results(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
-        file=results_file,
+        filepath=results_file,
         match_type=args.match_type,
         status=args.status,
         output_file=args.output,
