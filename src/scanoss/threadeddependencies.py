@@ -35,8 +35,8 @@ from .scanossgrpc import ScanossGrpc
 
 DEP_FILE_PREFIX = "file="  # Default prefix to signify an existing parsed dependency file
 
-PROD_DEPENDENCIES = { "dependencies", "install", "import" }
-DEV_DEPENDENCIES = { "devDependencies" }
+DEV_DEPENDENCIES = { "dev", "test", "development", "provided", "runtime", "devDependencies", "dev-dependencies", "testImplementation", "testCompile", "Test", "require-dev" }
+
 
 # Define an enum class
 class SCOPE(Enum):
@@ -104,33 +104,7 @@ class ThreadedDependencies(ScanossBase):
             self.complete()
         return False if self._errors else True
 
-
-    def filter_dependencies(self,deps: json, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> json:
-        # Predefined set of scopes to filter
-        scope_mapping = {
-            SCOPE.PRODUCTION: PROD_DEPENDENCIES,
-            SCOPE.DEVELOPMENT: DEV_DEPENDENCIES
-        }
-
-        # Include all scopes
-        include_all = (dep_scope is None or dep_scope == "") and dep_scope_include is None and dep_scope_exclude is None
-
-        # Determine which set of dependencies to use based on dep_scope
-        scopes = scope_mapping.get(dep_scope, set())
-
-        ## Exclude option overrides default prod and dev scope. Be sure scopes is empty if flag is dep-scope prod or dev is set
-        exclude = set()
-        if dep_scope_exclude is not None:
-            exclude = set(dep_scope_exclude.split(','))
-            scopes = set()
-
-        ## Include option overrides default prod and dev scope.  Be sure scopes is empty if flag is dep-scope prod or dev is set
-        include = set()
-        if dep_scope_include is not None:
-            include = set(dep_scope_include.split(','))
-            scopes = set()
-
-        # Extract the list of files
+    def filter_dependencies(self,deps ,filter_dep)-> json:
         files = deps.get('files', [])
         # Iterate over files and their purls
         for file in files:
@@ -139,13 +113,40 @@ class ThreadedDependencies(ScanossBase):
                 file['purls'] = [
                     {key: value for key, value in purl.items() if key != 'scope'}
                     for purl in file['purls']
-                    if (include_all or purl.get('scope') in scopes) or
-                        (exclude and purl.get('scope') not in exclude) or
-                        (not exclude and purl.get('scope') in include)
+                    if filter_dep(purl.get('scope'))
                 ]
-        return deps
 
+        return {
+            'files': [
+                file for file in deps.get('files', [])
+                if file.get('purls')
+            ]
+        }
 
+    def filter_dependencies_by_scopes(self,deps: json, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> json:
+        # Predefined set of scopes to filter
+
+        # Include all scopes
+        include_all = (dep_scope is None or dep_scope == "") and dep_scope_include is None and dep_scope_exclude is None
+        ## All dependencies, remove scope key
+        if include_all:
+            return self.filter_dependencies(deps, lambda purl:True)
+
+        # Use default list of scopes if a custom list is not set
+        if (dep_scope is not None and dep_scope != "") and dep_scope_include is None and dep_scope_exclude is None:
+            return self.filter_dependencies(deps, lambda purl: (dep_scope == SCOPE.PRODUCTION and purl not in DEV_DEPENDENCIES) or
+            dep_scope == SCOPE.DEVELOPMENT and purl in DEV_DEPENDENCIES)
+
+        if (dep_scope_include is not None and dep_scope_include != "") or  dep_scope_exclude is not None and dep_scope_exclude != "":
+            # Create sets from comma-separated strings, if provided
+            exclude = set(dep_scope_exclude.split(',')) if dep_scope_exclude else set()
+            include = set(dep_scope_include.split(',')) if dep_scope_include else set()
+
+            # Define a lambda function that checks the inclusion/exclusion logic
+            return self.filter_dependencies(
+                deps,
+                lambda purl: (exclude and purl not in exclude) or (not exclude and purl in include)
+            )
 
     def scan_dependencies(self, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> None:
         """
@@ -169,7 +170,7 @@ class ThreadedDependencies(ScanossBase):
                         self.print_debug(f"Including dependencies with '{dep_scope_include.split(',')}' scopes")
                     if (dep_scope_exclude is not None):
                         self.print_debug(f"Excluding dependencies with '{dep_scope_exclude.split(',')}' scopes")
-                    deps = self.filter_dependencies(deps, dep_scope,dep_scope_include, dep_scope_exclude)
+                    deps = self.filter_dependencies_by_scopes(deps, dep_scope,dep_scope_include, dep_scope_exclude)
 
             if not self._errors:
                 if deps is None:
