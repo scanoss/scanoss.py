@@ -32,6 +32,8 @@ from .scanoss_settings import ScanossSettings
 from .scancodedeps import ScancodeDeps
 from .scanner import FAST_WINNOWING, Scanner
 from .scantype import ScanType
+from .filecount import FileCount
+from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite
 from .csvoutput import CsvOutput
 from .components import Components
