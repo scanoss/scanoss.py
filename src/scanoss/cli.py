@@ -29,10 +29,10 @@ import pypac
 
 
 from .scanner import Scanner
+from .scanoss_settings import ScanossSettings
 from .scancodedeps import ScancodeDeps
+from .scanner import FAST_WINNOWING, Scanner
 from .scantype import ScanType
-from .filecount import FileCount
-from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite
 from .csvoutput import CsvOutput
 from .components import Components
@@ -102,7 +102,11 @@ def setup_args() -> None:
                         help='Scancode command and path if required (optional - default scancode).')
     p_scan.add_argument('--sc-timeout', type=int, default=600,
                         help='Timeout (in seconds) for scancode to complete (optional - default 600)')
-    p_scan.add_argument('--settings', type=str, help='Settings file to use for scanning (optional - default scanoss.json).')
+    p_scan.add_argument(
+        '--settings',
+        type=str,
+        help='Settings file to use for scanning (optional - default scanoss.json)',
+    )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -490,42 +494,75 @@ def scan(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_dir and not args.wfp and not args.stdin and not args.dep and not args.files:
-        print_stderr('Please specify a file/folder, files (--files), fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)')
+    if (
+        not args.scan_dir
+        and not args.wfp
+        and not args.stdin
+        and not args.dep
+        and not args.files
+    ):
+        print_stderr(
+            'Please specify a file/folder, files (--files), fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)'
+        )
         parser.parse_args([args.subparser, '-h'])
         exit(1)
     if args.pac and args.proxy:
         print_stderr('Please specify one of --proxy or --pac, not both')
         parser.parse_args([args.subparser, '-h'])
         exit(1)
-    scan_type: str = None
-    sbom_path: str = None
+
+    if args.identify and args.settings:
+        print_stderr(f'ERROR: Cannot specify both --identify and --settings options.')
+        exit(1)
+
+    def is_valid_file(file_path: str) -> bool:
+        if not os.path.exists(file_path) or not os.path.isfile(file_path):
+            print_stderr(f'Specified file does not exist or is not a file: {file_path}')
+            return False
+        if not Scanner.valid_json_file(file_path):
+            return False
+        return True
+
+    scan_settings = ScanossSettings()
+    scan_settings_file = None
+    scan_settings_file_type = None
+    scan_settings_scan_type = None
+
     if args.identify:
-        sbom_path = args.identify
-        scan_type = 'identify'
-        if not os.path.exists(sbom_path) or not os.path.isfile(sbom_path):
-            print_stderr(f'Specified --identify file does not exist or is not a file: {sbom_path}')
+        if not is_valid_file(args.identify) or args.ignore:
             exit(1)
-        if not Scanner.valid_json_file(sbom_path):   # Make sure it's a valid JSON file
-            exit(1)
-        if args.ignore:
-            print_stderr(f'Warning: Specified --identify and --ignore options. Skipping ignore.')
+        scan_settings_file = args.identify
+        scan_settings_file_type = 'legacy'
+        scan_settings_scan_type = 'identify'
     elif args.ignore:
-        sbom_path = args.ignore
-        scan_type = 'blacklist'
-        if not os.path.exists(sbom_path) or not os.path.isfile(sbom_path):
-            print_stderr(f'Specified --ignore file does not exist or is not a file: {sbom_path}')
+        if not is_valid_file(args.ignore):
             exit(1)
-        if not Scanner.valid_json_file(sbom_path):   # Make sure it's a valid JSON file
+        scan_settings_file = args.ignore
+        scan_settings_file_type = 'legacy'
+        scan_settings_scan_type = 'blacklist'
+    elif args.settings:
+        if not is_valid_file(args.settings):
             exit(1)
+        scan_settings_file = args.settings
+        scan_settings_file_type = 'new'
+        scan_settings_scan_type = 'identify'
+
+    scan_settings.load_json_file(scan_settings_file).set_file_type(
+        scan_settings_file_type
+    ).set_scan_type(scan_settings_scan_type)
+
     if args.dep:
         if not os.path.exists(args.dep) or not os.path.isfile(args.dep):
-            print_stderr(f'Specified --dep file does not exist or is not a file: {args.dep}')
+            print_stderr(
+                f'Specified --dep file does not exist or is not a file: {args.dep}'
+            )
             exit(1)
         if not Scanner.valid_json_file(args.dep):  # Make sure it's a valid JSON file
             exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
-        print_stderr(f'Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
+        print_stderr(
+            f'Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.'
+        )
 
     scan_output: str = None
     if args.output:
@@ -564,38 +601,74 @@ def scan(parser, args):
             print_stderr(f'Using flags {flags}...')
     elif not args.quiet:
         if args.timeout < 5:
-            print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
+            print_stderr(
+                f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.'
+            )
         if args.retry < 0:
-            print_stderr(f'POST retry (--retry) too small: {args.retry}. Reverting to default.')
+            print_stderr(
+                f'POST retry (--retry) too small: {args.retry}. Reverting to default.'
+            )
 
-    if not os.access(os.getcwd(), os.W_OK):  # Make sure the current directory is writable. If not disable saving WFP
+    if not os.access(
+        os.getcwd(), os.W_OK
+    ):  # Make sure the current directory is writable. If not disable saving WFP
         print_stderr(f'Warning: Current directory is not writable: {os.getcwd()}')
         args.no_wfp_output = True
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
         exit(1)
     pac_file = get_pac_file(args.pac)
-    scan_options = get_scan_options(args)   # Figure out what scanning options we have
+    scan_options = get_scan_options(args)  # Figure out what scanning options we have
 
-    scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, api_key=args.key, url=args.apiurl,
-                      sbom_path=sbom_path, scan_type=scan_type, scan_output=scan_output, output_format=output_format,
-                      flags=flags, nb_threads=args.threads, post_size=args.post_size,
-                      timeout=args.timeout, no_wfp_file=args.no_wfp_output, all_extensions=args.all_extensions,
-                      all_folders=args.all_folders, hidden_files_folders=args.all_hidden,
-                      scan_options=scan_options, sc_timeout=args.sc_timeout, sc_command=args.sc_command,
-                      grpc_url=args.api2url, obfuscate=args.obfuscate,
-                      ignore_cert_errors=args.ignore_cert_errors, proxy=args.proxy, grpc_proxy=args.grpc_proxy,
-                      pac=pac_file, ca_cert=args.ca_cert, retry=args.retry, hpsm=args.hpsm,
-                      skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder,
-                      skip_md5_ids=args.skip_md5, strip_hpsm_ids=args.strip_hpsm, strip_snippet_ids=args.strip_snippet,
-                      scan_settings_file=args.settings
-                      )
+    scanner = Scanner(
+        debug=args.debug,
+        trace=args.trace,
+        quiet=args.quiet,
+        api_key=args.key,
+        url=args.apiurl,
+        scan_output=scan_output,
+        output_format=output_format,
+        flags=flags,
+        nb_threads=args.threads,
+        post_size=args.post_size,
+        timeout=args.timeout,
+        no_wfp_file=args.no_wfp_output,
+        all_extensions=args.all_extensions,
+        all_folders=args.all_folders,
+        hidden_files_folders=args.all_hidden,
+        scan_options=scan_options,
+        sc_timeout=args.sc_timeout,
+        sc_command=args.sc_command,
+        grpc_url=args.api2url,
+        obfuscate=args.obfuscate,
+        ignore_cert_errors=args.ignore_cert_errors,
+        proxy=args.proxy,
+        grpc_proxy=args.grpc_proxy,
+        pac=pac_file,
+        ca_cert=args.ca_cert,
+        retry=args.retry,
+        hpsm=args.hpsm,
+        skip_size=args.skip_size,
+        skip_extensions=args.skip_extension,
+        skip_folders=args.skip_folder,
+        skip_md5_ids=args.skip_md5,
+        strip_hpsm_ids=args.strip_hpsm,
+        strip_snippet_ids=args.strip_snippet,
+        scan_settings_file=args.settings,
+    )
+
+    scanner.set_sbom(scan_settings.get_sbom())
+
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
-            print_stderr(f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})')
+            print_stderr(
+                f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})'
+            )
             exit(1)
         if scanner.is_dependency_scan() and not args.dep:
-            print_stderr(f'Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)')
+            print_stderr(
+                f'Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)'
+            )
             exit(1)
         scanner.scan_wfp_with_options(args.wfp, args.dep)
     elif args.stdin:
@@ -603,26 +676,40 @@ def scan(parser, args):
         if not scanner.scan_contents(args.stdin, contents):
             exit(1)
     elif args.files:
-        if not scanner.scan_files_with_options(args.files, args.dep, scanner.winnowing.file_map):
+        if not scanner.scan_files_with_options(
+            args.files, args.dep, scanner.winnowing.file_map
+        ):
             exit(1)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
-            print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
+            print_stderr(
+                f'Error: File or folder specified does not exist: {args.scan_dir}.'
+            )
             exit(1)
         if os.path.isdir(args.scan_dir):
-            if not scanner.scan_folder_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map):
+            if not scanner.scan_folder_with_options(
+                args.scan_dir, args.dep, scanner.winnowing.file_map
+            ):
                 exit(1)
         elif os.path.isfile(args.scan_dir):
-            if not scanner.scan_file_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map):
+            if not scanner.scan_file_with_options(
+                args.scan_dir, args.dep, scanner.winnowing.file_map
+            ):
                 exit(1)
         else:
-            print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
+            print_stderr(
+                f'Error: Path specified is neither a file or a folder: {args.scan_dir}.'
+            )
             exit(1)
     elif args.dep:
         if not args.dependencies_only:
-            print_stderr(f'Error: No file or folder specified to scan. Please add --dependencies-only to decorate dependency file only.')
+            print_stderr(
+                f'Error: No file or folder specified to scan. Please add --dependencies-only to decorate dependency file only.'
+            )
             exit(1)
-        if not scanner.scan_folder_with_options(".", args.dep, scanner.winnowing.file_map):
+        if not scanner.scan_folder_with_options(
+            ".", args.dep, scanner.winnowing.file_map
+        ):
             exit(1)
     else:
         print_stderr('No action found to process')
@@ -709,10 +796,11 @@ def utils_cert_download(_, args):
     :param _: ignore/unused
     :param args: Parsed arguments
     """
-    from urllib.parse import urlparse
     import socket
-    from OpenSSL import SSL, crypto
     import traceback
+    from urllib.parse import urlparse
+
+    from OpenSSL import SSL, crypto
 
     file = sys.stdout
     if args.output:

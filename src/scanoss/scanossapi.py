@@ -35,7 +35,6 @@ from pypac import PACSession
 from pypac.parser import PACFile
 from urllib3.exceptions import InsecureRequestWarning
 
-from scanoss.scansettings import ScanSettings
 from .scanossbase import ScanossBase
 from . import __version__
 
@@ -52,14 +51,12 @@ class ScanossApi(ScanossBase):
     Currently support posting scan requests to the SCANOSS streaming API
     """
 
-    def __init__(self, scan_type: str = None, sbom_path: str = None, scan_format: str = None, flags: str = None,
+    def __init__(self, scan_format: str = None, flags: str = None,
                  url: str = None, api_key: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
                  timeout: int = 180, ver_details: str = None, ignore_cert_errors: bool = False,
-                 proxy: str = None, ca_cert: str = None, pac: PACFile = None, retry: int = 5, scan_settings_file: str = None):
+                 proxy: str = None, ca_cert: str = None, pac: PACFile = None, retry: int = 5):
         """
         Initialise the SCANOSS API
-        :param scan_type: Scan type (default identify)
-        :param sbom_path: Input SBOM file to match scan type (default None)
         :param scan_format: Scan format (default plain)
         :param flags: Scanning flags (default None)
         :param url: API URL (default https://api.osskb.org/scan/direct)
@@ -80,9 +77,8 @@ class ScanossApi(ScanossBase):
         self.api_key = api_key if api_key else SCANOSS_API_KEY
         if self.api_key and not url and not os.environ.get("SCANOSS_SCAN_URL"):
             self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
-        self.scan_type = scan_type
+        self.sbom = None
         self.scan_format = scan_format if scan_format else 'plain'
-        self.sbom_path = sbom_path
         self.flags = flags
         self.timeout = timeout if timeout > 5 else 180
         self.retry_limit = retry if retry >= 0 else 5
@@ -95,8 +91,6 @@ class ScanossApi(ScanossBase):
             self.headers['x-api-key'] = self.api_key
         self.headers['User-Agent'] = f'scanoss-py/{__version__}'
         self.headers['user-agent'] = f'scanoss-py/{__version__}'
-        self.sbom = None
-        self.load_sbom()  # Load an input SBOM if one is specified
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
             http_client.HTTPConnection.debuglevel = 1
@@ -117,18 +111,6 @@ class ScanossApi(ScanossBase):
         self.proxies = {'https': proxy, 'http': proxy} if proxy else None
         if self. proxies:
             self.session.proxies = self.proxies
-        self.scan_settings = ScanSettings(filepath=scan_settings_file)
-
-    def load_sbom(self):
-        """
-        Load the input SBOM if one exists
-        """
-        if self.sbom_path:
-            if not self.scan_type:
-                self.scan_type = 'identify'  # Default to identify SBOM type if it's not set
-            self.print_debug(f'Loading {self.scan_type} SBOM {self.sbom_path}...')
-            with open(self.sbom_path) as f:
-                self.sbom = f.read()
 
     def scan(self, wfp: str, context: str = None, scan_id: int = None):
         """
@@ -141,8 +123,8 @@ class ScanossApi(ScanossBase):
         request_id = str(uuid.uuid4())
         form_data = {}
         if self.sbom:
-            form_data['type'] = self.scan_type
-            form_data['assets'] = self.sbom
+            form_data['type'] = self.sbom.get("scan_type")
+            form_data['assets'] = self.sbom.get("assets")
         if self.scan_format:
             form_data['format'] = self.scan_format
         if self.flags:
@@ -150,10 +132,8 @@ class ScanossApi(ScanossBase):
         if context:
             form_data['context'] = context
         
-        form_data['include_purls'] = self.scan_settings.get_bom_include_purls()
-        form_data['remove_purls'] = self.scan_settings.get_bom_remove_purls()
-        print(form_data)
-        print(self.scan_settings.data)
+        print("self.sbom", self.sbom)
+        print("form_data", form_data)
 
         scan_files = {'file': ("%s.wfp" % request_id, wfp)}
         headers = self.headers
@@ -252,6 +232,10 @@ class ScanossApi(ScanossBase):
         except Exception as ee:
             self.print_stderr(f'Warning: Issue writing bad request file - {bad_req_file} ({ee.__class__.__name__}):'
                               f' {ee}')
+    
+    def set_sbom(self, sbom):
+        self.sbom = sbom
+        return self
 
 #
 # End of ScanossApi Class

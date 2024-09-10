@@ -95,7 +95,7 @@ class Scanner(ScanossBase):
 
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
-                 sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
+                 flags: str = None, nb_threads: int = 5,
                  post_size: int = 32, timeout: int = 180, no_wfp_file: bool = False,
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
                  scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
@@ -134,9 +134,9 @@ class Scanner(ScanossBase):
                                    skip_md5_ids=skip_md5_ids
                                    )
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
-                                      sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,
+                                      flags=flags, timeout=timeout,
                                       ver_details=ver_details, ignore_cert_errors=ignore_cert_errors,
-                                      proxy=proxy, ca_cert=ca_cert, pac=pac, retry=retry, scan_settings_file=scan_settings_file
+                                      proxy=proxy, ca_cert=ca_cert, pac=pac, retry=retry
                                       )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
         grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace, api_key=api_key,
@@ -157,6 +157,9 @@ class Scanner(ScanossBase):
         self.skip_extensions = FILTERED_EXT
         if skip_extensions:  # Append extra file extensions to skip
             self.skip_extensions.extend(skip_extensions)
+
+    def set_sbom(self, sbom):
+        self.scanoss_api.set_sbom(sbom)
 
     def __filter_files(self, files: list) -> list:
         """
