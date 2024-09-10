@@ -105,8 +105,8 @@ class Results(ScanossBase):
                 result.append(file_obj)
         return result
 
-    def _load_filters(self, **kwargs) -> Dict[str, List[str]]:
-        filters = {key: None for key in kwargs}
+    def _load_filters(self, **kwargs):
+        filters = {}
 
         for key, value in kwargs.items():
             if value:
@@ -115,7 +115,7 @@ class Results(ScanossBase):
         return filters
 
     @staticmethod
-    def _extract_comma_separated_values(values: str) -> dict:
+    def _extract_comma_separated_values(values: str):
         return [value.strip() for value in values.split(",")]
 
     def apply_filters(self):
@@ -128,21 +128,22 @@ class Results(ScanossBase):
         return self
 
     def _item_matches_filters(self, item):
-        for filter_key, filter_value in self.filters.items():
-            if not filter_value:
+        for filter_key, filter_values in self.filters.items():
+            if not filter_values:
                 continue
 
-            self._validate_filter_values(filter_key, filter_value)
+            self._validate_filter_values(filter_key, filter_values)
 
             item_value = item.get(ARG_TO_FILTER_MAP[filter_key])
-            if isinstance(filter_value, list):
-                if item_value not in filter_value:
+            if isinstance(filter_values, list):
+                if item_value not in filter_values:
                     return False
-            elif item_value != filter_value:
+            elif item_value != filter_values:
                 return False
         return True
 
-    def _validate_filter_values(self, filter_key: str, filter_value: str):
+    @staticmethod
+    def _validate_filter_values(filter_key: str, filter_value: list[str]):
         if any(
             value not in AVAILABLE_FILTER_VALUES.get(filter_key, [])
             for value in filter_value
@@ -153,7 +154,7 @@ class Results(ScanossBase):
                 f"Valid values are: {valid_values}"
             )
 
-    def get_pending_identifications(self) -> bool:
+    def get_pending_identifications(self):
         self.filters = PENDING_IDENTIFICATION_FILTERS
         self.apply_filters()
 
@@ -220,7 +221,8 @@ class Results(ScanossBase):
             formatted += f"{self._format_plain_output_item(item)} \n"
         return formatted
 
-    def _format_plain_output_item(self, item):
+    @staticmethod
+    def _format_plain_output_item(item):
         return (
             f"File: {item['filename']}\n"
             f"Match type: {item['id']}\n"

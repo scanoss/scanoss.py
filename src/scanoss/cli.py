@@ -957,8 +957,8 @@ def results(parser, args):
         results.get_pending_identifications().present()
         if results.has_results():
             exit(1)
-
-    return results.apply_filters().present()
+    else:
+        results.apply_filters().present()
 
 
 def main():
