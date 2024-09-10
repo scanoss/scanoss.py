@@ -56,7 +56,7 @@ class ScanossSettings(ScanossBase):
         if filepath:
             self.load_json_file(filepath)
 
-    def load_json_file(self, filepath: str) -> Dict[str, Any]:
+    def load_json_file(self, filepath: str):
         file = f'{os.getcwd()}/{filepath}'
 
         if not os.path.exists(file):
@@ -121,6 +121,8 @@ class ScanossSettings(ScanossBase):
         return self.normalize_bom_entries(self._get_bom().get('remove', []))
 
     def get_sbom(self):
+        if not self.data:
+            return None
         return {
             'scan_type': self.scan_type,
             'assets': json.dumps(self._get_sbom_assets()),

@@ -549,9 +549,10 @@ def scan(parser, args):
         scan_settings_file_type = 'new'
         scan_settings_scan_type = 'identify'
 
-    scan_settings.load_json_file(scan_settings_file).set_file_type(
-        scan_settings_file_type
-    ).set_scan_type(scan_settings_scan_type)
+    if scan_settings_file and scan_settings_file_type and scan_settings_scan_type:
+        scan_settings.load_json_file(scan_settings_file).set_file_type(
+            scan_settings_file_type
+        ).set_scan_type(scan_settings_scan_type)
 
     if args.dep:
         if not os.path.exists(args.dep) or not os.path.isfile(args.dep):
@@ -659,7 +660,8 @@ def scan(parser, args):
         scan_settings_file=args.settings,
     )
 
-    scanner.set_sbom(scan_settings.get_sbom())
+    if scan_settings.get_sbom():
+        scanner.set_sbom(scan_settings.get_sbom())
 
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():

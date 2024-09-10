@@ -132,9 +132,6 @@ class ScanossApi(ScanossBase):
         if context:
             form_data['context'] = context
         
-        print("self.sbom", self.sbom)
-        print("form_data", form_data)
-
         scan_files = {'file': ("%s.wfp" % request_id, wfp)}
         headers = self.headers
         headers['x-request-id'] = request_id  # send a unique request id for each post
