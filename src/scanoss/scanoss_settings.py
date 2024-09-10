@@ -1,7 +1,7 @@
 """
  SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+   Copyright (c) 2024, SCANOSS
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the 'Software'), to deal
@@ -24,11 +24,10 @@
 
 import json
 import os
-from typing import Any, Dict
 
-from scanoss.scanossbase import ScanossBase
+from .scanossbase import ScanossBase
 
-DEFAULT_SCAN_SETTINGS_FILE = 'scanoss.json'
+DEFAULT_SCAN_SETTINGS_FILE = "scanoss.json"
 
 
 class ScanossSettings(ScanossBase):
@@ -57,18 +56,18 @@ class ScanossSettings(ScanossBase):
             self.load_json_file(filepath)
 
     def load_json_file(self, filepath: str):
-        file = f'{os.getcwd()}/{filepath}'
+        file = f"{os.getcwd()}/{filepath}"
 
         if not os.path.exists(file):
-            self.print_stderr(f'Scan settings file not found: {file}')
+            self.print_stderr(f"Scan settings file not found: {file}")
             self.data = {}
 
-        with open(file, 'r') as jsonfile:
-            self.print_stderr(f'Loading scan settings from: {file}')
+        with open(file, "r") as jsonfile:
+            self.print_stderr(f"Loading scan settings from: {file}")
             try:
                 self.data = json.load(jsonfile)
             except Exception as e:
-                self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
+                self.print_stderr(f"ERROR: Problem parsing input JSON: {e}")
         return self
 
     def set_file_type(self, file_type: str):
@@ -90,19 +89,19 @@ class ScanossSettings(ScanossBase):
         return self
 
     def is_valid_sbom_file(self):
-        if not self.data.get('components') or not self.data.get('bom'):
+        if not self.data.get("components") or not self.data.get("bom"):
             return False
         return True
 
     def _get_bom(self):
-        if self.settings_file_type == 'legacy':
-            return self.normalize_bom_entries(self.data.get('components', []))
-        return self.data.get('bom', {})
+        if self.settings_file_type == "legacy":
+            return self.normalize_bom_entries(self.data.get("components", []))
+        return self.data.get("bom", {})
 
     def get_bom_include(self):
-        if self.settings_file_type == 'legacy':
+        if self.settings_file_type == "legacy":
             return self._get_bom()
-        return self.normalize_bom_entries(self._get_bom().get('include', []))
+        return self.normalize_bom_entries(self._get_bom().get("include", []))
 
     @staticmethod
     def normalize_bom_entries(bom_entries):
@@ -110,25 +109,25 @@ class ScanossSettings(ScanossBase):
         for entry in bom_entries:
             normalized_bom_entries.append(
                 {
-                    'purl': entry.get('purl', ''),
+                    "purl": entry.get("purl", ""),
                 }
             )
         return normalized_bom_entries
 
     def get_bom_remove(self):
-        if self.settings_file_type == 'legacy':
+        if self.settings_file_type == "legacy":
             return self._get_bom()
-        return self.normalize_bom_entries(self._get_bom().get('remove', []))
+        return self.normalize_bom_entries(self._get_bom().get("remove", []))
 
     def get_sbom(self):
         if not self.data:
             return None
         return {
-            'scan_type': self.scan_type,
-            'assets': json.dumps(self._get_sbom_assets()),
+            "scan_type": self.scan_type,
+            "assets": json.dumps(self._get_sbom_assets()),
         }
 
     def _get_sbom_assets(self):
-        if self.scan_type == 'identify':
+        if self.scan_type == "identify":
             return self.get_bom_include()
         return self.get_bom_remove()
