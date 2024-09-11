@@ -21,6 +21,7 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 """
+import json
 
 from .scanoss_settings import ScanossSettings
 from .scanossbase import ScanossBase
@@ -49,10 +50,8 @@ class ScanPostProcessor(ScanossBase):
         self.scan_settings = scan_settings
         self.results = results
 
-    def load_results(self, raw_output: dict | str):
-        if isinstance(raw_output, dict):
-            self.results = raw_output
-        # TODO: handle string input
+    def load_results(self, raw_results: dict | str):
+        self.results = raw_results
         return self
 
     def post_process(self):

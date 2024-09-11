@@ -537,37 +537,24 @@ class Scanner(ScanossBase):
                                 raw_output += ",\n  \"%s\":[%s]" % (file, json.dumps(dep_file, indent=2))
                     # End for loop
         raw_output += "\n}"
-        parsed_json = None
         try:
-            parsed_json = json.loads(raw_output)
+            raw_results = json.loads(raw_output)
         except Exception as e:
-            self.print_stderr(f'Warning: Problem decoding parsed json: {e}')
+            raise Exception(f'ERROR: Problem decoding parsed json: {e}')
 
-        parsed_json = self.post_processor.load_results(parsed_json).post_process() if parsed_json else None
+        results = self.post_processor.load_results(raw_results).post_process()
 
         if self.output_format == 'plain':
-            if parsed_json:
-                self.__log_result(json.dumps(parsed_json, indent=2, sort_keys=True))
-            else:
-                self.__log_result(raw_output)
+            self.__log_result(json.dumps(results, indent=2, sort_keys=True))
         elif self.output_format == 'cyclonedx':
             cdx = CycloneDx(self.debug, self.scan_output)
-            if parsed_json:
-                success = cdx.produce_from_json(parsed_json)
-            else:
-                success = cdx.produce_from_str(raw_output)
+            success = cdx.produce_from_json(results)
         elif self.output_format == 'spdxlite':
             spdxlite = SpdxLite(self.debug, self.scan_output)
-            if parsed_json:
-                success = spdxlite.produce_from_json(parsed_json)
-            else:
-                success = spdxlite.produce_from_str(raw_output)
+            success = spdxlite.produce_from_json(results)
         elif self.output_format == 'csv':
             csvo = CsvOutput(self.debug, self.scan_output)
-            if parsed_json:
-                success = csvo.produce_from_json(parsed_json)
-            else:
-                success = csvo.produce_from_str(raw_output)
+            success = csvo.produce_from_json(results)
         else:
             self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
             success = False
@@ -728,7 +715,7 @@ class Scanner(ScanossBase):
         else:
             Scanner.print_stderr(f'Warning: No files found to scan from: {filtered_files}')
         return success
-    
+
     def scan_files_with_options(self, files: [], deps_file: str = None, file_map: dict = None) -> bool:
         """
         Scan the given list of files for whatever scaning options that have been configured
