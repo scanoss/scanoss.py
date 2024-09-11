@@ -41,11 +41,13 @@ from .threadeddependencies import ThreadedDependencies
 from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
+from .scanoss_settings import ScanossSettings
+from .scanpostprocessor import ScanPostProcessor
 from . import __version__
 
 FAST_WINNOWING = False
 try:
-    from scanoss_winnowing.winnowing import Winnowing
+    from .winnowing import Winnowing
 
     FAST_WINNOWING = True
 except ModuleNotFoundError or ImportError:
@@ -103,7 +105,7 @@ class Scanner(ScanossBase):
                  ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False,
                  skip_size: int = 0, skip_extensions=None, skip_folders=None,
                  strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None,
-                 scan_settings_file: str = None
+                 scan_settings: ScanossSettings = None
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
@@ -158,8 +160,15 @@ class Scanner(ScanossBase):
         if skip_extensions:  # Append extra file extensions to skip
             self.skip_extensions.extend(skip_extensions)
 
-    def set_sbom(self, sbom):
-        self.scanoss_api.set_sbom(sbom)
+        if scan_settings:
+            self.scan_settings = scan_settings
+            self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet)
+            self._maybe_set_api_sbom()
+
+    def _maybe_set_api_sbom(self):
+        sbom = self.scan_settings.get_sbom()
+        if sbom:
+            self.scanoss_api.set_sbom(sbom)
 
     def __filter_files(self, files: list) -> list:
         """
@@ -533,6 +542,8 @@ class Scanner(ScanossBase):
             parsed_json = json.loads(raw_output)
         except Exception as e:
             self.print_stderr(f'Warning: Problem decoding parsed json: {e}')
+
+        parsed_json = self.post_processor.load_results(parsed_json).post_process() if parsed_json else None
 
         if self.output_format == 'plain':
             if parsed_json:

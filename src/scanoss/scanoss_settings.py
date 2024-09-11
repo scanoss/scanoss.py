@@ -75,7 +75,7 @@ class ScanossSettings(ScanossBase):
         Set the file type in order to support both legacy SBOM.json and new scanoss.json files
         """
         self.settings_file_type = file_type
-        if not self.is_valid_sbom_file:
+        if not self._is_valid_sbom_file:
             raise Exception(
                 'Invalid scan settings file, missing "components" or "bom")'
             )
@@ -88,20 +88,38 @@ class ScanossSettings(ScanossBase):
         self.scan_type = scan_type
         return self
 
-    def is_valid_sbom_file(self):
+    def _is_valid_sbom_file(self):
         if not self.data.get("components") or not self.data.get("bom"):
             return False
         return True
 
     def _get_bom(self):
         if self.settings_file_type == "legacy":
-            return self.normalize_bom_entries(self.data.get("components", []))
+            return self.data.get("components", [])
         return self.data.get("bom", {})
 
     def get_bom_include(self):
         if self.settings_file_type == "legacy":
             return self._get_bom()
-        return self.normalize_bom_entries(self._get_bom().get("include", []))
+        return self._get_bom().get("include", [])
+
+    def get_bom_remove(self):
+        if self.settings_file_type == "legacy":
+            return self._get_bom()
+        return self._get_bom().get("remove", [])
+
+    def get_sbom(self):
+        if not self.data:
+            return None
+        return {
+            "scan_type": self.scan_type,
+            "assets": json.dumps(self._get_sbom_assets()),
+        }
+
+    def _get_sbom_assets(self):
+        if self.scan_type == "identify":
+            return self.normalize_bom_entries(self.get_bom_include())
+        return self.normalize_bom_entries(self.get_bom_remove())
 
     @staticmethod
     def normalize_bom_entries(bom_entries):
@@ -114,20 +132,12 @@ class ScanossSettings(ScanossBase):
             )
         return normalized_bom_entries
 
-    def get_bom_remove(self):
-        if self.settings_file_type == "legacy":
-            return self._get_bom()
-        return self.normalize_bom_entries(self._get_bom().get("remove", []))
-
-    def get_sbom(self):
-        if not self.data:
-            return None
-        return {
-            "scan_type": self.scan_type,
-            "assets": json.dumps(self._get_sbom_assets()),
-        }
-
-    def _get_sbom_assets(self):
-        if self.scan_type == "identify":
-            return self.get_bom_include()
-        return self.get_bom_remove()
+    def get_bom_remove_for_filtering(self):
+        entries = self.get_bom_remove()
+        files = [
+            entry.get("path") for entry in entries if entry.get("path") is not None
+        ]
+        purls = [
+            entry.get("purl") for entry in entries if entry.get("purl") is not None
+        ]
+        return files, purls

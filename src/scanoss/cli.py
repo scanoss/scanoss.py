@@ -27,6 +27,7 @@ import sys
 
 import pypac
 
+
 from .scanner import Scanner
 from .scanoss_settings import ScanossSettings
 from .scancodedeps import ScancodeDeps
@@ -482,34 +483,28 @@ def scan(parser, args):
             return False
         return True
 
-    scan_settings = ScanossSettings()
-    scan_settings_file = None
-    scan_settings_file_type = None
-    scan_settings_scan_type = None
+    scan_settings = ScanossSettings(
+        debug=args.debug, trace=args.trace, quiet=args.quiet
+    )
 
     if args.identify:
         if not is_valid_file(args.identify) or args.ignore:
             exit(1)
-        scan_settings_file = args.identify
-        scan_settings_file_type = 'legacy'
-        scan_settings_scan_type = 'identify'
+        scan_settings.load_json_file(args.identify).set_file_type(
+            'legacy'
+        ).set_scan_type('identify')
     elif args.ignore:
         if not is_valid_file(args.ignore):
             exit(1)
-        scan_settings_file = args.ignore
-        scan_settings_file_type = 'legacy'
-        scan_settings_scan_type = 'blacklist'
+        scan_settings.load_json_file(args.ignore).set_file_type('legacy').set_scan_type(
+            'blacklist'
+        )
     elif args.settings:
         if not is_valid_file(args.settings):
             exit(1)
-        scan_settings_file = args.settings
-        scan_settings_file_type = 'new'
-        scan_settings_scan_type = 'identify'
-
-    if scan_settings_file and scan_settings_file_type and scan_settings_scan_type:
-        scan_settings.load_json_file(scan_settings_file).set_file_type(
-            scan_settings_file_type
-        ).set_scan_type(scan_settings_scan_type)
+        scan_settings.load_json_file(args.settings).set_file_type('new').set_scan_type(
+            'identify'
+        )
 
     if args.dep:
         if not os.path.exists(args.dep) or not os.path.isfile(args.dep):
@@ -614,12 +609,9 @@ def scan(parser, args):
         skip_md5_ids=args.skip_md5,
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
-        scan_settings_file=args.settings,
+        scan_settings=scan_settings
     )
-
-    if scan_settings.get_sbom():
-        scanner.set_sbom(scan_settings.get_sbom())
-
+    
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
             print_stderr(
