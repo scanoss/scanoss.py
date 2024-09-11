@@ -78,10 +78,9 @@ class ScanPostProcessor(ScanossBase):
             file = file[0] if isinstance(file, list) else file
 
             identified_purls = file.get("purl")
-            if identified_purls:
-                if any(purl in purls for purl in identified_purls):
-                    continue
-            if file_name in files:
+            if identified_purls and any(purl in purls for purl in identified_purls):
+                continue
+            elif file_name in files:
                 continue
 
             filtered_results[file_name] = file
