@@ -131,7 +131,7 @@ class ScancodeDeps(ScanossBase):
                                 dp_data['scope'] = scope
 
                             purls.append(dp_data)
-
+                        # end for loop
 
                     if len(purls) > 0:
                         files.append({'file': f_path, 'purls': purls})

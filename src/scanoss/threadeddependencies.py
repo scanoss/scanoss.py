@@ -76,10 +76,13 @@ class ThreadedDependencies(ScanossBase):
                 return resp
         return None
 
-    def run(self, what_to_scan: str = None, deps_file: str = None, wait: bool = True, dep_scope: SCOPE =  None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> bool:
+    def run(self, what_to_scan: str = None, deps_file: str = None, wait: bool = True, dep_scope: SCOPE =  None,
+            dep_scope_include: str = None, dep_scope_exclude: str = None) -> bool:
         """
         Initiate a background scan for the specified file/dir
-        :param dep_scope:
+        :param dep_scope_exclude: comma separated list of dependency scopes to exclude
+        :param dep_scope_include: comma separated list of dependency scopes to include
+        :param dep_scope: Enum dependency scope to use
         :param what_to_scan: file/folder to scan
         :param deps_file: file to decorate instead of scan (overrides what_to_scan option)
         :param wait: wait for completion
@@ -115,6 +118,7 @@ class ThreadedDependencies(ScanossBase):
                     for purl in file['purls']
                     if filter_dep(purl.get('scope'))
                 ]
+        # End of for loop
 
         return {
             'files': [
@@ -123,7 +127,8 @@ class ThreadedDependencies(ScanossBase):
             ]
         }
 
-    def filter_dependencies_by_scopes(self,deps: json, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None) -> json:
+    def filter_dependencies_by_scopes(self,deps: json, dep_scope: SCOPE = None, dep_scope_include: str = None,
+                                      dep_scope_exclude: str = None) -> json:
         # Predefined set of scopes to filter
 
         # Include all scopes
@@ -137,7 +142,8 @@ class ThreadedDependencies(ScanossBase):
             return self.filter_dependencies(deps, lambda purl: (dep_scope == SCOPE.PRODUCTION and purl not in DEV_DEPENDENCIES) or
             dep_scope == SCOPE.DEVELOPMENT and purl in DEV_DEPENDENCIES)
 
-        if (dep_scope_include is not None and dep_scope_include != "") or  dep_scope_exclude is not None and dep_scope_exclude != "":
+        if ((dep_scope_include is not None and dep_scope_include != "")
+                or  dep_scope_exclude is not None and dep_scope_exclude != ""):
             # Create sets from comma-separated strings, if provided
             exclude = set(dep_scope_exclude.split(',')) if dep_scope_exclude else set()
             include = set(dep_scope_include.split(',')) if dep_scope_include else set()
@@ -164,11 +170,11 @@ class ThreadedDependencies(ScanossBase):
                     self._errors = True
                 else:
                     deps = self.sc_deps.produce_from_file()
-                    if (dep_scope is not None):
+                    if dep_scope is not None:
                         self.print_debug(f'Filtering {dep_scope.name} dependencies')
-                    if (dep_scope_include is not None):
+                    if dep_scope_include is not None:
                         self.print_debug(f"Including dependencies with '{dep_scope_include.split(',')}' scopes")
-                    if (dep_scope_exclude is not None):
+                    if dep_scope_exclude is not None:
                         self.print_debug(f"Excluding dependencies with '{dep_scope_exclude.split(',')}' scopes")
                     deps = self.filter_dependencies_by_scopes(deps, dep_scope,dep_scope_include, dep_scope_exclude)
 

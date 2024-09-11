@@ -688,12 +688,12 @@ def scan(parser, args):
             )
             exit(1)
         if os.path.isdir(args.scan_dir):
-            if not scanner.scan_folder_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map, args.dep_scope,
-                                                    args.dep_scope_inc, args.dep_scope_exc):
+            if not scanner.scan_folder_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map,
+                                                    args.dep_scope, args.dep_scope_inc, args.dep_scope_exc):
                 exit(1)
         elif os.path.isfile(args.scan_dir):
-            if not scanner.scan_file_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map, args.dep_scope,
-                                                  args.dep_scope_inc, args.dep_scope_exc):
+            if not scanner.scan_file_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map,
+                                                  args.dep_scope, args.dep_scope_inc, args.dep_scope_exc):
                 exit(1)
         else:
             print_stderr(
@@ -706,9 +706,8 @@ def scan(parser, args):
                 f'Error: No file or folder specified to scan. Please add --dependencies-only to decorate dependency file only.'
             )
             exit(1)
-        if not scanner.scan_folder_with_options(
-            ".", args.dep, scanner.winnowing.file_map
-        ):
+        if not scanner.scan_folder_with_options(".", args.dep, scanner.winnowing.file_map,args.dep_scope,
+                                                args.dep_scope_inc, args.dep_scope_exclude):
             exit(1)
     else:
         print_stderr('No action found to process')
