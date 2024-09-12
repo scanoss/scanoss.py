@@ -41,11 +41,13 @@ from .threadeddependencies import ThreadedDependencies
 from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
+from .scanoss_settings import ScanossSettings
+from .scanpostprocessor import ScanPostProcessor
 from . import __version__
 
 FAST_WINNOWING = False
 try:
-    from scanoss_winnowing.winnowing import Winnowing
+    from .winnowing import Winnowing
 
     FAST_WINNOWING = True
 except ModuleNotFoundError or ImportError:
@@ -103,7 +105,7 @@ class Scanner(ScanossBase):
                  ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False,
                  skip_size: int = 0, skip_extensions=None, skip_folders=None,
                  strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None,
-                 scan_settings_file: str = None
+                 scan_settings: ScanossSettings = None
                  ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
@@ -158,8 +160,15 @@ class Scanner(ScanossBase):
         if skip_extensions:  # Append extra file extensions to skip
             self.skip_extensions.extend(skip_extensions)
 
-    def set_sbom(self, sbom):
-        self.scanoss_api.set_sbom(sbom)
+        if scan_settings:
+            self.scan_settings = scan_settings
+            self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet)
+            self._maybe_set_api_sbom()
+
+    def _maybe_set_api_sbom(self):
+        sbom = self.scan_settings.get_sbom()
+        if sbom:
+            self.scanoss_api.set_sbom(sbom)
 
     def __filter_files(self, files: list) -> list:
         """
@@ -528,35 +537,24 @@ class Scanner(ScanossBase):
                                 raw_output += ",\n  \"%s\":[%s]" % (file, json.dumps(dep_file, indent=2))
                     # End for loop
         raw_output += "\n}"
-        parsed_json = None
         try:
-            parsed_json = json.loads(raw_output)
+            raw_results = json.loads(raw_output)
         except Exception as e:
-            self.print_stderr(f'Warning: Problem decoding parsed json: {e}')
+            raise Exception(f'ERROR: Problem decoding parsed json: {e}')
+
+        results = self.post_processor.load_results(raw_results).post_process()
 
         if self.output_format == 'plain':
-            if parsed_json:
-                self.__log_result(json.dumps(parsed_json, indent=2, sort_keys=True))
-            else:
-                self.__log_result(raw_output)
+            self.__log_result(json.dumps(results, indent=2, sort_keys=True))
         elif self.output_format == 'cyclonedx':
             cdx = CycloneDx(self.debug, self.scan_output)
-            if parsed_json:
-                success = cdx.produce_from_json(parsed_json)
-            else:
-                success = cdx.produce_from_str(raw_output)
+            success = cdx.produce_from_json(results)
         elif self.output_format == 'spdxlite':
             spdxlite = SpdxLite(self.debug, self.scan_output)
-            if parsed_json:
-                success = spdxlite.produce_from_json(parsed_json)
-            else:
-                success = spdxlite.produce_from_str(raw_output)
+            success = spdxlite.produce_from_json(results)
         elif self.output_format == 'csv':
             csvo = CsvOutput(self.debug, self.scan_output)
-            if parsed_json:
-                success = csvo.produce_from_json(parsed_json)
-            else:
-                success = csvo.produce_from_str(raw_output)
+            success = csvo.produce_from_json(results)
         else:
             self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
             success = False
@@ -717,7 +715,7 @@ class Scanner(ScanossBase):
         else:
             Scanner.print_stderr(f'Warning: No files found to scan from: {filtered_files}')
         return success
-    
+
     def scan_files_with_options(self, files: [], deps_file: str = None, file_map: dict = None) -> bool:
         """
         Scan the given list of files for whatever scaning options that have been configured
