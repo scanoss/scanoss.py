@@ -27,6 +27,7 @@ import sys
 
 import pypac
 
+
 from .scanner import Scanner
 from .scancodedeps import ScancodeDeps
 from .scantype import ScanType
@@ -37,6 +38,7 @@ from .csvoutput import CsvOutput
 from .components import Components
 from . import __version__
 from .scanner import FAST_WINNOWING
+from .results import Results
 
 
 def print_stderr(*args, **kwargs):
@@ -243,6 +245,47 @@ def setup_args() -> None:
     p_p_proxy.add_argument('--url', required=False, type=str, default="https://api.osskb.org",
                            help='URL to test (default: https://api.osskb.org).')
 
+    p_results = subparsers.add_parser(
+        'results',
+        aliases=['res'],
+        description=f"SCANOSS Results commands: {__version__}",
+        help='Process scan results',
+    )
+    p_results.add_argument(
+        'filepath',
+        metavar='FILEPATH',
+        type=str,
+        nargs='?',
+        help='Path to the file containing the results',
+    )
+    p_results.add_argument(
+        '--match-type',
+        '-mt',
+        help='Filter results by match type (comma-separated, e.g., file,snippet)',
+    )
+    p_results.add_argument(
+        '--status',
+        '-s',
+        help='Filter results by file status (comma-separated, e.g., pending, identified)',
+    )
+    p_results.add_argument(
+        '--has-pending',
+        action='store_true',
+        help='Filter results to only include files with pending status',
+    )
+    p_results.add_argument(
+        '--output',
+        '-o',
+        help='Output result file',
+    )
+    p_results.add_argument(
+        '--format',
+        '-f',
+        choices=['json', 'plain'],
+        help='Output format (default: plain)',
+    )
+    p_results.set_defaults(func=results)
+
     # Global Scan command options
     for p in [p_scan]:
         p.add_argument('--apiurl', type=str,
@@ -288,7 +331,7 @@ def setup_args() -> None:
 
     # Help/Trace command options
     for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld, p_p_proxy, c_crypto, c_vulns, c_search,
-              c_versions, c_semgrep]:
+              c_versions, c_semgrep, p_results]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
@@ -876,6 +919,46 @@ def comp_versions(parser, args):
                        timeout=args.timeout)
     if not comps.get_component_versions(args.output, json_file=args.input, purl=args.purl, limit=args.limit):
         exit(1)
+
+
+def results(parser, args):
+    """
+    Run the "results" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if not args.filepath:
+        print_stderr('ERROR: Please specify a file containing the results')
+        parser.parse_args([args.subparser, "-h"])
+        exit(1)
+
+    results_file = f"{os.getcwd()}/{args.filepath}"
+
+    if not os.path.isfile(results_file):
+        print_stderr(f"The specified file {args.filepath} does not exist")
+        exit(1)
+
+    results = Results(
+        debug=args.debug,
+        trace=args.trace,
+        quiet=args.quiet,
+        filepath=results_file,
+        match_type=args.match_type,
+        status=args.status,
+        output_file=args.output,
+        output_format=args.format,
+    )
+
+    if args.has_pending:
+        results.get_pending_identifications().present()
+        if results.has_results():
+            exit(1)
+    else:
+        results.apply_filters().present()
 
 
 def main():

@@ -276,3 +276,25 @@ scanoss-py comp semgrep --key $SC_API_KEY -i purl-input.json -o semgrep-issues.j
 ```
 **Note:** This sub-command requires a subscription to SCANOSS premium data.
 
+### Results Commands
+The `results` command provides the capability to operate on scan results. For example:
+
+The following command gets the pending results from a scan:
+```bash
+scanoss-py results results.json --has-pending
+```
+
+You can indicate the output format and an output file:
+```bash
+scanoss-py results results.json --format json --output results-output.json
+```
+
+You can also filter the results by either status or match type:
+```bash
+scanoss-py results results.json --status pending --match-type file
+```
+
+You can provide a comma separated list of statuses or match types:
+```bash
+scanoss-py results results.json --status pending,identified --match-type file,snippet
+```
