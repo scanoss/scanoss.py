@@ -51,6 +51,10 @@ AVAILABLE_OUTPUT_FORMATS = ["json", "plain"]
 
 
 class Results(ScanossBase):
+    """
+    SCANOSS Results class \n
+    Handles the parsing and filtering of the scan results
+    """
 
     def __init__(
         self,
@@ -63,15 +67,17 @@ class Results(ScanossBase):
         output_file: str = None,
         output_format: str = None,
     ):
-        """
-        Handles parsing of scan result file
+        """Initialise the Results class
 
-        :param debug: Debug
-        :param trace: Trace
-        :param quiet: Quiet
-        :param filepath: Path to the results file
-        :param match_type: Comma separated list of match type filters
-        :param status: Comma separated list of status filters
+        Args:
+            debug (bool, optional): Debug. Defaults to False.
+            trace (bool, optional): Trace. Defaults to False.
+            quiet (bool, optional): Quiet. Defaults to False.
+            filepath (str, optional): Path to the scan results file. Defaults to None.
+            match_type (str, optional): Comma separated match type filters. Defaults to None.
+            status (str, optional): Comma separated status filters. Defaults to None.
+            output_file (str, optional): Path to the output file. Defaults to None.
+            output_format (str, optional): Output format. Defaults to None.
         """
 
         super().__init__(debug, trace, quiet)
@@ -81,6 +87,14 @@ class Results(ScanossBase):
         self.output_format = output_format
 
     def _load_file(self, file: str) -> Dict[str, Any]:
+        """Load the JSON file
+
+        Args:
+            file (str): Path to the JSON file
+
+        Returns:
+            Dict[str, Any]: The parsed JSON data
+        """
         with open(file, "r") as jsonfile:
             try:
                 return json.load(jsonfile)
@@ -97,6 +111,14 @@ class Results(ScanossBase):
 
     @staticmethod
     def _transform_data(data: dict) -> list:
+        """Transform the data into a list of dictionaries with the filename and the file data
+
+        Args:
+            data (dict): The raw data
+
+        Returns:
+            list: The transformed data
+        """
         result = []
         for filename, file_data in data.items():
             if file_data:
@@ -106,6 +128,11 @@ class Results(ScanossBase):
         return result
 
     def _load_filters(self, **kwargs):
+        """Extract and parse the filters
+
+        Returns:
+            dict: Parsed filters
+        """
         filters = {}
 
         for key, value in kwargs.items():
@@ -119,6 +146,7 @@ class Results(ScanossBase):
         return [value.strip() for value in values.split(",")]
 
     def apply_filters(self):
+        """Apply the filters to the data"""
         filtered_data = []
         for item in self.data:
             if self._item_matches_filters(item):
@@ -155,6 +183,7 @@ class Results(ScanossBase):
             )
 
     def get_pending_identifications(self):
+        """Get files with 'pending' status and 'file' or 'snippet' match type"""
         self.filters = PENDING_IDENTIFICATION_FILTERS
         self.apply_filters()
 
@@ -164,6 +193,18 @@ class Results(ScanossBase):
         return bool(self.data)
 
     def present(self, output_format: str = None, output_file: str = None):
+        """Format and present the results. If no output format is provided, the results will be printed to stdout
+
+        Args:
+            output_format (str, optional): Output format. Defaults to None.
+            output_file (str, optional): Output file. Defaults to None.
+
+        Raises:
+            Exception: Invalid output format
+
+        Returns:
+            None
+        """
         file_path = output_file or self.output_file
         fmt = output_format or self.output_format
 
@@ -180,6 +221,11 @@ class Results(ScanossBase):
             return self._present_stdout()
 
     def _present_json(self, file: str = None):
+        """Present the results in JSON format
+
+        Args:
+            file (str, optional): Output file. Defaults to None.
+        """
         self.print_to_file_or_stdout(
             json.dumps(self._format_json_output(), indent=2), file
         )
@@ -208,18 +254,31 @@ class Results(ScanossBase):
         return {'results': formatted_data, 'total': len(formatted_data)}
 
     def _present_plain(self, file: str = None):
+        """Present the results in plain text format
+
+        Args:
+            file (str, optional): Output file. Defaults to None.
+
+        Returns:
+            None
+        """
         if not self.data:
             return self.print_stderr("No results to present")
         self.print_to_file_or_stdout(self._format_plain_output(), file)
 
     def _present_stdout(self):
+        """Present the results to stdout
+
+        Returns:
+            None
+        """
         if not self.data:
             return self.print_stderr("No results to present")
         self.print_to_file_or_stdout(self._format_plain_output())
 
     def _format_plain_output(self):
         """
-        Format the output data into a plain text
+        Format the output data into a plain text string
         """
 
         formatted = ""
