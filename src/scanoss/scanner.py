@@ -41,11 +41,13 @@ from .threadeddependencies import ThreadedDependencies
 from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
+from .scanoss_settings import ScanossSettings
+from .scanpostprocessor import ScanPostProcessor
 from . import __version__
 
 FAST_WINNOWING = False
 try:
-    from scanoss_winnowing.winnowing import Winnowing
+    from .winnowing import Winnowing
 
     FAST_WINNOWING = True
 except ModuleNotFoundError or ImportError:
@@ -95,17 +97,18 @@ class Scanner(ScanossBase):
 
     def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
                  debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
-                 sbom_path: str = None, scan_type: str = None, flags: str = None, nb_threads: int = 5,
+                 flags: str = None, nb_threads: int = 5,
                  post_size: int = 32, timeout: int = 180, no_wfp_file: bool = False,
                  all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
                  scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
                  obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, grpc_proxy: str = None,
                  ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False,
                  skip_size: int = 0, skip_extensions=None, skip_folders=None,
-                 strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None
+                 strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None,
+                 scan_settings: ScanossSettings = None
                  ):
         """
-        Initialise scanning class, including Winnowing, ScanossApi and ThreadedScanning
+        Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
         """
         super().__init__(debug, trace, quiet)
         if skip_folders is None:
@@ -133,7 +136,7 @@ class Scanner(ScanossBase):
                                    skip_md5_ids=skip_md5_ids
                                    )
         self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
-                                      sbom_path=sbom_path, scan_type=scan_type, flags=flags, timeout=timeout,
+                                      flags=flags, timeout=timeout,
                                       ver_details=ver_details, ignore_cert_errors=ignore_cert_errors,
                                       proxy=proxy, ca_cert=ca_cert, pac=pac, retry=retry
                                       )
@@ -156,6 +159,16 @@ class Scanner(ScanossBase):
         self.skip_extensions = FILTERED_EXT
         if skip_extensions:  # Append extra file extensions to skip
             self.skip_extensions.extend(skip_extensions)
+
+        if scan_settings:
+            self.scan_settings = scan_settings
+            self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet)
+            self._maybe_set_api_sbom()
+
+    def _maybe_set_api_sbom(self):
+        sbom = self.scan_settings.get_sbom()
+        if sbom:
+            self.scanoss_api.set_sbom(sbom)
 
     def __filter_files(self, files: list) -> list:
         """
@@ -524,35 +537,24 @@ class Scanner(ScanossBase):
                                 raw_output += ",\n  \"%s\":[%s]" % (file, json.dumps(dep_file, indent=2))
                     # End for loop
         raw_output += "\n}"
-        parsed_json = None
         try:
-            parsed_json = json.loads(raw_output)
+            raw_results = json.loads(raw_output)
         except Exception as e:
-            self.print_stderr(f'Warning: Problem decoding parsed json: {e}')
+            raise Exception(f'ERROR: Problem decoding parsed json: {e}')
+
+        results = self.post_processor.load_results(raw_results).post_process()
 
         if self.output_format == 'plain':
-            if parsed_json:
-                self.__log_result(json.dumps(parsed_json, indent=2, sort_keys=True))
-            else:
-                self.__log_result(raw_output)
+            self.__log_result(json.dumps(results, indent=2, sort_keys=True))
         elif self.output_format == 'cyclonedx':
             cdx = CycloneDx(self.debug, self.scan_output)
-            if parsed_json:
-                success = cdx.produce_from_json(parsed_json)
-            else:
-                success = cdx.produce_from_str(raw_output)
+            success = cdx.produce_from_json(results)
         elif self.output_format == 'spdxlite':
             spdxlite = SpdxLite(self.debug, self.scan_output)
-            if parsed_json:
-                success = spdxlite.produce_from_json(parsed_json)
-            else:
-                success = spdxlite.produce_from_str(raw_output)
+            success = spdxlite.produce_from_json(results)
         elif self.output_format == 'csv':
             csvo = CsvOutput(self.debug, self.scan_output)
-            if parsed_json:
-                success = csvo.produce_from_json(parsed_json)
-            else:
-                success = csvo.produce_from_str(raw_output)
+            success = csvo.produce_from_json(results)
         else:
             self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
             success = False
@@ -713,7 +715,7 @@ class Scanner(ScanossBase):
         else:
             Scanner.print_stderr(f'Warning: No files found to scan from: {filtered_files}')
         return success
-    
+
     def scan_files_with_options(self, files: [], deps_file: str = None, file_map: dict = None) -> bool:
         """
         Scan the given list of files for whatever scaning options that have been configured
