@@ -21,13 +21,13 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 """
-import json
 
 from .scanoss_settings import ScanossSettings
 from .scanossbase import ScanossBase
 
 
 class ScanPostProcessor(ScanossBase):
+    """Handles post-processing of the scan results"""
 
     def __init__(
         self,
@@ -35,10 +35,9 @@ class ScanPostProcessor(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        results: dict | str = None,
+        results: dict = None,
     ):
-        """This class handles post-processing of the scan results
-
+        """
         Args:
             scan_settings (ScanossSettings): Scan settings object
             debug (bool, optional): Debug mode. Defaults to False.
@@ -50,16 +49,26 @@ class ScanPostProcessor(ScanossBase):
         self.scan_settings = scan_settings
         self.results = results
 
-    def load_results(self, raw_results: dict | str):
+    def load_results(self, raw_results: dict):
+        """Load the raw results
+
+        Args:
+            raw_results (dict): Raw scan results
+        """
         self.results = raw_results
         return self
 
     def post_process(self):
+        """Post-process the scan results
+
+        Returns:
+            dict: Processed results
+        """
         self.remove_dismissed_files()
-        # TODO: add more post-processing steps (e.g replace, ignore, etc)
         return self.results
 
     def remove_dismissed_files(self):
+        """Remove dismissed files in SCANOSS settings file from the results"""
         to_remove_files, to_remove_purls = (
             self.scan_settings.get_bom_remove_for_filtering()
         )
@@ -71,6 +80,12 @@ class ScanPostProcessor(ScanossBase):
         return self
 
     def filter_files(self, files: list, purls: list):
+        """Filter files based on the provided list of files and purls
+
+        Args:
+            files (list): List of files to be filtered
+            purls (list): List of purls to be filtered
+        """
         filtered_results = {}
 
         for file_name in self.results:
