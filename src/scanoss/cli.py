@@ -707,7 +707,7 @@ def scan(parser, args):
             )
             exit(1)
         if not scanner.scan_folder_with_options(".", args.dep, scanner.winnowing.file_map,args.dep_scope,
-                                                args.dep_scope_inc, args.dep_scope_exclude):
+                                                args.dep_scope_inc, args.dep_scope_exc):
             exit(1)
     else:
         print_stderr('No action found to process')
