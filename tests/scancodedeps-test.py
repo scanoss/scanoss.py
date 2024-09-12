@@ -21,7 +21,9 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 """
+import json
 import os
+import tempfile
 import unittest
 
 from src.scanoss.scancodedeps import ScancodeDeps
@@ -242,8 +244,27 @@ class MyTestCase(unittest.TestCase):
         # Prod dependencies package.json file: "uuid" and "xml-js"
         self.assertEqual(package_json_deps[0]["component"], "@babel/core")
 
+    def test_dependency_scan(self):
+        """
+          Run a dependency scan of the current directory. Dependencies should be returned without scopes
+        """
+        temp_dir = tempfile.gettempdir()
+        file_name = "dependency-result-output.json"
+        output_file = os.path.join(temp_dir, file_name)
+        sc_deps = ScancodeDeps(debug=True, trace=True)
 
+        success =  sc_deps.get_dependencies(what_to_scan=".",result_output=output_file)
+        self.assertTrue(success)
+        with open(output_file, 'r') as result:
+            # Parse the JSON data from the file
+            dependencies = json.load(result)
+            files = dependencies.get("files")
+            for file in files:
+                purls = file.get("purls")
+                contains_scope = any('scope' in purl for purl in purls)
+                self.assertFalse(contains_scope)
 
+        os.remove(output_file)
 
 if __name__ == '__main__':
     unittest.main()
