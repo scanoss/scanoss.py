@@ -143,7 +143,7 @@ class Results(ScanossBase):
         return True
 
     @staticmethod
-    def _validate_filter_values(filter_key: str, filter_value: list[str]):
+    def _validate_filter_values(filter_key: str, filter_value: List[str]):
         if any(
             value not in AVAILABLE_FILTER_VALUES.get(filter_key, [])
             for value in filter_value
@@ -193,10 +193,16 @@ class Results(ScanossBase):
         for item in self.data:
             formatted_data.append(
                 {
-                    'file': item['filename'],
-                    'status': item['status'] if 'status' in item else None,
+                    'file': item.get('filename'),
+                    'status': item.get('status', "N/A"),
                     'match_type': item['id'],
-                    'matched': item['matched'] if 'matched' in item else None,
+                    'matched': item.get('matched', "N/A"),
+                    'purl': (item.get('purl')[0] if item.get('purl') else "N/A"),
+                    'license': (
+                        item.get('licenses')[0].get('name', "N/A")
+                        if item.get('licenses')
+                        else "N/A"
+                    ),
                 }
             )
         return {'results': formatted_data, 'total': len(formatted_data)}
@@ -223,9 +229,14 @@ class Results(ScanossBase):
 
     @staticmethod
     def _format_plain_output_item(item):
+        purls = item.get('purl', [])
+        licenses = item.get('licenses', [])
+
         return (
-            f"File: {item['filename']}\n"
-            f"Match type: {item['id']}\n"
+            f"File: {item.get('filename')}\n"
+            f"Match type: {item.get('id')}\n"
             f"Status: {item.get('status', 'N/A')}\n"
             f"Matched: {item.get('matched', 'N/A')}\n"
+            f"Purl: {purls[0] if purls else 'N/A'}\n"
+            f"License: {licenses[0].get('name', 'N/A') if licenses else 'N/A'}\n"
         )
