@@ -21,10 +21,11 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 """
+
 import unittest
 
-from src.scanoss.scanoss_settings import ScanossSettings
-from src.scanoss.scanpostprocessor import ScanPostProcessor
+from scanoss.scanoss_settings import ScanossSettings
+from scanoss.scanpostprocessor import ScanPostProcessor
 
 
 class MyTestCase(unittest.TestCase):
@@ -32,26 +33,62 @@ class MyTestCase(unittest.TestCase):
     Unit test cases for Scan Post-Processing
     """
 
+    scan_settings = ScanossSettings(filepath="tests/data/scanoss.json")
+    post_processor = ScanPostProcessor(scan_settings)
+
     def test_remove_files(self):
         """
-        Should remove files by path from the scan results
+        Should remove component if matches path and purl
         """
-        scan_settings = ScanossSettings(filepath="data/scanoss.json")
-        post_processor = ScanPostProcessor(scan_settings)
+
         results = {
             "scanoss_settings.py": [
                 {
                     "purl": ["pkg:github/scanoss/scanoss.py"],
                 }
             ],
+        }
+        processed_results = self.post_processor.load_results(results).post_process()
+
+        self.assertEqual(len(processed_results), 0)
+        self.assertEqual(processed_results, {})
+
+    def test_remove_files_no_results(self):
+        """
+        Should return empty dictionary when empty results are provided
+        """
+        processed_results = self.post_processor.load_results({}).post_process()
+
+        self.assertEqual(len(processed_results), 0)
+        self.assertEqual(processed_results, {})
+
+    def test_remove_files_path_match(self):
+        """
+        Should remove component if matches path
+        """
+        results = {
             "test_file_path.go": [
                 {
-                    "purl": ["pkg:github/scanoss/scanoss.lui"],
+                    "purl": ["no/matching/purl"],
                 }
-            ]
+            ],
         }
-        processed_results = post_processor.load_results(results).post_process()
+        processed_results = self.post_processor.load_results(results).post_process()
+        self.assertEqual(len(processed_results), 0)
+        self.assertEqual(processed_results, {})
 
+    def test_remove_files_purl_match(self):
+        """
+        Should remove component if matches purl
+        """
+        results = {
+            "no_matching_path.go": [
+                {
+                    "purl": ["matching/purl"],
+                }
+            ],
+        }
+        processed_results = self.post_processor.load_results(results).post_process()
         self.assertEqual(len(processed_results), 0)
         self.assertEqual(processed_results, {})
 
