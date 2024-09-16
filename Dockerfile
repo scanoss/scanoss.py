@@ -17,6 +17,7 @@ RUN mkdir /install
 WORKDIR /install
 ENV PATH=/root/.local/bin:$PATH
 
+# assumes `make dist` as prerequisite
 COPY ./dist/scanoss-*-py3-none-any.whl /install/
 
 # Install dependencies
