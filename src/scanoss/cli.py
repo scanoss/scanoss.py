@@ -23,6 +23,7 @@
 """
 import argparse
 import os
+from pathlib import Path
 import sys
 
 import pypac
@@ -1021,9 +1022,9 @@ def results(parser, args):
         parser.parse_args([args.subparser, "-h"])
         exit(1)
 
-    results_file = f"{os.getcwd()}/{args.filepath}"
+    file_path = Path(args.filepath).resolve()
 
-    if not os.path.isfile(results_file):
+    if not file_path.is_file():
         print_stderr(f"The specified file {args.filepath} does not exist")
         exit(1)
 
@@ -1031,7 +1032,7 @@ def results(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
-        filepath=results_file,
+        filepath=file_path,
         match_type=args.match_type,
         status=args.status,
         output_file=args.output,
