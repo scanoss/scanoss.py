@@ -97,29 +97,20 @@ class ScanPostProcessor(ScanossBase):
             if not to_remove_path and not to_remove_purl:
                 continue
 
-            if to_remove_path and to_remove_purl:
-                if self._is_full_match(result_path, result_purls, to_remove_entry):
-                    self._print_removal_message(
-                        result_path, result_purls, to_remove_entry
-                    )
-                    return True
-                elif self._is_partial_match(result_path, result_purls, to_remove_entry):
-                    self._print_removal_message(
-                        result_path, result_purls, to_remove_entry
-                    )
-                    return True
-            elif to_remove_purl and not to_remove_path:
-                if to_remove_purl in result_purls:
-                    self._print_removal_message(
-                        result_path, result_purls, to_remove_entry
-                    )
-                    return True
-            elif to_remove_path and not to_remove_purl:
-                if to_remove_path == result_path:
-                    self._print_removal_message(
-                        result_path, result_purls, to_remove_entry
-                    )
-                    return True
+            # Bom entry has both path and purl
+            if self._is_full_match(result_path, result_purls, to_remove_entry):
+                self._print_removal_message(result_path, result_purls, to_remove_entry)
+                return True
+
+            # Bom entry has only purl
+            if not to_remove_path and to_remove_purl in result_purls:
+                self._print_removal_message(result_path, result_purls, to_remove_entry)
+                return True
+
+            # Bom entry has only path
+            if not to_remove_purl and to_remove_path == result_path:
+                self._print_removal_message(result_path, result_purls, to_remove_entry)
+                return True
 
         return False
 
@@ -157,28 +148,12 @@ class ScanPostProcessor(ScanossBase):
         Returns:
             bool: True if the path and purl match, False otherwise
         """
-        purl = bom_entry.get("purl")
-        path = bom_entry.get("path")
+
         if not result_purls:
-            return
-        return purl and path and path == result_path and purl in result_purls
+            return False
 
-    def _is_partial_match(
-        self, result_path: str, result_purls: List[str], bom_entry: BomEntry
-    ) -> bool:
-        """Check if path or purl matches partially with the BOM entry
-
-        Args:
-            result_path (str): Scan result path
-            result_purls (str): Scan result purl
-            bom_entry (BomEntry): BOM entry to compare with
-
-        Returns:
-            bool: True if the path and purl match, False otherwise
-        """
-
-        purl = bom_entry.get("purl")
-        path = bom_entry.get("path")
-        # if not result_purls:
-        #     return False
-        return path and path == result_path or purl and purl in result_purls
+        return bool(
+            (bom_entry.get("purl") and bom_entry.get("path"))
+            and (bom_entry.get("path") == result_path)
+            and (bom_entry.get("purl") in result_purls)
+        )
