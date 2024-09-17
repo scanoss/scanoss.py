@@ -12,16 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.15.0] - 2024-09-17
 ### Added
 - Added Results sub-command:
-  - Get all results (`scanoss-py results /path/to/file`)
-  - Get filtered results (`scanoss-py results /path/to/file --match-type=file,snippet status=pending`)
-  - Get pending declarations (`scanoss-py results /path/to/file --has-pending`)
+- Get all results (`scanoss-py results /path/to/file`)
+- Get filtered results (`scanoss-py results /path/to/file --match-type=file,snippet status=pending`)
+- Get pending declarations (`scanoss-py results /path/to/file --has-pending`)
 - Added `--settings` option to `scan` command to specify a settings file
-  - Specify settings file (`scanoss-py scan --settings /path/to/settings.json /path/to/file`)
+- Specify settings file (`scanoss-py scan --settings /path/to/settings.json /path/to/file`)
+- Added support for filtering dependencies based on development or production dependency scopes
+- Added support for defining custom scopes to include or exclude dependencies with specified scope criteria
 
 ## [1.14.0] - 2024-08-09
 ### Added
 - Added support for Python3.12
-  - Module `pkg_resources` has been replaced with `importlib_resources`
+- Module `pkg_resources` has been replaced with `importlib_resources`
 - Added support for UTF-16 filenames 
 
 ## [1.13.0] - 2024-06-05

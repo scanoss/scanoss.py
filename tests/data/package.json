@@ -15,6 +15,10 @@
   "author": "Evan You",
   "license": "MIT",
   "homepage": "https://github.com/vuejs/vue#readme",
+  "dependencies": {
+    "uuid": "^9.0.0",
+    "xml-js": "^1.6.11"
+  },
   "devDependencies": {
     "@babel/core": ">0.2.0"
   }

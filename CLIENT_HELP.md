@@ -189,6 +189,27 @@ The following command scans the `src` folder for file, snippet & dependency matc
 scanoss-py scan -o scan-results.json -D src
 ```
 
+### Scan a project folder with filtered dependency scopes
+The following command scans the src folder for files, code snippets, and dependencies, specifically targeting development dependencies:
+The available flags for filtering dependency scopes are **__dev__** for development dependencies or **__prod__** for production dependencies:
+```bash
+scanoss-py scan  -D src --dep-scope dev
+```
+
+### Scan a project folder including dependencies with declared scopes
+The following command scans the src folder for files, code snippets, and dependencies, allowing you to specify which dependency scopes to include.
+In this example, the scan targets the dependencies and install scopes:
+```bash
+scanoss-py scan  -D src --dep-scope-inc dependencies,install
+```
+
+### Scan a project folder excluding dependencies with declared scopes
+The following command scans the src folder for files, code snippets, and dependencies, allowing you to specify which dependency scopes to exclude.
+In this example, the scan targets dependencies but excludes those within the install scope:
+```bash
+scanoss-py scan  -D src --dep-scope-exc install
+```
+
 ### Scan a project folder skipping files and snippets
 The following command scans the `src` folder writing the output to `scan-results.json` skipping the following:
 - MD5 file `37f7cd1e657aa3c30ece35995b4c59e5`

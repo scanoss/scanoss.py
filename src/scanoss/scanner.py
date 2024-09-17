@@ -37,7 +37,7 @@ from .spdxlite import SpdxLite
 from .csvoutput import CsvOutput
 from .threadedscanning import ThreadedScanning
 from .scancodedeps import ScancodeDeps
-from .threadeddependencies import ThreadedDependencies
+from .threadeddependencies import ThreadedDependencies, SCOPE
 from .scanossgrpc import ScanossGrpc
 from .scantype import ScanType
 from .scanossbase import ScanossBase
@@ -342,14 +342,20 @@ class Scanner(ScanossBase):
             return True
         return False
 
-    def scan_folder_with_options(self, scan_dir: str, deps_file: str = None, file_map: dict = None) -> bool:
+    def scan_folder_with_options(self, scan_dir: str, deps_file: str = None, file_map: dict = None,
+                                 dep_scope: SCOPE = None, dep_scope_include: str = None,
+                                 dep_scope_exclude: str = None) -> bool:
         """
         Scan the given folder for whatever scaning options that have been configured
+        :param dep_scope_exclude: comma separated list of dependency scopes to exclude
+        :param dep_scope_include: comma separated list of dependency scopes to include
+        :param dep_scope: Enum dependency scope to use
         :param scan_dir: directory to scan
         :param deps_file: pre-parsed dependency file to decorate
         :param file_map: mapping of obfuscated files back into originals
         :return: True if successful, False otherwise
         """
+
         success = True
         if not scan_dir:
             raise Exception(f"ERROR: Please specify a folder to scan")
@@ -361,7 +367,8 @@ class Scanner(ScanossBase):
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
-            if not self.threaded_deps.run(what_to_scan=scan_dir, deps_file=deps_file, wait=False):  # Kick off a background dependency scan
+            if not self.threaded_deps.run(what_to_scan=scan_dir, deps_file=deps_file, wait=False, dep_scope=dep_scope,
+                                          dep_scope_include= dep_scope_include, dep_scope_exclude=dep_scope_exclude):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_folder(scan_dir):
@@ -560,9 +567,11 @@ class Scanner(ScanossBase):
             success = False
         return success
 
-    def scan_file_with_options(self, file: str, deps_file: str = None, file_map: dict = None) -> bool:
+    def scan_file_with_options(self, file: str, deps_file: str = None, file_map: dict = None, dep_scope: SCOPE = None,
+                               dep_scope_include: str = None, dep_scope_exclude: str = None) -> bool:
         """
         Scan the given file for whatever scaning options that have been configured
+        :param dep_scope:
         :param file: file to scan
         :param deps_file: pre-parsed dependency file to decorate
         :param file_map: mapping of obfuscated files back into originals
@@ -579,7 +588,8 @@ class Scanner(ScanossBase):
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
-            if not self.threaded_deps.run(what_to_scan=file, deps_file=deps_file, wait=False):  # Kick off a background dependency scan
+            if not self.threaded_deps.run(what_to_scan=file, deps_file=deps_file, wait=False, dep_scope=dep_scope,
+                                          dep_scope_include=dep_scope_include, dep_scope_exclude=dep_scope_exclude):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_file(file):
