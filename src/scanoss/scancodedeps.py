@@ -59,6 +59,7 @@ class ScancodeDeps(ScanossBase):
         else:
             print(string)
 
+
     def remove_interim_file(self, output_file: str = None):
         """
         Remove the temporary Scancode interim file
@@ -105,15 +106,17 @@ class ScancodeDeps(ScanossBase):
                             continue
                     self.print_debug(f'Path: {f_path}, Packages: {len(f_packages)}')
                     purls = []
+                    scopes = []
                     for pkgs in f_packages:
                         pk_deps = pkgs.get('dependencies')
+
                         if not pk_deps or pk_deps == '':
                             continue
-                        self.print_debug(f'Path: {f_path}, Dependencies: {len(pk_deps)}')
                         for d in pk_deps:
                             dp = d.get('purl')
                             if not dp or dp == '':
                                 continue
+
                             dp = dp.replace('"', '').replace('%22', '')  # remove unwanted quotes on purls
                             dp_data = {'purl': dp}
                             rq = d.get('extracted_requirement')  # scancode format 2.0
@@ -122,15 +125,21 @@ class ScancodeDeps(ScanossBase):
                             # skip requirement if it ends with the purl (i.e. exact version) or if it's local (file)
                             if rq and rq != '' and not dp.endswith(rq) and not rq.startswith('file:'):
                                 dp_data['requirement'] = rq
+
+                            # Gets dependency scope
+                            scope = d.get('scope')
+                            if scope and scope != '':
+                                dp_data['scope'] = scope
+
                             purls.append(dp_data)
-                        # self.print_stderr(f'Path: {f_path}, Purls: {purls}')
+                        # end for loop
+
                     if len(purls) > 0:
                         files.append({'file': f_path, 'purls': purls})
                     # End packages
                 # End file details
         # End dependencies json
         deps = {'files': files}
-        # self.print_debug(f'Dep Data: {deps}')
         return deps
 
     def produce_from_file(self, json_file: str = None) -> json:
@@ -179,6 +188,7 @@ class ScancodeDeps(ScanossBase):
             return False
         self.print_msg('Producing summary...')
         deps = self.produce_from_file(output_file)
+        deps = self.__remove_dep_scope(deps)
         self.remove_interim_file(output_file)
         if not deps:
             return False
@@ -234,6 +244,22 @@ class ScancodeDeps(ScanossBase):
             except Exception as e:
                 self.print_stderr(f'ERROR: Problem loading input JSON: {e}')
         return None
+
+
+    @staticmethod
+    def __remove_dep_scope(deps: json)->json:
+        """
+        :param deps: dependencies with scopes
+        :return dependencies without scopes
+        """
+        files = deps.get("files")
+        for file in files:
+            if 'purls' in file:
+                purls = file.get("purls")
+                for purl in purls:
+                    purl.pop("scope",None)
+
+        return {"files": files }
 
 #
 # End of ScancodeDeps Class
