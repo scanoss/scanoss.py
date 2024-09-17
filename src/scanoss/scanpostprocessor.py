@@ -22,7 +22,9 @@
    THE SOFTWARE.
 """
 
-from .scanoss_settings import ScanossSettings
+from typing import List
+
+from .scanoss_settings import BomEntry, ScanossSettings
 from .scanossbase import ScanossBase
 
 
@@ -68,37 +70,90 @@ class ScanPostProcessor(ScanossBase):
         return self.results
 
     def remove_dismissed_files(self):
-        """Remove dismissed files in SCANOSS settings file from the results"""
-        to_remove_files, to_remove_purls = (
-            self.scan_settings.get_bom_remove_for_filtering()
-        )
+        """Remove entries from the results based on files and/or purls specified in the SCANOSS settings file"""
 
-        if not to_remove_files and not to_remove_purls:
+        to_remove_entries = self.scan_settings.get_bom_remove()
+
+        if not to_remove_entries:
             return
 
-        self.filter_files(to_remove_files, to_remove_purls)
-        return self
+        self.results = {
+            result_path: result
+            for result_path, result in self.results.items()
+            if not self._should_remove_result(result_path, result, to_remove_entries)
+        }
 
-    def filter_files(self, files: list, purls: list):
-        """Filter files based on the provided list of files and purls
+    def _should_remove_result(
+        self, result_path: str, result: dict, to_remove_entries: List[BomEntry]
+    ) -> bool:
+        """Check if a result should be removed based on the SCANOSS settings"""
+        result = result[0] if isinstance(result, list) else result
+        result_purls = result.get("purl", [])
+
+        for to_remove_entry in to_remove_entries:
+            to_remove_path = to_remove_entry.get("path")
+            to_remove_purl = to_remove_entry.get("purl")
+
+            if not to_remove_path and not to_remove_purl:
+                continue
+
+            # Bom entry has both path and purl
+            if self._is_full_match(result_path, result_purls, to_remove_entry):
+                self._print_removal_message(result_path, result_purls, to_remove_entry)
+                return True
+
+            # Bom entry has only purl
+            if not to_remove_path and to_remove_purl in result_purls:
+                self._print_removal_message(result_path, result_purls, to_remove_entry)
+                return True
+
+            # Bom entry has only path
+            if not to_remove_purl and to_remove_path == result_path:
+                self._print_removal_message(result_path, result_purls, to_remove_entry)
+                return True
+
+        return False
+
+    def _print_removal_message(
+        self, result_path: str, result_purls: List[str], to_remove_entry: BomEntry
+    ) -> None:
+        """Print a message about removing a result"""
+        if to_remove_entry.get("path") and to_remove_entry.get("purl"):
+            message = f"Removing '{result_path}' from the results. Full match found."
+        elif to_remove_entry.get("purl"):
+            message = f"Removing '{result_path}' from the results. Found PURL match."
+        else:
+            message = f"Removing '{result_path}' from the results. Found path match."
+
+        self.print_msg(
+            f"{message}\n"
+            f"Details:\n"
+            f"  - PURLs: {', '.join(result_purls)}\n"
+            f"  - Path: '{result_path}'\n"
+        )
+
+    def _is_full_match(
+        self,
+        result_path: str,
+        result_purls: List[str],
+        bom_entry: BomEntry,
+    ) -> bool:
+        """Check if path and purl matches fully with the bom entry
 
         Args:
-            files (list): List of files to be filtered
-            purls (list): List of purls to be filtered
+            result_path (str): Scan result path
+            result_purls (List[str]): Scan result purls
+            bom_entry (BomEntry): BOM entry to compare with
+
+        Returns:
+            bool: True if the path and purl match, False otherwise
         """
-        filtered_results = {}
 
-        for file_name in self.results:
-            file = self.results.get(file_name)
-            file = file[0] if isinstance(file, list) else file
+        if not result_purls:
+            return False
 
-            identified_purls = file.get("purl")
-            if identified_purls and any(purl in purls for purl in identified_purls):
-                continue
-            elif file_name in files:
-                continue
-
-            filtered_results[file_name] = file
-
-        self.results = filtered_results
-        return self
+        return bool(
+            (bom_entry.get("purl") and bom_entry.get("path"))
+            and (bom_entry.get("path") == result_path)
+            and (bom_entry.get("purl") in result_purls)
+        )

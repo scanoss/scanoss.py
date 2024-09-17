@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.15.0] - 2024-09-03
+## [1.15.0] - 2024-09-17
 ### Added
 - Added Results sub-command:
   - Get all results (`scanoss-py results /path/to/file`)
   - Get filtered results (`scanoss-py results /path/to/file --match-type=file,snippet status=pending`)
   - Get pending declarations (`scanoss-py results /path/to/file --has-pending`)
+- Added `--settings` option to `scan` command to specify a settings file
+  - Specify settings file (`scanoss-py scan --settings /path/to/settings.json /path/to/file`)
 
 ## [1.14.0] - 2024-08-09
 ### Added

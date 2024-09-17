@@ -23,9 +23,15 @@
 """
 
 import json
-import os
+from pathlib import Path
+from typing import Dict, List, TypedDict
 
 from .scanossbase import ScanossBase
+
+
+class BomEntry(TypedDict, total=False):
+    purl: str
+    path: str
 
 
 class ScanossSettings(ScanossBase):
@@ -60,14 +66,14 @@ class ScanossSettings(ScanossBase):
         Args:
             filepath (str): Path to the SCANOSS settings file
         """
-        file = f"{os.getcwd()}/{filepath}"
+        json_file = Path(filepath).resolve()
 
-        if not os.path.exists(file):
-            self.print_stderr(f"Scan settings file not found: {file}")
+        if not json_file.exists():
+            self.print_stderr(f"Scan settings file not found: {filepath}")
             self.data = {}
 
-        with open(file, "r") as jsonfile:
-            self.print_stderr(f"Loading scan settings from: {file}")
+        with open(json_file, "r") as jsonfile:
+            self.print_debug(f"Loading scan settings from: {filepath}")
             try:
                 self.data = json.load(jsonfile)
             except Exception as e:
@@ -120,7 +126,7 @@ class ScanossSettings(ScanossBase):
             return self.data.get("components", [])
         return self.data.get("bom", {})
 
-    def get_bom_include(self):
+    def get_bom_include(self) -> List[BomEntry]:
         """Get the list of components to include in the scan
 
         Returns:
@@ -130,7 +136,7 @@ class ScanossSettings(ScanossBase):
             return self._get_bom()
         return self._get_bom().get("include", [])
 
-    def get_bom_remove(self):
+    def get_bom_remove(self) -> List[BomEntry]:
         """Get the list of components to remove from the scan
 
         Returns:
@@ -157,21 +163,21 @@ class ScanossSettings(ScanossBase):
         """Get the SBOM assets
 
         Returns:
-            list: List of SBOM assets
+            List: List of SBOM assets
         """
         if self.scan_type == "identify":
             return self.normalize_bom_entries(self.get_bom_include())
         return self.normalize_bom_entries(self.get_bom_remove())
 
     @staticmethod
-    def normalize_bom_entries(bom_entries):
+    def normalize_bom_entries(bom_entries) -> List[BomEntry]:
         """Normalize the BOM entries
 
         Args:
-            bom_entries (dict): BOM entries
+            bom_entries (List[Dict]): List of BOM entries
 
         Returns:
-            list: Normalized BOM entries
+            List: Normalized BOM entries
         """
         normalized_bom_entries = []
         for entry in bom_entries:
@@ -181,18 +187,3 @@ class ScanossSettings(ScanossBase):
                 }
             )
         return normalized_bom_entries
-
-    def get_bom_remove_for_filtering(self):
-        """Get the list of files and purls to remove from the scan
-
-        Returns:
-            (list[str], list[str]): List of files and list of purls to remove from the scan
-        """
-        entries = self.get_bom_remove()
-        files = [
-            entry.get("path") for entry in entries if entry.get("path") is not None
-        ]
-        purls = [
-            entry.get("purl") for entry in entries if entry.get("purl") is not None
-        ]
-        return files, purls
