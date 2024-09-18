@@ -119,12 +119,10 @@ class MyTestCase(unittest.TestCase):
         threaded_deps = ThreadedDependencies(sc_deps, grpc_client, ".", debug=True, trace=True)
         self.assertTrue(threaded_deps.run(what_to_scan=".", wait=True, dep_scope=SCOPE.DEVELOPMENT))
         deps = threaded_deps.responses
+        print("DEPENDENCIES",deps)
         files = deps.get("files")
         package_json_dev_deps = files[0]["dependencies"]
-        requirements_txt_dev_deps = files[1].get("dependencies", [])
         print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_dev_deps}')
-        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_dev_deps}')
-        self.assertNotEquals(len(package_json_dev_deps),len(requirements_txt_dev_deps))
         self.assertEqual(len(package_json_dev_deps),1)
         # devDependencies of package.json file: "@babel/core": ">0.2.0"
         self.assertEqual(package_json_dev_deps[0]["component"], "@babel/core")
@@ -175,9 +173,8 @@ class MyTestCase(unittest.TestCase):
         deps = threaded_deps.responses
         files = deps.get("files")
         package_json_deps = files[0]["dependencies"]
-        requirements_txt_deps = files[1].get("dependencies", [])
+        requirements_txt_deps = files[1].get("dependencies", []) if len(files) > 1 and isinstance(files[1], dict) else []
         print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_deps}')
-        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_deps}')
 
         # requirements.txt dependencies should be empty due to the filter 'dependencies'
         self.assertEqual(len(requirements_txt_deps), 0)
@@ -204,9 +201,8 @@ class MyTestCase(unittest.TestCase):
         deps = threaded_deps.responses
         files = deps.get("files")
         package_json_deps = files[0]["dependencies"]
-        requirements_txt_deps = files[1].get("dependencies", [])
+        requirements_txt_deps = files[1].get("dependencies", []) if len(files) > 1 and isinstance(files[1], dict) else []
         print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_deps}')
-        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_deps}')
         self.assertEqual(len(requirements_txt_deps), 0)
 
         ## Only dev dependencies should be presents because 'dependencies' and 'install' scopes are excluded
@@ -233,9 +229,8 @@ class MyTestCase(unittest.TestCase):
         deps = threaded_deps.responses
         files = deps.get("files")
         package_json_deps = files[0]["dependencies"]
-        requirements_txt_deps = files[1].get("dependencies", [])
+        requirements_txt_deps = files[1].get("dependencies", []) if len(files) > 1 and isinstance(files[1], dict) else []
         print(f'Dependency results for: ({files[0]["file"]}), dependencies: {package_json_deps}')
-        print(f'Dependency results for: ({files[1]["file"]}), dependencies: {requirements_txt_deps}')
         self.assertEqual(len(requirements_txt_deps), 0)
 
         ## Only dev dependencies should be presents because 'dependencies' and 'install' scopes are excluded

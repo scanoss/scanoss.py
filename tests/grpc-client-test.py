@@ -23,7 +23,9 @@
 """
 import os
 import unittest
+from math import trunc
 
+from scanoss.components import Components
 from scanoss.scancodedeps import ScancodeDeps
 from scanoss.scanossgrpc import ScanossGrpc
 
@@ -73,3 +75,15 @@ class MyTestCase(unittest.TestCase):
                 file = dep_file.pop("file", None)
                 print(f'File: {file} - {dep_file}')
 
+    def test_load_purls_array(self):
+        comps = Components(debug=True, trace=True)
+        # Expected value as a dictionary, not a string
+        expected_value = {
+            'purls': [
+                {'purl': 'pkg:github/unoconv/unoconv'},
+                {'purl': 'pkg:github/torvalds/linux@v5.13'}
+            ]
+        }
+        components = comps.load_purls(purls=["pkg:github/unoconv/unoconv", "pkg:github/torvalds/linux@v5.13"])
+        print(components)
+        self.assertEqual(components,expected_value)
