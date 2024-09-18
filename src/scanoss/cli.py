@@ -198,6 +198,13 @@ def setup_args() -> None:
                                    help='Retrieve semgrep issues/findings for the given components')
     c_semgrep.set_defaults(func=comp_semgrep)
 
+    # Component Sub-command: component semgrep
+    c_provenance = comp_sub.add_parser('provenance', aliases=['prov'],
+                                   description=f'Show Provenance findings: {__version__}',
+                                   help='Retrieve provenance for the given components')
+    c_provenance.set_defaults(func=comp_provenance)
+
+
     # Component Sub-command: component search
     c_search = comp_sub.add_parser('search', aliases=['sc'],
                                    description=f'Search component details: {__version__}',
@@ -221,11 +228,11 @@ def setup_args() -> None:
     c_versions.set_defaults(func=comp_versions)
 
     # Common purl Component sub-command options
-    for p in [c_crypto, c_vulns, c_semgrep]:
+    for p in [c_crypto, c_vulns, c_semgrep, c_provenance]:
         p.add_argument('--purl',  '-p', type=str, nargs="*", help='Package URL - PURL to process.')
         p.add_argument('--input', '-i', type=str, help='Input file name')
     # Common Component sub-command options
-    for p in [c_crypto, c_vulns, c_search, c_versions, c_semgrep]:
+    for p in [c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
         p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
         p.add_argument('--timeout', '-M', type=int, default=600,
                        help='Timeout (in seconds) for API communication (optional - default 600)')
@@ -361,7 +368,7 @@ def setup_args() -> None:
         p.add_argument('--strip-snippet', '-N', type=str, action='append', help='Strip Snippet ID string from WFP.')
 
     # Global Scan/GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
         p.add_argument('--key', '-k', type=str,
                        help='SCANOSS API Key token (optional - not required for default OSSKB URL)')
         p.add_argument('--proxy', type=str, help='Proxy URL to use for connections (optional). '
@@ -375,7 +382,7 @@ def setup_args() -> None:
                                                    '"GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/cacert.pem" for gRPC')
 
     # Global GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
         p.add_argument('--api2url', type=str,
                        help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)')
         p.add_argument('--grpc-proxy', type=str, help='GRPC Proxy URL to use for connections (optional). '
@@ -383,7 +390,7 @@ def setup_args() -> None:
 
     # Help/Trace command options
     for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld, p_p_proxy, c_crypto, c_vulns, c_search,
-              c_versions, c_semgrep, p_results, p_undeclared, p_copyleft]:
+              c_versions, c_semgrep, p_results, p_undeclared, p_copyleft, c_provenance]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
@@ -473,7 +480,7 @@ def wfp(parser, args):
     if args.output:
         scan_output = args.output
         open(scan_output, 'w').close()
-        
+
     # Load scan settings
     scan_settings = None
     if not args.skip_settings_file:
@@ -1020,6 +1027,30 @@ def comp_semgrep(parser, args):
                        ca_cert=args.ca_cert, proxy=args.proxy, grpc_proxy=args.grpc_proxy, pac=pac_file,
                        timeout=args.timeout)
     if not comps.get_semgrep_details(args.input, args.purl, args.output):
+        exit(1)
+
+def comp_provenance(parser, args):
+    """
+    Run the "component semgrep" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if (not args.purl and not args.input) or (args.purl and args.input):
+        print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        exit(1)
+    if args.ca_cert and not os.path.exists(args.ca_cert):
+        print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
+        exit(1)
+    pac_file = get_pac_file(args.pac)
+    comps = Components(debug=args.debug, trace=args.trace, quiet=args.quiet, grpc_url=args.api2url, api_key=args.key,
+                       ca_cert=args.ca_cert, proxy=args.proxy, grpc_proxy=args.grpc_proxy, pac=pac_file,
+                       timeout=args.timeout)
+    if not comps.get_provenance_details(args.input, args.purl, args.output):
         exit(1)
 
 def comp_search(parser, args):
