@@ -1031,7 +1031,7 @@ def comp_semgrep(parser, args):
 
 def comp_provenance(parser, args):
     """
-    Run the "component semgrep" sub-command
+    Run the "component provenance" sub-command
     Parameters
     ----------
         parser: ArgumentParser
