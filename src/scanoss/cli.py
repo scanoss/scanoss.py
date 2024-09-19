@@ -198,8 +198,8 @@ def setup_args() -> None:
                                    help='Retrieve semgrep issues/findings for the given components')
     c_semgrep.set_defaults(func=comp_semgrep)
 
-    # Component Sub-command: component semgrep
-    c_provenance = comp_sub.add_parser('provenance', aliases=['prov'],
+    # Component Sub-command: component provenance
+    c_provenance = comp_sub.add_parser('provenance', aliases=['prov', 'prv'],
                                    description=f'Show Provenance findings: {__version__}',
                                    help='Retrieve provenance for the given components')
     c_provenance.set_defaults(func=comp_provenance)
