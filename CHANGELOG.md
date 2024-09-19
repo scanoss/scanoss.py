@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.16.0] - 2024-09-20
+### Added
+- Added support for component provenance reporting
+  - `scanoss-py component prov ...`
+
 ## [1.15.0] - 2024-09-17
 ### Added
 - Added Results sub-command:
@@ -350,3 +355,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.13.0]: https://github.com/scanoss/scanoss.py/compare/v1.12.3...v1.13.0
 [1.14.0]: https://github.com/scanoss/scanoss.py/compare/v1.13.0...v1.14.0
 [1.15.0]: https://github.com/scanoss/scanoss.py/compare/v1.14.0...v1.15.0
+[1.16.0]: https://github.com/scanoss/scanoss.py/compare/v1.15.0...v1.16.0

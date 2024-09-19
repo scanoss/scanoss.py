@@ -239,6 +239,7 @@ The `component` command has a suite of sub-commands designed to operate on OSS c
 * Search (`search`)
 * Version Details (`versions`)
 * Cryptography (`crypto`)
+* Provenance (`provenance`)
 
 For the latest list of sub-commands, please run:
 ```bash
@@ -296,6 +297,16 @@ It is possible to supply multiple PURLs by repeating the `-p pkg` option, or pro
 scanoss-py comp semgrep --key $SC_API_KEY -i purl-input.json -o semgrep-issues.json
 ```
 **Note:** This sub-command requires a subscription to SCANOSS premium data.
+
+#### Component Provenance
+The following command provides the capability to search the SCANOSS KB for component Provenance:
+```bash
+scanoss-py comp prov -p "pkg:github/unoconv/unoconv"
+```
+It is possible to supply multiple PURLs by repeating the `-p pkg` option, or providing a purl input file `-i purl-input.json` ([for example](tests/data/purl-input.json)):
+```bash
+scanoss-py comp prov -i purl-input.json -o provenance.json
+
 
 ### Results Commands
 The `results` command provides the capability to operate on scan results. For example:
