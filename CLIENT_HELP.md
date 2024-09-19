@@ -239,6 +239,7 @@ The `component` command has a suite of sub-commands designed to operate on OSS c
 * Search (`search`)
 * Version Details (`versions`)
 * Cryptography (`crypto`)
+* Provenance (`provenance`)
 
 For the latest list of sub-commands, please run:
 ```bash
