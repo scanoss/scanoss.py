@@ -24,7 +24,7 @@
 import json
 import os
 import sys
-from typing import TextIO
+from typing import TextIO, Optional, List
 
 from pypac.parser import PACFile
 
@@ -62,13 +62,13 @@ class Components(ScanossBase):
                                     ver_details=ver_details, ca_cert=ca_cert, proxy=proxy, pac=pac,
                                     grpc_proxy=grpc_proxy, timeout=timeout)
 
-    def load_purls(self, json_file: str = None, purls: [str] = None) -> dict:
+    def load_purls(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None) -> Optional[dict]:
         """
         Load the specified purls and return a dictionary
 
         :param json_file: JSON PURL file (optional)
         :param purls: list of PURLs (optional)
-        :return: PURL Request dictionary
+        :return: PURL Request dictionary or None
         """
         if json_file:
             if not os.path.isfile(json_file) or not os.access(json_file, os.R_OK):
