@@ -95,7 +95,6 @@ class MyTestCase(unittest.TestCase):
     def test_load_purls_array_malformed(self, mock_stderr):
         comps = Components(debug=True, trace=True)
         components = comps.load_purls(purls=[1, "pkg:github/torvalds/linux@v5.13"])
-        print(components)
         self.assertEqual(components,None)
         self.assertIn('ERROR: PURLs must be a list of strings.', mock_stderr.getvalue())
 
