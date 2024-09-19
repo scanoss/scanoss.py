@@ -24,7 +24,9 @@ SPDX-License-Identifier: MIT
 
 import os
 import unittest
-from math import trunc
+from unittest.mock import patch
+from io import StringIO
+
 
 from scanoss.components import Components
 from scanoss.scancodedeps import ScancodeDeps
@@ -87,7 +89,37 @@ class MyTestCase(unittest.TestCase):
             ]
         }
         components = comps.load_purls(purls=["pkg:github/unoconv/unoconv", "pkg:github/torvalds/linux@v5.13"])
+        self.assertEqual(components,expected_value)
+
+    @patch('sys.stderr', new_callable=StringIO)
+    def test_load_purls_array_malformed(self, mock_stderr):
+        comps = Components(debug=True, trace=True)
+        components = comps.load_purls(purls=[1, "pkg:github/torvalds/linux@v5.13"])
         print(components)
+        self.assertEqual(components,None)
+        self.assertIn('ERROR: PURLs must be a list of strings.', mock_stderr.getvalue())
+
+    @patch('sys.stderr', new_callable=StringIO)
+    def test_load_purls_file_malformed(self,  mock_stderr):
+        comps = Components(debug=True, trace=True)
+        components = comps.load_purls(json_file='./data/malformed-purl-input.json')
+        # Ensure the method returned None (indicating a failure)
+        self.assertIsNone(components)
+        # Check if the correct error message was printed to stderr
+        self.assertIn('ERROR: No PURLs parsed from request.', mock_stderr.getvalue())
+
+    def test_load_purls_file(self):
+        comps = Components(debug=True, trace=True)
+        expected_value = {
+              'purls': [
+                {
+                  'purl': 'pkg:github/torvalds/linux@v5.13'
+                }
+              ]
+            }
+        components = comps.load_purls( json_file='./data/purl-input.json')
+        print(components)
+        # Ensure the method returned None (indicating a failure)
         self.assertEqual(components,expected_value)
 
 if __name__ == '__main__':

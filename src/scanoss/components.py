@@ -62,7 +62,7 @@ class Components(ScanossBase):
                                     ver_details=ver_details, ca_cert=ca_cert, proxy=proxy, pac=pac,
                                     grpc_proxy=grpc_proxy, timeout=timeout)
 
-    def load_purls(self, json_file: str = None, purls: [] = None) -> dict:
+    def load_purls(self, json_file: str = None, purls: [str] = None) -> dict:
         """
         Load the specified purls and return a dictionary
 
@@ -81,6 +81,9 @@ class Components(ScanossBase):
                     self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
                     return None
         elif purls:
+            if not all(isinstance(purl, str) for purl in purls):
+                self.print_stderr('ERROR: PURLs must be a list of strings.')
+                return None
             parsed_purls = []
             for p in purls:
                 parsed_purls.append({'purl': p})
