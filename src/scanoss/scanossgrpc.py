@@ -444,7 +444,6 @@ class ScanossGrpc(ScanossBase):
                 if not self._check_status_response(resp.status, request_id):
                     return None
                 resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
-                del resp_dict['status']
                 return resp_dict
         return None
 #

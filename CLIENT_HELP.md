@@ -304,7 +304,7 @@ scanoss-py comp prov -p "pkg:github/unoconv/unoconv"
 ```
 It is possible to supply multiple PURLs by repeating the `-p pkg` option, or providing a purl input file `-i purl-input.json` ([for example](tests/data/purl-input.json)):
 ```bash
-scanoss-py comp prov -i purl-input.json -o vulnernable-comps.json
+scanoss-py comp prov -i purl-input.json -o provenance.json
 
 
 ### Results Commands
