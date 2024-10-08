@@ -27,7 +27,7 @@ import sys
 import uuid
 import datetime
 
-from .__init__ import __version__
+from . import __version__
 
 from .scanossbase import ScanossBase
 from .spdxlite import SpdxLite
