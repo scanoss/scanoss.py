@@ -25,6 +25,9 @@ import json
 import os.path
 import sys
 import uuid
+import datetime
+
+from . import __version__
 
 from .scanossbase import ScanossBase
 from .spdxlite import SpdxLite
@@ -186,6 +189,16 @@ class CycloneDx(ScanossBase):
             'specVersion': '1.4',
             'serialNumber': f'urn:uuid:{uuid.uuid4()}',
             'version': 1,
+            'metadata': {
+                'timestamp': datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                'tools': [
+                    {
+                        'vendor': 'SCANOSS',
+                        'name': 'scanoss-py',
+                        'version': __version__,
+                    }
+                ]
+            },
             'components': [],
             'vulnerabilities': []
         }
