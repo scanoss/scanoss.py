@@ -29,6 +29,7 @@ from array import array
 
 import pypac
 
+from scanoss.inspections.copyleft import Copyleft
 from .threadeddependencies import SCOPE
 from .scanner import Scanner
 from .scanoss_settings import ScanossSettings
@@ -298,6 +299,19 @@ def setup_args() -> None:
         help='Output format (default: plain)',
     )
     p_results.set_defaults(func=results)
+
+
+    # Sub-command: inspect
+    p_inspect = subparsers.add_parser('inspect', aliases=['insp'],
+                                   description=f'Inspect results: {__version__}',
+                                   help='Inspect results')
+    p_inspect.set_defaults(func=inspect)
+    p_inspect.add_argument('-i','--input',nargs='?' ,help='Path to results file')
+    p_inspect.add_argument('-c', '--copyleft', action='store_true', help='Inspect for copyleft licenses')
+    p_inspect.add_argument('-u', '--undeclared', action='store_true', help='Inspect for undeclared components')
+    p_inspect.add_argument('-f', '--format',required=False ,choices=['json', 'md'], default='json',
+                           help='Output format (default: json)')
+
 
     # Global Scan command options
     for p in [p_scan]:
@@ -773,6 +787,31 @@ def convert(parser, args):
             print_stderr(f'Producing CSV report...')
         csvo = CsvOutput(debug=args.debug, output_file=args.output)
         success = csvo.produce_from_file(args.input)
+    else:
+        print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
+    if not success:
+        exit(1)
+
+def inspect(parser, args):
+    """
+    Run the "inspect" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    print("ARGS",args)
+
+    if not args.input:
+        print_stderr('Please specify an input file to convert')
+        parser.parse_args([args.subparser, '-h'])
+        exit(1)
+    success = False
+    if args.copyleft:
+        new_check = Copyleft(debug=True, filepath=args.input, format=args.format)
+        new_check.run()
     else:
         print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
     if not success:
