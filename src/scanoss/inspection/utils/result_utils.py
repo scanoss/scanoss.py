@@ -1,14 +1,16 @@
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
-from scanoss.inspections.utils.license_utils import license_util
+from scanoss.inspection.utils.license_utils import license_util
 
 
 class ComponentID(Enum):
     FILE = "file"
     SNIPPET = "snippet"
     DEPENDENCY = "dependency"
+
 
 def _append_component(components: Dict[str, Any], new_component: Dict[str, Any]) -> Dict[str, Any]:
 
@@ -25,14 +27,13 @@ def _append_component(components: Dict[str, Any], new_component: Dict[str, Any])
         components[component_key]['licenses'][spdxid] = {
             'spdxid': spdxid,
             'copyleft': license_util.is_copyleft(spdxid),
-            'url': l.get('url'),
-            'count': 1
+            'url': l.get('url')
         }
 
     return components
 
 
-def get_components(results: Dict[str, Any]) -> []:
+def get_components(results: Dict[str, Any]) -> list:
     components = {}
     for component in results.values():
         for c in component:
@@ -49,10 +50,9 @@ def get_components(results: Dict[str, Any]) -> []:
 
                     if component_key not in components:
                         components = _append_component(components, d)
-
-
-
-
+                # End of for loop
+            # End if
+        # End if
     results = list(components.values())
     for component in results:
         component['licenses'] = list(component['licenses'].values())

@@ -28,8 +28,10 @@ import sys
 from array import array
 
 import pypac
+from docutils.nodes import description
 
-from scanoss.inspections.copyleft import Copyleft
+from scanoss.inspection import copyleft
+from scanoss.inspection.copyleft import Copyleft
 from .threadeddependencies import SCOPE
 from .scanner import Scanner
 from .scanoss_settings import ScanossSettings
@@ -305,12 +307,24 @@ def setup_args() -> None:
     p_inspect = subparsers.add_parser('inspect', aliases=['insp'],
                                    description=f'Inspect results: {__version__}',
                                    help='Inspect results')
-    p_inspect.set_defaults(func=inspect)
-    p_inspect.add_argument('-i','--input',nargs='?' ,help='Path to results file')
-    p_inspect.add_argument('-c', '--copyleft', action='store_true', help='Inspect for copyleft licenses')
-    p_inspect.add_argument('-u', '--undeclared', action='store_true', help='Inspect for undeclared components')
-    p_inspect.add_argument('-f', '--format',required=False ,choices=['json', 'md'], default='json',
-                           help='Output format (default: json)')
+
+
+    p_inspect_sub = p_inspect.add_subparsers(title='Inspect Commands', dest='subparsercmd',
+                                             description='Inspect sub-commands', help='Inspect sub-commands')
+    #Copyleft
+    p_copyleft = p_inspect_sub.add_parser('copyleft', aliases=['cp'],description="inspect for copyleft licenses", help='Inspect for copyleft licenses')
+    p_copyleft.add_argument('--include', help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.')
+    p_copyleft.add_argument('--exclude', help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.')
+    p_copyleft.add_argument('--explicit', help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s')
+    p_copyleft.set_defaults(func=inspect)
+
+    for p in [p_copyleft]:
+        p.add_argument('-i', '--input', nargs='?', help='Path to results file')
+        p.add_argument('-f', '--format',required=False ,choices=['json', 'md'], default='json', help='Output format (default: json)')
+        p.add_argument('-o', '--output', type=str, help='Save details into a file')
+        p.add_argument('-s', '--status', type=str, help='Save summary into a file')
+
+
 
 
     # Global Scan command options
@@ -371,9 +385,11 @@ def setup_args() -> None:
         parser.print_help()  # No sub command subcommand, print general help
         exit(1)
     else:
-        if (args.subparser == 'utils' or args.subparser == 'ut' or
-            args.subparser == 'component' or args.subparser == 'comp') \
-                and not args.subparsercmd:
+        if ((args.subparser == 'utils' or args.subparser == 'ut' or
+            args.subparser == 'component' or args.subparser == 'comp' or args.subparser == 'inspect'
+             or args.subparser == 'cp' ) \
+            \
+                and not args.subparsercmd):
             parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
             exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
@@ -802,15 +818,15 @@ def inspect(parser, args):
         args: Namespace
             Parsed arguments
     """
-    print("ARGS",args)
-
-    if not args.input:
-        print_stderr('Please specify an input file to convert')
-        parser.parse_args([args.subparser, '-h'])
+    print_stderr(args)
+    if args.subparsercmd or not args.input :
+        print_stderr('Please specify an input file to inspect')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         exit(1)
     success = False
-    if args.copyleft:
-        new_check = Copyleft(debug=True, filepath=args.input, format=args.format)
+    if args.subparsercmd == 'copyleft':
+        new_check = Copyleft(debug=True, filepath=args.input, format=args.format, status=args.status,
+                             output=args.output, include=args.include, exclude=args.exclude, explicit=args.explicit)
         new_check.run()
     else:
         print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
