@@ -32,6 +32,7 @@ from docutils.nodes import description
 
 from scanoss.inspection import copyleft
 from scanoss.inspection.copyleft import Copyleft
+from scanoss.inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
 from .scanner import Scanner
 from .scanoss_settings import ScanossSettings
@@ -311,17 +312,22 @@ def setup_args() -> None:
     p_inspect_sub = p_inspect.add_subparsers(title='Inspect Commands', dest='subparsercmd',
                                              description='Inspect sub-commands', help='Inspect sub-commands')
     # Inspect Sub-command: inspect copyleft
-    p_copyleft = p_inspect_sub.add_parser('copyleft', aliases=['cp'],description="inspect for copyleft licenses", help='Inspect for copyleft licenses')
+    p_copyleft = p_inspect_sub.add_parser('copyleft', aliases=['cp'],description="Inspect for copyleft licenses", help='Inspect for copyleft licenses')
     p_copyleft.add_argument('--include', help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.')
     p_copyleft.add_argument('--exclude', help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.')
     p_copyleft.add_argument('--explicit', help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s')
     p_copyleft.set_defaults(func=inspect)
 
-    for p in [p_copyleft]:
+    # Inspect Sub-command: inspect undeclared
+    p_undeclared = p_inspect_sub.add_parser('undeclared', aliases=['un'],description="Inspect for undeclared components", help='Inspect for undeclared components')
+    p_undeclared.set_defaults(func=inspect)
+
+    for p in [p_copyleft, p_undeclared]:
         p.add_argument('-i', '--input', nargs='?', help='Path to results file')
         p.add_argument('-f', '--format',required=False ,choices=['json', 'md'], default='json', help='Output format (default: json)')
         p.add_argument('-o', '--output', type=str, help='Save details into a file')
         p.add_argument('-s', '--status', type=str, help='Save summary into a file')
+
 
 
 
@@ -371,7 +377,7 @@ def setup_args() -> None:
 
     # Help/Trace command options
     for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld, p_p_proxy, c_crypto, c_vulns, c_search,
-              c_versions, c_semgrep, p_results]:
+              c_versions, c_semgrep, p_results, p_undeclared, p_copyleft]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
@@ -817,18 +823,22 @@ def inspect(parser, args):
         args: Namespace
             Parsed arguments
     """
-    print_stderr(args)
     if args.subparsercmd and not args.input :
         print_stderr('Please specify an input file to inspect')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         exit(1)
     success = False
     if args.subparsercmd == 'copyleft':
-        new_check = Copyleft(debug=True, filepath=args.input, format=args.format, status=args.status,
-                             output=args.output, include=args.include, exclude=args.exclude, explicit=args.explicit)
+        new_check = Copyleft(debug=False, trace=args.trace, quiet=args.quiet, filepath=args.input, format=args.format,
+                             status=args.status, output=args.output, include=args.include,
+                             exclude=args.exclude, explicit=args.explicit)
         new_check.run()
-    else:
-        print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
+
+    if args.subparsercmd == 'undeclared':
+        new_check = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet, filepath=args.input,
+                                        format=args.format, status=args.status, output=args.output)
+        new_check.run()
+
     if not success:
         exit(1)
 
