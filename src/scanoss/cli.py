@@ -307,11 +307,10 @@ def setup_args() -> None:
     p_inspect = subparsers.add_parser('inspect', aliases=['insp'],
                                    description=f'Inspect results: {__version__}',
                                    help='Inspect results')
-
-
+    # Sub-parser: inspect
     p_inspect_sub = p_inspect.add_subparsers(title='Inspect Commands', dest='subparsercmd',
                                              description='Inspect sub-commands', help='Inspect sub-commands')
-    #Copyleft
+    # Inspect Sub-command: inspect copyleft
     p_copyleft = p_inspect_sub.add_parser('copyleft', aliases=['cp'],description="inspect for copyleft licenses", help='Inspect for copyleft licenses')
     p_copyleft.add_argument('--include', help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.')
     p_copyleft.add_argument('--exclude', help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.')
@@ -819,7 +818,7 @@ def inspect(parser, args):
             Parsed arguments
     """
     print_stderr(args)
-    if args.subparsercmd or not args.input :
+    if args.subparsercmd and not args.input :
         print_stderr('Please specify an input file to inspect')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         exit(1)

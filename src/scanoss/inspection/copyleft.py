@@ -16,7 +16,7 @@ class Copyleft(PolicyCheck):
         self.status = status
         license_util.init(include, exclude, explicit)
 
-    def _json(self,comp: list) -> Dict[str, Any]:
+    def _json(self, comp: list) -> Dict[str, Any]:
         return {
             'details':  json.dumps({ 'components': comp}, indent=2),
             'summary': ""
@@ -59,6 +59,7 @@ class Copyleft(PolicyCheck):
             if copyleft_licenses:
                 filtered_component = component
                 filtered_component['licenses'] = copyleft_licenses
+                del filtered_component['status']
                 filtered_components.append(filtered_component)
 
         return filtered_components

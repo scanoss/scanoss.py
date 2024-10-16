@@ -18,7 +18,8 @@ def _append_component(components: Dict[str, Any], new_component: Dict[str, Any])
     components[component_key] = {
         'purl': new_component['purl'][0],
         'version': new_component['version'],
-        'licenses': {}
+        'licenses': {},
+        'status': new_component['status'],
     }
 
     # Process licenses for this component
