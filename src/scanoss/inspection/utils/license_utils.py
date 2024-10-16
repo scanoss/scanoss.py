@@ -9,6 +9,12 @@ DEFAULT_COPYLEFT_LICENSES = {
 }
 
 class LicenseUtil(ScanossBase):
+    """
+        A utility class for handling software licenses, particularly copyleft licenses.
+
+        This class provides functionality to initialize, manage, and query a set of
+        copyleft licenses. It also offers a method to generate URLs for license information.
+    """
     BASE_OSADL_URL = 'https://spdx.org/licenses'
     HTML = 'html'
 
@@ -18,6 +24,18 @@ class LicenseUtil(ScanossBase):
 
 
     def init(self, include: str=None, exclude: str=None, explicit: str= None):
+        """
+            Initialize the set of copyleft licenses based on user input.
+
+            This method allows for customization of the copyleft license set by:
+            - Setting an explicit list of licenses
+            - Including additional licenses to the default set
+            - Excluding specific licenses from the default set
+
+            :param include: Comma-separated string of licenses to include
+            :param exclude: Comma-separated string of licenses to exclude
+            :param explicit: Comma-separated string of licenses to use exclusively
+        """
 
         if explicit:
             exp = [item.lower() for item in explicit.split(',')]
@@ -38,9 +56,21 @@ class LicenseUtil(ScanossBase):
 
 
     def is_copyleft(self, spdxid: str) -> bool:
+        """
+           Check if a given license is considered copyleft.
+
+           :param spdxid: The SPDX identifier of the license to check
+           :return: True if the license is copyleft, False otherwise
+        """
         return spdxid.lower() in self.copyleft_licenses
 
     def get_osadl(self, spdxid: str) -> str:
+        """
+           Generate the URL for the OSADL (Open Source Automation Development Lab) page of a license.
+
+           :param spdxid: The SPDX identifier of the license
+           :return: The URL of the OSADL page for the given license
+        """
         return f"{self.BASE_OSADL_URL}/{spdxid}.{self.HTML}"
 
 
