@@ -1,5 +1,4 @@
 import json
-from types import MethodType
 from typing import Dict, Any, Callable, List
 from scanoss.inspection.policy_check import PolicyCheck
 from scanoss.inspection.utils.markdown_utils import generate_table
@@ -8,7 +7,7 @@ from scanoss.inspection.utils.markdown_utils import generate_table
 class UndeclaredComponent(PolicyCheck):
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
-                 format: str = None, status: str = None, output: str = None):
+                 format: str = 'json', status: str = None, output: str = None):
         super().__init__(debug, trace, quiet, filepath, format, status, output, name='Undeclared Components Policy')
         self.filepath = filepath
         self.format = format
@@ -64,7 +63,7 @@ class UndeclaredComponent(PolicyCheck):
         }
         return function_map[self.format]
 
-    def run(self):
+    def run(self) -> Dict[str, Any]:
         self._debug()
         components = self._get_components()
         undeclared_components = self._get_undeclared_component(components)
