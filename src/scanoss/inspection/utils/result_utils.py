@@ -11,7 +11,17 @@ class ComponentID(Enum):
 
 
 def _append_component(components: Dict[str, Any], new_component: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Append a new component to the components dictionary.
 
+    This function creates a new entry in the components dictionary for the given component,
+    or updates an existing entry if the component already exists. It also processes the
+    licenses associated with the component.
+
+    :param components: The existing dictionary of components
+    :param new_component: The new component to be added or updated
+    :return: The updated components dictionary
+    """
     component_key = f"{new_component['purl'][0]}@{new_component['version']}"
     components[component_key] = {
         'purl': new_component['purl'][0],
@@ -33,6 +43,16 @@ def _append_component(components: Dict[str, Any], new_component: Dict[str, Any])
 
 
 def get_components(results: Dict[str, Any]) -> list:
+    """
+        Process the results dictionary to extract and format component information.
+
+        This function iterates through the results dictionary, identifying components from
+        different sources (files, snippets, and dependencies). It consolidates this information
+        into a list of unique components, each with its associated licenses and other details.
+
+        :param results: A dictionary containing the raw results of a component scan
+        :return: A list of dictionaries, each representing a unique component with its details
+    """
     components = {}
     for component in results.values():
         for c in component:
