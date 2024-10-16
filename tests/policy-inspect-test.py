@@ -23,12 +23,15 @@
 """
 import json
 import os
+import re
 import unittest
 
 from scanoss.inspection.copyleft import Copyleft
+from scanoss.inspection.undeclared_component import UndeclaredComponent
 
 
 class MyTestCase(unittest.TestCase):
+
     """
     Inspect for copyleft licenses
     """
@@ -39,7 +42,6 @@ class MyTestCase(unittest.TestCase):
         copyleft = Copyleft(filepath=input_file_name, format='json')
         copyleft.run()
         self.assertEqual(True, True)
-
 
     """
     Inspect for empty copyleft licenses
@@ -111,3 +113,31 @@ class MyTestCase(unittest.TestCase):
         expected_summary_output = '1 component(s) with copyleft licenses were found.'
         self.assertEqual(results['details'], expected_detail_output)
         self.assertEqual(results['summary'], expected_summary_output)
+
+    ## Undeclared Components Policy Tests ##
+    """
+    Inspect for undeclared components
+    """
+    def test_undeclared_policy(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = "result.json"
+        input_file_name = os.path.join(script_dir,'data', file_name)
+        undeclared = UndeclaredComponent(filepath=input_file_name, format='json')
+        results = undeclared.run()
+        print(results)
+        details = json.loads(results['details'])
+        summary = results['summary']
+        expected_summary_output = """3 undeclared component(s) were found.
+        Add the following snippet into your `sbom.json` file 
+        ```json 
+        [
+          {
+            "purl": "pkg:github/scanoss/scanner.c"
+          },
+          {
+            "purl": "pkg:github/scanoss/wfp"
+          }
+        ]```
+        """
+        self.assertEqual(len(details['components']), 3)
+        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))

@@ -55,8 +55,8 @@ class UndeclaredComponent(PolicyCheck):
         return {
             'details':  json.dumps({ 'components': components}, indent=2),
             'summary': f"{len(components)} undeclared component(s) were found.\n"
-                       f" Add the following snippet into your \`sbom.json\` file \n"
-                       f" \`\`\`json \n {json.dumps(self._generate_sbom_file(components), indent=2)} \n ",
+                       f" Add the following snippet into your `sbom.json` file \n"
+                       f" ```json \n {json.dumps(self._generate_sbom_file(components), indent=2)}``` \n ",
         }
 
 
@@ -77,8 +77,8 @@ class UndeclaredComponent(PolicyCheck):
         return  {
             'details': f"### Undeclared components \n {generate_table(headers,rows)}",
             'summary': f"{len(components)} undeclared component(s) were found.\n"
-                       f" Add the following snippet into your \`sbom.json\` file \n"
-                       f" \`\`\`json \n {json.dumps(self._generate_sbom_file(components), indent=2)} \n "
+                       f" Add the following snippet into your `sbom.json` file \n"
+                       f" ```json \n {json.dumps(self._generate_sbom_file(components), indent=2)} ``` \n "
         }
 
     def _generate_sbom_file(self,components: list) -> list:
@@ -88,11 +88,11 @@ class UndeclaredComponent(PolicyCheck):
          :param components: List of undeclared components
          :return: List of dictionaries containing PURLs
          """
-        sbom = []
+        sbom = {}
         for component in components:
-            purl = { 'purl': component['purl'] }
-            sbom.append(purl)
-        return sbom
+            sbom[component['purl']] = { 'purl': component['purl'] }
+
+        return list(sbom.values())
 
 
     def _get_formatter(self) -> Callable[[List[dict]], Dict[str,Any]] :
