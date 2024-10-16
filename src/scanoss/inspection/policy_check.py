@@ -14,6 +14,13 @@ class PolicyCheck(ScanossBase):
         self.result = Results(debug, trace, quiet, filepath)
         self.filepath = filepath
 
+    @abstractmethod
+    def run(self) -> str:
+        pass
+
+    @abstractmethod
+    def _get_formatter(self) -> str:
+        pass
 
     def _get_components(self):
         results = self.result.load_file(self.filepath)
@@ -25,6 +32,3 @@ class PolicyCheck(ScanossBase):
         if filename:
             self.print_to_file_or_stdout(input, filename)
 
-    @abstractmethod
-    def run(self) -> str:
-        pass
