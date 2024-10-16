@@ -9,10 +9,14 @@ class PolicyCheck(ScanossBase):
     result: Results
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
-                 format: str = None, status: str = None, output: str = None):
+                 format: str = None, status: str = None, output: str = None, name: str = None):
         super().__init__(debug, trace, quiet)
         self.result = Results(debug, trace, quiet, filepath)
         self.filepath = filepath
+        self.name = name
+        self.output = output
+        self.format =format
+        self.status = status
 
     @abstractmethod
     def run(self) -> str:
@@ -21,6 +25,14 @@ class PolicyCheck(ScanossBase):
     @abstractmethod
     def _get_formatter(self) -> str:
         pass
+
+    def _debug(self):
+        self.print_debug(f"Policy: {self.name}")
+        self.print_debug(f"Format: {self.format}")
+        self.print_debug(f"Status: {self.status}")
+        self.print_debug(f"Output: {self.output}")
+        self.print_debug(f"Input: {self.filepath}")
+
 
     def _get_components(self):
         results = self.result.load_file(self.filepath)
