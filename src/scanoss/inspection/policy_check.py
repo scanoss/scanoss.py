@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import Dict, Any
 from scanoss.inspection.utils.result_utils import get_components
 from scanoss.results import Results
 from scanoss.scanossbase import ScanossBase
@@ -19,7 +20,7 @@ class PolicyCheck(ScanossBase):
         self.status = status
 
     @abstractmethod
-    def run(self) -> str:
+    def run(self) -> Dict[str, Any]:
         pass
 
     @abstractmethod

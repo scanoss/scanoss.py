@@ -1,7 +1,5 @@
-from collections import defaultdict
-from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 from scanoss.inspection.utils.license_utils import license_util
 

@@ -8,7 +8,7 @@ from scanoss.inspection.utils.markdown_utils import generate_table
 class Copyleft(PolicyCheck):
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
-                 format: str = None, status: str = None, output: str = None, include: str = None, exclude: str = None, explicit: str = None):
+                 format: str = 'json', status: str = None, output: str = None, include: str = None, exclude: str = None, explicit: str = None):
         super().__init__(debug, trace, quiet, filepath, format, status, output, name='Copyleft Policy')
         self.filepath = filepath
         self.format = format
@@ -16,10 +16,13 @@ class Copyleft(PolicyCheck):
         self.status = status
         license_util.init(include, exclude, explicit)
 
-    def _json(self, comp: list) -> Dict[str, Any]:
+    def _json(self, components: list) -> Dict[str, Any]:
+        details = {}
+        if len(components) > 0:
+            details = { 'components': components }
         return {
-            'details':  json.dumps({ 'components': comp}, indent=2),
-            'summary': ""
+            'details':  json.dumps(details, indent=2),
+            'summary': f"{len(components)} component(s) with copyleft licenses were found."
         }
 
 
@@ -40,7 +43,7 @@ class Copyleft(PolicyCheck):
 
         return  {
             'details': f"### Copyleft licenses \n {generate_table(headers,rows,centeredColumns)}",
-            'summary' : f"#### {len(components)} component(s) with copyleft licenses were found."
+            'summary' : f"{len(components)} component(s) with copyleft licenses were found."
         }
 
     def _get_formatter(self)-> Callable[[List[dict]], str] :
@@ -52,10 +55,8 @@ class Copyleft(PolicyCheck):
 
     def _filter_components_with_copyleft_licenses(self, components: list) -> list:
         filtered_components = []
-
         for component in components:
             copyleft_licenses = [license for license in component['licenses'] if license['copyleft']]
-
             if copyleft_licenses:
                 filtered_component = component
                 filtered_component['licenses'] = copyleft_licenses
@@ -64,7 +65,7 @@ class Copyleft(PolicyCheck):
 
         return filtered_components
 
-    def run(self) -> str:
+    def run(self) -> Dict[str, Any]:
         components = self._get_components()
         copyleft_components = self._filter_components_with_copyleft_licenses(components)
         self.print_debug(f"Copyleft components: {copyleft_components}")

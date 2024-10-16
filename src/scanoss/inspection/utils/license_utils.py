@@ -1,8 +1,3 @@
-import os
-import logging
-
-from tldextract.tldextract import update
-
 from scanoss.scanossbase import ScanossBase
 
 DEFAULT_COPYLEFT_LICENSES = {
@@ -40,7 +35,6 @@ class LicenseUtil(ScanossBase):
             inc = [item.lower() for item in exclude.split(',')]
             for lic in inc:
                 self.copyleft_licenses.discard(lic)
-
 
 
     def is_copyleft(self, spdxid: str) -> bool:
