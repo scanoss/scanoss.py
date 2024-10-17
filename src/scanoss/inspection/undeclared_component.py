@@ -127,6 +127,9 @@ class UndeclaredComponent(PolicyCheck):
 
         :return: Dictionary containing the inspection results
         """
+        if not self._init():
+            return PolicyStatus.ERROR.value, {}
+
         self._debug()
         components = self._get_components()
         if components is None:
@@ -139,6 +142,7 @@ class UndeclaredComponent(PolicyCheck):
             return PolicyStatus.ERROR.value, {}
 
         results = formatter(undeclared_components)
+
         self.print_to_file_or_stdout(results['details'], self.output)
         self.print_to_file_or_stderr(results['summary'], self.status)
 

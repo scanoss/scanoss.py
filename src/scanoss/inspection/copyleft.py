@@ -124,6 +124,10 @@ class Copyleft(PolicyCheck):
 
         :return: Dictionary containing the inspection results
         """
+        if not self._init():
+            return PolicyStatus.ERROR.value, {}
+
+        self._debug()
 
         license_util.init(self.include, self.exclude, self.explicit)
         components = self._get_components()
