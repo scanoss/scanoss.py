@@ -1,6 +1,6 @@
 import json
 from typing import Dict, Any, Callable, List
-from scanoss.inspection.policy_check import PolicyCheck
+from scanoss.inspection.policy_check import PolicyCheck, PolicyStatus
 from scanoss.inspection.utils.markdown_utils import generate_table
 
 
@@ -95,19 +95,23 @@ class UndeclaredComponent(PolicyCheck):
         return list(sbom.values())
 
 
-    def _get_formatter(self) -> Callable[[List[dict]], Dict[str,Any]] :
+    def _get_formatter(self) -> Callable[[List[dict]], Dict[str,Any]] or None:
         """
             Get the appropriate formatter function based on the specified format.
 
             :return: Formatter function (either _json or _markdown)
         """
+        valid_format = self._is_valid_format()
+        if not valid_format:
+            return None
+
         function_map = {
             'json': self._json,
             'md': self._markdown
         }
         return function_map[self.format]
 
-    def run(self) -> Dict[str, Any]:
+    def run(self):
         """
         Run the undeclared component inspection process.
 
@@ -121,10 +125,19 @@ class UndeclaredComponent(PolicyCheck):
         """
         self._debug()
         components = self._get_components()
+        if components is None:
+            return PolicyStatus.ERROR.value, {}
+
         undeclared_components = self._get_undeclared_component(components)
         self.print_debug(f"Undeclared components: {undeclared_components}")
         formatter = self._get_formatter()
+        if formatter is None:
+            return PolicyStatus.ERROR.value, {}
+
         results = formatter(undeclared_components)
         self.print_to_file_or_stdout(results['details'], self.output)
         self.print_to_file_or_stderr(results['summary'], self.status)
-        return results
+
+        if len(undeclared_components) <= 0:
+            return PolicyStatus.FAIL.value, results
+        return PolicyStatus.SUCCESS.value, results

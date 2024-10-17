@@ -32,6 +32,7 @@ from scanoss.inspection.undeclared_component import UndeclaredComponent
 
 class MyTestCase(unittest.TestCase):
 
+
     """
     Inspect for copyleft licenses
     """
@@ -44,6 +45,15 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(True, True)
 
     """
+       Inspect for copyleft licenses empty path
+    """
+    def test_copyleft_policy_empty_path(self):
+        copyleft = Copyleft(filepath='', format='json')
+        success, results = copyleft.run()
+        self.assertTrue(success,2)
+
+
+    """
     Inspect for empty copyleft licenses
     """
     def test_empty_copyleft_policy(self):
@@ -51,10 +61,11 @@ class MyTestCase(unittest.TestCase):
         file_name = "result-no-copyleft.json"
         input_file_name = os.path.join(script_dir,'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format='json')
-        results = copyleft.run()
+        status,results = copyleft.run()
         details = json.loads(results['details'])
+        self.assertEqual(status, 1)
         self.assertEqual(details, {})
-        self.assertEqual(results['summary'], '')
+        self.assertEqual(results['summary'], '0 component(s) with copyleft licenses were found.')
 
     """
     Inspect for copyleft licenses include
@@ -64,7 +75,7 @@ class MyTestCase(unittest.TestCase):
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format='json', include='MIT')
-        results = copyleft.run()
+        status, results = copyleft.run()
         has_mit_license = False
         details = json.loads(results['details'])
         for component in details['components']:
@@ -73,6 +84,7 @@ class MyTestCase(unittest.TestCase):
                     has_mit_license = True
                     break
 
+        self.assertEqual(status,0)
         self.assertEqual(has_mit_license, True)
 
     """
@@ -83,9 +95,10 @@ class MyTestCase(unittest.TestCase):
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format='json', exclude='GPL-2.0-only')
-        results = copyleft.run()
+        status,results = copyleft.run()
         details = json.loads(results['details'])
         self.assertEqual(details, {})
+        self.assertEqual(status, 1)
 
     """
         Inspect for copyleft licenses explicit
@@ -95,9 +108,23 @@ class MyTestCase(unittest.TestCase):
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format='json', explicit='MIT')
-        results = copyleft.run()
+        status, results = copyleft.run()
         details = json.loads(results['details'])
         self.assertEqual(len(details['components']), 1)
+        self.assertEqual(status,0)
+
+    """
+        Inspect for copyleft licenses empty explicit licenses (should set the default ones)
+    """
+    def test_copyleft_policy_empty_explicit(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = "result.json"
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(filepath=input_file_name, format='json', explicit='')
+        status, results = copyleft.run()
+        details = json.loads(results['details'])
+        self.assertEqual(len(details['components']), 5)
+        self.assertEqual(status,0)
 
 
     """
@@ -108,13 +135,24 @@ class MyTestCase(unittest.TestCase):
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format='md', explicit='MIT')
-        results = copyleft.run()
+        status, results = copyleft.run()
         expected_detail_output = '### Copyleft licenses \n  | Component | Version | License | URL | Copyleft | \n | - | :-: | - | - | :-: | \n | pkg:github/scanoss/engine | 4.0.4 | MIT | https://spdx.org/licenses/MIT.html | YES | '
         expected_summary_output = '1 component(s) with copyleft licenses were found.'
         self.assertEqual(results['details'], expected_detail_output)
         self.assertEqual(results['summary'], expected_summary_output)
+        self.assertEqual(status, 0)
 
     ## Undeclared Components Policy Tests ##
+
+    """
+       Inspect for undeclared components empty path
+    """
+    def test_copyleft_policy_empty_path(self):
+        copyleft = UndeclaredComponent(filepath='', format='json')
+        success, results = copyleft.run()
+        self.assertTrue(success,2)
+
+
     """
     Inspect for undeclared components
     """
@@ -123,8 +161,7 @@ class MyTestCase(unittest.TestCase):
         file_name = "result.json"
         input_file_name = os.path.join(script_dir,'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format='json')
-        results = undeclared.run()
-        print(results)
+        status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
         expected_summary_output = """3 undeclared component(s) were found.
@@ -141,3 +178,40 @@ class MyTestCase(unittest.TestCase):
         """
         self.assertEqual(len(details['components']), 3)
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))
+        self.assertEqual(status, 0)
+
+    """
+       Undeclared component markdown output
+    """
+    def test_undeclared_policy_markdown(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = "result.json"
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        undeclared = UndeclaredComponent(filepath=input_file_name, format='md')
+        status, results = undeclared.run()
+        details = results['details']
+        summary = results['summary']
+        expected_details_output =  """ ### Undeclared components
+             | Component | Version | License | 
+             | - | - | - | 
+             | pkg:github/scanoss/scanner.c | 1.3.3 | BSD-2-Clause - GPL-2.0-only | 
+             | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
+             | pkg:github/scanoss/wfp | 6afc1f6 | Zlib - GPL-2.0-only | """
+
+        expected_summary_output = """3 undeclared component(s) were found.
+           Add the following snippet into your `sbom.json` file 
+           ```json 
+           [
+             {
+               "purl": "pkg:github/scanoss/scanner.c"
+             },
+             {
+               "purl": "pkg:github/scanoss/wfp"
+             }
+           ]```
+           """
+        self.assertEqual(status, 0)
+        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)',
+                                                                            '', expected_details_output))
+        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary),
+                         re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))
