@@ -24,13 +24,24 @@ class PolicyCheck(ScanossBase):
         self.format =format
         self.status = status
 
+
     @abstractmethod
-    def run(self) :
+    def run(self):
         pass
 
     @abstractmethod
     def _get_formatter(self) -> str:
         pass
+
+    def _init(self) :
+        if self.status is not None:
+            if not self._is_valid_path(self.status):
+               return None
+        if self.output is not None:
+            if not self._is_valid_path(self.output):
+                return None
+
+        return True
 
     def _debug(self):
         self.print_debug(f"Policy: {self.name}")
@@ -40,9 +51,38 @@ class PolicyCheck(ScanossBase):
         self.print_debug(f"Input: {self.filepath}")
 
     def _is_valid_format(self):
+        """
+          Validate if the format specified is supported.
+
+          This method checks if the format stored in self.format is one of the
+          valid formats defined in self.VALID_FORMATS.
+
+          Returns:
+              bool: True if the format is valid, False otherwise.
+        """
         if self.format not in self.VALID_FORMATS:
             valid_formats_str = ", ".join(self.VALID_FORMATS)
             self.print_stderr(f"Invalid format '{self.format}'. Valid formats are: {valid_formats_str}")
+            return False
+        return True
+
+    def _is_valid_path(self, file_path: str) -> bool:
+        """
+        Check if the directory path for a given file path exists.
+
+        This method extracts the directory path from the given file path
+        and checks if it exists.
+
+        Args:
+            file_path (str): The full path to the file.
+
+        Returns:
+            bool: True if the directory exists, False otherwise.
+        """
+        dir_path = os.path.dirname(file_path)
+        # Check if the directory exists, if not, create it
+        if not os.path.exists(dir_path):
+            self.print_stderr(f"ERROR: Dir '{dir_path}' does not exist.")
             return False
         return True
 
@@ -75,8 +115,4 @@ class PolicyCheck(ScanossBase):
             return None
         components = get_components(results)
         return components
-
-    def _save_to_file(self, input: str, filename: str = None):
-        if filename:
-            self.print_to_file_or_stdout(input, filename)
 

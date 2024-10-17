@@ -25,12 +25,9 @@ import argparse
 import os
 from pathlib import Path
 import sys
-from array import array
+
 
 import pypac
-from docutils.nodes import description
-
-from scanoss.inspection import copyleft
 from scanoss.inspection.copyleft import Copyleft
 from scanoss.inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
