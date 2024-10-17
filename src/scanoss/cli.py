@@ -829,15 +829,17 @@ def inspect(parser, args):
         exit(1)
     success = False
     if args.subparsercmd == 'copyleft':
-        new_check = Copyleft(debug=False, trace=args.trace, quiet=args.quiet, filepath=args.input, format=args.format,
+        i_copyleft = Copyleft(debug=False, trace=args.trace, quiet=args.quiet, filepath=args.input, format=args.format,
                              status=args.status, output=args.output, include=args.include,
                              exclude=args.exclude, explicit=args.explicit)
-        new_check.run()
+        status, _ = i_copyleft.run()
+        sys.exit(status)
 
     if args.subparsercmd == 'undeclared':
-        new_check = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet, filepath=args.input,
+        i_undeclared = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet, filepath=args.input,
                                         format=args.format, status=args.status, output=args.output)
-        new_check.run()
+        status, _ = i_undeclared.run()
+        sys.exit(status)
 
     if not success:
         exit(1)

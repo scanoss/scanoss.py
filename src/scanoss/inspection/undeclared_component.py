@@ -45,6 +45,14 @@ class UndeclaredComponent(PolicyCheck):
         # end for
         return undeclared_components
 
+    def _get_summary(self, components: list) -> str:
+        summary = f"{len(components)} undeclared component(s) were found.\n"
+
+        if len(components) > 0:
+            summary += (f" Add the following snippet into your `sbom.json` file \n"
+                        f" ```json \n {json.dumps(self._generate_sbom_file(components), indent=2)} ``` \n ")
+        return summary
+
     def _json(self, components: list) -> Dict[str, Any]:
         """
         Format the undeclared components as JSON.
@@ -54,9 +62,7 @@ class UndeclaredComponent(PolicyCheck):
         """
         return {
             'details':  json.dumps({ 'components': components}, indent=2),
-            'summary': f"{len(components)} undeclared component(s) were found.\n"
-                       f" Add the following snippet into your `sbom.json` file \n"
-                       f" ```json \n {json.dumps(self._generate_sbom_file(components), indent=2)}``` \n ",
+            'summary': self._get_summary(components),
         }
 
 
@@ -73,12 +79,10 @@ class UndeclaredComponent(PolicyCheck):
             licenses = " - ".join(license.get('spdxid', 'Unknown') for license in component['licenses'])
 
             rows.append([component['purl'], component['version'], licenses])
-        #`#### Add the following snippet into your \`sbom.json\` file \n \`\`\`json \n ${snippet} \n \`\`\``
+
         return  {
             'details': f"### Undeclared components \n {generate_table(headers,rows)}",
-            'summary': f"{len(components)} undeclared component(s) were found.\n"
-                       f" Add the following snippet into your `sbom.json` file \n"
-                       f" ```json \n {json.dumps(self._generate_sbom_file(components), indent=2)} ``` \n "
+            'summary': self._get_summary(components),
         }
 
     def _generate_sbom_file(self,components: list) -> list:
