@@ -37,7 +37,7 @@ class LicenseUtil(ScanossBase):
             :param explicit: Comma-separated string of licenses to use exclusively
         """
 
-        if explicit:
+        if explicit and explicit.strip():
             exp = [item.lower() for item in explicit.split(',')]
             self.copyleft_licenses = set(exp)
             return
@@ -45,11 +45,11 @@ class LicenseUtil(ScanossBase):
         # If no explicit licenses were set, set default ones
         self.copyleft_licenses = self.default_copyleft_licenses.copy()
 
-        if include:
+        if include and include.strip():
             inc =[item.lower() for item in include.split(',')]
             self.copyleft_licenses.update(inc)
 
-        if exclude:
+        if exclude and exclude.strip():
             inc = [item.lower() for item in exclude.split(',')]
             for lic in inc:
                 self.copyleft_licenses.discard(lic)

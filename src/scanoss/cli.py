@@ -392,7 +392,7 @@ def setup_args() -> None:
     else:
         if ((args.subparser == 'utils' or args.subparser == 'ut' or
             args.subparser == 'component' or args.subparser == 'comp' or args.subparser == 'inspect'
-             or args.subparser == 'cp' ) \
+             or args.subparser == 'insp' ) \
             \
                 and not args.subparsercmd):
             parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed

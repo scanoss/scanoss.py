@@ -1,7 +1,7 @@
 import json
 import sys
 from typing import Dict, Any, Callable, List
-from scanoss.inspection.policy_check import PolicyCheck
+from scanoss.inspection.policy_check import PolicyCheck, PolicyStatus
 from scanoss.inspection.utils.license_utils import license_util
 from scanoss.inspection.utils.markdown_utils import generate_table
 
@@ -32,7 +32,9 @@ class Copyleft(PolicyCheck):
         self.format = format
         self.output = output
         self.status = status
-        license_util.init(include, exclude, explicit)
+        self.include = include
+        self.exclude = exclude
+        self.explicit = explicit
 
     def _json(self, components: list) -> Dict[str, Any]:
         """
@@ -76,11 +78,15 @@ class Copyleft(PolicyCheck):
             'summary' : f"{len(components)} component(s) with copyleft licenses were found."
         }
 
-    def _get_formatter(self)-> Callable[[List[dict]], Dict[str,Any]] :
+    def _get_formatter(self)-> Callable[[List[dict]], Dict[str,Any]] or None:
         """
             Get the appropriate formatter function based on the specified format.
             :return: Formatter function (either _json or _markdown)
         """
+        valid_format = self._is_valid_format()
+        if not valid_format:
+            return None
+
         function_map = {
             'json': self._json,
             'md': self._markdown
@@ -103,9 +109,10 @@ class Copyleft(PolicyCheck):
                 del filtered_component['status']
                 filtered_components.append(filtered_component)
 
+        self.print_debug(f"Copyleft components: {filtered_components}")
         return filtered_components
 
-    def run(self) -> Dict[str, Any]:
+    def run(self):
         """
         Run the copyleft license inspection process.
 
@@ -117,15 +124,25 @@ class Copyleft(PolicyCheck):
 
         :return: Dictionary containing the inspection results
         """
+
+        license_util.init(self.include, self.exclude, self.explicit)
         components = self._get_components()
+        if components is None:
+            return PolicyStatus.ERROR.value, {}
+
         copyleft_components = self._filter_components_with_copyleft_licenses(components)
-        self.print_debug(f"Copyleft components: {copyleft_components}")
         formatter = self._get_formatter()
+        if formatter is None:
+            return PolicyStatus.ERROR.value, {}
+
         results = formatter(copyleft_components)
         ## Save outputs  if required
         self.print_to_file_or_stdout(results['details'], self.output)
         self.print_to_file_or_stderr(results['summary'], self.status)
-        return results
+
+        if len(copyleft_components) <= 0:
+            return PolicyStatus.FAIL.value, results
+        return PolicyStatus.SUCCESS.value, results
 
 
 
