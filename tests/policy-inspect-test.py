@@ -1,7 +1,7 @@
 """
  SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+   Copyright (c) 2024, SCANOSS
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir,'data', file_name)
-        copyleft = Copyleft(filepath=input_file_name, format='json')
+        copyleft = Copyleft(filepath=input_file_name, format_type='json')
         copyleft.run()
         self.assertEqual(True, True)
 
@@ -48,7 +48,7 @@ class MyTestCase(unittest.TestCase):
        Inspect for copyleft licenses empty path
     """
     def test_copyleft_policy_empty_path(self):
-        copyleft = Copyleft(filepath='', format='json')
+        copyleft = Copyleft(filepath='', format_type='json')
         success, results = copyleft.run()
         self.assertTrue(success,2)
 
@@ -60,7 +60,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result-no-copyleft.json"
         input_file_name = os.path.join(script_dir,'data', file_name)
-        copyleft = Copyleft(filepath=input_file_name, format='json')
+        copyleft = Copyleft(filepath=input_file_name, format_type='json')
         status,results = copyleft.run()
         details = json.loads(results['details'])
         self.assertEqual(status, 1)
@@ -74,7 +74,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
-        copyleft = Copyleft(filepath=input_file_name, format='json', include='MIT')
+        copyleft = Copyleft(filepath=input_file_name, format_type='json', include='MIT')
         status, results = copyleft.run()
         has_mit_license = False
         details = json.loads(results['details'])
@@ -94,7 +94,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
-        copyleft = Copyleft(filepath=input_file_name, format='json', exclude='GPL-2.0-only')
+        copyleft = Copyleft(filepath=input_file_name, format_type='json', exclude='GPL-2.0-only')
         status,results = copyleft.run()
         details = json.loads(results['details'])
         self.assertEqual(details, {})
@@ -107,7 +107,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
-        copyleft = Copyleft(filepath=input_file_name, format='json', explicit='MIT')
+        copyleft = Copyleft(filepath=input_file_name, format_type='json', explicit='MIT')
         status, results = copyleft.run()
         details = json.loads(results['details'])
         self.assertEqual(len(details['components']), 1)
@@ -120,7 +120,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
-        copyleft = Copyleft(filepath=input_file_name, format='json', explicit='')
+        copyleft = Copyleft(filepath=input_file_name, format_type='json', explicit='')
         status, results = copyleft.run()
         details = json.loads(results['details'])
         self.assertEqual(len(details['components']), 5)
@@ -134,7 +134,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
-        copyleft = Copyleft(filepath=input_file_name, format='md', explicit='MIT')
+        copyleft = Copyleft(filepath=input_file_name, format_type='md', explicit='MIT')
         status, results = copyleft.run()
         expected_detail_output = '### Copyleft licenses \n  | Component | Version | License | URL | Copyleft | \n | - | :-: | - | - | :-: | \n | pkg:github/scanoss/engine | 4.0.4 | MIT | https://spdx.org/licenses/MIT.html | YES | '
         expected_summary_output = '1 component(s) with copyleft licenses were found.'
@@ -148,7 +148,7 @@ class MyTestCase(unittest.TestCase):
        Inspect for undeclared components empty path
     """
     def test_copyleft_policy_empty_path(self):
-        copyleft = UndeclaredComponent(filepath='', format='json')
+        copyleft = UndeclaredComponent(filepath='', format_type='json')
         success, results = copyleft.run()
         self.assertTrue(success,2)
 
@@ -160,7 +160,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir,'data', file_name)
-        undeclared = UndeclaredComponent(filepath=input_file_name, format='json')
+        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='json')
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
@@ -187,7 +187,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
-        undeclared = UndeclaredComponent(filepath=input_file_name, format='md')
+        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md')
         status, results = undeclared.run()
         details = results['details']
         summary = results['summary']

@@ -346,13 +346,13 @@ scanoss-py insp copyleft -i scan-results.json
 The following command can be used to inspect for copyleft licenses and save the results.
 Default output format 'json'.
 ```bash
-scanoss-py insp copyleft -i scan-results.json --status status.txt --output copyleft.json
+scanoss-py insp copyleft -i scan-results.json --status status.md --output copyleft.json
 ```
 
 #### Inspect for copyleft licenses and save results in Markdown format
 The following command can be used to inspect for copyleft licenses and save the results in Markdown format.
 ```bash
-scanoss-py insp copyleft -i scan-results.json --status status.txt --output copyleft.md --format md
+scanoss-py insp copyleft -i scan-results.json --status status.md --output copyleft.md --format md
 ```
 
 #### Inspect for undeclared components
@@ -367,11 +367,11 @@ scanoss-py insp undeclared -i scan-results.json
 The following command can be used to inspect for undeclared components and save the results.
 Default output format 'json'.
 ```bash
-scanoss-py insp undeclared -i scan-results.json --status undeclared-status.txt --output undeclared.json
+scanoss-py insp undeclared -i scan-results.json --status undeclared-status.md --output undeclared.json
 ```
 
 #### Inspect for undeclared components and save results in Markdown format
 The following command can be used to inspect for undeclared components and save the results in Markdown format.
 ```bash
-scanoss-py insp undeclared -i scan-results.json --status undeclared-status.txt --output undeclared.json --format md
+scanoss-py insp undeclared -i scan-results.json --status undeclared-status.md --output undeclared.json --format md
 ```

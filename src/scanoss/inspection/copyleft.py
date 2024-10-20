@@ -1,10 +1,29 @@
-import json
-import sys
-from typing import Dict, Any, Callable, List
-from scanoss.inspection.policy_check import PolicyCheck, PolicyStatus
-from scanoss.inspection.utils.license_utils import license_util
-from scanoss.inspection.utils.markdown_utils import generate_table
+"""
+ SPDX-License-Identifier: MIT
 
+   Copyright (c) 2024, SCANOSS
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE.
+"""
+import json
+from typing import Dict, Any
+from scanoss.inspection.policy_check import PolicyCheck, PolicyStatus
 
 class Copyleft(PolicyCheck):
     """
@@ -13,21 +32,23 @@ class Copyleft(PolicyCheck):
     """
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
-                 format: str = 'json', status: str = None, output: str = None, include: str = None, exclude: str = None, explicit: str = None):
+                 format_type: str = 'json', status: str = None, output: str = None, include: str = None,
+                 exclude: str = None, explicit: str = None):
         """
                Initialize the Copyleft class.
                :param debug: Enable debug mode
                :param trace: Enable trace mode (default True)
                :param quiet: Enable quiet mode
                :param filepath: Path to the file containing component data
-               :param format: Output format ('json' or 'md')
+               :param format_type: Output format ('json' or 'md')
                :param status: Path to save the status output
                :param output: Path to save detailed output
                :param include: Licenses to include in the analysis
                :param exclude: Licenses to exclude from the analysis
                :param explicit: Explicitly defined licenses
         """
-        super().__init__(debug, trace, quiet, filepath, format, status, output, name='Copyleft Policy')
+        super().__init__(debug, trace, quiet, filepath, format_type, status, output, name='Copyleft Policy')
+        self.license_util.init(include, exclude, explicit)
         self.filepath = filepath
         self.format = format
         self.output = output
@@ -74,24 +95,9 @@ class Copyleft(PolicyCheck):
                 rows.append(row)
 
         return  {
-            'details': f"### Copyleft licenses \n {generate_table(headers,rows,centeredColumns)}",
+            'details': f"### Copyleft licenses \n {self.generate_table(headers,rows,centeredColumns)}",
             'summary' : f"{len(components)} component(s) with copyleft licenses were found."
         }
-
-    def _get_formatter(self)-> Callable[[List[dict]], Dict[str,Any]] or None:
-        """
-            Get the appropriate formatter function based on the specified format.
-            :return: Formatter function (either _json or _markdown)
-        """
-        valid_format = self._is_valid_format()
-        if not valid_format:
-            return None
-
-        function_map = {
-            'json': self._json,
-            'md': self._markdown
-        }
-        return function_map[self.format]
 
     def _filter_components_with_copyleft_licenses(self, components: list) -> list:
         """
@@ -124,12 +130,8 @@ class Copyleft(PolicyCheck):
 
         :return: Dictionary containing the inspection results
         """
-        if not self._init():
-            return PolicyStatus.ERROR.value, {}
 
         self._debug()
-
-        license_util.init(self.include, self.exclude, self.explicit)
         components = self._get_components()
         if components is None:
             return PolicyStatus.ERROR.value, {}

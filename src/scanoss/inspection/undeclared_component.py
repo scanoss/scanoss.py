@@ -1,8 +1,29 @@
-import json
-from typing import Dict, Any, Callable, List
-from scanoss.inspection.policy_check import PolicyCheck, PolicyStatus
-from scanoss.inspection.utils.markdown_utils import generate_table
+"""
+ SPDX-License-Identifier: MIT
 
+   Copyright (c) 2024, SCANOSS
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE.
+"""
+import json
+from typing import Dict, Any
+from scanoss.inspection.policy_check import PolicyCheck, PolicyStatus
 
 class UndeclaredComponent(PolicyCheck):
     """
@@ -11,7 +32,7 @@ class UndeclaredComponent(PolicyCheck):
       """
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
-                 format: str = 'json', status: str = None, output: str = None):
+                 format_type: str = 'json', status: str = None, output: str = None):
         """
                Initialize the UndeclaredComponent class.
 
@@ -19,11 +40,12 @@ class UndeclaredComponent(PolicyCheck):
                :param trace: Enable trace mode (default True)
                :param quiet: Enable quiet mode
                :param filepath: Path to the file containing component data
-               :param format: Output format ('json' or 'md')
+               :param format_type: Output format ('json' or 'md')
                :param status: Path to save status output
                :param output: Path to save detailed output
         """
-        super().__init__(debug, trace, quiet, filepath, format, status, output, name='Undeclared Components Policy')
+        super().__init__(debug, trace, quiet, filepath, format_type, status, output,
+                         name='Undeclared Components Policy')
         self.filepath = filepath
         self.format = format
         self.output = output
@@ -60,8 +82,11 @@ class UndeclaredComponent(PolicyCheck):
         :param components: List of undeclared components
         :return: Dictionary with formatted JSON details and summary
         """
+        details = {}
+        if len(components) > 0:
+            details = {'components': components}
         return {
-            'details':  json.dumps({ 'components': components}, indent=2),
+            'details':  json.dumps(details, indent=2),
             'summary': self._get_summary(components),
         }
 
@@ -81,7 +106,7 @@ class UndeclaredComponent(PolicyCheck):
             rows.append([component['purl'], component['version'], licenses])
 
         return  {
-            'details': f"### Undeclared components \n {generate_table(headers,rows)}",
+            'details': f"### Undeclared components \n {self.generate_table(headers,rows)}",
             'summary': self._get_summary(components),
         }
 
@@ -98,23 +123,6 @@ class UndeclaredComponent(PolicyCheck):
 
         return list(sbom.values())
 
-
-    def _get_formatter(self) -> Callable[[List[dict]], Dict[str,Any]] or None:
-        """
-            Get the appropriate formatter function based on the specified format.
-
-            :return: Formatter function (either _json or _markdown)
-        """
-        valid_format = self._is_valid_format()
-        if not valid_format:
-            return None
-
-        function_map = {
-            'json': self._json,
-            'md': self._markdown
-        }
-        return function_map[self.format]
-
     def run(self):
         """
         Run the undeclared component inspection process.
@@ -127,8 +135,6 @@ class UndeclaredComponent(PolicyCheck):
 
         :return: Dictionary containing the inspection results
         """
-        if not self._init():
-            return PolicyStatus.ERROR.value, {}
 
         self._debug()
         components = self._get_components()

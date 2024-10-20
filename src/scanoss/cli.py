@@ -25,16 +25,13 @@ import argparse
 import os
 from pathlib import Path
 import sys
-
-
 import pypac
 from scanoss.inspection.copyleft import Copyleft
 from scanoss.inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
-from .scanner import Scanner
 from .scanoss_settings import ScanossSettings
 from .scancodedeps import ScancodeDeps
-from .scanner import FAST_WINNOWING, Scanner
+from .scanner import Scanner
 from .scantype import ScanType
 from .filecount import FileCount
 from .cyclonedx import CycloneDx
@@ -313,17 +310,17 @@ def setup_args() -> None:
     p_copyleft.add_argument('--include', help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.')
     p_copyleft.add_argument('--exclude', help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.')
     p_copyleft.add_argument('--explicit', help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s')
-    p_copyleft.set_defaults(func=inspect)
+    p_copyleft.set_defaults(func=inspect_copyleft)
 
     # Inspect Sub-command: inspect undeclared
     p_undeclared = p_inspect_sub.add_parser('undeclared', aliases=['un'],description="Inspect for undeclared components", help='Inspect for undeclared components')
-    p_undeclared.set_defaults(func=inspect)
+    p_undeclared.set_defaults(func=inspect_undeclared)
 
     for p in [p_copyleft, p_undeclared]:
         p.add_argument('-i', '--input', nargs='?', help='Path to results file')
         p.add_argument('-f', '--format',required=False ,choices=['json', 'md'], default='json', help='Output format (default: json)')
         p.add_argument('-o', '--output', type=str, help='Save details into a file')
-        p.add_argument('-s', '--status', type=str, help='Save summary into a file')
+        p.add_argument('-s', '--status', type=str, help='Save summary data into Markdown file')
 
 
 
@@ -810,7 +807,7 @@ def convert(parser, args):
     if not success:
         exit(1)
 
-def inspect(parser, args):
+def inspect_copyleft(parser, args):
     """
     Run the "inspect" sub-command
     Parameters
@@ -820,26 +817,58 @@ def inspect(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if args.subparsercmd and not args.input :
+    if args.input is None:
         print_stderr('Please specify an input file to inspect')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         exit(1)
-    success = False
-    if args.subparsercmd == 'copyleft':
-        i_copyleft = Copyleft(debug=False, trace=args.trace, quiet=args.quiet, filepath=args.input, format=args.format,
-                             status=args.status, output=args.output, include=args.include,
-                             exclude=args.exclude, explicit=args.explicit)
-        status, _ = i_copyleft.run()
-        sys.exit(status)
 
-    if args.subparsercmd == 'undeclared':
-        i_undeclared = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet, filepath=args.input,
-                                        format=args.format, status=args.status, output=args.output)
-        status, _ = i_undeclared.run()
-        sys.exit(status)
+    output: str = None
+    if args.output:
+        output = args.output
+        open(output, 'w').close()
 
-    if not success:
+    status_output: str = None
+    if args.status:
+        status_output = args.status
+        open(status_output, 'w').close()
+
+    i_copyleft = Copyleft(debug=False, trace=args.trace, quiet=args.quiet, filepath=args.input,
+                          format_type=args.format, status=status_output, output=output, include=args.include,
+                         exclude=args.exclude, explicit=args.explicit)
+    status, _ = i_copyleft.run()
+    sys.exit(status)
+
+
+
+def inspect_undeclared(parser, args):
+    """
+    Run the "inspect" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if args.input is None:
+        print_stderr('Please specify an input file to inspect')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         exit(1)
+
+    output: str = None
+    if args.output:
+        output = args.output
+        open(output, 'w').close()
+
+    status_output: str = None
+    if args.status:
+        status_output = args.status
+        open(status_output, 'w').close()
+    i_undeclared = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet,
+                                       filepath=args.input, format_type=args.format,
+                                       status=status_output, output=output)
+    status, _ = i_undeclared.run()
+    sys.exit(status)
 
 
 def utils_certloc(*_):
