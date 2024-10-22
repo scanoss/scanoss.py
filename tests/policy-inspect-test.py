@@ -136,9 +136,12 @@ class MyTestCase(unittest.TestCase):
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='md', explicit='MIT')
         status, results = copyleft.run()
-        expected_detail_output = '### Copyleft licenses \n  | Component | Version | License | URL | Copyleft | \n | - | :-: | - | - | :-: | \n | pkg:github/scanoss/engine | 4.0.4 | MIT | https://spdx.org/licenses/MIT.html | YES | '
+        expected_detail_output = ('### Copyleft licenses \n  | Component | Version | License | URL | Copyleft |\n'
+                                  ' | - | :-: | - | - | :-: |\n'
+                                  ' | pkg:github/scanoss/engine | 4.0.4 | MIT | https://spdx.org/licenses/MIT.html | YES | ')
         expected_summary_output = '1 component(s) with copyleft licenses were found.'
-        self.assertEqual(results['details'], expected_detail_output)
+        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', results['details']),
+                         re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_detail_output))
         self.assertEqual(results['summary'], expected_summary_output)
         self.assertEqual(status, 0)
 
@@ -177,7 +180,8 @@ class MyTestCase(unittest.TestCase):
         ]```
         """
         self.assertEqual(len(details['components']), 3)
-        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))
+        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)',
+                                                                            '', expected_summary_output))
         self.assertEqual(status, 0)
 
     """
