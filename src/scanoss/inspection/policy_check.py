@@ -41,7 +41,9 @@ class PolicyStatus(Enum):
     SUCCESS = 0
     FAIL = 1
     ERROR = 2
-
+#
+# End of PolicyStatus Class
+#
 
 class ComponentID(Enum):
     """
@@ -55,9 +57,11 @@ class ComponentID(Enum):
     FILE = "file"
     SNIPPET = "snippet"
     DEPENDENCY = "dependency"
+#
+# End of ComponentID Class
+#
 
 class PolicyCheck(ScanossBase):
-
     """
     A base class for implementing various software policy checks.
 
@@ -141,21 +145,16 @@ class PolicyCheck(ScanossBase):
         :param new_component: The new component to be added or updated
         :return: The updated components dictionary
         """
-
         component_key = f"{new_component['purl'][0]}@{new_component['version']}"
-
         components[component_key] = {
             'purl': new_component['purl'][0],
             'version': new_component['version'],
             'licenses': {},
             'status': new_component['status'],
         }
-
-
         if not new_component.get('licenses'):
-            self.print_stderr(f"WARNING: Results missing licenses. Skipping.")
+            self.print_stderr(f'WARNING: Results missing licenses. Skipping.')
             return components
-
         # Process licenses for this component
         for l in new_component['licenses']:
             if l.get('name'):
@@ -165,7 +164,6 @@ class PolicyCheck(ScanossBase):
                     'copyleft': self.license_util.is_copyleft(spdxid),
                     'url': self.license_util.get_spdx_url(spdxid),
                 }
-
         return components
 
     def _get_components_from_results(self,results: Dict[str, Any]) -> list or None:
@@ -179,65 +177,55 @@ class PolicyCheck(ScanossBase):
             :param results: A dictionary containing the raw results of a component scan
             :return: A list of dictionaries, each representing a unique component with its details
         """
-
         if results is None:
             self.print_stderr(f'ERROR: Results cannot be empty')
             return None
-
         components = {}
         for component in results.values():
             for c in component:
                 component_id = c.get('id')
                 if not component_id:
-                    self.print_stderr(f"WARNING: Result missing id. Skipping.")
+                    self.print_stderr(f'WARNING: Result missing id. Skipping.')
                     continue
-
                 if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
-
                     if not c.get('purl'):
-                            self.print_stderr(f"WARNING: Result missing purl. Skipping.")
-                            continue
+                        self.print_stderr(f'WARNING: Result missing purl. Skipping.')
+                        continue
                     if len(c.get('purl')) <= 0:
-                        self.print_stderr(f"WARNING: Result missing purls. Skipping.")
+                        self.print_stderr(f'WARNING: Result missing purls. Skipping.')
                         continue
                     if not c.get('version'):
-                        self.print_stderr(f"WARNING: Result missing version. Skipping.")
+                        self.print_stderr(f'WARNING: Result missing version. Skipping.')
                         continue
-
                     component_key = f"{c['purl'][0]}@{c['version']}"
-
                     # Initialize or update the component entry
                     if component_key not in components:
                         components = self._append_component(components, c)
-
                 if c['id'] == ComponentID.DEPENDENCY.value:
                     if c.get('dependency') is None:
                         continue
                     for d in c['dependencies']:
                         if not d.get('purl'):
-                            self.print_stderr(f"WARNING: Result missing purl. Skipping.")
+                            self.print_stderr(f'WARNING: Result missing purl. Skipping.')
                             continue
                         if len(d.get('purl')) <= 0:
-                            self.print_stderr(f"WARNING: Result missing purls. Skipping.")
+                            self.print_stderr(f'WARNING: Result missing purls. Skipping.')
                             continue
                         if not d.get('version'):
-                            self.print_stderr(f"WARNING: Result missing version. Skipping.")
+                            self.print_stderr(f'WARNING: Result missing version. Skipping.')
                             continue
-
                         component_key = f"{d['purl'][0]}@{d['version']}"
-
                         if component_key not in components:
                             components = self._append_component(components, d)
-                    # End of for loop
+                    # End of dependencies loop
                 # End if
-            # End if
+            # End of component loop
+        # End of results loop
         results = list(components.values())
         for component in results:
             component['licenses'] = list(component['licenses'].values())
 
         return results
-
-
 
     def generate_table(self, headers, rows, centered_columns=None):
         """
@@ -250,34 +238,31 @@ class PolicyCheck(ScanossBase):
         """
         col_sep = ' | '
         centered_column_set = set(centered_columns or [])
-
         if headers is None:
             self.print_stderr('ERROR: Header are no set')
             return None
-
-        def create_separator(header, index):
+        # Decide which separator to use
+        def create_separator(index):
             if centered_columns is None:
                 return '-'
             return ':-:' if index in centered_column_set else '-'
-
-        row_separator = col_sep + col_sep.join(
-            create_separator(header, index) for index, header in enumerate(headers)
-        ) + col_sep
-
+        # Build the row separator
+        row_separator = col_sep + col_sep.join(create_separator(index) for index, _ in enumerate(headers)) + col_sep
+        # build table rows
         table_rows = [col_sep + col_sep.join(headers) + col_sep, row_separator]
         table_rows.extend(col_sep + col_sep.join(row) + col_sep for row in rows)
-
         return '\n'.join(table_rows)
 
     def _get_formatter(self)-> Callable[[List[dict]], Dict[str,Any]] or None:
         """
-            Get the appropriate formatter function based on the specified format.
-            :return: Formatter function (either _json or _markdown)
+        Get the appropriate formatter function based on the specified format.
+
+        :return: Formatter function (either _json or _markdown)
         """
         valid_format = self._is_valid_format()
         if not valid_format:
             return None
-
+        # a map of which format function to return
         function_map = {
             'json': self._json,
             'md': self._markdown
@@ -290,34 +275,31 @@ class PolicyCheck(ScanossBase):
 
         This method prints various attributes of the PolicyCheck instance for debugging purposes.
         """
-        self.print_debug(f'Policy: {self.name}')
-        self.print_debug(f'Format: {self.format_type}')
-        self.print_debug(f'Status: {self.status}')
-        self.print_debug(f'Output: {self.output}')
-        self.print_debug(f'Input: {self.filepath}')
+        if self.debug:
+            self.print_stderr(f'Policy: {self.name}')
+            self.print_stderr(f'Format: {self.format_type}')
+            self.print_stderr(f'Status: {self.status}')
+            self.print_stderr(f'Output: {self.output}')
+            self.print_stderr(f'Input: {self.filepath}')
 
-    def _is_valid_format(self):
+    def _is_valid_format(self) -> bool:
         """
-          Validate if the format specified is supported.
+        Validate if the format specified is supported.
 
-          This method checks if the format stored in self.format is one of the
-          valid formats defined in self.VALID_FORMATS.
+        This method checks if the format stored in format is one of the
+        valid formats defined in self.VALID_FORMATS.
 
-          Returns:
-              bool: True if the format is valid, False otherwise.
+        :return: bool: True if the format is valid, False otherwise.
         """
         if self.format_type not in self.VALID_FORMATS:
-            valid_formats_str = ", ".join(self.VALID_FORMATS)
+            valid_formats_str = ', '.join(self.VALID_FORMATS)
             self.print_stderr(f'ERROR: Invalid format "{self.format_type}". Valid formats are: {valid_formats_str}')
             return False
         return True
 
-
     def _load_input_file(self):
-        """Load the result.json file
-
-          Args:
-              file (str): Path to the JSON file
+        """
+        Load the result.json file
 
           Returns:
               Dict[str, Any]: The parsed JSON data
@@ -325,7 +307,6 @@ class PolicyCheck(ScanossBase):
         if not os.path.exists(self.filepath):
             self.print_stderr(f'ERROR: The file "{self.filepath}" does not exist.')
             return None
-
         with open(self.filepath, "r") as jsonfile:
             try:
                 return json.load(jsonfile)
@@ -333,10 +314,9 @@ class PolicyCheck(ScanossBase):
                 self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
         return None
 
-
     def _get_components(self):
         """
-        Retrieve and process components from the pre-loaded results.
+        Retrieve and process components from the preloaded results.
 
         This method performs the following steps:
         1. Checks if the results have been previously loaded (self.results).
@@ -349,13 +329,13 @@ class PolicyCheck(ScanossBase):
 
         Note:
         - This method assumes that the results have been previously loaded and stored in self.results.
-        - If self.results is None, the method returns None without performing any further operations.
+        - If results is None, the method returns None without performing any further operations.
         - The actual processing of components is delegated to the _get_components_from_results method.
         """
-
-
         if self.results is None:
             return None
         components = self._get_components_from_results(self.results)
         return components
-
+#
+# End of PolicyCheck Class
+#

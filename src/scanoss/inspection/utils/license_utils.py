@@ -24,11 +24,9 @@
 from scanoss.scanossbase import ScanossBase
 
 DEFAULT_COPYLEFT_LICENSES = {
-            'gpl-1.0-only', 'gpl-2.0-only', 'gpl-3.0-only', 'agpl-3.0-only',
-            'sleepycat', 'watcom-1.0', 'gfdl-1.1-only', 'gfdl-1.2-only',
-            'gfdl-1.3-only', 'lgpl-2.1-only', 'lgpl-3.0-only', 'mpl-1.1',
-            'mpl-2.0', 'epl-1.0', 'epl-2.0', 'cddl-1.0', 'cddl-1.1',
-            'cecill-2.1', 'artistic-1.0', 'artistic-2.0', 'cc-by-sa-4.0'
+    'agpl-3.0-only', 'artistic-1.0', 'artistic-2.0', 'cc-by-sa-4.0', 'cddl-1.0', 'cddl-1.1', 'cecill-2.1',
+    'epl-1.0', 'epl-2.0', 'gfdl-1.1-only', 'gfdl-1.2-only', 'gfdl-1.3-only', 'gpl-1.0-only', 'gpl-2.0-only',
+    'gpl-3.0-only', 'lgpl-2.1-only', 'lgpl-3.0-only', 'mpl-1.1', 'mpl-2.0', 'sleepycat', 'watcom-1.0'
 }
 
 class LicenseUtil(ScanossBase):
@@ -39,15 +37,14 @@ class LicenseUtil(ScanossBase):
         copyleft licenses. It also offers a method to generate URLs for license information.
     """
     BASE_SPDX_ORG_URL = 'https://spdx.org/licenses'
-    HTML = 'html'
+    BASE_OSADL_URL = 'https://www.osadl.org/fileadmin/checklists/unreflicenses'
 
     def __init__(self,debug: bool = False, trace: bool = True, quiet: bool = False):
         super().__init__(debug, trace, quiet)
         self.default_copyleft_licenses = set(DEFAULT_COPYLEFT_LICENSES)
         self.copyleft_licenses = set()
 
-
-    def init(self, include: str=None, exclude: str=None, explicit: str= None):
+    def init(self, include: str = None, exclude: str = None, explicit: str = None):
         """
             Initialize the set of copyleft licenses based on user input.
 
@@ -60,32 +57,31 @@ class LicenseUtil(ScanossBase):
             :param exclude: Comma-separated string of licenses to exclude
             :param explicit: Comma-separated string of licenses to use exclusively
         """
-
-        self.print_debug(f'Include Copyleft licenses: ${include}')
-        self.print_debug(f'Exclude Copyleft licenses: ${exclude}')
-        self.print_debug(f'Explicit Copyleft licenses: ${explicit}')
-
-        if explicit and explicit.strip():
-            exp = [item.lower() for item in explicit.split(',')]
+        if self.debug:
+            self.print_stderr(f'Include Copyleft licenses: ${include}')
+            self.print_stderr(f'Exclude Copyleft licenses: ${exclude}')
+            self.print_stderr(f'Explicit Copyleft licenses: ${explicit}')
+        if explicit:
+            explicit = explicit.strip()
+        if explicit:
+            exp = [item.strip().lower() for item in explicit.split(',')]
             self.copyleft_licenses = set(exp)
             self.print_debug(f'Copyleft licenses: ${self.copyleft_licenses}')
             return
-
         # If no explicit licenses were set, set default ones
         self.copyleft_licenses = self.default_copyleft_licenses.copy()
-
-        if include and include.strip():
-            inc =[item.lower() for item in include.split(',')]
+        if include:
+            include = include.strip()
+        if include:
+            inc =[item.strip().lower() for item in include.split(',')]
             self.copyleft_licenses.update(inc)
-
-        if exclude and exclude.strip():
-            inc = [item.lower() for item in exclude.split(',')]
+        if exclude:
+            exclude = exclude.strip()
+        if exclude:
+            inc = [item.strip().lower() for item in exclude.split(',')]
             for lic in inc:
                 self.copyleft_licenses.discard(lic)
-
         self.print_debug(f'Copyleft licenses: ${self.copyleft_licenses}')
-
-
 
     def is_copyleft(self, spdxid: str) -> bool:
         """
@@ -98,12 +94,22 @@ class LicenseUtil(ScanossBase):
 
     def get_spdx_url(self, spdxid: str) -> str:
         """
-           Generate the URL for the OSADL (Open Source Automation Development Lab) page of a license.
+           Generate the URL for the SPDX page of a license.
 
            :param spdxid: The SPDX identifier of the license
-           :return: The URL of the OSADL page for the given license
+           :return: The URL of the SPDX page for the given license
         """
-        return f"{self.BASE_SPDX_ORG_URL}/{spdxid}.{self.HTML}"
+        return f'{self.BASE_SPDX_ORG_URL}/{spdxid}.html'
 
 
-license_util = LicenseUtil()
+    def get_osadl_url(self, spdxid: str) -> str:
+        """
+        Generate the URL for the OSADL (Open Source Automation Development Lab) page of a license.
+
+        :param spdxid: The SPDX identifier of the license
+        :return: The URL of the OSADL page for the given license
+        """
+        return f'{self.BASE_OSADL_URL}/{spdxid}.txt'
+#
+# End of LicenseUtil Class
+#
