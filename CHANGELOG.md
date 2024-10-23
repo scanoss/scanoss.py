@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.17.0] - 2024-10-17
+## [1.17.0] - 2024-10-23
 ### Added
 - Added inspect subcommand
 - Inspect for copyleft licenses (`scanoss-py inspect copyleft -i scanoss-results.json`)
 - Inspect for undeclared components (`scanoss-py inspect undeclared -i scanoss-results.json`)
+### Fixed
+- Fixed SPDX date format
 
 ## [1.16.0] - 2024-10-08
 ### Added
