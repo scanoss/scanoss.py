@@ -86,7 +86,7 @@ class Results(ScanossBase):
         self.output_file = output_file
         self.output_format = output_format
 
-    def _load_file(self, file: str) -> Dict[str, Any]:
+    def load_file(self, file: str) -> Dict[str, Any]:
         """Load the JSON file
 
         Args:
@@ -106,7 +106,7 @@ class Results(ScanossBase):
         Load the file and transform the data into a list of dictionaries with the filename and the file data
         """
 
-        raw_data = self._load_file(file)
+        raw_data = self.load_file(file)
         return self._transform_data(raw_data)
 
     @staticmethod

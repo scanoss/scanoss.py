@@ -89,3 +89,13 @@ class ScanossBase:
                 f.write(msg)
         else:
             self.print_stdout(msg)
+
+    def print_to_file_or_stderr(self, msg: str, file: str = None):
+        """
+        Print message to file if provided or stderr
+        """
+        if file:
+            with open(file, "w") as f:
+                f.write(msg)
+        else:
+            self.print_stderr(msg)
