@@ -139,6 +139,7 @@ scanoss-py scan --help
 scanoss-py comp
 scanoss-py comp vulns --help
 scanoss-py utils
+scanoss-py inspect
 ```
 
 ### Fingerprint a project folder
@@ -318,4 +319,59 @@ scanoss-py results results.json --status pending --match-type file
 You can provide a comma separated list of statuses or match types:
 ```bash
 scanoss-py results results.json --status pending,identified --match-type file,snippet
+```
+
+
+### Inspect Commands
+The `inspect` command has a suite of sub-commands designed to inspect the results.json.
+Details, such as license compliance or component declarations, can be examined.
+
+For example:
+* Copyleft (`copylefet`)
+* Undeclared Components (`undeclared`)
+
+For the latest list of sub-commands, please run:
+```bash
+scanoss-py insp --help
+```
+#### Inspect Copyleft
+The following command can be used to inspect for copyleft licenses.
+If no output or status flag is defined, details are exposed via stdout and the summary is provided via stderr.
+Default format 'json'
+```bash
+scanoss-py insp copyleft -i scan-results.json
+```
+
+#### Inspect for copyleft licenses and save results
+The following command can be used to inspect for copyleft licenses and save the results.
+Default output format 'json'.
+```bash
+scanoss-py insp copyleft -i scan-results.json --status status.md --output copyleft.json
+```
+
+#### Inspect for copyleft licenses and save results in Markdown format
+The following command can be used to inspect for copyleft licenses and save the results in Markdown format.
+```bash
+scanoss-py insp copyleft -i scan-results.json --status status.md --output copyleft.md --format md
+```
+
+#### Inspect for undeclared components
+The following command can be used to inspect for undeclared components.
+If no output or status flag is defined, details are exposed via stdout and the summary is provided via stderr.
+Default output format 'json'.
+```bash
+scanoss-py insp undeclared -i scan-results.json 
+```
+
+#### Inspect for undeclared components and save results
+The following command can be used to inspect for undeclared components and save the results.
+Default output format 'json'.
+```bash
+scanoss-py insp undeclared -i scan-results.json --status undeclared-status.md --output undeclared.json
+```
+
+#### Inspect for undeclared components and save results in Markdown format
+The following command can be used to inspect for undeclared components and save the results in Markdown format.
+```bash
+scanoss-py insp undeclared -i scan-results.json --status undeclared-status.md --output undeclared.json --format md
 ```

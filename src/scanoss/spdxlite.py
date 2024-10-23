@@ -175,7 +175,7 @@ class SpdxLite:
         # pip3 install jsonschema
         # jsonschema -i spdxlite.json  <(curl https://raw.githubusercontent.com/spdx/spdx-spec/v2.2/schemas/spdx-schema.json)
         # Validation can also be done online here: https://tools.spdx.org/app/validate/
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.utcnow() # TODO replace with recommended format
         md5hex = hashlib.md5(f'{raw_data}-{now}'.encode('utf-8')).hexdigest()
         data = {
             'spdxVersion': 'SPDX-2.2',

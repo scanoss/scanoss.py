@@ -25,15 +25,13 @@ import argparse
 import os
 from pathlib import Path
 import sys
-from array import array
-
 import pypac
-
+from scanoss.inspection.copyleft import Copyleft
+from scanoss.inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
-from .scanner import Scanner
 from .scanoss_settings import ScanossSettings
 from .scancodedeps import ScancodeDeps
-from .scanner import FAST_WINNOWING, Scanner
+from .scanner import Scanner
 from .scantype import ScanType
 from .filecount import FileCount
 from .cyclonedx import CycloneDx
@@ -171,19 +169,19 @@ def setup_args() -> None:
     # Component Sub-command: component crypto
     c_crypto = comp_sub.add_parser('crypto', aliases=['cr'],
                                    description=f'Show Cryptographic algorithms: {__version__}',
-                                   help='Retreive cryptographic algorithms for the given components')
+                                   help='Retrieve cryptographic algorithms for the given components')
     c_crypto.set_defaults(func=comp_crypto)
 
     # Component Sub-command: component vulns
     c_vulns = comp_sub.add_parser('vulns', aliases=['vulnerabilities', 'vu'],
                                   description=f'Show Vulnerability details: {__version__}',
-                                  help='Retreive vulnerabilities for the given components')
+                                  help='Retrieve vulnerabilities for the given components')
     c_vulns.set_defaults(func=comp_vulns)
 
     # Component Sub-command: component semgrep
     c_semgrep = comp_sub.add_parser('semgrep', aliases=['sp'],
                                    description=f'Show Semgrep findings: {__version__}',
-                                   help='Retreive semgrep issues/findings for the given components')
+                                   help='Retrieve semgrep issues/findings for the given components')
     c_semgrep.set_defaults(func=comp_semgrep)
 
     # Component Sub-command: component search
@@ -299,6 +297,31 @@ def setup_args() -> None:
     )
     p_results.set_defaults(func=results)
 
+
+    # Sub-command: inspect
+    p_inspect = subparsers.add_parser('inspect', aliases=['insp', 'ins'],
+                                   description=f'Inspect results: {__version__}',
+                                   help='Inspect results')
+    # Sub-parser: inspect
+    p_inspect_sub = p_inspect.add_subparsers(title='Inspect Commands', dest='subparsercmd',
+                                             description='Inspect sub-commands', help='Inspect sub-commands')
+    # Inspect Sub-command: inspect copyleft
+    p_copyleft = p_inspect_sub.add_parser('copyleft', aliases=['cp'],description="Inspect for copyleft licenses", help='Inspect for copyleft licenses')
+    p_copyleft.add_argument('--include', help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.')
+    p_copyleft.add_argument('--exclude', help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.')
+    p_copyleft.add_argument('--explicit', help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s')
+    p_copyleft.set_defaults(func=inspect_copyleft)
+
+    # Inspect Sub-command: inspect undeclared
+    p_undeclared = p_inspect_sub.add_parser('undeclared', aliases=['un'],description="Inspect for undeclared components", help='Inspect for undeclared components')
+    p_undeclared.set_defaults(func=inspect_undeclared)
+
+    for p in [p_copyleft, p_undeclared]:
+        p.add_argument('-i', '--input', nargs='?', help='Path to results file')
+        p.add_argument('-f', '--format',required=False ,choices=['json', 'md'], default='json', help='Output format (default: json)')
+        p.add_argument('-o', '--output', type=str, help='Save details into a file')
+        p.add_argument('-s', '--status', type=str, help='Save summary data into Markdown file')
+
     # Global Scan command options
     for p in [p_scan]:
         p.add_argument('--apiurl', type=str,
@@ -344,7 +367,7 @@ def setup_args() -> None:
 
     # Help/Trace command options
     for p in [p_scan, p_wfp, p_dep, p_fc, p_cnv, p_c_loc, p_c_dwnld, p_p_proxy, c_crypto, c_vulns, c_search,
-              c_versions, c_semgrep, p_results]:
+              c_versions, c_semgrep, p_results, p_undeclared, p_copyleft]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
@@ -357,9 +380,10 @@ def setup_args() -> None:
         parser.print_help()  # No sub command subcommand, print general help
         exit(1)
     else:
-        if (args.subparser == 'utils' or args.subparser == 'ut' or
-            args.subparser == 'component' or args.subparser == 'comp') \
-                and not args.subparsercmd:
+        if ((args.subparser == 'utils' or args.subparser == 'ut' or
+            args.subparser == 'component' or args.subparser == 'comp' or
+            args.subparser == 'inspect' or args.subparser == 'insp' or args.subparser == 'ins')
+            and not args.subparsercmd):
             parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
             exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
@@ -778,6 +802,64 @@ def convert(parser, args):
     if not success:
         exit(1)
 
+def inspect_copyleft(parser, args):
+    """
+    Run the "inspect" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if args.input is None:
+        print_stderr('Please specify an input file to inspect')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        exit(1)
+    output: str = None
+    if args.output:
+        output = args.output
+        open(output, 'w').close()
+
+    status_output: str = None
+    if args.status:
+        status_output = args.status
+        open(status_output, 'w').close()
+
+    i_copyleft = Copyleft(debug=args.debug, trace=args.trace, quiet=args.quiet, filepath=args.input,
+                          format_type=args.format, status=status_output, output=output, include=args.include,
+                         exclude=args.exclude, explicit=args.explicit)
+    status, _ = i_copyleft.run()
+    sys.exit(status)
+
+def inspect_undeclared(parser, args):
+    """
+    Run the "inspect" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if args.input is None:
+        print_stderr('Please specify an input file to inspect')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        exit(1)
+    output: str = None
+    if args.output:
+        output = args.output
+        open(output, 'w').close()
+
+    status_output: str = None
+    if args.status:
+        status_output = args.status
+        open(status_output, 'w').close()
+    i_undeclared = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet,
+                                       filepath=args.input, format_type=args.format,
+                                       status=status_output, output=output)
+    status, _ = i_undeclared.run()
+    sys.exit(status)
 
 def utils_certloc(*_):
     """
@@ -786,7 +868,6 @@ def utils_certloc(*_):
     """
     import certifi
     print(f'CA Cert File: {certifi.where()}')
-
 
 def utils_cert_download(_, args):
     """
@@ -820,7 +901,7 @@ def utils_cert_download(_, args):
             else:
                 cn = cert_components.get('CN')
             if not args.quiet:
-                print_stderr(f'Centificate {index} - CN: {cn}')
+                print_stderr(f'Certificate {index} - CN: {cn}')
             if sys.version_info[0] >= 3:
                 print((crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode('utf-8')).strip(), file=file)  # Print the downloaded PEM certificate
             else:
