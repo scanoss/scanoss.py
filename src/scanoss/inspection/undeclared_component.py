@@ -78,8 +78,8 @@ class UndeclaredComponent(PolicyCheck):
         """
         summary = f'{len(components)} undeclared component(s) were found.\n'
         if len(components) > 0:
-            summary += (f' Add the following snippet into your `sbom.json` file \n'
-                        f' ```json \n {json.dumps(self._generate_sbom_file(components), indent=2)} ``` \n ')
+            summary += (f'Add the following snippet into your `sbom.json` file\n'
+                        f'\n```json\n{json.dumps(self._generate_sbom_file(components), indent=2)}\n```\n')
         return summary
 
     def _json(self, components: list) -> Dict[str, Any]:
@@ -93,7 +93,7 @@ class UndeclaredComponent(PolicyCheck):
         if len(components) > 0:
             details = {'components': components}
         return {
-            'details':  json.dumps(details, indent=2),
+            'details':  f'{json.dumps(details, indent=2)}\n',
             'summary': self._get_summary(components),
         }
 
@@ -111,7 +111,7 @@ class UndeclaredComponent(PolicyCheck):
             licenses = " - ".join(lic.get('spdxid', 'Unknown') for lic in component['licenses'])
             rows.append([component['purl'], component['version'], licenses])
         return  {
-            'details': f'### Undeclared components\n{self.generate_table(headers,rows)}',
+            'details': f'### Undeclared components\n{self.generate_table(headers,rows)}\n',
             'summary': self._get_summary(components),
         }
 
