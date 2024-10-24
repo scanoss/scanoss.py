@@ -69,8 +69,8 @@ class Copyleft(PolicyCheck):
         if len(components) > 0:
             details = { 'components': components }
         return {
-            'details':  json.dumps(details, indent=2),
-            'summary': f'{len(components)} component(s) with copyleft licenses were found.'
+            'details':  f'{json.dumps(details, indent=2)}\n',
+            'summary': f'{len(components)} component(s) with copyleft licenses were found.\n'
         }
 
     def _markdown(self, components: list) -> Dict[str,Any]:
@@ -96,8 +96,8 @@ class Copyleft(PolicyCheck):
             # End license loop
         # End component loop
         return  {
-            'details': f'### Copyleft licenses\n{self.generate_table(headers,rows,centered_columns)}',
-            'summary' : f'{len(components)} component(s) with copyleft licenses were found.'
+            'details': f'### Copyleft licenses\n{self.generate_table(headers,rows,centered_columns)}\n',
+            'summary' : f'{len(components)} component(s) with copyleft licenses were found.\n'
         }
 
     def _filter_components_with_copyleft_licenses(self, components: list) -> list:
