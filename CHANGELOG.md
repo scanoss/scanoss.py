@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.17.1] - 2024-10-24
+### Fixed
+- Fixed policy summary output
+
 ## [1.17.0] - 2024-10-23
 ### Added
 - Added inspect subcommand
@@ -364,3 +368,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.15.0]: https://github.com/scanoss/scanoss.py/compare/v1.14.0...v1.15.0
 [1.16.0]: https://github.com/scanoss/scanoss.py/compare/v1.15.0...v1.16.0
 [1.17.0]: https://github.com/scanoss/scanoss.py/compare/v1.16.0...v1.17.0
+[1.17.1]: https://github.com/scanoss/scanoss.py/compare/v1.17.0...v1.17.1

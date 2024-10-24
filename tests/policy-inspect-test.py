@@ -65,7 +65,7 @@ class MyTestCase(unittest.TestCase):
         details = json.loads(results['details'])
         self.assertEqual(status, 1)
         self.assertEqual(details, {})
-        self.assertEqual(results['summary'], '0 component(s) with copyleft licenses were found.')
+        self.assertEqual(results['summary'], '0 component(s) with copyleft licenses were found.\n')
 
     """
     Inspect for copyleft licenses include
@@ -139,7 +139,7 @@ class MyTestCase(unittest.TestCase):
         expected_detail_output = ('### Copyleft licenses \n  | Component | Version | License | URL | Copyleft |\n'
                                   ' | - | :-: | - | - | :-: |\n'
                                   ' | pkg:github/scanoss/engine | 4.0.4 | MIT | https://spdx.org/licenses/MIT.html | YES | ')
-        expected_summary_output = '1 component(s) with copyleft licenses were found.'
+        expected_summary_output = '1 component(s) with copyleft licenses were found.\n'
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', results['details']),
                          re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_detail_output))
         self.assertEqual(results['summary'], expected_summary_output)
