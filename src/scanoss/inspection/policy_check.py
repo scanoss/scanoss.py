@@ -133,7 +133,8 @@ class PolicyCheck(ScanossBase):
         """
         pass
 
-    def _append_component(self,components: Dict[str, Any], new_component: Dict[str, Any]) -> Dict[str, Any]:
+    def _append_component(self,components: Dict[str, Any], new_component: Dict[str, Any],
+                           id: str, status: str) -> Dict[str, Any]:
         """
         Append a new component to the component's dictionary.
 
@@ -143,15 +144,25 @@ class PolicyCheck(ScanossBase):
 
         :param components: The existing dictionary of components
         :param new_component: The new component to be added or updated
+        :param id: The new component ID
+        :param status: The new component status
         :return: The updated components dictionary
         """
-        component_key = f"{new_component['purl'][0]}@{new_component['version']}"
+
+        # Determine the component key and purl based on component type
+        if id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
+            purl = new_component['purl'][0]  # Take first purl for these component types
+        else:
+            purl = new_component['purl']
+
+        component_key = f"{purl}@{new_component['version']}"
         components[component_key] = {
-            'purl': new_component['purl'][0],
-            'version': new_component['version'],
-            'licenses': {},
-            'status': new_component['status'],
+                'purl': purl,
+                'version': new_component['version'],
+                'licenses': {},
+                'status': status,
         }
+
         if not new_component.get('licenses'):
             self.print_stderr(f'WARNING: Results missing licenses. Skipping.')
             return components
@@ -187,6 +198,10 @@ class PolicyCheck(ScanossBase):
                 if not component_id:
                     self.print_stderr(f'WARNING: Result missing id. Skipping.')
                     continue
+                status = c.get('status')
+                if not component_id:
+                    self.print_stderr(f'WARNING: Result missing status. Skipping.')
+                    continue
                 if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
                     if not c.get('purl'):
                         self.print_stderr(f'WARNING: Result missing purl. Skipping.')
@@ -200,9 +215,10 @@ class PolicyCheck(ScanossBase):
                     component_key = f"{c['purl'][0]}@{c['version']}"
                     # Initialize or update the component entry
                     if component_key not in components:
-                        components = self._append_component(components, c)
+                        components = self._append_component(components, c, component_id, status)
+
                 if c['id'] == ComponentID.DEPENDENCY.value:
-                    if c.get('dependency') is None:
+                    if c.get('dependencies') is None:
                         continue
                     for d in c['dependencies']:
                         if not d.get('purl'):
@@ -214,9 +230,9 @@ class PolicyCheck(ScanossBase):
                         if not d.get('version'):
                             self.print_stderr(f'WARNING: Result missing version. Skipping.')
                             continue
-                        component_key = f"{d['purl'][0]}@{d['version']}"
+                        component_key = f"{d['purl']}@{d['version']}"
                         if component_key not in components:
-                            components = self._append_component(components, d)
+                            components = self._append_component(components, d, component_id, status)
                     # End of dependencies loop
                 # End if
             # End of component loop

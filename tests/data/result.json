@@ -415,5 +415,39 @@
       "vendor": "scanoss",
       "version": "4.0.4"
     }
-  ]
+  ],
+   "example_codebase/dependencies/package.json": [
+    {
+      "dependencies": [
+        {
+          "component": "@electron/rebuild",
+          "licenses": [
+            {
+              "is_spdx_approved": true,
+              "name": "MIT",
+              "spdx_id": "MIT"
+            }
+          ],
+          "purl": "pkg:npm/%40electron/rebuild",
+          "url": "https://www.npmjs.com/package/%40electron/rebuild",
+          "version": "3.7.0"
+        },
+        {
+          "component": "@emotion/react",
+          "licenses": [
+            {
+              "is_spdx_approved": true,
+              "name": "MIT",
+              "spdx_id": "MIT"
+            }
+          ],
+          "purl": "pkg:npm/%40emotion/react",
+          "url": "https://www.npmjs.com/package/%40emotion/react",
+          "version": "11.13.3"
+        }
+      ],
+      "id": "dependency",
+      "status": "pending"
+    }
+   ]
 }
