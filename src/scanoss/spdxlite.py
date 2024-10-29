@@ -180,7 +180,7 @@ class SpdxLite:
         data = {
             'spdxVersion': 'SPDX-2.2',
             'dataLicense': 'CC0-1.0',
-            'SPDXID': f'SPDXRef-{md5hex}',
+            'SPDXID': f'SPDXRef-DOCUMENT',
             'name': 'SCANOSS-SBOM',
             'creationInfo': {
                 'created': now.strftime('%Y-%m-%dT%H:%M:%SZ'),
@@ -214,6 +214,8 @@ class SpdxLite:
             comp_name = comp.get('component')
             comp_ver = comp.get('version')
             purl_ver = f'{purl}@{comp_ver}'
+            vendor = comp.get('vendor', 'NOASSERTION')
+            supplier = f"Organization: {vendor}" if vendor != 'NOASSERTION' else vendor
             purl_hash = hashlib.md5(f'{purl_ver}'.encode('utf-8')).hexdigest()
             purl_spdx = f'SPDXRef-{purl_hash}'
             data['documentDescribes'].append(purl_spdx)
@@ -227,6 +229,7 @@ class SpdxLite:
                 'licenseConcluded': 'NOASSERTION',
                 'filesAnalyzed': False,
                 'copyrightText': 'NOASSERTION',
+                'supplier':  supplier,
                 'externalRefs': [{
                     'referenceCategory': 'PACKAGE-MANAGER',
                     'referenceLocator': purl_ver,
