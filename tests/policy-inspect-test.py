@@ -172,20 +172,22 @@ class MyTestCase(unittest.TestCase):
         expected_summary_output = """5 undeclared component(s) were found.
         Add the following snippet into your `sbom.json` file 
         ```json 
-        [
-          {
-            "purl": "pkg:github/scanoss/scanner.c"
-          },
-          {
-            "purl": "pkg:github/scanoss/wfp"
-          },
-          {
-            "purl": "pkg:npm/%40electron/rebuild"
-          },
-          {
-            "purl": "pkg:npm/%40emotion/react"
-          }
-        ]```
+        {
+            "components":[
+                  {
+                    "purl": "pkg:github/scanoss/scanner.c"
+                  },
+                  {
+                    "purl": "pkg:github/scanoss/wfp"
+                  },
+                  {
+                    "purl": "pkg:npm/%40electron/rebuild"
+                  },
+                  {
+                    "purl": "pkg:npm/%40emotion/react"
+                  }
+            ]
+        }```
         """
         self.assertEqual(len(details['components']), 5)
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)',
@@ -215,21 +217,25 @@ class MyTestCase(unittest.TestCase):
         expected_summary_output = """5 undeclared component(s) were found.
            Add the following snippet into your `sbom.json` file 
            ```json 
-           [
-             {
-                "purl": "pkg:github/scanoss/scanner.c"
-              },
-              {
-                "purl": "pkg:github/scanoss/wfp"
-              },
-              {
-                "purl": "pkg:npm/%40electron/rebuild"
-              },
-              {
-                "purl": "pkg:npm/%40emotion/react"
-              }
-           ]```
+               {
+                "components":[
+                 {
+                    "purl": "pkg:github/scanoss/scanner.c"
+                  },
+                  {
+                    "purl": "pkg:github/scanoss/wfp"
+                  },
+                  {
+                    "purl": "pkg:npm/%40electron/rebuild"
+                  },
+                  {
+                    "purl": "pkg:npm/%40emotion/react"
+                  }           
+                ]             
+               }```
            """
+
+        print(summary)
         self.assertEqual(status, 0)
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)',
                                                                             '', expected_details_output))
