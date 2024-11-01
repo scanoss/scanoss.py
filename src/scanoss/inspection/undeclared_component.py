@@ -115,20 +115,26 @@ class UndeclaredComponent(PolicyCheck):
             'summary': self._get_summary(components),
         }
 
-    def _generate_sbom_file(self, components: list) -> list:
+    def _generate_sbom_file(self, components: list) -> dict[str, list[dict[str, str]]]:
         """
          Generate a list of PURLs for the SBOM file.
 
          :param components: List of undeclared components
-         :return: List of dictionaries containing PURLs
+         :return: SBOM Dictionary with components
          """
-        sbom = {}
+
+        unique_components = {}
         if components is None:
             self.print_stderr(f'WARNING: No components provided!')
         else:
             for component in components:
-                sbom[component['purl']] = { 'purl': component['purl'] }
-        return list(sbom.values())
+                unique_components[component['purl']] = { 'purl': component['purl'] }
+
+        sbom = {
+            'components': list(unique_components.values())
+        }
+
+        return sbom
 
     def run(self):
         """

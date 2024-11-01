@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.17.2] - 2024-10-29
+## [1.17.2] - 2024-11-01
 ### Fixed
 - Fixed parsing of dependencies in Policy Checks
 - Fixed legacy SBOM.json support
 ### Added
 - Added supplier to SPDX packages
+### Changed
+- Changed undeclared summary output 
 
 ## [1.17.1] - 2024-10-24
 ### Fixed
