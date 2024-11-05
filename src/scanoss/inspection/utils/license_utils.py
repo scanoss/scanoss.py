@@ -21,7 +21,7 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 """
-from src.scanoss.scanossbase import ScanossBase
+from ...scanossbase import ScanossBase
 
 DEFAULT_COPYLEFT_LICENSES = {
     'agpl-3.0-only', 'artistic-1.0', 'artistic-2.0', 'cc-by-sa-4.0', 'cddl-1.0', 'cddl-1.1', 'cecill-2.1',
