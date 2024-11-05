@@ -26,8 +26,8 @@ import os
 import re
 import unittest
 
-from scanoss.inspection.copyleft import Copyleft
-from scanoss.inspection.undeclared_component import UndeclaredComponent
+from src.scanoss.inspection.copyleft import Copyleft
+from src.scanoss.inspection.undeclared_component import UndeclaredComponent
 
 
 class MyTestCase(unittest.TestCase):

@@ -23,7 +23,7 @@
 """
 import json
 from typing import Dict, Any
-from scanoss.inspection.policy_check import PolicyCheck, PolicyStatus
+from .policy_check import PolicyCheck, PolicyStatus
 
 class UndeclaredComponent(PolicyCheck):
     """
@@ -115,7 +115,7 @@ class UndeclaredComponent(PolicyCheck):
             'summary': self._get_summary(components),
         }
 
-    def _generate_sbom_file(self, components: list) -> dict[str, list[dict[str, str]]]:
+    def _generate_sbom_file(self, components: list) -> dict:
         """
          Generate a list of PURLs for the SBOM file.
 
