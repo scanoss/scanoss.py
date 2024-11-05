@@ -26,8 +26,9 @@ import os.path
 from abc import abstractmethod
 from enum import Enum
 from typing import Callable, List, Dict, Any
-from scanoss.inspection.utils.license_utils import LicenseUtil
-from scanoss.scanossbase import ScanossBase
+from .utils.license_utils import LicenseUtil
+from ..scanossbase import ScanossBase
+
 
 class PolicyStatus(Enum):
     """

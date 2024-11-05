@@ -26,8 +26,9 @@ import os
 from pathlib import Path
 import sys
 import pypac
-from scanoss.inspection.copyleft import Copyleft
-from scanoss.inspection.undeclared_component import UndeclaredComponent
+
+from src.scanoss.inspection.copyleft import Copyleft
+from src.scanoss.inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
 from .scanoss_settings import ScanossSettings
 from .scancodedeps import ScancodeDeps
