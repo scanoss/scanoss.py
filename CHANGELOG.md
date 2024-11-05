@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.17.3] - 2024-11-05
+### Fixed
+- Fixed undeclared policy
+
+
 ## [1.17.2] - 2024-11-01
 ### Fixed
 - Fixed parsing of dependencies in Policy Checks
@@ -379,3 +384,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.17.0]: https://github.com/scanoss/scanoss.py/compare/v1.16.0...v1.17.0
 [1.17.1]: https://github.com/scanoss/scanoss.py/compare/v1.17.0...v1.17.1
 [1.17.2]: https://github.com/scanoss/scanoss.py/compare/v1.17.1...v1.17.2
+[1.17.3]: https://github.com/scanoss/scanoss.py/compare/v1.17.2...v1.17.3
