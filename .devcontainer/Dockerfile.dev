@@ -9,7 +9,6 @@ WORKDIR /workspace
 
 COPY requirements.txt requirements-dev.txt requirements-scancode.txt /tmp/
 
-# Install Python dependencies
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
     pip3 install --no-cache-dir -r /tmp/requirements-dev.txt && \
     pip3 install --no-cache-dir scanoss_winnowing && \
@@ -22,5 +21,4 @@ RUN tar -xvzf /install/v5.39.210212.tar.gz -C /install \
     && ./build.sh && python3 setup.py sdist bdist_wheel \
     && pip3 install --user `ls /install/typecode_libmagic_from_sources*/dist/*.whl`
 
-# Keep container running
 CMD ["sleep", "infinity"]
