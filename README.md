@@ -39,6 +39,17 @@ To enable dependency scanning, an extra tool is required: scancode-toolkit
 pip3 install -r requirements-scancode.txt
 ```
 
+### Devcontainer Setup
+To simplify the development environment setup, a devcontainer configuration is provided. This allows you to develop inside a containerized environment with all necessary dependencies pre-installed.
+
+To use the devcontainer setup:
+1. Install [Visual Studio Code](https://code.visualstudio.com/).
+2. Install the [Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
+3. Open the project in Visual Studio Code.
+4. When prompted, reopen the project in the container.
+
+This will build the container defined in the `.devcontainer` folder and open a new Visual Studio Code window connected to the container.
+
 ### Package Development
 More details on Python packaging/distribution can be found [here](https://packaging.python.org/overview/), [here](https://packaging.python.org/guides/distributing-packages-using-setuptools/), and [here](https://packaging.python.org/guides/using-testpypi/#using-test-pypi).
 
