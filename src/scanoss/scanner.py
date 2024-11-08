@@ -545,9 +545,9 @@ class Scanner(ScanossBase):
 
     def _merge_scan_results(
         self,
-        scan_responses: list | None,
-        dep_responses: dict | None,
-        file_map: dict | None,
+        scan_responses: Optional[List],
+        dep_responses: Optional[Dict[str,Any]],
+        file_map: Optional[Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Merge scan and dependency responses into a single dictionary"""
         results: Dict[str, Any] = {}
