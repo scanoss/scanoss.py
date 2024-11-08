@@ -29,6 +29,7 @@
 """
 import hashlib
 import pathlib
+import platform
 import re
 
 from crc32c import crc32c
@@ -310,6 +311,8 @@ class Winnowing(ScanossBase):
         wfp_filename = repr(file).strip("'")  # return a utf-8 compatible version of the filename
         if self.obfuscate:  # hide the real size of the file and its name, but keep the suffix
             wfp_filename = f'{self.ob_count}{pathlib.Path(file).suffix}'
+            if platform.system() == 'Windows':
+                wfp_filename = wfp_filename.replace('\\', '/')
             self.ob_count = self.ob_count + 1
             self.file_map[wfp_filename] = file  # Save the file name map for later (reverse lookup)
 
