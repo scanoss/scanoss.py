@@ -37,5 +37,5 @@
   "mounts": [
     "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
   ],
-  "postCreateCommand": "pip install -e ."
+  "postCreateCommand": "make dev_setup"
 }
