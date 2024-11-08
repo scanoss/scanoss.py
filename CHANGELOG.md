@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Upcoming changes...
+  
+## [1.17.4] - 2024-11-08
+### Fixed
+- Fix backslashes in file paths on Windows
 
 ## [1.17.3] - 2024-11-05
 ### Fixed
