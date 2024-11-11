@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.18.0] - 2024-11-11
+### Added
+- Add support for replace action when specifying a settings file
+
 ## [1.17.5] - 2024-11-12
 ### Fixed
 - Fix dependencies scan result structure
