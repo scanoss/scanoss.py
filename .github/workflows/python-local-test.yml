@@ -29,10 +29,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Run Unit Tests
-        run: |
-          python -m unittest
-
       - name: Build Local Package
         run: make dist
 
@@ -82,3 +78,7 @@ jobs:
             echo "Error: WFP test did not produce any results. Failing"
             exit 1
           fi
+      
+      - name: Run Unit Tests
+        run: |
+          python -m unittest
