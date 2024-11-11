@@ -1,28 +1,28 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2024, SCANOSS
+  Copyright (c) 2024, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
 
-from typing import List
+from typing import List, Tuple
 
 from .scanoss_settings import BomEntry, ScanossSettings
 from .scanossbase import ScanossBase
@@ -67,6 +67,7 @@ class ScanPostProcessor(ScanossBase):
             dict: Processed results
         """
         self.remove_dismissed_files()
+        self.replace_purls()
         return self.results
 
     def remove_dismissed_files(self):
@@ -75,7 +76,7 @@ class ScanPostProcessor(ScanossBase):
         to_remove_entries = self.scan_settings.get_bom_remove()
 
         if not to_remove_entries:
-            return
+            self.results = self.results
 
         self.results = {
             result_path: result
@@ -83,16 +84,94 @@ class ScanPostProcessor(ScanossBase):
             if not self._should_remove_result(result_path, result, to_remove_entries)
         }
 
+    def replace_purls(self):
+        """Replace purls in the results based on the SCANOSS settings file"""
+
+        to_replace_entries = self.scan_settings.get_bom_replace()
+
+        if not to_replace_entries:
+            self.results = self.results
+
+        for result_path, result in self.results.items():
+            result = result[0] if isinstance(result, list) else result
+            should_replace, to_replace_with = self._should_replace_result(
+                result_path, result, to_replace_entries
+            )
+            if should_replace:
+                result["purl"] = [to_replace_with]
+
+    def _should_replace_result(self, result_path: str, result: dict, to_replace_entries: List[BomEntry]) -> Tuple[bool, str]:
+        """Check if a result should be replaced based on the SCANOSS settings
+
+        Args:
+            result_path (str): Path of the result
+            result (dict): Result to check
+            to_replace_entries (List[BomEntry]): BOM entries to replace from the settings file
+
+        Returns:
+            bool: True if the result should be replaced, False otherwise
+            str: The purl to replace with
+        """
+        result_purls = result.get('purl', [])
+
+        for to_replace_entry in to_replace_entries:
+            to_replace_path = to_replace_entry.get('path')
+            to_replace_purl = to_replace_entry.get('purl')
+            to_replace_with = to_replace_entry.get('replace_with')
+
+            if not to_replace_path and not to_replace_purl or not to_replace_with:
+                continue
+            
+            # If it's the same purl as the one in the result, skip fast
+            if to_replace_with in result_purls:
+                continue
+
+            # Bom entry has both path and purl
+            if self._is_full_match(result_path, result_purls, to_replace_entry):
+                self._print_replacement_message(result_path, result_purls, to_replace_entry)
+                return True, to_replace_with
+
+            # Bom entry has only purl
+            if not to_replace_path and to_replace_purl in result_purls:
+                self._print_replacement_message(result_path, result_purls, to_replace_entry)
+                return True, to_replace_with
+
+            # Bom entry has only path
+            if not to_replace_purl and to_replace_path == result_path:
+                self._print_removal_message(result_path, result_purls, to_replace_entry)
+                return True, to_replace_with
+
+        return False, None
+    
+    def _print_replacement_message(
+        self, result_path: str, result_purls: List[str], to_replace_entry: BomEntry
+    ) -> None:
+        """Print a message about replacing a result"""
+        if to_replace_entry.get("path") and to_replace_entry.get('purl'):
+            message = f"Replacing purl for '{result_path}'. Full match found."
+        elif to_replace_entry.get('purl'):
+            message = f"Replacing purl for '{result_path}'. Found PURL match."
+        else:
+            message = f"Replacing purl for '{result_path}'. Found path match."
+
+        self.print_debug(
+            f"{message}\n"
+            f"Details:\n"
+            f"  - PURLs: {', '.join(result_purls)}\n"
+            f"  - Path: '{result_path}'\n"
+            f"  - Replacing with: '{to_replace_entry.get('replace_with')}'\n"
+        )
+
     def _should_remove_result(
         self, result_path: str, result: dict, to_remove_entries: List[BomEntry]
     ) -> bool:
         """Check if a result should be removed based on the SCANOSS settings"""
         result = result[0] if isinstance(result, list) else result
-        result_purls = result.get("purl", [])
+        result_purls = result.get('purl', [])
 
         for to_remove_entry in to_remove_entries:
-            to_remove_path = to_remove_entry.get("path")
-            to_remove_purl = to_remove_entry.get("purl")
+            to_remove_path = to_remove_entry.get('path')
+            to_remove_purl = to_remove_entry.get('purl')
 
             if not to_remove_path and not to_remove_purl:
                 continue
@@ -118,14 +197,14 @@ class ScanPostProcessor(ScanossBase):
         self, result_path: str, result_purls: List[str], to_remove_entry: BomEntry
     ) -> None:
         """Print a message about removing a result"""
-        if to_remove_entry.get("path") and to_remove_entry.get("purl"):
+        if to_remove_entry.get("path") and to_remove_entry.get('purl'):
             message = f"Removing '{result_path}' from the results. Full match found."
-        elif to_remove_entry.get("purl"):
+        elif to_remove_entry.get('purl'):
             message = f"Removing '{result_path}' from the results. Found PURL match."
         else:
             message = f"Removing '{result_path}' from the results. Found path match."
 
-        self.print_msg(
+        self.print_debug(
             f"{message}\n"
             f"Details:\n"
             f"  - PURLs: {', '.join(result_purls)}\n"
@@ -153,7 +232,7 @@ class ScanPostProcessor(ScanossBase):
             return False
 
         return bool(
-            (bom_entry.get("purl") and bom_entry.get("path"))
-            and (bom_entry.get("path") == result_path)
-            and (bom_entry.get("purl") in result_purls)
+            (bom_entry.get('purl') and bom_entry.get('path'))
+            and (bom_entry.get('path') == result_path)
+            and (bom_entry.get('purl') in result_purls)
         )

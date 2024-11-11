@@ -151,6 +151,16 @@ class ScanossSettings(ScanossBase):
             return self._get_bom()
         return self._get_bom().get("remove", [])
 
+    def get_bom_replace(self) -> List[BomEntry]:
+        """Get the list of components to replace in the scan
+
+        Returns:
+            list: List of components to replace in the scan
+        """
+        if self.settings_file_type == "legacy":
+            return []
+        return self._get_bom().get("replace", [])
+
     def get_sbom(self):
         """Get the SBOM to be sent to the SCANOSS API
 
