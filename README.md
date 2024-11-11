@@ -46,7 +46,12 @@ To use the devcontainer setup:
 1. Install [Visual Studio Code](https://code.visualstudio.com/).
 2. Install the [Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
 3. Open the project in Visual Studio Code.
-4. When prompted, reopen the project in the container.
+4. Run 
+```bash
+cp .devcontainer/devcontainer.example.json .devcontainer/devcontainer.json
+``` 
+5. Update the `devcontainer.json` file with the desired settings.
+6. When prompted, reopen the project in the container.
 
 This will build the container defined in the `.devcontainer` folder and open a new Visual Studio Code window connected to the container.
 
