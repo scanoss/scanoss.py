@@ -49,7 +49,7 @@ class ScanPostProcessor(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         self.scan_settings = scan_settings
-        self.results = results
+        self.results: dict = results
 
     def load_results(self, raw_results: dict):
         """Load the raw results
@@ -72,11 +72,9 @@ class ScanPostProcessor(ScanossBase):
 
     def remove_dismissed_files(self):
         """Remove entries from the results based on files and/or purls specified in the SCANOSS settings file"""
-
         to_remove_entries = self.scan_settings.get_bom_remove()
-
         if not to_remove_entries:
-            self.results = self.results
+            return
 
         self.results = {
             result_path: result
@@ -86,21 +84,19 @@ class ScanPostProcessor(ScanossBase):
 
     def replace_purls(self):
         """Replace purls in the results based on the SCANOSS settings file"""
-
         to_replace_entries = self.scan_settings.get_bom_replace()
-
         if not to_replace_entries:
-            self.results = self.results
+            return
 
         for result_path, result in self.results.items():
             result = result[0] if isinstance(result, list) else result
-            should_replace, to_replace_with = self._should_replace_result(
-                result_path, result, to_replace_entries
-            )
+            should_replace, to_replace_with = self._should_replace_result(result_path, result, to_replace_entries)
             if should_replace:
-                result["purl"] = [to_replace_with]
+                result['purl'] = [to_replace_with]
 
-    def _should_replace_result(self, result_path: str, result: dict, to_replace_entries: List[BomEntry]) -> Tuple[bool, str]:
+    def _should_replace_result(
+        self, result_path: str, result: dict, to_replace_entries: List[BomEntry]
+    ) -> Tuple[bool, str]:
         """Check if a result should be replaced based on the SCANOSS settings
 
         Args:
@@ -113,7 +109,6 @@ class ScanPostProcessor(ScanossBase):
             str: The purl to replace with
         """
         result_purls = result.get('purl', [])
-
         for to_replace_entry in to_replace_entries:
             to_replace_path = to_replace_entry.get('path')
             to_replace_purl = to_replace_entry.get('purl')
@@ -121,50 +116,21 @@ class ScanPostProcessor(ScanossBase):
 
             if not to_replace_path and not to_replace_purl or not to_replace_with:
                 continue
-            
-            # If it's the same purl as the one in the result, skip fast
+
             if to_replace_with in result_purls:
                 continue
 
-            # Bom entry has both path and purl
-            if self._is_full_match(result_path, result_purls, to_replace_entry):
-                self._print_replacement_message(result_path, result_purls, to_replace_entry)
-                return True, to_replace_with
-
-            # Bom entry has only purl
-            if not to_replace_path and to_replace_purl in result_purls:
-                self._print_replacement_message(result_path, result_purls, to_replace_entry)
-                return True, to_replace_with
-
-            # Bom entry has only path
-            if not to_replace_purl and to_replace_path == result_path:
-                self._print_removal_message(result_path, result_purls, to_replace_entry)
+            if (
+                self._is_full_match(result_path, result_purls, to_replace_entry)
+                or (not to_replace_path and to_replace_purl in result_purls)
+                or (not to_replace_purl and to_replace_path == result_path)
+            ):
+                self._print_message(result_path, result_purls, to_replace_entry, 'Replacing')
                 return True, to_replace_with
 
         return False, None
-    
-    def _print_replacement_message(
-        self, result_path: str, result_purls: List[str], to_replace_entry: BomEntry
-    ) -> None:
-        """Print a message about replacing a result"""
-        if to_replace_entry.get("path") and to_replace_entry.get('purl'):
-            message = f"Replacing purl for '{result_path}'. Full match found."
-        elif to_replace_entry.get('purl'):
-            message = f"Replacing purl for '{result_path}'. Found PURL match."
-        else:
-            message = f"Replacing purl for '{result_path}'. Found path match."
 
-        self.print_debug(
-            f"{message}\n"
-            f"Details:\n"
-            f"  - PURLs: {', '.join(result_purls)}\n"
-            f"  - Path: '{result_path}'\n"
-            f"  - Replacing with: '{to_replace_entry.get('replace_with')}'\n"
-        )
-
-    def _should_remove_result(
-        self, result_path: str, result: dict, to_remove_entries: List[BomEntry]
-    ) -> bool:
+    def _should_remove_result(self, result_path: str, result: dict, to_remove_entries: List[BomEntry]) -> bool:
         """Check if a result should be removed based on the SCANOSS settings"""
         result = result[0] if isinstance(result, list) else result
         result_purls = result.get('purl', [])
@@ -176,39 +142,37 @@ class ScanPostProcessor(ScanossBase):
             if not to_remove_path and not to_remove_purl:
                 continue
 
-            # Bom entry has both path and purl
-            if self._is_full_match(result_path, result_purls, to_remove_entry):
-                self._print_removal_message(result_path, result_purls, to_remove_entry)
-                return True
-
-            # Bom entry has only purl
-            if not to_remove_path and to_remove_purl in result_purls:
-                self._print_removal_message(result_path, result_purls, to_remove_entry)
-                return True
-
-            # Bom entry has only path
-            if not to_remove_purl and to_remove_path == result_path:
-                self._print_removal_message(result_path, result_purls, to_remove_entry)
+            if (
+                self._is_full_match(result_path, result_purls, to_remove_entry)
+                or (not to_remove_path and to_remove_purl in result_purls)
+                or (not to_remove_purl and to_remove_path == result_path)
+            ):
+                self._print_message(result_path, result_purls, to_remove_entry, 'Removing')
                 return True
 
         return False
 
-    def _print_removal_message(
-        self, result_path: str, result_purls: List[str], to_remove_entry: BomEntry
+    def _print_message(
+        self,
+        result_path: str,
+        result_purls: List[str],
+        bom_entry: BomEntry,
+        action: str,
     ) -> None:
-        """Print a message about removing a result"""
-        if to_remove_entry.get("path") and to_remove_entry.get('purl'):
-            message = f"Removing '{result_path}' from the results. Full match found."
-        elif to_remove_entry.get('purl'):
-            message = f"Removing '{result_path}' from the results. Found PURL match."
+        """Print a message about replacing or removing a result"""
+        if bom_entry.get('path') and bom_entry.get('purl'):
+            message = f"{action} '{result_path}'. Full match found."
+        elif bom_entry.get('purl'):
+            message = f"{action} '{result_path}'. Found PURL match."
         else:
-            message = f"Removing '{result_path}' from the results. Found path match."
+            message = f"{action} '{result_path}'. Found path match."
 
         self.print_debug(
             f"{message}\n"
             f"Details:\n"
             f"  - PURLs: {', '.join(result_purls)}\n"
             f"  - Path: '{result_path}'\n"
+            f"  - {action} with: '{bom_entry.get('replace_with')}'\n" if action == 'Replacing' else ''
         )
 
     def _is_full_match(
