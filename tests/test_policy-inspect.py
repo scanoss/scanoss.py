@@ -26,8 +26,8 @@ import os
 import re
 import unittest
 
-from src.scanoss.inspection.copyleft import Copyleft
-from src.scanoss.inspection.undeclared_component import UndeclaredComponent
+from scanoss.inspection.copyleft import Copyleft
+from scanoss.inspection.undeclared_component import UndeclaredComponent
 
 
 class MyTestCase(unittest.TestCase):
@@ -241,3 +241,6 @@ class MyTestCase(unittest.TestCase):
                                                                             '', expected_details_output))
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary),
                          re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))
+        
+if __name__ == '__main__':
+    unittest.main()
