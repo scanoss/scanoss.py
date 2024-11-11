@@ -416,8 +416,7 @@
       "version": "4.0.4"
     }
   ],
-   "example_codebase/dependencies/package.json": [
-    {
+   "example_codebase/dependencies/package.json": {
       "dependencies": [
         {
           "component": "@electron/rebuild",
@@ -449,5 +448,4 @@
       "id": "dependency",
       "status": "pending"
     }
-   ]
 }

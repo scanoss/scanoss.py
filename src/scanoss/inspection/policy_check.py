@@ -164,6 +164,7 @@ class PolicyCheck(ScanossBase):
                 'status': status,
         }
 
+
         if not new_component.get('licenses'):
             self.print_stderr(f'WARNING: Results missing licenses. Skipping.')
             return components
@@ -178,7 +179,7 @@ class PolicyCheck(ScanossBase):
                 }
         return components
 
-    def _get_components_from_results(self,results: Dict[str, Any]) -> list or None:
+    def _get_components_from_results(self, results: Dict[str, Any]) -> list or None:
         """
             Process the results dictionary to extract and format component information.
 
@@ -194,34 +195,17 @@ class PolicyCheck(ScanossBase):
             return None
         components = {}
         for component in results.values():
-            for c in component:
-                component_id = c.get('id')
-                if not component_id:
-                    self.print_stderr(f'WARNING: Result missing id. Skipping.')
-                    continue
-                status = c.get('status')
-                if not component_id:
-                    self.print_stderr(f'WARNING: Result missing status. Skipping.')
-                    continue
-                if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
-                    if not c.get('purl'):
-                        self.print_stderr(f'WARNING: Result missing purl. Skipping.')
-                        continue
-                    if len(c.get('purl')) <= 0:
-                        self.print_stderr(f'WARNING: Result missing purls. Skipping.')
-                        continue
-                    if not c.get('version'):
-                        self.print_stderr(f'WARNING: Result missing version. Skipping.')
-                        continue
-                    component_key = f"{c['purl'][0]}@{c['version']}"
-                    # Initialize or update the component entry
-                    if component_key not in components:
-                        components = self._append_component(components, c, component_id, status)
 
-                if c['id'] == ComponentID.DEPENDENCY.value:
-                    if c.get('dependencies') is None:
+            if isinstance(component, dict):
+                if component['id'] == ComponentID.DEPENDENCY.value:
+                    status = component.get('status')
+                    component_id = component.get('id')
+                    if not component_id:
+                        self.print_stderr(f'WARNING: Result missing id. Skipping.')
                         continue
-                    for d in c['dependencies']:
+                    if component.get('dependencies') is None:
+                        continue
+                    for d in component['dependencies']:
                         if not d.get('purl'):
                             self.print_stderr(f'WARNING: Result missing purl. Skipping.')
                             continue
@@ -235,9 +219,36 @@ class PolicyCheck(ScanossBase):
                         if component_key not in components:
                             components = self._append_component(components, d, component_id, status)
                     # End of dependencies loop
-                # End if
-            # End of component loop
-        # End of results loop
+                    # End if
+
+            if isinstance(component, list):
+                for c in component:
+                    component_id = c.get('id')
+                    if not component_id:
+                        self.print_stderr(f'WARNING: Result missing id. Skipping.')
+                        continue
+                    status = c.get('status')
+                    if not component_id:
+                        self.print_stderr(f'WARNING: Result missing status. Skipping.')
+                        continue
+                    if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
+                        if not c.get('purl'):
+                            self.print_stderr(f'WARNING: Result missing purl. Skipping.')
+                            continue
+                        if len(c.get('purl')) <= 0:
+                            self.print_stderr(f'WARNING: Result missing purls. Skipping.')
+                            continue
+                        if not c.get('version'):
+                            self.print_stderr(f'WARNING: Result missing version. Skipping.')
+                            continue
+                        component_key = f"{c['purl'][0]}@{c['version']}"
+                        # Initialize or update the component entry
+                        if component_key not in components:
+                            components = self._append_component(components, c, component_id, status)
+
+        # End of component results loop
+
+
         results = list(components.values())
         for component in results:
             component['licenses'] = list(component['licenses'].values())

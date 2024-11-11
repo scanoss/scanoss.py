@@ -234,8 +234,6 @@ class MyTestCase(unittest.TestCase):
                 ]             
                }```
            """
-
-        print(summary)
         self.assertEqual(status, 0)
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)',
                                                                             '', expected_details_output))
