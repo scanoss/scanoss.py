@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+  Copyright (c) 2021, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import os
 import unittest
 
@@ -32,17 +33,18 @@ class MyTestCase(unittest.TestCase):
     """
     Unit test cases for GRPC comms
     """
-    TEST_LOCAL = os.getenv("SCANOSS_TEST_LOCAL", 'True').lower() in ('true', '1', 't', 'yes', 'y')
+
+    TEST_LOCAL = os.getenv('SCANOSS_TEST_LOCAL', 'True').lower() in ('true', '1', 't', 'yes', 'y')
 
     def test_grpc_dep_echo(self):
         """
         Test the basic echo rpc call on the local server
         """
         if MyTestCase.TEST_LOCAL:
-            server_type = "local"
+            server_type = 'local'
             grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
         else:
-            server_type = "remote"
+            server_type = 'remote'
             grpc_client = ScanossGrpc(debug=True)
         echo_resp = grpc_client.deps_echo(f'testing dep echo ({server_type})')
         print(f'Echo Resp ({server_type}): {echo_resp}')
@@ -53,23 +55,26 @@ class MyTestCase(unittest.TestCase):
         Test getting dependencies from the local gRPC server
         """
         sc_deps = ScancodeDeps(debug=True)
-        dep_file = "data/scancode-deps.json"
+        dep_file = 'data/scancode-deps.json'
         deps = sc_deps.produce_from_file(dep_file)
         print(f'Dependency JSON: {deps}')
         self.assertIsNotNone(deps)
         if MyTestCase.TEST_LOCAL:
-            server_type = "local"
+            server_type = 'local'
             grpc_client = ScanossGrpc(debug=True, url='localhost:50051')
         else:
-            server_type = "remote"
+            server_type = 'remote'
             grpc_client = ScanossGrpc(debug=True)
         resp = grpc_client.get_dependencies(deps)
         print(f'Resp ({server_type}): {resp}')
         self.assertIsNotNone(resp)
 
-        dep_files = resp.get("files")
+        dep_files = resp.get('files')
         if dep_files and len(dep_files) > 0:
             for dep_file in dep_files:
-                file = dep_file.pop("file", None)
+                file = dep_file.pop('file', None)
                 print(f'File: {file} - {dep_file}')
 
+
+if __name__ == '__main__':
+    unittest.main()
