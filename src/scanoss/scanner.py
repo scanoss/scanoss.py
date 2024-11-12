@@ -564,7 +564,7 @@ class Scanner(ScanossBase):
             for dep_file in dep_files:
                 file = dep_file.pop("file", None)
                 if file:
-                    results[file] = dep_file
+                    results[file] = [dep_file]
 
         return results
 
