@@ -24,3 +24,5 @@ bad*.txt
 *.zip
 local-*.txt
 docs/build
+.devcontainer/devcontainer.json
+!.devcontainer/*.example.json
