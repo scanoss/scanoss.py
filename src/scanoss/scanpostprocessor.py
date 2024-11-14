@@ -24,6 +24,9 @@ SPDX-License-Identifier: MIT
 
 from typing import List, Tuple
 
+from packageurl import PackageURL
+from packageurl.contrib import purl2url
+
 from .scanoss_settings import BomEntry, ScanossSettings
 from .scanossbase import ScanossBase
 
@@ -50,6 +53,7 @@ class ScanPostProcessor(ScanossBase):
         super().__init__(debug, trace, quiet)
         self.scan_settings = scan_settings
         self.results: dict = results
+        self.component_info_map: dict = {}
 
     def load_results(self, raw_results: dict):
         """Load the raw results
@@ -58,7 +62,18 @@ class ScanPostProcessor(ScanossBase):
             raw_results (dict): Raw scan results
         """
         self.results = raw_results
+        self._load_component_info()
         return self
+
+    def _load_component_info(self):
+        """Create a map of component information from scan results for faster lookup"""
+        if not self.results:
+            return
+        for _, result in self.results.items():
+            result = result[0] if isinstance(result, list) else result
+            purls = result.get('purl', [])
+            for purl in purls:
+                self.component_info_map[purl] = result
 
     def post_process(self):
         """Post-process the scan results
@@ -66,11 +81,11 @@ class ScanPostProcessor(ScanossBase):
         Returns:
             dict: Processed results
         """
-        self.remove_dismissed_files()
-        self.replace_purls()
+        self._remove_dismissed_files()
+        self._replace_purls()
         return self.results
 
-    def remove_dismissed_files(self):
+    def _remove_dismissed_files(self):
         """Remove entries from the results based on files and/or purls specified in the SCANOSS settings file"""
         to_remove_entries = self.scan_settings.get_bom_remove()
         if not to_remove_entries:
@@ -82,7 +97,7 @@ class ScanPostProcessor(ScanossBase):
             if not self._should_remove_result(result_path, result, to_remove_entries)
         }
 
-    def replace_purls(self):
+    def _replace_purls(self):
         """Replace purls in the results based on the SCANOSS settings file"""
         to_replace_entries = self.scan_settings.get_bom_replace()
         if not to_replace_entries:
@@ -90,9 +105,54 @@ class ScanPostProcessor(ScanossBase):
 
         for result_path, result in self.results.items():
             result = result[0] if isinstance(result, list) else result
-            should_replace, to_replace_with = self._should_replace_result(result_path, result, to_replace_entries)
+            should_replace, to_replace_with_purl = self._should_replace_result(result_path, result, to_replace_entries)
             if should_replace:
-                result['purl'] = [to_replace_with]
+                self.results[result_path] = self._update_replaced_result(result, to_replace_with_purl)
+
+    def _update_replaced_result(self, result: dict, to_replace_with_purl: str) -> dict:
+        """
+        Update the result with the new purl and component information if available,
+        otherwise removes the old component information
+
+        Args:
+            result (dict): The result to update
+            to_replace_with_purl (str): The purl to replace with
+
+        Returns:
+            dict: Updated result
+        """
+
+        if self.component_info_map.get(to_replace_with_purl):
+            result.update(self.component_info_map[to_replace_with_purl])
+        else:
+            try:
+                new_component = PackageURL.from_string(to_replace_with_purl).to_dict()
+                new_component_url = purl2url.get_repo_url(to_replace_with_purl)
+            except Exception:
+                self.print_stderr(
+                    f"Error while replacing: Invalid PURL '{to_replace_with_purl}' in settings file. Abort replacing."
+                )
+                return result
+
+            result['component'] = new_component.get('name')
+            result['url'] = new_component_url
+            result['vendor'] = new_component.get('namespace')
+
+            result.pop('licenses', None)
+            result.pop('file', None)
+            result.pop('file_hash', None)
+            result.pop('file_url', None)
+            result.pop('latest', None)
+            result.pop('release_date', None)
+            result.pop('source_hash', None)
+            result.pop('url_hash', None)
+            result.pop('url_stats', None)
+            result.pop('url_stats', None)
+            result.pop('version', None)
+
+        result['purl'] = [to_replace_with_purl]
+
+        return result
 
     def _should_replace_result(
         self, result_path: str, result: dict, to_replace_entries: List[BomEntry]
@@ -115,9 +175,6 @@ class ScanPostProcessor(ScanossBase):
             to_replace_with = to_replace_entry.get('replace_with')
 
             if not to_replace_path and not to_replace_purl or not to_replace_with:
-                continue
-
-            if to_replace_with in result_purls:
                 continue
 
             if (
@@ -160,6 +217,36 @@ class ScanPostProcessor(ScanossBase):
         action: str,
     ) -> None:
         """Print a message about replacing or removing a result"""
+        message = (
+            f"{self._get_match_type_message(result_path, result_purls, bom_entry, action)} \n"
+            f"Details:\n"
+            f"  - PURLs: {', '.join(result_purls)}\n"
+            f"  - Path: '{result_path}'\n"
+        )
+
+        if action == 'Replacing':
+            message += f" - {action} with '{bom_entry.get('replace_with')}'"
+
+        self.print_debug(message)
+
+    def _get_match_type_message(
+        self,
+        result_path: str,
+        result_purls: List[str],
+        bom_entry: BomEntry,
+        action: str,
+    ) -> str:
+        """Compose message based on match type
+
+        Args:
+            result_path (str): Path of the scan result
+            result_purls (List[str]): Purls of the scan result
+            bom_entry (BomEntry): BOM entry to compare with
+            action (str): Post processing action being performed
+
+        Returns:
+            str: The message to be printed
+        """
         if bom_entry.get('path') and bom_entry.get('purl'):
             message = f"{action} '{result_path}'. Full match found."
         elif bom_entry.get('purl'):
@@ -167,13 +254,7 @@ class ScanPostProcessor(ScanossBase):
         else:
             message = f"{action} '{result_path}'. Found path match."
 
-        self.print_debug(
-            f"{message}\n"
-            f"Details:\n"
-            f"  - PURLs: {', '.join(result_purls)}\n"
-            f"  - Path: '{result_path}'\n"
-            f"  - {action} with: '{bom_entry.get('replace_with')}'\n" if action == 'Replacing' else ''
-        )
+        return message
 
     def _is_full_match(
         self,
