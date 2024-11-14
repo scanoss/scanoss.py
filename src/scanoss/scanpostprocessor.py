@@ -107,7 +107,7 @@ class ScanPostProcessor(ScanossBase):
             result = result[0] if isinstance(result, list) else result
             should_replace, to_replace_with_purl = self._should_replace_result(result_path, result, to_replace_entries)
             if should_replace:
-                self.results[result_path] = self._update_replaced_result(result, to_replace_with_purl)
+                self.results[result_path] = [self._update_replaced_result(result, to_replace_with_purl)]
 
     def _update_replaced_result(self, result: dict, to_replace_with_purl: str) -> dict:
         """
