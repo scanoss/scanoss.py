@@ -860,7 +860,7 @@ def inspect_undeclared(parser, args):
         open(status_output, 'w').close()
     i_undeclared = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet,
                                        filepath=args.input, format_type=args.format,
-                                       status=status_output, output=output, sbom_format=args.sbom-format)
+                                       status=status_output, output=output, sbom_format=args.sbom_format)
     status, _ = i_undeclared.run()
     sys.exit(status)
 
