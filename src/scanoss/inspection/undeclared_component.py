@@ -32,7 +32,7 @@ class UndeclaredComponent(PolicyCheck):
     """
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
-                 format_type: str = 'json', status: str = None, output: str = None):
+                 format_type: str = 'json', status: str = None, output: str = None, style: str = 'scanoss-settings'):
         """
         Initialize the UndeclaredComponent class.
 
@@ -43,6 +43,7 @@ class UndeclaredComponent(PolicyCheck):
         :param format_type: Output format ('json' or 'md')
         :param status: Path to save status output
         :param output: Path to save detailed output
+        :param style: Status output style (default 'scanoss-settings')
         """
         super().__init__(debug, trace, quiet, filepath, format_type, status, output,
                          name='Undeclared Components Policy')
@@ -50,6 +51,7 @@ class UndeclaredComponent(PolicyCheck):
         self.format = format
         self.output = output
         self.status = status
+        self.style = style
 
     def _get_undeclared_component(self, components: list)-> list or None:
         """
@@ -78,9 +80,14 @@ class UndeclaredComponent(PolicyCheck):
         """
         summary = f'{len(components)} undeclared component(s) were found.\n'
         if len(components) > 0:
+            if(self.style == 'scanoss-settings'):
+                summary += (f'Add the following snippet into your `scanoss.json` file\n'
+                            f'\n```json\n{json.dumps(self._generate_scanoss_file(components), indent=2)}\n```\n')
+                return summary
+
             summary += (f'Add the following snippet into your `sbom.json` file\n'
                         f'\n```json\n{json.dumps(self._generate_sbom_file(components), indent=2)}\n```\n')
-        return summary
+            return summary
 
     def _json(self, components: list) -> Dict[str, Any]:
         """
@@ -115,6 +122,37 @@ class UndeclaredComponent(PolicyCheck):
             'summary': self._get_summary(components),
         }
 
+    def _get_unique_components(self, components: list) -> list:
+        """
+         Generate a list of unique components.
+
+         :param components: List of undeclared components
+         :return: list of unique components
+         """
+        unique_components = {}
+        if components is None:
+            self.print_stderr(f'WARNING: No components provided!')
+            return []
+
+        for component in components:
+                unique_components[component['purl']] = {'purl': component['purl']}
+        return list(unique_components.values())
+
+    def _generate_scanoss_file(self, components: list) -> dict:
+        """
+         Generate a list of PURLs for the scanoss.json file.
+
+         :param components: List of undeclared components
+         :return: scanoss.json Dictionary
+         """
+        scanoss_settings = {
+            'bom':{
+                'include': self._get_unique_components(components),
+            }
+        }
+
+        return scanoss_settings
+
     def _generate_sbom_file(self, components: list) -> dict:
         """
          Generate a list of PURLs for the SBOM file.
@@ -122,16 +160,8 @@ class UndeclaredComponent(PolicyCheck):
          :param components: List of undeclared components
          :return: SBOM Dictionary with components
          """
-
-        unique_components = {}
-        if components is None:
-            self.print_stderr(f'WARNING: No components provided!')
-        else:
-            for component in components:
-                unique_components[component['purl']] = { 'purl': component['purl'] }
-
         sbom = {
-            'components': list(unique_components.values())
+            'components': self._get_unique_components(components),
         }
 
         return sbom

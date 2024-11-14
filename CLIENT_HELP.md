@@ -375,3 +375,10 @@ The following command can be used to inspect for undeclared components and save 
 ```bash
 scanoss-py insp undeclared -i scan-results.json --status undeclared-status.md --output undeclared.json --format md
 ```
+
+#### Inspect for undeclared components and save results in Markdown format and styled as sbom.json
+The following command can be used to inspect for undeclared components and save the results in Markdown format.
+Default status style 'scanoss-json'
+```bash
+scanoss-py insp undeclared -i scan-results.json --status undeclared-status.md --output undeclared.json --format md --style sbom
+```

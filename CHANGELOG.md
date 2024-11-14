@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.17.5] - 2024-11-12
 ### Fixed
 - Fix dependencies scan result structure
+### Added
+- Added style status flag to inspect undeclared command
   
 ## [1.17.4] - 2024-11-08
 ### Fixed

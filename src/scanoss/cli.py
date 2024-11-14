@@ -315,6 +315,8 @@ def setup_args() -> None:
 
     # Inspect Sub-command: inspect undeclared
     p_undeclared = p_inspect_sub.add_parser('undeclared', aliases=['un'],description="Inspect for undeclared components", help='Inspect for undeclared components')
+    p_undeclared.add_argument('--style',required=False ,choices=['sbom', 'scanoss-settings'],
+                              default="scanoss-settings",help='Status output style')
     p_undeclared.set_defaults(func=inspect_undeclared)
 
     for p in [p_copyleft, p_undeclared]:
@@ -858,7 +860,7 @@ def inspect_undeclared(parser, args):
         open(status_output, 'w').close()
     i_undeclared = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet,
                                        filepath=args.input, format_type=args.format,
-                                       status=status_output, output=output)
+                                       status=status_output, output=output, style=args.style)
     status, _ = i_undeclared.run()
     sys.exit(status)
 
