@@ -179,8 +179,8 @@ class ScanossSettings(ScanossBase):
             List: List of SBOM assets
         """
         if self.scan_type == 'identify':
-            include_bom_entries = self.normalize_bom_entries(self.get_bom_include())
-            replace_bom_entries = self.normalize_bom_entries(self.get_bom_replace())
+            include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
+            replace_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_replace()))
             self.print_debug(
                 f"Scan type set to 'identify'. Adding {len(include_bom_entries) + len(replace_bom_entries)} components as context to the scan. \n"
                 f"From Include list: {[entry['purl'] for entry in include_bom_entries]} \n"
@@ -207,3 +207,22 @@ class ScanossSettings(ScanossBase):
                 }
             )
         return normalized_bom_entries
+
+    @staticmethod
+    def _remove_duplicates(bom_entries: List[BomEntry]) -> List[BomEntry]:
+        """Remove duplicate BOM entries
+
+        Args:
+            bom_entries (List[Dict]): List of BOM entries
+
+        Returns:
+            List: List of unique BOM entries
+        """
+        already_added = set()
+        unique_entries = []
+        for entry in bom_entries:
+            entry_tuple = tuple(entry.items())
+            if entry_tuple not in already_added:
+                already_added.add(entry_tuple)
+                unique_entries.append(entry)
+        return unique_entries
