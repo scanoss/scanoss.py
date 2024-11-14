@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix dependencies scan result structure
 ### Added
-- Added style status flag to inspect undeclared command
+- Added sbom format flag to define status output for undeclared policy
   
 ## [1.17.4] - 2024-11-08
 ### Fixed

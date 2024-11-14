@@ -32,7 +32,7 @@ class UndeclaredComponent(PolicyCheck):
     """
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
-                 format_type: str = 'json', status: str = None, output: str = None, style: str = 'scanoss-settings'):
+                 format_type: str = 'json', status: str = None, output: str = None, sbom_format: str = 'settings'):
         """
         Initialize the UndeclaredComponent class.
 
@@ -43,7 +43,7 @@ class UndeclaredComponent(PolicyCheck):
         :param format_type: Output format ('json' or 'md')
         :param status: Path to save status output
         :param output: Path to save detailed output
-        :param style: Status output style (default 'scanoss-settings')
+        :param sbom_format: Sbom format for status output (default 'settings')
         """
         super().__init__(debug, trace, quiet, filepath, format_type, status, output,
                          name='Undeclared Components Policy')
@@ -51,7 +51,7 @@ class UndeclaredComponent(PolicyCheck):
         self.format = format
         self.output = output
         self.status = status
-        self.style = style
+        self.sbom_format = sbom_format
 
     def _get_undeclared_component(self, components: list)-> list or None:
         """
@@ -61,7 +61,7 @@ class UndeclaredComponent(PolicyCheck):
            :return: List of undeclared components
         """
         if components is None:
-            self.print_stderr(f'WARNING: No components provided!')
+            self.print_debug(f'WARNING: No components provided!')
             return None
         undeclared_components = []
         for component in components:
@@ -80,7 +80,7 @@ class UndeclaredComponent(PolicyCheck):
         """
         summary = f'{len(components)} undeclared component(s) were found.\n'
         if len(components) > 0:
-            if(self.style == 'scanoss-settings'):
+            if self.sbom_format == 'settings':
                 summary += (f'Add the following snippet into your `scanoss.json` file\n'
                             f'\n```json\n{json.dumps(self._generate_scanoss_file(components), indent=2)}\n```\n')
                 return summary

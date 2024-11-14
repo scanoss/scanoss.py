@@ -165,7 +165,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir,'data', file_name)
-        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='json', style='sbom')
+        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='json', sbom_format='legacy')
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
@@ -201,7 +201,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
-        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md', style='sbom')
+        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md', sbom_format='legacy')
         status, results = undeclared.run()
         details = results['details']
         summary = results['summary']
