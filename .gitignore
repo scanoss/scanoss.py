@@ -27,5 +27,5 @@ docs/build
 .devcontainer/devcontainer.json
 !.devcontainer/*.example.json
 
-
 !tests/data/*.json
+!docs/assets/*.json

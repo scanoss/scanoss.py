@@ -46,6 +46,8 @@ To enable dependency scanning, an extra tool is required: scancode-toolkit.
 To install it run: ``pip3 install -r requirements-scancode.txt``
 
 
+.. include:: scanoss_settings_schema.rst
+
 
 Commands and arguments
 ======================
