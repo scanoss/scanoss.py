@@ -316,7 +316,7 @@ def setup_args() -> None:
     # Inspect Sub-command: inspect undeclared
     p_undeclared = p_inspect_sub.add_parser('undeclared', aliases=['un'],description="Inspect for undeclared components", help='Inspect for undeclared components')
     p_undeclared.add_argument('--sbom-format',required=False ,choices=['legacy', 'settings'],
-                              default="scanoss-settings",help='Sbom format for status output')
+                              default="settings",help='Sbom format for status output')
     p_undeclared.set_defaults(func=inspect_undeclared)
 
     for p in [p_copyleft, p_undeclared]:
