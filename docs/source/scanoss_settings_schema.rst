@@ -3,7 +3,7 @@ Settings File
 
 SCANOSS provides a settings file to customize the scanning process. The settings file is a JSON file that contains project information and BOM (Bill of Materials) rules. It allows you to include, remove, or replace components in the BOM before and after scanning.
 
-The schema is available at: ``https://<your-project>.readthedocs.io/en/latest/_static/schema.json``
+The schema is available to download :download:`here </_static/scanoss-settings-schema.json>`
 
 Schema Overview
 ---------------
