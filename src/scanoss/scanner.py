@@ -161,12 +161,13 @@ class Scanner(ScanossBase):
         if skip_extensions:  # Append extra file extensions to skip
             self.skip_extensions.extend(skip_extensions)
 
-        if scan_settings:
-            self.scan_settings = scan_settings
-            self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet)
-            self._maybe_set_api_sbom()
+        self.scan_settings = scan_settings
+        self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
+        self._maybe_set_api_sbom()
 
     def _maybe_set_api_sbom(self):
+        if not self.scan_settings:
+            return
         sbom = self.scan_settings.get_sbom()
         if sbom:
             self.scanoss_api.set_sbom(sbom)
@@ -521,11 +522,12 @@ class Scanner(ScanossBase):
                 success = False
             dep_responses = self.threaded_deps.responses
 
-        raw_scan_results = self._merge_scan_results(
-            scan_responses, dep_responses, file_map
-        )
+        raw_scan_results = self._merge_scan_results(scan_responses, dep_responses, file_map)
 
-        results = self.post_processor.load_results(raw_scan_results).post_process()
+        if self.post_processor:
+            results = self.post_processor.load_results(raw_scan_results).post_process()
+        else:
+            results = raw_scan_results
 
         if self.output_format == 'plain':
             self.__log_result(json.dumps(results, indent=2, sort_keys=True))

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.18.0] - 2024-11-11
+### Fixed
+- Fixed post processor being accesed if not set
+### Added
+- Add support for replace action when specifying a settings file
+- Add replaced files as context to scan request
+
 ## [1.17.5] - 2024-11-12
 ### Fixed
 - Fix dependencies scan result structure

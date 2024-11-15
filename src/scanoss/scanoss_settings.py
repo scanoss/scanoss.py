@@ -69,15 +69,15 @@ class ScanossSettings(ScanossBase):
         json_file = Path(filepath).resolve()
 
         if not json_file.exists():
-            self.print_stderr(f"Scan settings file not found: {filepath}")
+            self.print_stderr(f'Scan settings file not found: {filepath}')
             self.data = {}
 
-        with open(json_file, "r") as jsonfile:
-            self.print_debug(f"Loading scan settings from: {filepath}")
+        with open(json_file, 'r') as jsonfile:
+            self.print_debug(f'Loading scan settings from: {filepath}')
             try:
                 self.data = json.load(jsonfile)
             except Exception as e:
-                self.print_stderr(f"ERROR: Problem parsing input JSON: {e}")
+                self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
         return self
 
     def set_file_type(self, file_type: str):
@@ -91,9 +91,7 @@ class ScanossSettings(ScanossBase):
         """
         self.settings_file_type = file_type
         if not self._is_valid_sbom_file:
-            raise Exception(
-                'Invalid scan settings file, missing "components" or "bom")'
-            )
+            raise Exception('Invalid scan settings file, missing "components" or "bom")')
         return self
 
     def set_scan_type(self, scan_type: str):
@@ -111,7 +109,7 @@ class ScanossSettings(ScanossBase):
         Returns:
             bool: True if the file is valid, False otherwise
         """
-        if not self.data.get("components") or not self.data.get("bom"):
+        if not self.data.get('components') or not self.data.get('bom'):
             return False
         return True
 
@@ -122,14 +120,14 @@ class ScanossSettings(ScanossBase):
             dict: If using scanoss.json
             list: If using SBOM.json
         """
-        if self.settings_file_type == "legacy":
+        if self.settings_file_type == 'legacy':
             if isinstance(self.data, list):
                 return self.data
-            elif isinstance(self.data, dict) and self.data.get("components"):
-                return self.data.get("components")
+            elif isinstance(self.data, dict) and self.data.get('components'):
+                return self.data.get('components')
             else:
                 return []
-        return self.data.get("bom", {})
+        return self.data.get('bom', {})
 
     def get_bom_include(self) -> List[BomEntry]:
         """Get the list of components to include in the scan
@@ -137,9 +135,9 @@ class ScanossSettings(ScanossBase):
         Returns:
             list: List of components to include in the scan
         """
-        if self.settings_file_type == "legacy":
+        if self.settings_file_type == 'legacy':
             return self._get_bom()
-        return self._get_bom().get("include", [])
+        return self._get_bom().get('include', [])
 
     def get_bom_remove(self) -> List[BomEntry]:
         """Get the list of components to remove from the scan
@@ -147,21 +145,31 @@ class ScanossSettings(ScanossBase):
         Returns:
             list: List of components to remove from the scan
         """
-        if self.settings_file_type == "legacy":
+        if self.settings_file_type == 'legacy':
             return self._get_bom()
-        return self._get_bom().get("remove", [])
+        return self._get_bom().get('remove', [])
+
+    def get_bom_replace(self) -> List[BomEntry]:
+        """Get the list of components to replace in the scan
+
+        Returns:
+            list: List of components to replace in the scan
+        """
+        if self.settings_file_type == 'legacy':
+            return []
+        return self._get_bom().get('replace', [])
 
     def get_sbom(self):
         """Get the SBOM to be sent to the SCANOSS API
 
         Returns:
-            dict: SBOM
+            dict: SBOM request payload
         """
         if not self.data:
             return None
         return {
-            "scan_type": self.scan_type,
-            "assets": json.dumps(self._get_sbom_assets()),
+            'scan_type': self.scan_type,
+            'assets': json.dumps(self._get_sbom_assets()),
         }
 
     def _get_sbom_assets(self):
@@ -170,8 +178,15 @@ class ScanossSettings(ScanossBase):
         Returns:
             List: List of SBOM assets
         """
-        if self.scan_type == "identify":
-            return self.normalize_bom_entries(self.get_bom_include())
+        if self.scan_type == 'identify':
+            include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
+            replace_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_replace()))
+            self.print_debug(
+                f"Scan type set to 'identify'. Adding {len(include_bom_entries) + len(replace_bom_entries)} components as context to the scan. \n"
+                f"From Include list: {[entry['purl'] for entry in include_bom_entries]} \n"
+                f"From Replace list: {[entry['purl'] for entry in replace_bom_entries]} \n"
+            )
+            return include_bom_entries + replace_bom_entries
         return self.normalize_bom_entries(self.get_bom_remove())
 
     @staticmethod
@@ -188,7 +203,26 @@ class ScanossSettings(ScanossBase):
         for entry in bom_entries:
             normalized_bom_entries.append(
                 {
-                    "purl": entry.get("purl", ""),
+                    'purl': entry.get('purl', ''),
                 }
             )
         return normalized_bom_entries
+
+    @staticmethod
+    def _remove_duplicates(bom_entries: List[BomEntry]) -> List[BomEntry]:
+        """Remove duplicate BOM entries
+
+        Args:
+            bom_entries (List[Dict]): List of BOM entries
+
+        Returns:
+            List: List of unique BOM entries
+        """
+        already_added = set()
+        unique_entries = []
+        for entry in bom_entries:
+            entry_tuple = tuple(entry.items())
+            if entry_tuple not in already_added:
+                already_added.add(entry_tuple)
+                unique_entries.append(entry)
+        return unique_entries

@@ -1,0 +1,30 @@
+{
+  "bom": {
+    "include": [],
+    "remove": [
+      {
+        "path": "scanoss_settings.py",
+        "purl": "pkg:github/scanoss/scanoss.py"
+      },
+      {
+        "path": "test_file_path.go",
+        "purl": "pkg:github/scanoss/scanoss.py"
+      },
+      {
+        "purl": "matching/purl"
+      }
+    ],
+    "replace": [
+      {
+        "path": "full_match_test.py",
+        "purl": "pkg:github/scanoss/full_match_test.py",
+        "replace_with": "pkg:github/scanoss/full_match_replaced.py"
+      },
+      {
+        "purl": "pkg:github/scanoss/only_purl_match.py",
+        "replace_with": "pkg:github/scanoss/only_purl_match_replaced.py"
+      }
+    ]
+  }
+}
+
