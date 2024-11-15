@@ -6,14 +6,14 @@ SCANOSS provides a settings file to customize the scanning process. The settings
 The schema is available at: ``https://<your-project>.readthedocs.io/en/latest/_static/schema.json``
 
 Schema Overview
--------------
+---------------
 
 The settings file consists of two main sections:
 
 Project Information
------------------
+-------------------
 
-The ``self`` section contains basic information about the your project:
+The ``self`` section contains basic information about your project:
 
 .. code-block:: json
 
@@ -31,7 +31,7 @@ BOM Rules
 The ``bom`` section defines rules for modifying the BOM before and after scanning. It contains three main operations:
 
 1. Include Rules
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Rules for adding context when scanning. These rules will be sent to the SCANOSS API meaning they have more chance of being considered part of the resulting scan. 
 
@@ -50,7 +50,7 @@ Rules for adding context when scanning. These rules will be sent to the SCANOSS 
     }
 
 2. Remove Rules
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 Rules for removing files from results after scanning. These rules will be applied to the results file after scanning. The post processing happens on the client side.
 
@@ -69,7 +69,7 @@ Rules for removing files from results after scanning. These rules will be applie
     }
 
 3. Replace Rules
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Rules for replacing components after scanning. These rules will be applied to the results file after scanning. The post processing happens on the client side.
 
@@ -90,31 +90,31 @@ Rules for replacing components after scanning. These rules will be applied to th
     }
 
 Important Notes
--------------
+---------------
 
 Matching Rules
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 1. **Full Match**: Requires both PATH and PURL to match. It means the rule will be applied ONLY to the specific file with the matching PURL and PATH.
 2. **Partial Match**: Matches based on either:
    - File path only (PURL is optional). It means the rule will be applied to all files with the matching path.
    - PURL only (PATH is optional). It means the rule will be applied to all files with the matching PURL.
    
-
 File Paths
-~~~~~~~~~
+~~~~~~~~~~
 
 - All paths should be specified relative to the scanned directory
 - Use forward slashes (``/``) as path separators
 
 Given the following example directory structure:
+
 .. code-block:: text
 
-   project
-   ├── src
-   │   └── component.js
-   └── lib
-       └── utils.py
+    project/
+    ├── src/
+    │   └── component.js
+    └── lib/
+        └── utils.py
 
 - If the scanned directory is ``/project/src``, then:
     - ``component.js`` is a valid path
@@ -124,7 +124,7 @@ Given the following example directory structure:
     - ``lib/utils.py`` is a valid path
 
 Package URLs (PURLs)
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 PURLs must follow the Package URL specification:
 
@@ -136,7 +136,7 @@ PURLs must follow the Package URL specification:
 - Version is strongly recommended but optional
 
 Example Configuration
--------------------
+---------------------
 
 Here's a complete example showing all sections:
 
