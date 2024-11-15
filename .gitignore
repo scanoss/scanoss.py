@@ -28,4 +28,4 @@ docs/build
 !.devcontainer/*.example.json
 
 !tests/data/*.json
-!docs/assets/*.json
+!docs/source/_static/*.json
