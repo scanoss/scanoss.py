@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Scanoss Settings",
+  "type": "object",
+  "properties": {
+    "self": {
+      "type": "object",
+      "description": "Description of the project under analysis",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the project"
+        },
+        "license": {
+          "type": "string",
+          "description": "License of the project"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the project"
+        }
+      }
+    },
+    "bom": {
+      "type": "object",
+      "description": "BOM Rules: Set of rules that will be used to modify the BOM before and after the scan is completed",
+      "properties": {
+        "include": {
+          "type": "array",
+          "description": "Set of rules to be added as context when scanning. This list will be sent as payload to the API.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "File path",
+                "examples": ["/path/to/file", "/path/to/another/file"],
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "purl": {
+                "type": "string",
+                "description": "Package URL to be used to match the component",
+                "examples": [
+                  "pkg:npm/vue@2.6.12",
+                  "pkg:golang/github.com/golang/go@1.17.3"
+                ]
+              },
+              "comment": {
+                "type": "string",
+                "description": "Additional notes or comments"
+              }
+            },
+            "uniqueItems": true,
+            "required": ["purl"]
+          }
+        },
+        "remove": {
+          "type": "array",
+          "description": "Set of rules that will remove files from the results file after the scan is completed.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "File path",
+                "examples": ["/path/to/file", "/path/to/another/file"]
+              },
+              "purl": {
+                "type": "string",
+                "description": "Package URL",
+                "examples": [
+                  "pkg:npm/vue@2.6.12",
+                  "pkg:golang/github.com/golang/go@1.17.3"
+                ]
+              },
+              "comment": {
+                "type": "string",
+                "description": "Additional notes or comments"
+              }
+            },
+            "uniqueItems": true,
+            "required": ["purl"]
+          }
+        },
+        "replace": {
+          "type": "array",
+          "description": "Set of rules that will replace components with the specified one after the scan is completed.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "File path",
+                "examples": ["/path/to/file", "/path/to/another/file"]
+              },
+              "purl": {
+                "type": "string",
+                "description": "Package URL to replace",
+                "examples": [
+                  "pkg:npm/vue@2.6.12",
+                  "pkg:golang/github.com/golang/go@1.17.3"
+                ]
+              },
+              "comment": {
+                "type": "string",
+                "description": "Additional notes or comments"
+              },
+              "license": {
+                "type": "string",
+                "description": "License of the component. Should be a valid SPDX license expression",
+                "examples": ["MIT", "Apache-2.0"]
+              },
+              "replace_with": {
+                "type": "string",
+                "description": "Package URL to replace with",
+                "examples": [
+                  "pkg:npm/vue@2.6.12",
+                  "pkg:golang/github.com/golang/go@1.17.3"
+                ]
+              }
+            },
+            "uniqueItems": true,
+            "required": ["purl", "replace_with"]
+          }
+        }
+      }
+    }
+  }
+}
