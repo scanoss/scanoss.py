@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed post processor being accesed if not set
 ### Added
-- Add support for replace action when specifying a settings file
-- Add replaced files as context to scan request
+- Added support for replace action when specifying a settings file
+- Added replaced files as context to scan request
+- Added sbom format flag to define status output for undeclared policy
 
 ## [1.17.5] - 2024-11-12
 ### Fixed
@@ -402,3 +403,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.17.3]: https://github.com/scanoss/scanoss.py/compare/v1.17.2...v1.17.3
 [1.17.4]: https://github.com/scanoss/scanoss.py/compare/v1.17.3...v1.17.4
 [1.17.5]: https://github.com/scanoss/scanoss.py/compare/v1.17.4...v1.17.5
+[1.18.0]: https://github.com/scanoss/scanoss.py/compare/v1.17.5...v1.18.0
