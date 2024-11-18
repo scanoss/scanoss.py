@@ -32,6 +32,8 @@ from progress.bar import Bar
 from progress.spinner import Spinner
 from pypac.parser import PACFile
 
+from scanoss.utils.file import validate_json_file
+
 from .scanossapi import ScanossApi
 from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite
@@ -96,18 +98,44 @@ class Scanner(ScanossBase):
     Handle the scanning of files, snippets and dependencies
     """
 
-    def __init__(self, wfp: str = None, scan_output: str = None, output_format: str = 'plain',
-                 debug: bool = False, trace: bool = False, quiet: bool = False, api_key: str = None, url: str = None,
-                 flags: str = None, nb_threads: int = 5,
-                 post_size: int = 32, timeout: int = 180, no_wfp_file: bool = False,
-                 all_extensions: bool = False, all_folders: bool = False, hidden_files_folders: bool = False,
-                 scan_options: int = 7, sc_timeout: int = 600, sc_command: str = None, grpc_url: str = None,
-                 obfuscate: bool = False, ignore_cert_errors: bool = False, proxy: str = None, grpc_proxy: str = None,
-                 ca_cert: str = None, pac: PACFile = None, retry: int = 5, hpsm: bool = False,
-                 skip_size: int = 0, skip_extensions=None, skip_folders=None,
-                 strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None,
-                 scan_settings: ScanossSettings = None
-                 ):
+    def __init__(
+        self,
+        wfp: str = None,
+        scan_output: str = None,
+        output_format: str = 'plain',
+        debug: bool = False,
+        trace: bool = False,
+        quiet: bool = False,
+        api_key: str = None,
+        url: str = None,
+        flags: str = None,
+        nb_threads: int = 5,
+        post_size: int = 32,
+        timeout: int = 180,
+        no_wfp_file: bool = False,
+        all_extensions: bool = False,
+        all_folders: bool = False,
+        hidden_files_folders: bool = False,
+        scan_options: int = 7,
+        sc_timeout: int = 600,
+        sc_command: str = None,
+        grpc_url: str = None,
+        obfuscate: bool = False,
+        ignore_cert_errors: bool = False,
+        proxy: str = None,
+        grpc_proxy: str = None,
+        ca_cert: str = None,
+        pac: PACFile = None,
+        retry: int = 5,
+        hpsm: bool = False,
+        skip_size: int = 0,
+        skip_extensions=None,
+        skip_folders=None,
+        strip_hpsm_ids=None,
+        strip_snippet_ids=None,
+        skip_md5_ids=None,
+        scan_settings: ScanossSettings = None
+    ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
         """
@@ -255,27 +283,7 @@ class Scanner(ScanossBase):
                     if WFP_FILE_START in line:
                         count += 1
         return count
-
-    @staticmethod
-    def valid_json_file(json_file: str) -> bool:
-        """
-        Validate if the specified file is indeed valid JSON
-        :param: str JSON file to load
-        :return bool True if valid, False otherwise
-        """
-        if not json_file:
-            Scanner.print_stderr('ERROR: No JSON file provided to parse.')
-            return False
-        if not os.path.isfile(json_file):
-            Scanner.print_stderr(f'ERROR: JSON file does not exist or is not a file: {json_file}')
-            return False
-        try:
-            with open(json_file) as f:
-                json.load(f)
-        except Exception as e:
-            Scanner.print_stderr(f'Problem parsing JSON file "{json_file}": {e}')
-            return False
-        return True
+    
 
     @staticmethod
     def version_details() -> str:
