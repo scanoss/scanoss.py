@@ -81,6 +81,11 @@ class ScanPostProcessor(ScanossBase):
         Returns:
             dict: Processed results
         """
+        if self.scan_settings.is_legacy():
+            self.print_stderr(
+                'Legacy settings file detected. Post-processing is not supported for legacy settings file.'
+            )
+            return self.results
         self._remove_dismissed_files()
         self._replace_purls()
         return self.results

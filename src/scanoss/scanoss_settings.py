@@ -26,7 +26,11 @@ import json
 from pathlib import Path
 from typing import List, TypedDict
 
+from scanoss.utils.file import validate_json_file
+
 from .scanossbase import ScanossBase
+
+DEFAULT_SCANOSS_JSON_FILE = 'scanoss.json'
 
 
 class BomEntry(TypedDict, total=False):
@@ -61,23 +65,32 @@ class ScanossSettings(ScanossBase):
             self.load_json_file(filepath)
 
     def load_json_file(self, filepath: str):
-        """Load the scan settings file
+        """Load the scan settings file. If no filepath is provided, scanoss.json will be used as default.
 
         Args:
             filepath (str): Path to the SCANOSS settings file
         """
+
+        if not filepath:
+            filepath = DEFAULT_SCANOSS_JSON_FILE
+
         json_file = Path(filepath).resolve()
 
-        if not json_file.exists():
-            self.print_stderr(f'Scan settings file not found: {filepath}')
-            self.data = {}
+        if filepath == DEFAULT_SCANOSS_JSON_FILE and not json_file.exists():
+            self.print_debug(f'Default settings file not found: {filepath}. Skipping...')
+            return self
+
+        try:
+            validate_json_file(json_file)
+        except ValueError as e:
+            return self.print_stderr(f'ERROR: Problem with settings file. {e}')
 
         with open(json_file, 'r') as jsonfile:
             self.print_debug(f'Loading scan settings from: {filepath}')
             try:
                 self.data = json.load(jsonfile)
             except Exception as e:
-                self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
+                self.print_stderr(f'ERROR: Problem parsing settings file. {e}')
         return self
 
     def set_file_type(self, file_type: str):
@@ -226,3 +239,7 @@ class ScanossSettings(ScanossBase):
                 already_added.add(entry_tuple)
                 unique_entries.append(entry)
         return unique_entries
+
+    def is_legacy(self):
+        """Check if the settings file is legacy"""
+        return self.settings_file_type == 'legacy'

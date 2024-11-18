@@ -27,10 +27,13 @@ from pathlib import Path
 import sys
 import pypac
 
+from scanoss.utils.file import validate_json_file
+
+
 from .inspection.copyleft import Copyleft
 from .inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
-from .scanoss_settings import ScanossSettings
+from .scanoss_settings import DEFAULT_SCANOSS_JSON_FILE, ScanossSettings
 from .scancodedeps import ScancodeDeps
 from .scanner import Scanner
 from .scantype import ScanType
@@ -112,6 +115,11 @@ def setup_args() -> None:
         '--settings',
         type=str,
         help='Settings file to use for scanning (optional - default scanoss.json)',
+    )
+    p_scan.add_argument(
+        '--omit-settings-file',
+        action='store_true',
+        help='Omit default settings file (scanoss.json) if it exists',
     )
 
 
@@ -547,39 +555,28 @@ def scan(parser, args):
         exit(1)
 
     if args.identify and args.settings:
-        print_stderr(f'ERROR: Cannot specify both --identify and --settings options.')
+        print_stderr('ERROR: Cannot specify both --identify and --settings options.')
         exit(1)
-
-    def is_valid_file(file_path: str) -> bool:
-        if not os.path.exists(file_path) or not os.path.isfile(file_path):
-            print_stderr(f'Specified file does not exist or is not a file: {file_path}')
-            return False
-        if not Scanner.valid_json_file(file_path):
-            return False
-        return True
-
-    scan_settings = ScanossSettings(
-        debug=args.debug, trace=args.trace, quiet=args.quiet
-    )
-
-    if args.identify:
-        if not is_valid_file(args.identify) or args.ignore:
+        
+    if args.settings and args.omit_settings_file:
+        print_stderr('ERROR: Cannot specify both --settings and --omit-file-settings options.')
+        exit(1)
+        
+    scan_settings = None
+                
+    if args.omit_settings_file:
+        print_stderr('Omit settings file is set. Skipping...')
+    else:
+        scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        try:
+            if args.identify:
+                scan_settings.load_json_file(args.identify).set_file_type('legacy').set_scan_type('identify')
+            elif args.ignore:
+                scan_settings.load_json_file(args.ignore).set_file_type('legacy').set_scan_type('blacklist')
+            else:
+                scan_settings.load_json_file(args.settings).set_file_type('new').set_scan_type('identify')
+        except Exception:
             exit(1)
-        scan_settings.load_json_file(args.identify).set_file_type(
-            'legacy'
-        ).set_scan_type('identify')
-    elif args.ignore:
-        if not is_valid_file(args.ignore):
-            exit(1)
-        scan_settings.load_json_file(args.ignore).set_file_type('legacy').set_scan_type(
-            'blacklist'
-        )
-    elif args.settings:
-        if not is_valid_file(args.settings):
-            exit(1)
-        scan_settings.load_json_file(args.settings).set_file_type('new').set_scan_type(
-            'identify'
-        )
 
     if args.dep:
         if not os.path.exists(args.dep) or not os.path.isfile(args.dep):
@@ -587,11 +584,13 @@ def scan(parser, args):
                 f'Specified --dep file does not exist or is not a file: {args.dep}'
             )
             exit(1)
-        if not Scanner.valid_json_file(args.dep):  # Make sure it's a valid JSON file
+        try:
+            validate_json_file(args.dep)
+        except Exception:
             exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
         print_stderr(
-            f'Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.'
+            'Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.'
         )
 
     scan_output: str = None
@@ -684,7 +683,7 @@ def scan(parser, args):
         skip_md5_ids=args.skip_md5,
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
-        scan_settings=scan_settings
+        scan_settings=scan_settings,
     )
 
     if args.wfp:
