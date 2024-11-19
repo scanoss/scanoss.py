@@ -33,7 +33,7 @@ from scanoss.utils.file import validate_json_file
 from .inspection.copyleft import Copyleft
 from .inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
-from .scanoss_settings import DEFAULT_SCANOSS_JSON_FILE, ScanossSettings
+from .scanoss_settings import ScanossSettings, ScanossSettingsError
 from .scancodedeps import ScancodeDeps
 from .scanner import Scanner
 from .scantype import ScanType
@@ -575,7 +575,8 @@ def scan(parser, args):
                 scan_settings.load_json_file(args.ignore).set_file_type('legacy').set_scan_type('blacklist')
             else:
                 scan_settings.load_json_file(args.settings).set_file_type('new').set_scan_type('identify')
-        except Exception:
+        except ScanossSettingsError as e:
+            print_stderr(f'Error: {e}')
             exit(1)
 
     if args.dep:
@@ -584,9 +585,9 @@ def scan(parser, args):
                 f'Specified --dep file does not exist or is not a file: {args.dep}'
             )
             exit(1)
-        is_valid, error = validate_json_file(args.dep)
-        if not is_valid:
-            print_stderr(f'Error: Dependency file is not valid: {error}')
+        result = validate_json_file(args.dep)
+        if not result.is_valid:
+            print_stderr(f'Error: Dependency file is not valid: {result.error}')
             exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
         print_stderr(
