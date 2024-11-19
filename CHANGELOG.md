@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.18.1] - 2024-11-19
+### Added
+- Added 'component' field in CycloneDX output
+
 ## [1.18.0] - 2024-11-11
 ### Fixed
 - Fixed post processor being accesed if not set
@@ -404,3 +408,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.17.4]: https://github.com/scanoss/scanoss.py/compare/v1.17.3...v1.17.4
 [1.17.5]: https://github.com/scanoss/scanoss.py/compare/v1.17.4...v1.17.5
 [1.18.0]: https://github.com/scanoss/scanoss.py/compare/v1.17.5...v1.18.0
+[1.18.1]: https://github.com/scanoss/scanoss.py/compare/v1.17.5...v1.18.1
