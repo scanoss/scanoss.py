@@ -416,11 +416,11 @@ class Scanner(ScanossBase):
         scan_started = False
         
         to_scan_files = self.scan_settings.get_filtered_files(scan_dir)
-        
-        for to_scan_file in to_scan_files:
+        for to_scan_file in to_scan_files: 
             if self.threaded_scan and self.threaded_scan.stop_scanning():
                 self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
                 break
+            self.print_trace(f'Fingerprinting {to_scan_file}...')
             if spinner:
                 spinner.next()
             abs_path = Path(scan_dir, to_scan_file).resolve()
@@ -432,30 +432,28 @@ class Scanner(ScanossBase):
                 wfp_list.append(wfp)
             file_count += 1
             if self.threaded_scan:
-                wfp_size = len(wfp.encode('utf-8'))
+                wfp_size = len(wfp.encode("utf-8"))
                 # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue
                 if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
-                    self.threaded_scan.queue_add(scan_block)
-                    queue_size += 1
-                    scan_block = ''
-                    wfp_file_count = 0
-                    scan_block += wfp
-                    scan_size = len(scan_block.encode('utf-8'))
-                    wfp_file_count += 1
-                    # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue
-                    if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
                         self.threaded_scan.queue_add(scan_block)
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
-                    if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
-                        scan_started = True
-                        if not self.threaded_scan.run(wait=False):
-                            self.print_stderr(
-                                'Warning: Some errors encounted while scanning. Results might be incomplete.'
-                            )
-                            success = False
-                
+                scan_block += wfp
+                scan_size = len(scan_block.encode("utf-8"))
+                wfp_file_count += 1
+                # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue
+                if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
+                    self.threaded_scan.queue_add(scan_block)
+                    queue_size += 1
+                    scan_block = ''
+                    wfp_file_count = 0
+                if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
+                    scan_started = True
+                    if not self.threaded_scan.run(wait=False):
+                        self.print_stderr('Warning: Some errors encounted while scanning. Results might be incomplete.')
+                        success = False
+
         # End for loop
         if self.threaded_scan and scan_block != '':
             self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
@@ -472,7 +470,7 @@ class Scanner(ScanossBase):
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
         else:
-            self.print_stderr(f'Warning: No files found to scan in folder: {scan_dir}')
+            Scanner.print_stderr(f'Warning: No files found to scan in folder: {scan_dir}')
         return success
 
     def __run_scan_threaded(self, scan_started: bool, file_count: int) -> bool:
