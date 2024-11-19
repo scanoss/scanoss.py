@@ -26,6 +26,7 @@ import json
 from pathlib import Path
 from typing import List, TypedDict
 
+from scanoss.scan_filter import ScanFilter
 from scanoss.utils.file import validate_json_file
 
 from .scanossbase import ScanossBase
@@ -51,6 +52,7 @@ class ScanossSettings(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
+        scan_root: Path = None,
         filepath: str = None,
     ):
         """
@@ -62,9 +64,12 @@ class ScanossSettings(ScanossBase):
         """
 
         super().__init__(debug, trace, quiet)
+        self.scan_root = scan_root
         self.data = {}
         self.settings_file_type = None
         self.scan_type = None
+        self.filter = None
+
         if filepath:
             self.load_json_file(filepath)
 
@@ -88,6 +93,14 @@ class ScanossSettings(ScanossBase):
         if not result.is_valid:
             raise ScanossSettingsError(f'Problem with settings file. {result.error}')
         self.data = result.data
+        self.filter = ScanFilter(
+            debug=self.debug,
+            quiet=self.quiet,
+            trace=self.trace,
+            settings=self.data.get('settings', {}),
+            scan_root=self.scan_root,
+        )
+        self.print_debug(f'Loading scan settings from: {filepath}')
         return self
 
     def set_file_type(self, file_type: str):
@@ -238,3 +251,10 @@ class ScanossSettings(ScanossBase):
     def is_legacy(self):
         """Check if the settings file is legacy"""
         return self.settings_file_type == 'legacy'
+
+    def should_process(self, path: Path) -> bool:
+        """Check if file should be processed based on settings"""
+        if not self.filter:
+            return True
+
+        return self.filter.should_process(path)
