@@ -29,30 +29,22 @@
           "type": "object",
           "description": "Set of rules to skip files from the scan",
           "properties": {
-            "folders": {
+            "patterns": {
               "type": "array",
-              "description": "List of folders to skip from the scan. These should be relative to the scan root",
+              "description": "List of glob patterns to skip files",
               "items": {
                 "type": "string",
-                "examples": ["/path/to/folder", "/path/to/another/folder"]
-              },
-              "uniqueItems": true
-            },
-            "files": {
-              "type": "array",
-              "description": "List of files to skip from the scan. These can be either relative file paths or just file names",
-              "items": {
-                "type": "string",
-                "examples": ["/path/to/include.h", "include.h"]
-              },
-              "uniqueItems": true
-            },
-            "extensions": {
-              "type": "array",
-              "description": "List of file extensions to skip from the scan",
-              "items": {
-                "type": "string",
-                "examples": [".h", ".c", ".cpp"]
+                "examples": [
+                  "path/to/folder",
+                  "path/to/folder/**",
+                  "path/to/folder/**/*",
+
+                  "path/to/file.c",
+                  "path/to/another/file.py",
+
+                  "**/*.ts",
+                  "**/*.json"
+                ]
               },
               "uniqueItems": true
             },

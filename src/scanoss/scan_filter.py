@@ -1,6 +1,7 @@
-from pathlib import Path
+import os
+from typing import List, Set, Tuple
 
-import pathspec
+from pathspec import PathSpec
 
 from scanoss.scanossbase import ScanossBase
 
@@ -209,7 +210,6 @@ class ScanFilter(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        scan_root: Path = None,
         settings: dict = None,
     ):
         """
@@ -220,37 +220,65 @@ class ScanFilter(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
 
-        self.scan_root = scan_root
-
         skip = settings.get('skip', {})
         skip_patterns = []
 
-        skip_patterns.extend(f'**/*{ext}' for ext in DEFAULT_SKIPPED_EXT)
         skip_patterns.extend(DEFAULT_SKIPPED_FILES)
-        skip_patterns.extend(f'**/{dir}/**' for dir in DEFAULT_SKIPPED_DIRS)
-        skip_patterns.extend(f'**/*{ext}/**' for ext in DEFAULT_SKIPPED_DIR_EXT)
-
-        skip_patterns_from_settings = []
-
-        # Add scan root to patterns, to support relative paths
-        for pattern in skip.get('patterns', []):
-            pattern_path = Path(scan_root, pattern)
-            skip_patterns_from_settings.append(str(pattern_path))
+        skip_patterns.extend(f'{dir}/' for dir in DEFAULT_SKIPPED_DIRS)
+        skip_patterns.extend(f'*{ext}' for ext in DEFAULT_SKIPPED_EXT)
+        skip_patterns.extend(f'*{ext}/' for ext in DEFAULT_SKIPPED_DIR_EXT)
         skip_patterns.extend(skip.get('patterns', []))
 
-        self.skip_spec = pathspec.PathSpec.from_lines('gitwildmatch', skip_patterns)
+        self.skip_patterns = skip_patterns
         self.min_size = skip.get('sizes', {}).get('min', 0)
         self.max_size = skip.get('sizes', {}).get('max', float('inf'))
 
-    def should_process(self, path: Path) -> bool:
-        if self.skip_spec.match_file(path):
-            self.print_debug(f'Skipping {path} {"folder" if path.is_dir() else "file"} due to pattern match')
-            return False
+    def get_filtered_files(self, root: str) -> List[str]:
+        """Get a list of files to scan based on the filter settings.
 
-        if path.is_file():
-            filesize = path.stat().st_size
-            if not (self.min_size <= filesize <= self.max_size):
-                self.print_debug(f'Skipping {path} due to size')
-                return False
+        Args:
+            root (str): Root directory to scan
 
-        return True
+        Returns:
+            list[str]: List of files to scan
+        """
+        files = self._walk_with_ignore(root)
+        return files
+
+    def _walk_with_ignore(self, scan_root: str) -> List[str]:
+        files = []
+        root = os.path.abspath(scan_root)
+
+        path_spec, dir_patterns = self._create_skip_path_matchers()
+
+        for dirpath, dirnames, filenames in os.walk(root):
+            rel_path = os.path.relpath(dirpath, root)
+
+            # Return early if the entire directory should be skipped
+            if any(rel_path.startswith(p) for p in dir_patterns):
+                self.print_debug(f'Skipping directory: {rel_path}')
+                dirnames.clear()
+                continue
+
+            for filename in filenames:
+                file_rel_path = os.path.join(rel_path, filename)
+                file_path = os.path.join(dirpath, filename)
+                file_size = os.path.getsize(file_path)
+
+                if file_size < self.min_size or file_size > self.max_size:
+                    self.print_debug(f'Skipping file: {file_rel_path} (size: {file_size})')
+                    continue
+                if path_spec.match_file(file_rel_path):
+                    self.print_debug(f'Skipping file: {file_rel_path}')
+                    continue
+                else:
+                    files.append(file_rel_path)
+
+        return files
+
+    def _create_skip_path_matchers(self) -> Tuple[PathSpec, Set[str]]:
+        dir_patterns = {p.rstrip('/') for p in self.skip_patterns if p.endswith('/')}
+
+        path_spec = PathSpec.from_lines('gitwildmatch', self.skip_patterns)
+
+        return path_spec, dir_patterns

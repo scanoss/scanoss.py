@@ -414,39 +414,31 @@ class Scanner(ScanossBase):
         file_count = 0  # count all files fingerprinted
         wfp_file_count = 0  # count number of files in each queue post
         scan_started = False
-            
-        for root, dirs, files in os.walk(scan_dir):
-            self.print_trace(f'U Root: {root}, Dirs: {dirs}, Files {files}')
+        
+        to_scan_files = self.scan_settings.get_filtered_files(scan_dir)
+        
+        for to_scan_file in to_scan_files:
             if self.threaded_scan and self.threaded_scan.stop_scanning():
                 self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
                 break
-            
-            dirs[:] = [d for d in dirs if self.scan_settings.should_process(Path(root, d))]
-            
-            for file in files:
-                path = Path(root, file)
-                if not self.scan_settings.should_process(path):
-                    self.print_debug(f'Skipping filtered file: {path}')
-                    continue
-
-                self.print_trace(f'Fingerprinting {path}...')
-                if spinner:
-                    spinner.next()
-                wfp = self.winnowing.wfp_for_file(str(path), self.__strip_dir(scan_dir, scan_dir_len, str(path)))
-                if wfp is None or wfp == '':
-                    self.print_debug(f'No WFP returned for {path}. Skipping.')
-                    continue
-                if save_wfps_for_print:
-                    wfp_list.append(wfp)
-                file_count += 1
-                if self.threaded_scan:
-                    wfp_size = len(wfp.encode('utf-8'))
-                    # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue
-                    if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
-                        self.threaded_scan.queue_add(scan_block)
-                        queue_size += 1
-                        scan_block = ''
-                        wfp_file_count = 0
+            if spinner:
+                spinner.next()
+            abs_path = Path(scan_dir, to_scan_file).resolve()
+            wfp = self.winnowing.wfp_for_file(str(abs_path), to_scan_file)
+            if wfp is None or wfp == '':
+                self.print_debug(f'No WFP returned for {to_scan_file}. Skipping.')
+                continue
+            if save_wfps_for_print:
+                wfp_list.append(wfp)
+            file_count += 1
+            if self.threaded_scan:
+                wfp_size = len(wfp.encode('utf-8'))
+                # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue
+                if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
+                    self.threaded_scan.queue_add(scan_block)
+                    queue_size += 1
+                    scan_block = ''
+                    wfp_file_count = 0
                     scan_block += wfp
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
@@ -463,7 +455,7 @@ class Scanner(ScanossBase):
                                 'Warning: Some errors encounted while scanning. Results might be incomplete.'
                             )
                             success = False
-
+                
         # End for loop
         if self.threaded_scan and scan_block != '':
             self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
