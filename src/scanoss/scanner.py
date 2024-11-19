@@ -32,8 +32,6 @@ from progress.bar import Bar
 from progress.spinner import Spinner
 from pypac.parser import PACFile
 
-from scanoss.utils.file import validate_json_file
-
 from .scanossapi import ScanossApi
 from .cyclonedx import CycloneDx
 from .spdxlite import SpdxLite

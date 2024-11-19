@@ -80,10 +80,9 @@ class ScanossSettings(ScanossBase):
             self.print_debug(f'Default settings file not found: {filepath}. Skipping...')
             return self
 
-        try:
-            validate_json_file(json_file)
-        except ValueError as e:
-            return self.print_stderr(f'ERROR: Problem with settings file. {e}')
+        is_valid, error = validate_json_file(json_file)
+        if not is_valid:
+            return self.print_stderr(f'ERROR: Problem with settings file. {error}')
 
         with open(json_file, 'r') as jsonfile:
             self.print_debug(f'Loading scan settings from: {filepath}')

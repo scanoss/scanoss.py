@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from typing import Tuple
 
 
 def print_stderr(*args, **kwargs):
@@ -25,21 +26,22 @@ def is_valid_file(file_path: str) -> bool:
     return True
 
 
-def validate_json_file(json_file_path: str) -> None:
+def validate_json_file(json_file_path: str) -> Tuple[bool, str]:
     """Validate if the specified file is indeed a valid JSON file
 
     Args:
         json_file_path (str): The JSON file to validate
 
-    Raises:
-        ValueError: If the JSON file is not valid
+    Returns:
+        Tuple[bool, str]: A tuple containing a boolean indicating if the file is valid and a message
     """
     if not json_file_path:
-        raise ValueError('No JSON file provided to parse.')
+        return False, 'No JSON file provided to parse.'
     if not os.path.isfile(json_file_path):
-        raise ValueError(f'JSON file does not exist or is not a file: {json_file_path}')
+        return False, f'JSON file does not exist or is not a file: {json_file_path}'
     try:
         with open(json_file_path) as f:
             json.load(f)
+            return True, ''
     except Exception as e:
-        raise ValueError(f'Problem parsing JSON file "{json_file_path}": {e}') from e
+        return False, f'Problem parsing JSON file "{json_file_path}": {e}'
