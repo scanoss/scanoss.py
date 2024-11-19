@@ -38,6 +38,10 @@ class BomEntry(TypedDict, total=False):
     path: str
 
 
+class ScanossSettingsError(Exception):
+    pass
+
+
 class ScanossSettings(ScanossBase):
     """Handles the loading and parsing of the SCANOSS settings file"""
 
@@ -64,7 +68,7 @@ class ScanossSettings(ScanossBase):
         if filepath:
             self.load_json_file(filepath)
 
-    def load_json_file(self, filepath: str):
+    def load_json_file(self, filepath: str) -> 'ScanossSettings':
         """Load the scan settings file. If no filepath is provided, scanoss.json will be used as default.
 
         Args:
@@ -77,19 +81,15 @@ class ScanossSettings(ScanossBase):
         json_file = Path(filepath).resolve()
 
         if filepath == DEFAULT_SCANOSS_JSON_FILE and not json_file.exists():
-            self.print_debug(f'Default settings file not found: {filepath}. Skipping...')
+            self.print_debug(f"Default settings file '{filepath}' not found. Skipping...")
             return self
 
-        is_valid, error = validate_json_file(json_file)
-        if not is_valid:
-            return self.print_stderr(f'ERROR: Problem with settings file. {error}')
+        result = validate_json_file(json_file)
+        if not result.is_valid:
+            raise ScanossSettingsError(f'Problem with settings file. {result.error}')
 
-        with open(json_file, 'r') as jsonfile:
-            self.print_debug(f'Loading scan settings from: {filepath}')
-            try:
-                self.data = json.load(jsonfile)
-            except Exception as e:
-                self.print_stderr(f'ERROR: Problem parsing settings file. {e}')
+        self.data = result.data
+        self.print_debug(f'Loading scan settings from: {filepath}')
         return self
 
     def set_file_type(self, file_type: str):
