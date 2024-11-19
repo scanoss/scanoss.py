@@ -558,13 +558,13 @@ def scan(parser, args):
         print_stderr('ERROR: Cannot specify both --identify and --settings options.')
         exit(1)
         
-    if args.settings and args.omit_settings_file:
+    if args.settings and args.skip_settings_file:
         print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
         exit(1)
         
     scan_settings = None
                 
-    if args.omit_settings_file:
+    if args.skip_settings_file:
         print_stderr('Omit settings file is set. Skipping...')
     else:
         scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
@@ -584,9 +584,9 @@ def scan(parser, args):
                 f'Specified --dep file does not exist or is not a file: {args.dep}'
             )
             exit(1)
-        try:
-            validate_json_file(args.dep)
-        except Exception:
+        is_valid, error = validate_json_file(args.dep)
+        if not is_valid:
+            print_stderr(f'Error: Dependency file is not valid: {error}')
             exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
         print_stderr(
