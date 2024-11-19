@@ -21,6 +21,60 @@
         }
       }
     },
+    "settings": {
+      "type": "object",
+      "description": "Scan settings and other configurations",
+      "properties": {
+        "skip": {
+          "type": "object",
+          "description": "Set of rules to skip files from the scan",
+          "properties": {
+            "folders": {
+              "type": "array",
+              "description": "List of folders to skip from the scan. These should be relative to the scan root",
+              "items": {
+                "type": "string",
+                "examples": ["/path/to/folder", "/path/to/another/folder"]
+              },
+              "uniqueItems": true
+            },
+            "files": {
+              "type": "array",
+              "description": "List of files to skip from the scan. These can be either relative file paths or just file names",
+              "items": {
+                "type": "string",
+                "examples": ["/path/to/include.h", "include.h"]
+              },
+              "uniqueItems": true
+            },
+            "extensions": {
+              "type": "array",
+              "description": "List of file extensions to skip from the scan",
+              "items": {
+                "type": "string",
+                "examples": [".h", ".c", ".cpp"]
+              },
+              "uniqueItems": true
+            },
+            "sizes": {
+              "type": "object",
+              "description": "Set of rules to skip files based on their size",
+              "properties": {
+                "min": {
+                  "type": "integer",
+                  "description": "Minimum size of the file in bytes"
+                },
+                "max": {
+                  "type": "integer",
+                  "description": "Maximum size of the file in bytes"
+                }
+              },
+              "required": ["max"]
+            }
+          }
+        }
+      }
+    },
     "bom": {
       "type": "object",
       "description": "BOM Rules: Set of rules that will be used to modify the BOM before and after the scan is completed",
