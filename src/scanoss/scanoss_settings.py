@@ -43,8 +43,9 @@ class ScanossSettingsError(Exception):
 
 
 class ScanossSettings(ScanossBase):
-    """Handles the loading and parsing of the SCANOSS settings file"""
-
+    """
+    Handles the loading and parsing of the SCANOSS settings file
+    """
     def __init__(
         self,
         debug: bool = False,
@@ -64,37 +65,34 @@ class ScanossSettings(ScanossBase):
         self.data = {}
         self.settings_file_type = None
         self.scan_type = None
-
         if filepath:
             self.load_json_file(filepath)
 
     def load_json_file(self, filepath: str) -> 'ScanossSettings':
-        """Load the scan settings file. If no filepath is provided, scanoss.json will be used as default.
+        """
+        Load the scan settings file. If no filepath is provided, scanoss.json will be used as default.
 
         Args:
             filepath (str): Path to the SCANOSS settings file
         """
-
         if not filepath:
             filepath = DEFAULT_SCANOSS_JSON_FILE
-
         json_file = Path(filepath).resolve()
 
         if filepath == DEFAULT_SCANOSS_JSON_FILE and not json_file.exists():
-            self.print_debug(f"Default settings file '{filepath}' not found. Skipping...")
+            self.print_debug(f'Default settings file "{filepath}" not found. Skipping...')
             return self
+        self.print_msg(f'Loading settings file {filepath}...')
 
         result = validate_json_file(json_file)
         if not result.is_valid:
             raise ScanossSettingsError(f'Problem with settings file. {result.error}')
-
         self.data = result.data
-        self.print_debug(f'Loading scan settings from: {filepath}')
         return self
 
     def set_file_type(self, file_type: str):
-        """Set the file type in order to support both legacy SBOM.json and new scanoss.json files
-
+        """
+        Set the file type in order to support both legacy SBOM.json and new scanoss.json files
         Args:
             file_type (str): 'legacy' or 'new'
 
@@ -107,8 +105,8 @@ class ScanossSettings(ScanossBase):
         return self
 
     def set_scan_type(self, scan_type: str):
-        """Set the scan type to support legacy SBOM.json files
-
+        """
+        Set the scan type to support legacy SBOM.json files
         Args:
             scan_type (str): 'identify' or 'exclude'
         """
@@ -116,8 +114,8 @@ class ScanossSettings(ScanossBase):
         return self
 
     def _is_valid_sbom_file(self):
-        """Check if the scan settings file is valid
-
+        """
+        Check if the scan settings file is valid
         Returns:
             bool: True if the file is valid, False otherwise
         """
@@ -126,8 +124,8 @@ class ScanossSettings(ScanossBase):
         return True
 
     def _get_bom(self):
-        """Get the Billing of Materials from the settings file
-
+        """
+        Get the Billing of Materials from the settings file
         Returns:
             dict: If using scanoss.json
             list: If using SBOM.json
@@ -142,8 +140,8 @@ class ScanossSettings(ScanossBase):
         return self.data.get('bom', {})
 
     def get_bom_include(self) -> List[BomEntry]:
-        """Get the list of components to include in the scan
-
+        """
+        Get the list of components to include in the scan
         Returns:
             list: List of components to include in the scan
         """
@@ -152,8 +150,8 @@ class ScanossSettings(ScanossBase):
         return self._get_bom().get('include', [])
 
     def get_bom_remove(self) -> List[BomEntry]:
-        """Get the list of components to remove from the scan
-
+        """
+        Get the list of components to remove from the scan
         Returns:
             list: List of components to remove from the scan
         """
@@ -162,8 +160,8 @@ class ScanossSettings(ScanossBase):
         return self._get_bom().get('remove', [])
 
     def get_bom_replace(self) -> List[BomEntry]:
-        """Get the list of components to replace in the scan
-
+        """
+        Get the list of components to replace in the scan
         Returns:
             list: List of components to replace in the scan
         """
@@ -172,8 +170,8 @@ class ScanossSettings(ScanossBase):
         return self._get_bom().get('replace', [])
 
     def get_sbom(self):
-        """Get the SBOM to be sent to the SCANOSS API
-
+        """
+        Get the SBOM to be sent to the SCANOSS API
         Returns:
             dict: SBOM request payload
         """
@@ -185,8 +183,8 @@ class ScanossSettings(ScanossBase):
         }
 
     def _get_sbom_assets(self):
-        """Get the SBOM assets
-
+        """
+        Get the SBOM assets
         Returns:
             List: List of SBOM assets
         """
@@ -203,11 +201,10 @@ class ScanossSettings(ScanossBase):
 
     @staticmethod
     def normalize_bom_entries(bom_entries) -> List[BomEntry]:
-        """Normalize the BOM entries
-
+        """
+        Normalize the BOM entries
         Args:
             bom_entries (List[Dict]): List of BOM entries
-
         Returns:
             List: Normalized BOM entries
         """
@@ -222,11 +219,10 @@ class ScanossSettings(ScanossBase):
 
     @staticmethod
     def _remove_duplicates(bom_entries: List[BomEntry]) -> List[BomEntry]:
-        """Remove duplicate BOM entries
-
+        """
+        Remove duplicate BOM entries
         Args:
             bom_entries (List[Dict]): List of BOM entries
-
         Returns:
             List: List of unique BOM entries
         """
