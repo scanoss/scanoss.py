@@ -199,6 +199,11 @@ class CycloneDx(ScanossBase):
                     }
                 ]
             },
+            'component': {
+                'type': 'application',
+                'name': 'NOASSERTION',
+                'version': 'NOASSERTION'
+            },
             'components': [],
             'vulnerabilities': []
         }
