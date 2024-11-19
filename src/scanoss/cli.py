@@ -117,7 +117,7 @@ def setup_args() -> None:
         help='Settings file to use for scanning (optional - default scanoss.json)',
     )
     p_scan.add_argument(
-        '--omit-settings-file',
+        '--skip-settings-file',
         action='store_true',
         help='Omit default settings file (scanoss.json) if it exists',
     )
@@ -559,7 +559,7 @@ def scan(parser, args):
         exit(1)
         
     if args.settings and args.omit_settings_file:
-        print_stderr('ERROR: Cannot specify both --settings and --omit-file-settings options.')
+        print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
         exit(1)
         
     scan_settings = None
