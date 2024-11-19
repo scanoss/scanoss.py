@@ -173,3 +173,22 @@ Here's a complete example showing all sections:
             ]
         }
     }
+
+Usage
+-----
+
+You can pass the settings file path as an argument to the CLI
+
+.. code-block:: bash
+
+    $ scanoss-py scan . --settings /path/to/settings.json
+
+If no settings file is provided, the default settings file will be used.
+The default location for the settings file is ``scanoss.json`` in the current working directory.
+If this file does not exist, settings will be omitted.
+
+You can also skip the default settings file:
+
+.. code-block:: bash
+
+    $ scanoss-py scan . --skip-settings-file
