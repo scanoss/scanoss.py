@@ -401,7 +401,6 @@ class Scanner(ScanossBase):
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
 
-        scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir) + 1
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
         if not self.quiet and self.isatty:

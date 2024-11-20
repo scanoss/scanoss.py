@@ -25,6 +25,134 @@ The ``self`` section contains basic information about your project:
         }
     }
 
+
+Settings
+========
+The ``settings`` object allows you to configure various aspects of the scanning process. Currently, it provides control over which files should be skipped during scanning through the ``skip`` property.
+
+Skip Configuration
+------------------
+The ``skip`` object lets you define rules for excluding files from being scanned. This can be useful for improving scan performance and avoiding unnecessary processing of certain files.
+
+Properties
+~~~~~~~~~~
+
+skip.patterns
+^^^^^^^^^^^^^
+A list of patterns that determine which files should be skipped during scanning. The patterns follow the same format as ``.gitignore`` files. For more information, see the `gitignore patterns documentation <https://git-scm.com/docs/gitignore#_pattern_format>`_.
+
+:Type: Array of strings
+:Required: No
+:Example:
+    .. code-block:: json
+
+        {
+            "settings": {
+            "skip": {
+                "patterns": [
+                    "*.log",
+                    "!important.log",
+                    "temp/",
+                    "debug[0-9]*.txt",
+                    "src/client/specific-file.js",
+                    "src/nested/folder/"
+                ]
+            }
+        }
+
+Pattern Format Rules
+''''''''''''''''''''
+* Patterns are matched **relative to the scan root directory**
+* A trailing slash indicates a directory (e.g., ``path/`` matches only directories)
+* An asterisk ``*`` matches anything except a slash
+* Two asterisks ``**`` match zero or more directories (e.g., ``path/**/folder`` matches ``path/to``, ``path/to/folder``, ``path/to/folder/b``)
+* Range notations like ``[0-9]`` match any character in the range
+* Question mark ``?`` matches any single character except a slash
+
+
+Examples with Explanations
+''''''''''''''''''''''''''
+.. code-block:: none
+
+    # Match all .txt files
+    *.txt
+
+    # Match all .log files except important.log
+    *.log
+    !important.log
+
+    # Match all files in the build directory
+    build/
+
+    # Match all .pdf files in docs directory and its subdirectories
+    docs/**/*.pdf
+
+    # Match files like test1.js, test2.js, etc.
+    test[0-9].js
+
+skip.sizes
+^^^^^^^^^^
+Rules for skipping files based on their size.
+
+:Type: Object
+:Required: No
+:Properties:
+    * ``min`` (integer): Minimum file size in bytes
+    * ``max`` (integer): Maximum file size in bytes (Required)
+:Example:
+    .. code-block:: json
+
+        {
+          "settings": {
+            "skip": {
+              "sizes": {
+                "min": 100,
+                "max": 1000000
+              }
+            }
+          }
+        }
+
+Complete Example
+-------------------
+Here's a comprehensive example combining pattern and size-based skipping:
+
+.. code-block:: json
+
+    {
+      "settings": {
+        "skip": {
+          "patterns": [
+            "# Node.js dependencies",
+            "node_modules/",
+            
+            "# Build outputs",
+            "dist/",
+            "build/",
+            
+            "# Logs except important ones",
+            "*.log",
+            "!important.log",
+            
+            "# Temporary files",
+            "temp/",
+            "*.tmp",
+            
+            "# Debug files with numbers",
+            "debug[0-9]*.txt",
+            
+            "# All test files in any directory",
+            "**/*test.js"
+          ],
+          "sizes": {
+            "min": 512,
+            "max": 5242880
+          }
+        }
+      }
+    }
+
+
 BOM Rules
 ---------
 
