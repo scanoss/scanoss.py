@@ -1,5 +1,5 @@
 import os
-from typing import List, Set, Tuple
+from typing import List
 
 from pathspec import PathSpec
 
@@ -230,6 +230,7 @@ class ScanFilter(ScanossBase):
         skip_patterns.extend(skip.get('patterns', []))
 
         self.skip_patterns = skip_patterns
+        self.path_spec = PathSpec.from_lines('gitwildmatch', self.skip_patterns)
         self.min_size = skip.get('sizes', {}).get('min', 0)
         self.max_size = skip.get('sizes', {}).get('max', float('inf'))
 
@@ -249,13 +250,11 @@ class ScanFilter(ScanossBase):
         files = []
         root = os.path.abspath(scan_root)
 
-        path_spec, dir_patterns = self._create_skip_path_matchers()
-
         for dirpath, dirnames, filenames in os.walk(root):
             rel_path = os.path.relpath(dirpath, root)
 
-            # Return early if the entire directory should be skipped
-            if any(rel_path.startswith(p) for p in dir_patterns):
+            # Early skip directories if they match any of the patterns
+            if self._should_skip_dir(rel_path):
                 self.print_debug(f'Skipping directory: {rel_path}')
                 dirnames.clear()
                 continue
@@ -268,7 +267,7 @@ class ScanFilter(ScanossBase):
                 if file_size < self.min_size or file_size > self.max_size:
                     self.print_debug(f'Skipping file: {file_rel_path} (size: {file_size})')
                     continue
-                if path_spec.match_file(file_rel_path):
+                if self.path_spec.match_file(file_rel_path):
                     self.print_debug(f'Skipping file: {file_rel_path}')
                     continue
                 else:
@@ -276,9 +275,7 @@ class ScanFilter(ScanossBase):
 
         return files
 
-    def _create_skip_path_matchers(self) -> Tuple[PathSpec, Set[str]]:
-        dir_patterns = {p.rstrip('/') for p in self.skip_patterns if p.endswith('/')}
-
-        path_spec = PathSpec.from_lines('gitwildmatch', self.skip_patterns)
-
-        return path_spec, dir_patterns
+    def _should_skip_dir(self, dir_rel_path: str) -> bool:
+        return any(dir_rel_path.startswith(p) for p in self.skip_patterns) or self.path_spec.match_file(
+            dir_rel_path + '/'
+        )
