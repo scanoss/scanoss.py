@@ -273,8 +273,27 @@ Here's a complete example showing all sections:
     {
         "self": {
             "name": "example-project",
-            "license": "Apache-2.0",
+            "license": "Apache-2.0", 
             "description": "Example project configuration"
+        },
+        "settings": {
+            "skip": {
+                "patterns": [
+                    "node_modules/",
+                    "dist/",
+                    "build/",
+                    "*.log",
+                    "!important.log",
+                    "temp/",
+                    "*.tmp", 
+                    "debug[0-9]*.txt",
+                    "**/*test.js"
+                ],
+                "sizes": {
+                    "min": 512,
+                    "max": 5242880
+                }
+            }
         },
         "bom": {
             "include": [
@@ -287,7 +306,7 @@ Here's a complete example showing all sections:
             "remove": [
                 {
                     "purl": "pkg:npm/deprecated-pkg@1.0.0",
-                    "comment": "Remove deprecated package"
+                    "comment": "Remove deprecated package" 
                 }
             ],
             "replace": [
