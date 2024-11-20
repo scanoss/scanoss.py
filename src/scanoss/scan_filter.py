@@ -284,6 +284,6 @@ class ScanFilter(ScanossBase):
         return files
 
     def _should_skip_dir(self, dir_rel_path: str) -> bool:
-        return any(dir_rel_path.startswith(p) for p in self.skip_patterns) or self.path_spec.match_file(
+        return any(dir_rel_path == p.rstrip('/') for p in self.skip_patterns) or self.path_spec.match_file(
             dir_rel_path + '/'
         )
