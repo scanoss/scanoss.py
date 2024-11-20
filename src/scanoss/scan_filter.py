@@ -212,6 +212,9 @@ class ScanFilter(ScanossBase):
         trace: bool = False,
         quiet: bool = False,
         scanoss_settings: 'ScanossSettings' = None,
+        all_extensions: bool = False,
+        all_folders: bool = False,
+        hidden_files_folders: bool = False,
     ):
         """
         Initialize scan filters based on default settings. Optionally append custom settings.
@@ -221,18 +224,24 @@ class ScanFilter(ScanossBase):
             trace (bool): Enable trace output
             quiet (bool): Suppress output
             scanoss_settings (ScanossSettings): Custom settings to override defaults
+            all_extensions (bool): Include all file extensions
+            all_folders (bool): Include all folders
+            hidden_files_folders (bool): Include hidden files and folders
         """
         super().__init__(debug, trace, quiet)
 
         self.min_size = 0
         self.max_size = float('inf')
+        self.hidden_files_folders = hidden_files_folders
 
         skip_patterns = []
 
         skip_patterns.extend(DEFAULT_SKIPPED_FILES)
-        skip_patterns.extend(f'{dir_path}/' for dir_path in DEFAULT_SKIPPED_DIRS)
-        skip_patterns.extend(f'*{ext}' for ext in DEFAULT_SKIPPED_EXT)
-        skip_patterns.extend(f'*{ext}/' for ext in DEFAULT_SKIPPED_DIR_EXT)
+        if not all_extensions:
+            skip_patterns.extend(f'*{ext}' for ext in DEFAULT_SKIPPED_EXT)
+            skip_patterns.extend(f'*{ext}/' for ext in DEFAULT_SKIPPED_DIR_EXT)
+        if not all_folders:
+            skip_patterns.extend(f'{dir_path}/' for dir_path in DEFAULT_SKIPPED_DIRS)
 
         if scanoss_settings:
             skip_patterns.extend(scanoss_settings.get_skip_patterns())
@@ -284,6 +293,9 @@ class ScanFilter(ScanossBase):
         return files
 
     def _should_skip_dir(self, dir_rel_path: str) -> bool:
-        return any(dir_rel_path == p.rstrip('/') for p in self.skip_patterns) or self.path_spec.match_file(
-            dir_rel_path + '/'
+        is_hidden = dir_rel_path != '.' and any(part.startswith('.') for part in dir_rel_path.split(os.sep))
+        return (
+            (is_hidden and not self.hidden_files_folders)
+            or any(dir_rel_path == p.rstrip('/') for p in self.skip_patterns)
+            or self.path_spec.match_file(dir_rel_path + '/')
         )

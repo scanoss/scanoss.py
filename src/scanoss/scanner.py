@@ -199,6 +199,9 @@ class Scanner(ScanossBase):
             trace=self.trace,
             quiet=self.quiet,
             scanoss_settings=self.scan_settings,
+            all_extensions=all_extensions,
+            all_folders=all_folders,
+            hidden_files_folders=hidden_files_folders,
         )
 
     def _maybe_set_api_sbom(self):
