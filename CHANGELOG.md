@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use scanoss.json as default settings file if no argument is supplied
 - Add —skip-settings-file flag
 - Update scanoss settings schema to allow skipping specific folders, files, and extensions
+- Add ScanFilter class to handle filtering of files and folders based on settings
 
 ## [1.18.1] - 2024-11-19
 ### Added
@@ -416,5 +417,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.17.4]: https://github.com/scanoss/scanoss.py/compare/v1.17.3...v1.17.4
 [1.17.5]: https://github.com/scanoss/scanoss.py/compare/v1.17.4...v1.17.5
 [1.18.0]: https://github.com/scanoss/scanoss.py/compare/v1.17.5...v1.18.0
-[1.18.1]: https://github.com/scanoss/scanoss.py/compare/v1.17.5...v1.18.1
-[1.18.0]: https://github.com/scanoss/scanoss.py/compare/v1.18.0...v1.19.0
+[1.18.1]: https://github.com/scanoss/scanoss.py/compare/v1.18.0...v1.18.1
+[1.18.0]: https://github.com/scanoss/scanoss.py/compare/v1.18.1...v1.19.0
