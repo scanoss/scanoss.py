@@ -26,7 +26,6 @@ import json
 from pathlib import Path
 from typing import List, TypedDict
 
-from scanoss.scan_filter import ScanFilter
 from scanoss.utils.file import validate_json_file
 
 from .scanossbase import ScanossBase
@@ -47,6 +46,7 @@ class ScanossSettings(ScanossBase):
     """
     Handles the loading and parsing of the SCANOSS settings file
     """
+
     def __init__(
         self,
         debug: bool = False,
@@ -66,7 +66,6 @@ class ScanossSettings(ScanossBase):
         self.data = {}
         self.settings_file_type = None
         self.scan_type = None
-        self.filter = None
 
         if filepath:
             self.load_json_file(filepath)
@@ -91,12 +90,6 @@ class ScanossSettings(ScanossBase):
         if not result.is_valid:
             raise ScanossSettingsError(f'Problem with settings file. {result.error}')
         self.data = result.data
-        self.filter = ScanFilter(
-            debug=self.debug,
-            quiet=self.quiet,
-            trace=self.trace,
-            settings=self.data.get('settings', {}),
-        )
         self.print_debug(f'Loading scan settings from: {filepath}')
         return self
 
@@ -249,5 +242,18 @@ class ScanossSettings(ScanossBase):
         """Check if the settings file is legacy"""
         return self.settings_file_type == 'legacy'
 
-    def get_filtered_files(self, scan_root: str) -> List[str]:
-        return self.filter.get_filtered_files(scan_root)
+    def get_skip_patterns(self) -> List[str]:
+        """
+        Get the list of patterns to skip
+        Returns:
+            List: List of patterns to skip
+        """
+        return self.data.get('settings', {}).get('skip', {}).get('patterns', [])
+
+    def get_skip_sizes(self) -> dict:
+        """
+        Get the min and max sizes to skip
+        Returns:
+            dict: Min and max sizes to skip
+        """
+        return self.data.get('settings', {}).get('skip', {}).get('sizes', {})

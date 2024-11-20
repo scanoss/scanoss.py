@@ -3,6 +3,7 @@ from typing import List
 
 from pathspec import PathSpec
 
+from scanoss.scanoss_settings import ScanossSettings
 from scanoss.scanossbase import ScanossBase
 
 DEFAULT_SKIPPED_FILES = {
@@ -210,29 +211,36 @@ class ScanFilter(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        settings: dict = None,
+        scanoss_settings: 'ScanossSettings' = None,
     ):
         """
-        Initialize filter with settings from ScanossSettings.
+        Initialize scan filters based on default settings. Optionally append custom settings.
 
         Args:
-            settings (ScanossSettings): Settings instance containing scan configuration
+            debug (bool): Enable debug output
+            trace (bool): Enable trace output
+            quiet (bool): Suppress output
+            scanoss_settings (ScanossSettings): Custom settings to override defaults
         """
         super().__init__(debug, trace, quiet)
 
-        skip = settings.get('skip', {})
+        self.min_size = 0
+        self.max_size = float('inf')
+
         skip_patterns = []
 
         skip_patterns.extend(DEFAULT_SKIPPED_FILES)
-        skip_patterns.extend(f'{dir}/' for dir in DEFAULT_SKIPPED_DIRS)
+        skip_patterns.extend(f'{dir_path}/' for dir_path in DEFAULT_SKIPPED_DIRS)
         skip_patterns.extend(f'*{ext}' for ext in DEFAULT_SKIPPED_EXT)
         skip_patterns.extend(f'*{ext}/' for ext in DEFAULT_SKIPPED_DIR_EXT)
-        skip_patterns.extend(skip.get('patterns', []))
+
+        if scanoss_settings:
+            skip_patterns.extend(scanoss_settings.get_skip_patterns())
+            self.min_size = scanoss_settings.get_skip_sizes().get('min', 0)
+            self.max_size = scanoss_settings.get_skip_sizes().get('max', float('inf'))
 
         self.skip_patterns = skip_patterns
         self.path_spec = PathSpec.from_lines('gitwildmatch', self.skip_patterns)
-        self.min_size = skip.get('sizes', {}).get('min', 0)
-        self.max_size = skip.get('sizes', {}).get('max', float('inf'))
 
     def get_filtered_files(self, root: str) -> List[str]:
         """Get a list of files to scan based on the filter settings.
