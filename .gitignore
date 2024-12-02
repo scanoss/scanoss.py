@@ -29,3 +29,4 @@ docs/build
 
 !tests/data/*.json
 !docs/source/_static/*.json
+!scanoss-settings-schema.json
