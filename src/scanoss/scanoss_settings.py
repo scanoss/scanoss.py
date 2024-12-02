@@ -26,6 +26,8 @@ import json
 from pathlib import Path
 from typing import List, TypedDict
 
+from jsonschema import validate
+
 from scanoss.utils.file import validate_json_file
 
 from .scanossbase import ScanossBase
@@ -67,6 +69,9 @@ class ScanossSettings(ScanossBase):
         self.settings_file_type = None
         self.scan_type = None
 
+        with open('scanoss-settings-schema.json') as f:
+            self.schema = json.load(f)
+
         if filepath:
             self.load_json_file(filepath)
 
@@ -89,6 +94,10 @@ class ScanossSettings(ScanossBase):
         result = validate_json_file(json_file)
         if not result.is_valid:
             raise ScanossSettingsError(f'Problem with settings file. {result.error}')
+        try:
+            validate(result.data, self.schema)
+        except Exception as e:
+            raise ScanossSettingsError(f'Invalid settings file. {e}') from e
         self.data = result.data
         self.print_debug(f'Loading scan settings from: {filepath}')
         return self
