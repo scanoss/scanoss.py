@@ -427,7 +427,7 @@ class Scanner(ScanossBase):
         scan_started = False
         
         
-        to_scan_files = self.scan_filters.get_filtered_files(scan_dir)
+        to_scan_files = self.scan_filters.get_filtered_files_from_folder(scan_dir)
         
         for to_scan_file in to_scan_files: 
             if self.threaded_scan and self.threaded_scan.stop_scanning():
@@ -670,23 +670,10 @@ class Scanner(ScanossBase):
         file_count = 0  # count all files fingerprinted
         wfp_file_count = 0  # count number of files in each queue post
         scan_started = False
-        filtered_files = []
-        # Filter the files to remove anything we shouldn't scan
-        for file in files:
-            filename = os.path.basename(file)
-            filtered_filenames = self.__filter_files([filename])
-            if not filtered_filenames or len(filtered_filenames) == 0:
-                self.print_debug(f'Skipping filtered file: {file}')
-                continue
-            paths = os.path.dirname(file).split(os.sep)
-            if len(self.__filter_dirs(paths)) == len(paths):  # Nothing found to filter
-                filtered_files.append(file)
-            else:
-                self.print_debug(f'Skipping filtered (folder) file: {file}')
-        if len(filtered_files) > 0:
-            self.print_debug(f'Scanning {len(filtered_files)} files...')
-        # Process all the requested files
-        for file in filtered_files:
+        
+        to_scan_files = self.scan_filters.get_filtered_files_from_files(files)
+        
+        for file in to_scan_files:
             if self.threaded_scan and self.threaded_scan.stop_scanning():
                 self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
                 break
@@ -746,7 +733,7 @@ class Scanner(ScanossBase):
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
         else:
-            Scanner.print_stderr(f'Warning: No files found to scan from: {filtered_files}')
+            Scanner.print_stderr(f'Warning: No files found to scan from: {to_scan_files}')
         return success
 
     def scan_files_with_options(self, files: [], deps_file: str = None, file_map: dict = None) -> bool:
@@ -1084,7 +1071,7 @@ class Scanner(ScanossBase):
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
 
-        to_fingerprint_files = self.scan_filters.get_filtered_files(scan_dir)
+        to_fingerprint_files = self.scan_filters.get_filtered_files_from_folder(scan_dir)
         for file in to_fingerprint_files:
             if spinner:
                 spinner.next()

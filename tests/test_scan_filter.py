@@ -27,7 +27,7 @@ class TestScanFilter(unittest.TestCase):
             'dir2/file5.js',
         ]
 
-        filtered_files = self.scan_filter.get_filtered_files('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
         self.assertEqual(filtered_files, expected_files)
 
     @patch('os.walk')
@@ -47,7 +47,7 @@ class TestScanFilter(unittest.TestCase):
             'dir1/file4.go',
         ]
 
-        filtered_files = self.scan_filter.get_filtered_files('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
         self.assertEqual(filtered_files, expected_files)
 
     @patch('os.walk')
@@ -63,7 +63,7 @@ class TestScanFilter(unittest.TestCase):
 
         expected_files = ['./file2.go', './file3.py']
 
-        filtered_files = self.scan_filter.get_filtered_files('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
         self.assertEqual(filtered_files, expected_files)
 
     @patch('os.walk')
@@ -81,7 +81,7 @@ class TestScanFilter(unittest.TestCase):
 
         expected_files = ['./file1.js', 'dir1/file2.js']
 
-        filtered_files = self.scan_filter.get_filtered_files('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
         self.assertEqual(filtered_files, expected_files)
 
     @patch('os.walk')
@@ -97,7 +97,7 @@ class TestScanFilter(unittest.TestCase):
 
         expected_files = ['./file3.py']
 
-        filtered_files = self.scan_filter.get_filtered_files('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
         self.assertEqual(filtered_files, expected_files)
 
 
