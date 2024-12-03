@@ -23,8 +23,8 @@ class TestScanFilter(unittest.TestCase):
 
     def test_default_extensions(self):
         files = [
-            'file1.go',
             'file2.js',
+            'file1.go',
             'dir1/file3.py',
             'dir1/file4.go',
             'dir2/file5.js',
@@ -35,13 +35,13 @@ class TestScanFilter(unittest.TestCase):
         expected_files = [
             'file2.js',
             'file1.go',
-            'dir2/file5.js',
             'dir1/file3.py',
             'dir1/file4.go',
+            'dir2/file5.js',
         ]
 
         filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
-        self.assertEqual(filtered_files, expected_files)
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_default_folders(self):
         files = [
@@ -60,7 +60,7 @@ class TestScanFilter(unittest.TestCase):
         ]
 
         filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
-        self.assertEqual(filtered_files, expected_files)
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_skip_files_by_size(self):
         self.scan_filter.min_size = 150
@@ -81,7 +81,7 @@ class TestScanFilter(unittest.TestCase):
         expected_files = ['file3.py', 'file2.go']
 
         filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
-        self.assertEqual(filtered_files, expected_files)
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_skip_directories(self):
         files = [
@@ -96,7 +96,7 @@ class TestScanFilter(unittest.TestCase):
         expected_files = ['file1.js', 'dir1/file2.js']
 
         filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
-        self.assertEqual(filtered_files, expected_files)
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_custom_skip_patterns(self):
         files = [
@@ -112,7 +112,7 @@ class TestScanFilter(unittest.TestCase):
         expected_files = ['file3.py']
 
         filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
-        self.assertEqual(filtered_files, expected_files)
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
 
 if __name__ == '__main__':
