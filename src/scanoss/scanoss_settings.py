@@ -26,6 +26,8 @@ import json
 from pathlib import Path
 from typing import List, TypedDict
 
+from jsonschema import validate
+
 from scanoss.utils.file import validate_json_file
 
 from .scanossbase import ScanossBase
@@ -46,6 +48,7 @@ class ScanossSettings(ScanossBase):
     """
     Handles the loading and parsing of the SCANOSS settings file
     """
+
     def __init__(
         self,
         debug: bool = False,
@@ -65,6 +68,10 @@ class ScanossSettings(ScanossBase):
         self.data = {}
         self.settings_file_type = None
         self.scan_type = None
+
+        with open('scanoss-settings-schema.json') as f:
+            self.schema = json.load(f)
+
         if filepath:
             self.load_json_file(filepath)
 
@@ -87,7 +94,12 @@ class ScanossSettings(ScanossBase):
         result = validate_json_file(json_file)
         if not result.is_valid:
             raise ScanossSettingsError(f'Problem with settings file. {result.error}')
+        try:
+            validate(result.data, self.schema)
+        except Exception as e:
+            raise ScanossSettingsError(f'Invalid settings file. {e}') from e
         self.data = result.data
+        self.print_debug(f'Loading scan settings from: {filepath}')
         return self
 
     def set_file_type(self, file_type: str):
@@ -238,3 +250,19 @@ class ScanossSettings(ScanossBase):
     def is_legacy(self):
         """Check if the settings file is legacy"""
         return self.settings_file_type == 'legacy'
+
+    def get_skip_patterns(self) -> List[str]:
+        """
+        Get the list of patterns to skip
+        Returns:
+            List: List of patterns to skip
+        """
+        return self.data.get('settings', {}).get('skip', {}).get('patterns', [])
+
+    def get_skip_sizes(self) -> dict:
+        """
+        Get the min and max sizes to skip
+        Returns:
+            dict: Min and max sizes to skip
+        """
+        return self.data.get('settings', {}).get('skip', {}).get('sizes', {})
