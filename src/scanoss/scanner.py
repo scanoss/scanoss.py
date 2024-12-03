@@ -1074,32 +1074,22 @@ class Scanner(ScanossBase):
         Fingerprint the specified folder producing fingerprints
         """
         if not scan_dir:
-            raise Exception(f"ERROR: Please specify a folder to fingerprint")
+            raise Exception(f'ERROR: Please specify a folder to fingerprint')
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
-            raise Exception(f"ERROR: Specified folder does not exist or is not a folder: {scan_dir}")
+            raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
         wfps = ''
-        scan_dir_len = len(scan_dir) if scan_dir.endswith(os.path.sep) else len(scan_dir) + 1
+
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
-        for root, dirs, files in os.walk(scan_dir):
-            dirs[:] = self.__filter_dirs(dirs)  # Strip out unwanted directories
-            filtered_files = self.__filter_files(files)  # Strip out unwanted files
-            self.print_trace(f'Root: {root}, Dirs: {dirs}, Files {filtered_files}')
-            for file in filtered_files:
-                path = os.path.join(root, file)
-                f_size = 0
-                try:
-                    f_size = os.stat(path).st_size
-                except Exception as e:
-                    self.print_trace(
-                        f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
-                if f_size > 0:  # Ignore empty files
-                    self.print_debug(f'Fingerprinting {path}...')
-                    if spinner:
-                        spinner.next()
-                    wfps += self.winnowing.wfp_for_file(path, Scanner.__strip_dir(scan_dir, scan_dir_len, path))
+
+        to_fingerprint_files = self.scan_filters.get_filtered_files(scan_dir)
+        for file in to_fingerprint_files:
+            if spinner:
+                spinner.next()
+            abs_path = Path(scan_dir, file).resolve()
+            wfps += self.winnowing.wfp_for_file(str(abs_path), file)
         if spinner:
             spinner.finish()
         if wfps:
