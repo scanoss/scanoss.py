@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import List
 
 from pathspec import PathSpec
@@ -251,8 +252,8 @@ class ScanFilter(ScanossBase):
         self.skip_patterns = skip_patterns
         self.path_spec = PathSpec.from_lines('gitwildmatch', self.skip_patterns)
 
-    def get_filtered_files(self, root: str) -> List[str]:
-        """Get a list of files to scan based on the filter settings.
+    def get_filtered_files_from_folder(self, root: str) -> List[str]:
+        """Retrieve a list of files to scan or fingerprint from a given directory root based on filter settings.
 
         Args:
             root (str): Root directory to scan
@@ -263,37 +264,69 @@ class ScanFilter(ScanossBase):
         files = self._walk_with_ignore(root)
         return files
 
+    def get_filtered_files_from_files(self, files: List[str]) -> List[str]:
+        """Retrieve a list of files to scan or fingerprint from a given list of files based on filter settings.
+
+        Args:
+            files (List[str]): List of files to scan
+
+        Returns:
+            list[str]: List of files to scan
+        """
+        filtered_files = []
+        for file in files:
+            file_path = Path(file).resolve()
+            file_rel_path = file_path.relative_to(Path.cwd())
+
+            if not file_path.exists():
+                self.print_debug(f'Skipping file: {file_rel_path} (does not exist)')
+                continue
+
+            file_size = file_path.stat().st_size
+
+            if file_size < self.min_size or file_size > self.max_size:
+                self.print_debug(f'Skipping file: {file} (size: {file_size})')
+                continue
+
+            if self.path_spec.match_file(str(file_rel_path)):
+                self.print_debug(f'Skipping file: {file}')
+                continue
+
+            filtered_files.append(str(file))
+        return filtered_files
+
     def _walk_with_ignore(self, scan_root: str) -> List[str]:
         files = []
-        root = os.path.abspath(scan_root)
+        root = Path(scan_root).resolve()
 
         for dirpath, dirnames, filenames in os.walk(root):
-            rel_path = os.path.relpath(dirpath, root)
+            dirpath = Path(dirpath)
+            rel_path = dirpath.relative_to(root)
 
-            # Early skip directories if they match any of the patterns
-            if self._should_skip_dir(rel_path):
+            if self._should_skip_dir(str(rel_path)):
                 self.print_debug(f'Skipping directory: {rel_path}')
                 dirnames.clear()
                 continue
 
             for filename in filenames:
-                file_rel_path = os.path.join(rel_path, filename)
-                file_path = os.path.join(dirpath, filename)
-                file_size = os.path.getsize(file_path)
+                file_path = dirpath / filename
+                file_rel_path = rel_path / filename
+                file_size = file_path.stat().st_size
 
                 if file_size < self.min_size or file_size > self.max_size:
                     self.print_debug(f'Skipping file: {file_rel_path} (size: {file_size})')
                     continue
-                if self.path_spec.match_file(file_rel_path):
+                if self.path_spec.match_file(str(file_rel_path)):
                     self.print_debug(f'Skipping file: {file_rel_path}')
                     continue
                 else:
-                    files.append(file_rel_path)
+                    files.append(str(file_rel_path))
 
         return files
 
     def _should_skip_dir(self, dir_rel_path: str) -> bool:
-        is_hidden = dir_rel_path != '.' and any(part.startswith('.') for part in dir_rel_path.split(os.sep))
+        dir_path = Path(dir_rel_path)
+        is_hidden = dir_path != Path('.') and any(part.startswith('.') for part in dir_path.parts)
         return (
             (is_hidden and not self.hidden_files_folders)
             or any(dir_rel_path == p.rstrip('/') for p in self.skip_patterns)
