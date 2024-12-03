@@ -1,5 +1,7 @@
+import os
+import shutil
+import tempfile
 import unittest
-from unittest.mock import patch
 
 from scanoss.scan_filter import ScanFilter
 
@@ -7,97 +9,109 @@ from scanoss.scan_filter import ScanFilter
 class TestScanFilter(unittest.TestCase):
     def setUp(self):
         self.scan_filter = ScanFilter(debug=True)
+        self.test_dir = tempfile.mkdtemp()
 
-    @patch('os.walk')
-    @patch('os.path.getsize')
-    def test_default_extensions(self, mock_getsize, mock_walk):
-        mock_walk.return_value = [
-            ('/scan_root', ['dir1', 'dir2'], ['file1.go', 'file2.js']),
-            ('/scan_root/dir1', [], ['file3.py', 'file4.go']),
-            ('/scan_root/dir2', [], ['file5.js', 'file6.png']),
-        ]
-        mock_getsize.side_effect = [100, 200, 300, 400, 500, 600]
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
 
-        # All the other files should be removed by the filter because they are in default skipped extensions
-        expected_files = [
-            './file1.go',
-            './file2.js',
+    def create_files(self, files):
+        for file in files:
+            file_path = os.path.join(self.test_dir, file)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'w') as f:
+                f.write('test')
+
+    def test_default_extensions(self):
+        files = [
+            'file1.go',
+            'file2.js',
             'dir1/file3.py',
             'dir1/file4.go',
             'dir2/file5.js',
+            'dir2/file6.png',
+        ]
+        self.create_files(files)
+
+        expected_files = [
+            'file2.js',
+            'file1.go',
+            'dir2/file5.js',
+            'dir1/file3.py',
+            'dir1/file4.go',
         ]
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(filtered_files, expected_files)
 
-    @patch('os.walk')
-    @patch('os.path.getsize')
-    def test_default_folders(self, mock_getsize, mock_walk):
-        mock_walk.return_value = [
-            ('/scan_root', ['__pycache__', 'dir1'], []),
-            ('/scan_root/__pycache__', [], ['file1.pyc', 'file2.pyc']),
-            ('/scan_root/dir1', ['nbdist'], ['file3.py', 'file4.go']),
-            ('/scan_root/dir1/nbdist', [], ['test.py', 'test1.py']),
+    def test_default_folders(self):
+        files = [
+            '__pycache__/file1.pyc',
+            '__pycache__/file2.pyc',
+            'dir1/nbdist/test.py',
+            'dir1/nbdist/test1.py',
+            'dir1/file3.py',
+            'dir1/file4.go',
         ]
-        mock_getsize.side_effect = [100, 200, 300, 400, 500, 600]
+        self.create_files(files)
 
-        # All the other files should be removed by the filter because they are in default skipped extensions
         expected_files = [
             'dir1/file3.py',
             'dir1/file4.go',
         ]
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(filtered_files, expected_files)
 
-    @patch('os.walk')
-    @patch('os.path.getsize')
-    def test_skip_files_by_size(self, mock_getsize, mock_walk):
+    def test_skip_files_by_size(self):
         self.scan_filter.min_size = 150
         self.scan_filter.max_size = 450
 
-        mock_walk.return_value = [
-            ('/scan_root', [], ['file1.js', 'file2.go', 'file3.py']),
+        files = [
+            'file1.js',
+            'file2.go',
+            'file3.py',
         ]
-        mock_getsize.side_effect = [100, 200, 300]
+        self.create_files(files)
 
-        expected_files = ['./file2.go', './file3.py']
+        for file in files:
+            file_path = os.path.join(self.test_dir, file)
+            with open(file_path, 'w') as f:
+                f.write('a' * (100 if 'file1' in file else 200 if 'file2' in file else 300))
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
+        expected_files = ['file3.py', 'file2.go']
+
+        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(filtered_files, expected_files)
 
-    @patch('os.walk')
-    @patch('os.path.getsize')
-    def test_skip_directories(self, mock_getsize, mock_walk):
-        mock_walk.return_value = [
-            ('/scan_root', ['dir1', 'dir2'], ['file1.js']),
-            ('/scan_root/dir1', [], ['file2.js']),
-            ('/scan_root/dir2', [], ['file3.py']),
+    def test_skip_directories(self):
+        files = [
+            'file1.js',
+            'dir1/file2.js',
+            'dir2/file3.py',
         ]
-
-        mock_getsize.side_effect = [100, 200, 300]
+        self.create_files(files)
 
         self.scan_filter.skip_patterns.append('dir2/')
 
-        expected_files = ['./file1.js', 'dir1/file2.js']
+        expected_files = ['file1.js', 'dir1/file2.js']
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(filtered_files, expected_files)
 
-    @patch('os.walk')
-    @patch('os.path.getsize')
-    def test_custom_skip_patterns(self, mock_getsize, mock_walk):
-        mock_walk.return_value = [
-            ('/scan_root', [], ['file1.txt', 'file2.md', 'file3.py', 'file4.rst']),
+    def test_custom_skip_patterns(self):
+        files = [
+            'file1.txt',
+            'file2.md',
+            'file3.py',
+            'file4.rst',
         ]
-
-        mock_getsize.side_effect = [100, 200, 300, 400]
+        self.create_files(files)
 
         self.scan_filter.skip_patterns.append('*.rst')
 
-        expected_files = ['./file3.py']
+        expected_files = ['file3.py']
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder('/scan_root')
+        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(filtered_files, expected_files)
 
 
