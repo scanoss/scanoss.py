@@ -27,39 +27,116 @@
       "properties": {
         "skip": {
           "type": "object",
-          "description": "Set of rules to skip files from the scan",
+          "description": "Set of rules to skip files from fingerprinting and scanning",
           "properties": {
             "patterns": {
-              "type": "array",
-              "description": "List of glob patterns to skip files",
-              "items": {
-                "type": "string",
-                "examples": [
-                  "path/to/folder",
-                  "path/to/folder/**",
-                  "path/to/folder/**/*",
-                  "path/to/file.c",
-                  "path/to/another/file.py",
-                  "**/*.ts",
-                  "**/*.json"
-                ]
-              },
-              "uniqueItems": true
+              "type": "object",
+              "properties": {
+                "scanning": {
+                  "type": "array",
+                  "description": "List of glob patterns to skip files from scanning",
+                  "items": {
+                    "type": "string",
+                    "examples": [
+                      "path/to/folder",
+                      "path/to/folder/**",
+                      "path/to/folder/**/*",
+                      "path/to/file.c",
+                      "path/to/another/file.py",
+                      "**/*.ts",
+                      "**/*.json"
+                    ]
+                  },
+                  "uniqueItems": true
+                },
+                "fingerprinting": {
+                  "type": "array",
+                  "description": "List of glob patterns to skip files from fingerprinting",
+                  "items": {
+                    "type": "string",
+                    "examples": [
+                      "path/to/folder",
+                      "path/to/folder/**",
+                      "path/to/folder/**/*",
+                      "path/to/file.c",
+                      "path/to/another/file.py",
+                      "**/*.ts",
+                      "**/*.json"
+                    ]
+                  },
+                  "uniqueItems": true
+                }
+              }
             },
             "sizes": {
               "type": "object",
-              "description": "Set of rules to skip files based on their size",
+              "description": "Set of rules to skip files based on their size.",
               "properties": {
-                "min": {
-                  "type": "integer",
-                  "description": "Minimum size of the file in bytes"
+                "scanning": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "patterns": {
+                        "type": "array",
+                        "description": "List of glob patterns to apply the min/max size rule",
+                        "items": {
+                          "type": "string",
+                          "examples": [
+                            "path/to/folder",
+                            "path/to/folder/**",
+                            "path/to/folder/**/*",
+                            "path/to/file.c",
+                            "path/to/another/file.py",
+                            "**/*.ts",
+                            "**/*.json"
+                          ]
+                        }
+                      },
+                      "min": {
+                        "type": "integer",
+                        "description": "Minimum size of the file in bytes"
+                      },
+                      "max": {
+                        "type": "integer",
+                        "description": "Maximum size of the file in bytes"
+                      }
+                    }
+                  }
                 },
-                "max": {
-                  "type": "integer",
-                  "description": "Maximum size of the file in bytes"
+                "fingerprinting": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "patterns": {
+                        "type": "array",
+                        "description": "List of glob patterns to apply the min/max size rule",
+                        "items": {
+                          "type": "string"
+                        },
+                        "examples": [
+                          "path/to/folder",
+                          "path/to/folder/**",
+                          "path/to/folder/**/*",
+                          "path/to/file.c",
+                          "path/to/another/file.py",
+                          "**/*.ts",
+                          "**/*.json"
+                        ]
+                      },
+                      "min": {
+                        "type": "integer",
+                        "description": "Minimum size of the file in bytes"
+                      },
+                      "max": {
+                        "type": "integer",
+                        "description": "Maximum size of the file in bytes"
+                      }
+                    }
+                  }
                 }
-              },
-              "required": ["max"]
+              }
             }
           }
         }
