@@ -26,6 +26,7 @@ import json
 from pathlib import Path
 from typing import List, TypedDict
 
+import importlib_resources
 from jsonschema import validate
 
 from scanoss.utils.file import validate_json_file
@@ -69,11 +70,28 @@ class ScanossSettings(ScanossBase):
         self.settings_file_type = None
         self.scan_type = None
 
-        with open('scanoss-settings-schema.json') as f:
-            self.schema = json.load(f)
+        self.schema = self._load_settings_schema()
 
         if filepath:
             self.load_json_file(filepath)
+
+    def _load_settings_schema(self) -> dict:
+        """
+        Load the SCANOSS settings schema from a JSON file.
+
+        Returns:
+            dict: The parsed JSON content of the SCANOSS settings schema.
+
+        Raises:
+            ScanossSettingsError: If there is any issue in locating, reading, or parsing the JSON file
+        """
+        try:
+            schema_path = importlib_resources.files(__name__) / 'data' / 'scanoss-settings-schema.json'
+            with importlib_resources.as_file(schema_path) as f:
+                with open(f, 'r', encoding='utf-8') as file:
+                    return json.load(file)
+        except Exception as e:
+            raise ScanossSettingsError(f'ERROR: Problem parsing Scanoss Settings Schema JSON file: {e}') from e
 
     def load_json_file(self, filepath: str) -> 'ScanossSettings':
         """
