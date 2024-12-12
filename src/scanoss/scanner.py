@@ -51,7 +51,7 @@ from . import __version__
 
 FAST_WINNOWING = False
 try:
-    from .winnowing import Winnowing
+    from scanoss_winnowing.winnowing import Winnowing
 
     FAST_WINNOWING = True
 except ModuleNotFoundError or ImportError:
