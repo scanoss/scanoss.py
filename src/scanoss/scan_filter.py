@@ -337,6 +337,6 @@ class ScanFilter(ScanossBase):
         is_hidden = dir_path != Path('.') and any(part.startswith('.') for part in dir_path.parts)
         return (
             (is_hidden and not self.hidden_files_folders)
-            or any(dir_rel_path == p.rstrip('/') for p in self.skip_patterns)
+            or any(dir_rel_path.lower() == p.rstrip('/').lower() for p in self.skip_patterns)
             or self.path_spec.match_file(dir_rel_path + '/')
         )
