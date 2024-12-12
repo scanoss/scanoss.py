@@ -58,12 +58,6 @@ except ModuleNotFoundError or ImportError:
     FAST_WINNOWING = False
     from .winnowing import Winnowing
 
-FILTERED_DIRS = {  # Folders to skip
-    "nbproject", "nbbuild", "nbdist", "__pycache__", "venv", "_yardoc", "eggs", "wheels", "htmlcov", "__pypackages__"
-}
-FILTERED_DIR_EXT = {  # Folder endings to skip
-    ".egg-info"
-}
 FILTERED_EXT = [  # File extensions to skip
     ".1", ".2", ".3", ".4", ".5", ".6", ".7", ".8", ".9", ".ac", ".adoc", ".am",
     ".asciidoc", ".bmp", ".build", ".cfg", ".chm", ".class", ".cmake", ".cnf",
@@ -186,9 +180,6 @@ class Scanner(ScanossBase):
         self.post_file_count = post_size if post_size > 0 else 32  # Max number of files for any given POST (default 32)
         if self._skip_snippets:
             self.max_post_size = 8 * 1024  # 8k Max post size if we're skipping snippets
-        self.skip_extensions = FILTERED_EXT
-        if skip_extensions:  # Append extra file extensions to skip
-            self.skip_extensions.extend(skip_extensions)
 
         self.scan_settings = scan_settings
         self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
@@ -210,73 +201,6 @@ class Scanner(ScanossBase):
         sbom = self.scan_settings.get_sbom()
         if sbom:
             self.scanoss_api.set_sbom(sbom)
-
-    def __filter_files(self, files: list) -> list:
-        """
-        Filter which files should be considered for processing
-        :param files: list of files to filter
-        :return list of filtered files
-        """
-        file_list = []
-        for f in files:
-            ignore = False
-            if f.startswith(".") and not self.hidden_files_folders:  # Ignore all . files unless requested
-                ignore = True
-            if not ignore and not self.all_extensions:  # Skip this check if we're allowing all extensions
-                f_lower = f.lower()
-                if f_lower in FILTERED_FILES:  # Check for exact files to ignore
-                    ignore = True
-                if not ignore:
-                    for ending in self.skip_extensions:  # Check for file endings to ignore (static and user supplied)
-                        if ending and f_lower.endswith(ending):
-                            ignore = True
-                            break
-            if not ignore:
-                file_list.append(f)
-        return file_list
-
-    def __filter_dirs(self, dirs: list) -> list:
-        """
-        Filter which folders should be considered for processing
-        :param dirs: list of directories to filter
-        :return: list of filtered directories
-        """
-        dir_list = []
-        for d in dirs:
-            ignore = False
-            if d.startswith(".") and not self.hidden_files_folders:  # Ignore all . folders unless requested
-                ignore = True
-            if not ignore and not self.all_folders:  # Skip this check if we're allowing all folders
-                d_lower = d.lower()
-                if d_lower in FILTERED_DIRS:  # Ignore specific folders (case insensitive)
-                    ignore = True
-                elif self.skip_folders and d in self.skip_folders:  # Ignore user-supplied folders (case sensitive)
-                    ignore = True
-                if not ignore:
-                    for de in FILTERED_DIR_EXT:  # Ignore specific folder endings (case insensitive)
-                        if d_lower.endswith(de):
-                            ignore = True
-                            break
-            if not ignore:
-                dir_list.append(d)
-        return dir_list
-
-    @staticmethod
-    def __strip_dir(scan_dir: str, length: int, path: str) -> str:
-        """
-        Strip the leading string from the specified path
-        Parameters
-        ----------
-            scan_dir: str
-                Root path
-            length: int
-                length of the root path string
-            path: str
-                Path to strip
-        """
-        if length > 0 and path.startswith(scan_dir):
-            path = path[length:]
-        return path
 
     @staticmethod
     def __count_files_in_wfp_file(wfp_file: str):

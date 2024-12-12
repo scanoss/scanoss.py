@@ -275,6 +275,10 @@ class ScanFilter(ScanossBase):
         """
         filtered_files = []
         for file in files:
+            if not self.hidden_files_folders and file.startswith('.'):
+                self.print_debug(f'Skipping file: {file} (hidden file)')
+                continue
+
             file_path = Path(file).resolve()
             file_rel_path = file_path.relative_to(Path.cwd())
 
@@ -309,6 +313,10 @@ class ScanFilter(ScanossBase):
                 continue
 
             for filename in filenames:
+                if not self.hidden_files_folders and filename.startswith('.'):
+                    self.print_debug(f'Skipping file: {filename} (hidden file)')
+                    continue
+
                 file_path = dirpath / filename
                 file_rel_path = rel_path / filename
                 file_size = file_path.stat().st_size
