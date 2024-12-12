@@ -316,7 +316,7 @@ class ScanFilter(ScanossBase):
                 self.print_debug(f'Skipping file: {file} (size: {file_size})')
                 continue
 
-            if self.path_spec.match_file(str(file_rel_path)):
+            if self.path_spec.match_file(str(file_rel_path).lower()):
                 self.print_debug(f'Skipping file: {file}')
                 continue
 
@@ -348,7 +348,7 @@ class ScanFilter(ScanossBase):
                 if file_size < self.min_size or file_size > self.max_size:
                     self.print_debug(f'Skipping file: {file_rel_path} (size: {file_size})')
                     continue
-                if self.path_spec.match_file(str(file_rel_path)):
+                if self.path_spec.match_file(str(file_rel_path).lower()):
                     self.print_debug(f'Skipping file: {file_rel_path}')
                     continue
                 else:
@@ -362,5 +362,5 @@ class ScanFilter(ScanossBase):
         return (
             (is_hidden and not self.hidden_files_folders)
             or any(dir_rel_path.lower() == p.rstrip('/').lower() for p in self.skip_patterns)
-            or self.path_spec.match_file(dir_rel_path + '/')
+            or self.path_spec.match_file(dir_rel_path.lower() + '/')
         )
