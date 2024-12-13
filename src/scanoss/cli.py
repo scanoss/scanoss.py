@@ -131,6 +131,15 @@ def setup_args() -> None:
     p_wfp.add_argument('--stdin', '-s', metavar='STDIN-FILENAME',  type=str,
                        help='Fingerprint the file contents supplied via STDIN (optional)')
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
+    p_wfp.add_argument(
+        '--settings', '-st',
+        type=str,
+        help='Settings file to use for fingerprinting (optional - default scanoss.json)',
+    )
+    p_wfp.add_argument(
+        '--skip-settings-file', '-stf', action='store_true',
+        help='Skip default settings file (scanoss.json) if it exists',
+    )
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser('dependencies', aliases=['dp', 'dep'],
@@ -466,13 +475,24 @@ def wfp(parser, args):
     if args.output:
         scan_output = args.output
         open(scan_output, 'w').close()
+        
+    # Load scan settings
+    scan_settings = None
+    if not args.skip_settings_file:
+        scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        try:
+            scan_settings.load_json_file(args.settings)
+        except ScanossSettingsError as e:
+            print_stderr(f'Error: {e}')
+            exit(1)
 
     scan_options = 0 if args.skip_snippets else ScanType.SCAN_SNIPPETS.value  # Skip snippet generation or not
     scanner = Scanner(debug=args.debug, trace=args.trace, quiet=args.quiet, obfuscate=args.obfuscate,
                       scan_options=scan_options, all_extensions=args.all_extensions,
                       all_folders=args.all_folders, hidden_files_folders=args.all_hidden, hpsm=args.hpsm,
                       skip_size=args.skip_size, skip_extensions=args.skip_extension, skip_folders=args.skip_folder,
-                      skip_md5_ids=args.skip_md5, strip_hpsm_ids=args.strip_hpsm, strip_snippet_ids=args.strip_snippet
+                      skip_md5_ids=args.skip_md5, strip_hpsm_ids=args.strip_hpsm, strip_snippet_ids=args.strip_snippet,
+                      scan_settings=scan_settings
                       )
     if args.stdin:
         contents = sys.stdin.buffer.read()

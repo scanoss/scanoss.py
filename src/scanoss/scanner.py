@@ -129,7 +129,7 @@ class Scanner(ScanossBase):
         strip_hpsm_ids=None,
         strip_snippet_ids=None,
         skip_md5_ids=None,
-        scan_settings: ScanossSettings = None
+        scan_settings: 'ScanossSettings | None' = None
     ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
