@@ -61,7 +61,7 @@ DEFAULT_SKIPPED_DIRS = {  # Folders to skip
 DEFAULT_SKIPPED_DIR_EXT = {  # Folder endings to skip
     '.egg-info'
 }
-DEFAULT_SKIPPED_EXT = [  # File extensions to skip
+DEFAULT_SKIPPED_EXT = {  # File extensions to skip
     '.1',
     '.2',
     '.3',
@@ -222,12 +222,12 @@ DEFAULT_SKIPPED_EXT = [  # File extensions to skip
     'manifest',
     'sqlite',
     'sqlite3',
-]
+}
 
 
-class ScanFilter(ScanossBase):
+class FileFilters(ScanossBase):
     """
-    Filter for determining which files to process during scanning.
+    Filter for determining which files to process during scanning, fingerprinting, etc.
     Handles both inclusion and exclusion rules based on file paths, extensions, and sizes.
     """
 
@@ -236,7 +236,7 @@ class ScanFilter(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        scanoss_settings: 'ScanossSettings' = None,
+        scanoss_settings: 'ScanossSettings | None' = None,
         all_extensions: bool = False,
         all_folders: bool = False,
         hidden_files_folders: bool = False,
@@ -255,73 +255,149 @@ class ScanFilter(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
 
-        self.min_size = 0
-        self.max_size = float('inf')
         self.hidden_files_folders = hidden_files_folders
+        self.scanoss_settings = scanoss_settings
 
-        skip_patterns = []
-
-        skip_patterns.extend(DEFAULT_SKIPPED_FILES)
+        self.default_skip_patterns = []
+        self.default_skip_patterns.extend(DEFAULT_SKIPPED_FILES)
         if not all_extensions:
-            skip_patterns.extend(f'*{ext}' for ext in DEFAULT_SKIPPED_EXT)
-            skip_patterns.extend(f'*{ext}/' for ext in DEFAULT_SKIPPED_DIR_EXT)
+            self.default_skip_patterns.extend(f'*{ext}' for ext in DEFAULT_SKIPPED_EXT)
+            self.default_skip_patterns.extend(f'*{ext}/' for ext in DEFAULT_SKIPPED_DIR_EXT)
         if not all_folders:
-            skip_patterns.extend(f'{dir_path}/' for dir_path in DEFAULT_SKIPPED_DIRS)
+            self.default_skip_patterns.extend(f'{dir_path}/' for dir_path in DEFAULT_SKIPPED_DIRS)
 
-        if scanoss_settings:
-            skip_patterns.extend(scanoss_settings.get_skip_patterns())
-            self.min_size = scanoss_settings.get_skip_sizes().get('min', 0)
-            self.max_size = scanoss_settings.get_skip_sizes().get('max', float('inf'))
-
-        self.skip_patterns = skip_patterns
-        self.path_spec = PathSpec.from_lines('gitwildmatch', self.skip_patterns)
-
-    def get_filtered_files_from_folder(self, root: str) -> List[str]:
+    def get_filtered_files_from_folder(self, root: str, operation_type: str) -> List[str]:
         """Retrieve a list of files to scan or fingerprint from a given directory root based on filter settings.
 
         Args:
-            root (str): Root directory to scan
+            root (str): Root directory to scan or fingerprint
+            operation_type (str): Type of operation ('scanning' or 'fingerprinting')
 
         Returns:
-            list[str]: List of files to scan
+            list[str]: Filtered list of files to scan or fingerprint
         """
-        files = self._walk_with_ignore(root)
-        return files
+        skip_patterns = self._get_operation_patterns(operation_type)
+        path_spec = PathSpec.from_lines('gitwildmatch', skip_patterns)
 
-    def get_filtered_files_from_files(self, files: List[str]) -> List[str]:
+        filtered_files = []
+        for dirpath, _, filenames in self._walk_with_ignore(root):
+            if self._should_skip_dir(os.path.relpath(dirpath, root)):
+                continue
+
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                rel_path = os.path.relpath(file_path, root)
+
+                if not self.hidden_files_folders and (filename.startswith('.') or '/.' in rel_path):
+                    continue
+
+                if path_spec.match_file(rel_path):
+                    continue
+
+                try:
+                    file_size = os.path.getsize(file_path)
+                    min_size, max_size = self._get_operation_size_limits(operation_type, file_path)
+                    if min_size <= file_size <= max_size:
+                        filtered_files.append(file_path)
+                except OSError as e:
+                    self.print_debug(f'Error getting size for {file_path}: {e}')
+
+        return filtered_files
+
+    def get_filtered_files_from_files(self, files: List[str], operation_type: str) -> List[str]:
         """Retrieve a list of files to scan or fingerprint from a given list of files based on filter settings.
 
         Args:
-            files (List[str]): List of files to scan
+            files (List[str]): List of files to scan or fingerprint
+            operation_type (str): Type of operation ('scanning' or 'fingerprinting')
 
         Returns:
-            list[str]: List of files to scan
+            list[str]: Filtered list of files to scan or fingerprint
         """
+        skip_patterns = self._get_operation_patterns(operation_type)
+        path_spec = PathSpec.from_lines('gitwildmatch', skip_patterns)
+
         filtered_files = []
-        for file in files:
-            if not self.hidden_files_folders and file.startswith('.'):
-                self.print_debug(f'Skipping file: {file} (hidden file)')
+        for file_path in files:
+            if not os.path.isfile(file_path):
                 continue
 
-            file_path = Path(file).resolve()
-            file_rel_path = file_path.relative_to(Path.cwd())
-
-            if not file_path.exists():
-                self.print_debug(f'Skipping file: {file_rel_path} (does not exist)')
+            filename = os.path.basename(file_path)
+            if not self.hidden_files_folders and filename.startswith('.'):
                 continue
 
-            file_size = file_path.stat().st_size
-
-            if file_size < self.min_size or file_size > self.max_size:
-                self.print_debug(f'Skipping file: {file} (size: {file_size})')
+            if path_spec.match_file(filename):
                 continue
 
-            if self.path_spec.match_file(str(file_rel_path).lower()):
-                self.print_debug(f'Skipping file: {file}')
-                continue
+            try:
+                file_size = os.path.getsize(file_path)
+                min_size, max_size = self._get_operation_size_limits(operation_type, file_path)
+                if min_size <= file_size <= max_size:
+                    filtered_files.append(file_path)
+            except OSError as e:
+                self.print_debug(f'Error getting size for {file_path}: {e}')
 
-            filtered_files.append(str(file))
         return filtered_files
+
+    def _get_operation_patterns(self, operation_type: str) -> List[str]:
+        """Get patterns specific to the operation type, combining defaults with settings.
+
+        Args:
+            operation_type (str): Type of operation ('scanning' or 'fingerprinting')
+
+        Returns:
+            List[str]: Combined list of patterns to skip
+        """
+        patterns = self.default_skip_patterns.copy()
+
+        if self.scanoss_settings:
+            settings_patterns = self.scanoss_settings.get_skip_patterns(operation_type)
+            if settings_patterns:
+                patterns.extend(settings_patterns)
+
+        return patterns
+
+    def _get_operation_size_limits(self, operation_type: str, file_path: str = None) -> tuple:
+        """Get size limits specific to the operation type and file path.
+
+        Args:
+            operation_type (str): Type of operation ('scanning' or 'fingerprinting')
+            file_path (str, optional): Path to the file to check against patterns. If None, returns default limits.
+
+        Returns:
+            tuple: (min_size, max_size) tuple for the given file path and operation type
+        """
+        min_size = 0
+        max_size = float('inf')
+
+        if not self.scanoss_settings or not file_path:
+            return min_size, max_size
+
+        size_rules = self.scanoss_settings.get_skip_sizes(operation_type)
+        if not size_rules:
+            return min_size, max_size
+
+        # Convert file path to relative path for pattern matching
+        try:
+            rel_path = os.path.relpath(file_path)
+        except ValueError:
+            # If file_path is on a different drive, just use the basename
+            rel_path = os.path.basename(file_path)
+
+        # Check each size rule against the file path
+        for rule in size_rules:
+            patterns = rule.get('patterns', [])
+            if not patterns:
+                continue
+
+            # Create a PathSpec for the rule's patterns
+            path_spec = PathSpec.from_lines('gitwildmatch', patterns)
+
+            # If the file matches any pattern in this rule, use its size limits
+            if path_spec.match_file(rel_path):
+                return (rule.get('min', min_size), rule.get('max', max_size))
+
+        return min_size, max_size
 
     def _walk_with_ignore(self, scan_root: str) -> List[str]:
         files = []
@@ -345,10 +421,12 @@ class ScanFilter(ScanossBase):
                 file_rel_path = rel_path / filename
                 file_size = file_path.stat().st_size
 
-                if file_size < self.min_size or file_size > self.max_size:
+                if file_size < 0 or file_size > float('inf'):
                     self.print_debug(f'Skipping file: {file_rel_path} (size: {file_size})')
                     continue
-                if self.path_spec.match_file(str(file_rel_path).lower()):
+                if PathSpec.from_lines('gitwildmatch', self.default_skip_patterns).match_file(
+                    str(file_rel_path).lower()
+                ):
                     self.print_debug(f'Skipping file: {file_rel_path}')
                     continue
                 else:
@@ -361,6 +439,6 @@ class ScanFilter(ScanossBase):
         is_hidden = dir_path != Path('.') and any(part.startswith('.') for part in dir_path.parts)
         return (
             (is_hidden and not self.hidden_files_folders)
-            or any(dir_rel_path.lower() == p.rstrip('/').lower() for p in self.skip_patterns)
-            or self.path_spec.match_file(dir_rel_path.lower() + '/')
+            or any(dir_rel_path.lower() == p.rstrip('/').lower() for p in self.default_skip_patterns)
+            or PathSpec.from_lines('gitwildmatch', self.default_skip_patterns).match_file(dir_rel_path.lower() + '/')
         )
