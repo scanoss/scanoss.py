@@ -61,7 +61,7 @@ class ScanossSettings(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        filepath: str = None,
+        filepath: 'str | None' = None,
     ):
         """
         Args:
@@ -99,7 +99,7 @@ class ScanossSettings(ScanossBase):
         except Exception as e:
             raise ScanossSettingsError(f'ERROR: Problem parsing Scanoss Settings Schema JSON file: {e}') from e
 
-    def load_json_file(self, filepath: str) -> 'ScanossSettings':
+    def load_json_file(self, filepath: 'str | None' = None) -> 'ScanossSettings':
         """
         Load the scan settings file. If no filepath is provided, scanoss.json will be used as default.
 
