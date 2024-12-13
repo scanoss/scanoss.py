@@ -357,7 +357,7 @@ class Scanner(ScanossBase):
             if self.threaded_scan and self.threaded_scan.stop_scanning():
                 self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
                 break
-            self.print_trace(f'Fingerprinting {to_scan_file}...')
+            self.print_debug(f'Fingerprinting {to_scan_file}...')
             if spinner:
                 spinner.next()
             abs_path = Path(scan_dir, to_scan_file).resolve()
@@ -608,7 +608,7 @@ class Scanner(ScanossBase):
                 self.print_trace(
                     f'Ignoring missing symlink file: {file} ({e})')  # Can fail if there is a broken symlink
             if f_size > 0:  # Ignore broken links and empty files
-                self.print_trace(f'Fingerprinting {file}...')
+                self.print_debug(f'Fingerprinting {file}...')
                 if spinner:
                     spinner.next()
                 wfp = self.winnowing.wfp_for_file(file, file)
@@ -1002,6 +1002,7 @@ class Scanner(ScanossBase):
             if spinner:
                 spinner.next()
             abs_path = Path(scan_dir, file).resolve()
+            self.print_debug(f'Fingerprinting {file}...')
             wfps += self.winnowing.wfp_for_file(str(abs_path), file)
         if spinner:
             spinner.finish()
