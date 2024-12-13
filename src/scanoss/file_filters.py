@@ -276,40 +276,30 @@ class FileFilters(ScanossBase):
         Returns:
             list[str]: Filtered list of files to scan or fingerprint
         """
-        skip_patterns = self._get_operation_patterns(operation_type)
-        path_spec = PathSpec.from_lines('gitwildmatch', skip_patterns)
+        all_files = []
+        root_path = Path(root).resolve()
 
-        filtered_files = []
-        for dirpath, _, filenames in self._walk_with_ignore(root):
-            if self._should_skip_dir(os.path.relpath(dirpath, root)):
+        for dirpath, dirnames, filenames in os.walk(root_path):
+            dirpath = Path(dirpath)
+            rel_path = dirpath.relative_to(root_path)
+
+            if self._should_skip_dir(str(rel_path), operation_type):
+                dirnames.clear()
                 continue
 
             for filename in filenames:
-                file_path = os.path.join(dirpath, filename)
-                rel_path = os.path.relpath(file_path, root)
+                file_path = dirpath / filename
+                all_files.append(str(file_path))
 
-                if not self.hidden_files_folders and (filename.startswith('.') or '/.' in rel_path):
-                    continue
+        return self.get_filtered_files_from_files(all_files, operation_type, str(root_path))
 
-                if path_spec.match_file(rel_path):
-                    continue
-
-                try:
-                    file_size = os.path.getsize(file_path)
-                    min_size, max_size = self._get_operation_size_limits(operation_type, file_path)
-                    if min_size <= file_size <= max_size:
-                        filtered_files.append(file_path)
-                except OSError as e:
-                    self.print_debug(f'Error getting size for {file_path}: {e}')
-
-        return filtered_files
-
-    def get_filtered_files_from_files(self, files: List[str], operation_type: str) -> List[str]:
+    def get_filtered_files_from_files(self, files: List[str], operation_type: str, scan_root: str = None) -> List[str]:
         """Retrieve a list of files to scan or fingerprint from a given list of files based on filter settings.
 
         Args:
             files (List[str]): List of files to scan or fingerprint
             operation_type (str): Type of operation ('scanning' or 'fingerprinting')
+            scan_root (str): Root directory to scan or fingerprint
 
         Returns:
             list[str]: Filtered list of files to scan or fingerprint
@@ -322,20 +312,35 @@ class FileFilters(ScanossBase):
             if not os.path.isfile(file_path):
                 continue
 
-            filename = os.path.basename(file_path)
-            if not self.hidden_files_folders and filename.startswith('.'):
+            try:
+                if scan_root:
+                    rel_path = os.path.relpath(file_path, scan_root)
+                else:
+                    rel_path = os.path.relpath(file_path)
+            except ValueError:
+                # If file_path is broken, symlink ignore it
+                self.print_debug(f'Ignoring file: {file_path} (broken symlink)')
                 continue
 
-            if path_spec.match_file(filename):
+            if not self.hidden_files_folders and ('/' + '.' in rel_path or rel_path.startswith('.')):
+                self.print_debug(f'Skipping file: {rel_path} (hidden file)')
+                continue
+
+            if path_spec.match_file(rel_path):
+                self.print_debug(f'Skipping file: {rel_path} (matched skip pattern)')
                 continue
 
             try:
                 file_size = os.path.getsize(file_path)
                 min_size, max_size = self._get_operation_size_limits(operation_type, file_path)
                 if min_size <= file_size <= max_size:
-                    filtered_files.append(file_path)
+                    filtered_files.append(rel_path)
+                else:
+                    self.print_debug(
+                        f'Skipping file: {rel_path} (size {file_size} outside limits {min_size}-{max_size})'
+                    )
             except OSError as e:
-                self.print_debug(f'Error getting size for {file_path}: {e}')
+                self.print_debug(f'Error getting size for {rel_path}: {e}')
 
         return filtered_files
 
@@ -377,68 +382,45 @@ class FileFilters(ScanossBase):
         if not size_rules:
             return min_size, max_size
 
-        # Convert file path to relative path for pattern matching
         try:
             rel_path = os.path.relpath(file_path)
         except ValueError:
-            # If file_path is on a different drive, just use the basename
             rel_path = os.path.basename(file_path)
 
-        # Check each size rule against the file path
         for rule in size_rules:
             patterns = rule.get('patterns', [])
             if not patterns:
                 continue
 
-            # Create a PathSpec for the rule's patterns
             path_spec = PathSpec.from_lines('gitwildmatch', patterns)
 
-            # If the file matches any pattern in this rule, use its size limits
             if path_spec.match_file(rel_path):
                 return (rule.get('min', min_size), rule.get('max', max_size))
 
         return min_size, max_size
 
-    def _walk_with_ignore(self, scan_root: str) -> List[str]:
-        files = []
-        root = Path(scan_root).resolve()
+    def _should_skip_dir(self, dir_rel_path: str, operation_type: str) -> bool:
+        """Check if a directory should be skipped based on operation type and patterns.
 
-        for dirpath, dirnames, filenames in os.walk(root):
-            dirpath = Path(dirpath)
-            rel_path = dirpath.relative_to(root)
+        Args:
+            dir_rel_path (str): Relative path to the directory
+            operation_type (str): Type of operation ('scanning' or 'fingerprinting')
 
-            if self._should_skip_dir(str(rel_path)):
-                self.print_debug(f'Skipping directory: {rel_path}')
-                dirnames.clear()
-                continue
-
-            for filename in filenames:
-                if not self.hidden_files_folders and filename.startswith('.'):
-                    self.print_debug(f'Skipping file: {filename} (hidden file)')
-                    continue
-
-                file_path = dirpath / filename
-                file_rel_path = rel_path / filename
-                file_size = file_path.stat().st_size
-
-                if file_size < 0 or file_size > float('inf'):
-                    self.print_debug(f'Skipping file: {file_rel_path} (size: {file_size})')
-                    continue
-                if PathSpec.from_lines('gitwildmatch', self.default_skip_patterns).match_file(
-                    str(file_rel_path).lower()
-                ):
-                    self.print_debug(f'Skipping file: {file_rel_path}')
-                    continue
-                else:
-                    files.append(str(file_rel_path))
-
-        return files
-
-    def _should_skip_dir(self, dir_rel_path: str) -> bool:
+        Returns:
+            bool: True if directory should be skipped, False otherwise
+        """
         dir_path = Path(dir_rel_path)
         is_hidden = dir_path != Path('.') and any(part.startswith('.') for part in dir_path.parts)
-        return (
-            (is_hidden and not self.hidden_files_folders)
-            or any(dir_rel_path.lower() == p.rstrip('/').lower() for p in self.default_skip_patterns)
-            or PathSpec.from_lines('gitwildmatch', self.default_skip_patterns).match_file(dir_rel_path.lower() + '/')
-        )
+
+        if is_hidden and not self.hidden_files_folders:
+            self.print_debug(f'Skipping directory: {dir_rel_path} (hidden directory)')
+            return True
+
+        skip_patterns = self._get_operation_patterns(operation_type)
+        path_spec = PathSpec.from_lines('gitwildmatch', skip_patterns)
+
+        if path_spec.match_file(dir_rel_path.lower() + '/'):
+            self.print_debug(f'Skipping directory: {dir_rel_path} (matched skip pattern)')
+            return True
+
+        return False

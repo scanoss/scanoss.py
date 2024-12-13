@@ -293,4 +293,4 @@ class ScanossSettings(ScanossBase):
         Returns:
             List: Min and max sizes to skip
         """
-        return self.data.get('settings', {}).get('sizes', {}).get(operation_type, [])
+        return self.data.get('settings', {}).get('skip', {}).get('sizes', {}).get(operation_type, [])
