@@ -3,12 +3,12 @@ import shutil
 import tempfile
 import unittest
 
-from scanoss.scan_filter import ScanFilter
+from scanoss.file_filters import FileFilters
 
 
-class TestScanFilter(unittest.TestCase):
+class TestFileFilters(unittest.TestCase):
     def setUp(self):
-        self.scan_filter = ScanFilter(debug=True)
+        self.file_filters = FileFilters(debug=True)
         self.test_dir = tempfile.mkdtemp()
 
     def tearDown(self):
@@ -40,7 +40,7 @@ class TestScanFilter(unittest.TestCase):
             'dir2/file5.js',
         ]
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_default_folders(self):
@@ -59,12 +59,12 @@ class TestScanFilter(unittest.TestCase):
             'dir1/file4.go',
         ]
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_skip_files_by_size(self):
-        self.scan_filter.min_size = 150
-        self.scan_filter.max_size = 450
+        self.file_filters.min_size = 150
+        self.file_filters.max_size = 450
 
         files = [
             'file1.js',
@@ -80,7 +80,7 @@ class TestScanFilter(unittest.TestCase):
 
         expected_files = ['file3.py', 'file2.go']
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_skip_directories(self):
@@ -91,11 +91,11 @@ class TestScanFilter(unittest.TestCase):
         ]
         self.create_files(files)
 
-        self.scan_filter.skip_patterns.append('dir2/')
+        self.file_filters.skip_patterns.append('dir2/')
 
         expected_files = ['file1.js', 'dir1/file2.js']
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_custom_skip_patterns(self):
@@ -107,11 +107,11 @@ class TestScanFilter(unittest.TestCase):
         ]
         self.create_files(files)
 
-        self.scan_filter.skip_patterns.append('*.rst')
+        self.file_filters.skip_patterns.append('*.rst')
 
         expected_files = ['file3.py']
 
-        filtered_files = self.scan_filter.get_filtered_files_from_folder(self.test_dir)
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
 

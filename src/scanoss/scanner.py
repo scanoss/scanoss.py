@@ -33,7 +33,7 @@ from progress.bar import Bar
 from progress.spinner import Spinner
 from pypac.parser import PACFile
 
-from scanoss.scan_filter import ScanFilter
+from scanoss.file_filters import FileFilters
 
 from .scanossapi import ScanossApi
 from .cyclonedx import CycloneDx
@@ -185,7 +185,7 @@ class Scanner(ScanossBase):
         self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
         self._maybe_set_api_sbom()
         
-        self.scan_filters = ScanFilter(
+        self.file_filters = FileFilters(
             debug=self.debug,
             trace=self.trace,
             quiet=self.quiet,
@@ -351,7 +351,7 @@ class Scanner(ScanossBase):
         scan_started = False
         
         
-        to_scan_files = self.scan_filters.get_filtered_files_from_folder(scan_dir)
+        to_scan_files = self.file_filters.get_filtered_files_from_folder(scan_dir, operation_type='scanning')
         
         for to_scan_file in to_scan_files: 
             if self.threaded_scan and self.threaded_scan.stop_scanning():
@@ -595,7 +595,7 @@ class Scanner(ScanossBase):
         wfp_file_count = 0  # count number of files in each queue post
         scan_started = False
         
-        to_scan_files = self.scan_filters.get_filtered_files_from_files(files)
+        to_scan_files = self.file_filters.get_filtered_files_from_files(files, operation_type='scanning')
         
         for file in to_scan_files:
             if self.threaded_scan and self.threaded_scan.stop_scanning():
@@ -995,7 +995,9 @@ class Scanner(ScanossBase):
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
 
-        to_fingerprint_files = self.scan_filters.get_filtered_files_from_folder(scan_dir)
+        to_fingerprint_files = self.file_filters.get_filtered_files_from_folder(
+            scan_dir, operation_type='fingerprinting'
+        )
         for file in to_fingerprint_files:
             if spinner:
                 spinner.next()

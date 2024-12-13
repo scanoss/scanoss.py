@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use scanoss.json as default settings file if no argument is supplied
 - Add —skip-settings-file flag
 - Update scanoss settings schema to allow skipping specific folders, files, and extensions
-- Add ScanFilter class to handle filtering of files and folders based on settings
+- Add FileFilters class to handle filtering of files and folders based on settings
 
 ## [1.18.1] - 2024-11-19
 ### Added

@@ -41,6 +41,12 @@ class BomEntry(TypedDict, total=False):
     path: str
 
 
+class SizeFilter(TypedDict, total=False):
+    patterns: List[str]
+    min: int
+    max: int
+
+
 class ScanossSettingsError(Exception):
     pass
 
@@ -269,18 +275,22 @@ class ScanossSettings(ScanossBase):
         """Check if the settings file is legacy"""
         return self.settings_file_type == 'legacy'
 
-    def get_skip_patterns(self) -> List[str]:
+    def get_skip_patterns(self, operation_type: str) -> List[str]:
         """
-        Get the list of patterns to skip
+        Get the list of patterns to skip based on the operation type
+        Args:
+            operation_type (str): Operation type
         Returns:
             List: List of patterns to skip
         """
-        return self.data.get('settings', {}).get('skip', {}).get('patterns', [])
+        return self.data.get('settings', {}).get('skip', {}).get('patterns', {}).get(operation_type, [])
 
-    def get_skip_sizes(self) -> dict:
+    def get_skip_sizes(self, operation_type: str) -> List[SizeFilter]:
         """
-        Get the min and max sizes to skip
+        Get the min and max sizes to skip based on the operation type
+        Args:
+            operation_type (str): Operation type
         Returns:
-            dict: Min and max sizes to skip
+            List: Min and max sizes to skip
         """
-        return self.data.get('settings', {}).get('skip', {}).get('sizes', {})
+        return self.data.get('settings', {}).get('sizes', {}).get(operation_type, [])
