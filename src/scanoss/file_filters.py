@@ -326,7 +326,7 @@ class FileFilters(ScanossBase):
                 self.print_debug(f'Skipping file: {rel_path} (hidden file)')
                 continue
 
-            if path_spec.match_file(rel_path):
+            if path_spec.match_file(rel_path.lower()):
                 self.print_debug(f'Skipping file: {rel_path} (matched skip pattern)')
                 continue
 
@@ -394,7 +394,7 @@ class FileFilters(ScanossBase):
 
             path_spec = PathSpec.from_lines('gitwildmatch', patterns)
 
-            if path_spec.match_file(rel_path):
+            if path_spec.match_file(rel_path.lower()):
                 return (rule.get('min', min_size), rule.get('max', max_size))
 
         return min_size, max_size
