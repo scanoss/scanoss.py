@@ -6,6 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+
 project = 'scanoss-py'
 copyright = '2024, Scan Open Source Solutions SL'
 author = 'Scan Open Source Solutions SL'
@@ -15,14 +16,15 @@ author = 'Scan Open Source Solutions SL'
 
 extensions = []
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
+
 html_theme = 'furo'
 html_logo = 'scanosslogo.jpg'
 html_static_path = ['_static']
+

@@ -9,3 +9,4 @@ urllib3
 pyOpenSSL
 google-api-core
 importlib_resources
+packageurl-python

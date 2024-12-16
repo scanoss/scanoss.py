@@ -165,27 +165,29 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir,'data', file_name)
-        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='json')
+        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='json', sbom_format='legacy')
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
         expected_summary_output = """5 undeclared component(s) were found.
         Add the following snippet into your `sbom.json` file 
         ```json 
-        [
-          {
-            "purl": "pkg:github/scanoss/scanner.c"
-          },
-          {
-            "purl": "pkg:github/scanoss/wfp"
-          },
-          {
-            "purl": "pkg:npm/%40electron/rebuild"
-          },
-          {
-            "purl": "pkg:npm/%40emotion/react"
-          }
-        ]```
+        {
+            "components":[
+                  {
+                    "purl": "pkg:github/scanoss/scanner.c"
+                  },
+                  {
+                    "purl": "pkg:github/scanoss/wfp"
+                  },
+                  {
+                    "purl": "pkg:npm/%40electron/rebuild"
+                  },
+                  {
+                    "purl": "pkg:npm/%40emotion/react"
+                  }
+            ]
+        }```
         """
         self.assertEqual(len(details['components']), 5)
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)',
@@ -199,7 +201,7 @@ class MyTestCase(unittest.TestCase):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = "result.json"
         input_file_name = os.path.join(script_dir, 'data', file_name)
-        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md')
+        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md', sbom_format='legacy')
         status, results = undeclared.run()
         details = results['details']
         summary = results['summary']
@@ -215,23 +217,120 @@ class MyTestCase(unittest.TestCase):
         expected_summary_output = """5 undeclared component(s) were found.
            Add the following snippet into your `sbom.json` file 
            ```json 
-           [
-             {
-                "purl": "pkg:github/scanoss/scanner.c"
-              },
-              {
-                "purl": "pkg:github/scanoss/wfp"
-              },
-              {
-                "purl": "pkg:npm/%40electron/rebuild"
-              },
-              {
-                "purl": "pkg:npm/%40emotion/react"
-              }
-           ]```
+               {
+                "components":[
+                 {
+                    "purl": "pkg:github/scanoss/scanner.c"
+                  },
+                  {
+                    "purl": "pkg:github/scanoss/wfp"
+                  },
+                  {
+                    "purl": "pkg:npm/%40electron/rebuild"
+                  },
+                  {
+                    "purl": "pkg:npm/%40emotion/react"
+                  }           
+                ]             
+               }```
            """
+
+        print(summary)
         self.assertEqual(status, 0)
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)',
                                                                             '', expected_details_output))
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary),
                          re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))
+
+    """
+         Undeclared component markdown scanoss summary output
+    """
+    def test_undeclared_policy_markdown_scanoss_summary(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = "result.json"
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md')
+        status, results = undeclared.run()
+        details = results['details']
+        summary = results['summary']
+        expected_details_output = """ ### Undeclared components
+               | Component | Version | License | 
+               | - | - | - | 
+               | pkg:github/scanoss/scanner.c | 1.3.3 | BSD-2-Clause - GPL-2.0-only | 
+               | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
+               | pkg:github/scanoss/wfp | 6afc1f6 | Zlib - GPL-2.0-only | 
+               | pkg:npm/%40electron/rebuild | 3.7.0 | MIT | 
+               | pkg:npm/%40emotion/react | 11.13.3 | MIT | """
+
+        expected_summary_output = """5 undeclared component(s) were found.
+            Add the following snippet into your `scanoss.json` file
+            
+            ```json
+            {
+              "bom": {
+                "include": [
+                  {
+                    "purl": "pkg:github/scanoss/scanner.c"
+                  },
+                  {
+                    "purl": "pkg:github/scanoss/wfp"
+                  },
+                  {
+                    "purl": "pkg:npm/%40electron/rebuild"
+                  },
+                  {
+                    "purl": "pkg:npm/%40emotion/react"
+                  }
+                ]
+              }
+            }
+            ```"""
+
+        print(summary)
+        self.assertEqual(status, 0)
+        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)',
+                                                                            '', expected_details_output))
+        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary),
+                         re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))
+
+    """
+        Undeclared component sbom summary output
+    """
+    def test_undeclared_policy_scanoss_summary(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = "result.json"
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        undeclared = UndeclaredComponent(filepath=input_file_name)
+        status, results = undeclared.run()
+        details = json.loads(results['details'])
+        summary = results['summary']
+        expected_summary_output = """5 undeclared component(s) were found.
+                Add the following snippet into your `scanoss.json` file
+
+                ```json
+                {
+                  "bom": {
+                    "include": [
+                      {
+                        "purl": "pkg:github/scanoss/scanner.c"
+                      },
+                      {
+                        "purl": "pkg:github/scanoss/wfp"
+                      },
+                      {
+                        "purl": "pkg:npm/%40electron/rebuild"
+                      },
+                      {
+                        "purl": "pkg:npm/%40emotion/react"
+                      }
+                    ]
+                  }
+                }
+                ```"""
+        self.assertEqual(status, 0)
+        self.assertEqual(len(details['components']), 5)
+        self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary),
+                         re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))
+
+if __name__ == '__main__':
+    unittest.main()

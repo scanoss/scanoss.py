@@ -29,6 +29,7 @@
 """
 import hashlib
 import pathlib
+import platform
 import re
 
 from crc32c import crc32c
@@ -307,11 +308,15 @@ class Winnowing(ScanossBase):
             return ''
         # Print file line
         content_length = len(contents)
-        wfp_filename = repr(file).strip("'")  # return a utf-8 compatible version of the filename
+        original_filename = file
+        
+        if platform.system() == 'Windows':
+            original_filename = file.replace('\\', '/')
+        wfp_filename = repr(original_filename).strip("'")  # return a utf-8 compatible version of the filename
         if self.obfuscate:  # hide the real size of the file and its name, but keep the suffix
-            wfp_filename = f'{self.ob_count}{pathlib.Path(file).suffix}'
+            wfp_filename = f'{self.ob_count}{pathlib.Path(original_filename).suffix}'
             self.ob_count = self.ob_count + 1
-            self.file_map[wfp_filename] = file  # Save the file name map for later (reverse lookup)
+            self.file_map[wfp_filename] = original_filename  # Save the file name map for later (reverse lookup)
 
         wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, wfp_filename)
         # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
@@ -464,7 +469,7 @@ class Winnowing(ScanossBase):
             crc = self.crc8_byte(crc, buffer[index])
         crc ^= CRC8_MAXIM_DOW_FINAL  # Bitwise OR (XOR) of crc in Maxim Dow Final
         return crc
-    
+
 #
 # End of Winnowing Class
 #

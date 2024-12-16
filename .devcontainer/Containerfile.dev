@@ -1,0 +1,24 @@
+FROM python:3.10-slim-buster
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    && apt-get clean
+
+WORKDIR /workspace
+
+COPY requirements.txt requirements-dev.txt requirements-scancode.txt /tmp/
+
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
+    pip3 install --no-cache-dir -r /tmp/requirements-dev.txt && \
+    pip3 install --no-cache-dir scanoss_winnowing && \
+    pip3 install --no-cache-dir scancode-toolkit-mini
+
+# Download compile and install typecode-libmagic from source (as there is not ARM wheel available)
+ADD https://github.com/nexB/typecode_libmagic_from_sources/archive/refs/tags/v5.39.210212.tar.gz /install/
+RUN tar -xvzf /install/v5.39.210212.tar.gz -C /install \
+    && cd /install/typecode_libmagic_from_sources* \
+    && ./build.sh && python3 setup.py sdist bdist_wheel \
+    && pip3 install --user `ls /install/typecode_libmagic_from_sources*/dist/*.whl`
+
+CMD ["sleep", "infinity"]

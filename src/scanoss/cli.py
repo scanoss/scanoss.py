@@ -26,10 +26,14 @@ import os
 from pathlib import Path
 import sys
 import pypac
-from scanoss.inspection.copyleft import Copyleft
-from scanoss.inspection.undeclared_component import UndeclaredComponent
+
+from scanoss.utils.file import validate_json_file
+
+
+from .inspection.copyleft import Copyleft
+from .inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
-from .scanoss_settings import ScanossSettings
+from .scanoss_settings import ScanossSettings, ScanossSettingsError
 from .scancodedeps import ScancodeDeps
 from .scanner import Scanner
 from .scantype import ScanType
@@ -108,11 +112,14 @@ def setup_args() -> None:
     p_scan.add_argument('--dep-scope-inc', '-dsi', type=str,help='Include dependencies with declared scopes')
     p_scan.add_argument('--dep-scope-exc', '-dse', type=str, help='Exclude dependencies with declared scopes')
     p_scan.add_argument(
-        '--settings',
+        '--settings', '-st',
         type=str,
         help='Settings file to use for scanning (optional - default scanoss.json)',
     )
-
+    p_scan.add_argument(
+        '--skip-settings-file', '-stf', action='store_true',
+        help='Skip default settings file (scanoss.json) if it exists',
+    )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser('fingerprint', aliases=['fp', 'wfp'],
@@ -314,6 +321,8 @@ def setup_args() -> None:
 
     # Inspect Sub-command: inspect undeclared
     p_undeclared = p_inspect_sub.add_parser('undeclared', aliases=['un'],description="Inspect for undeclared components", help='Inspect for undeclared components')
+    p_undeclared.add_argument('--sbom-format',required=False ,choices=['legacy', 'settings'],
+                              default="settings",help='Sbom format for status output')
     p_undeclared.set_defaults(func=inspect_undeclared)
 
     for p in [p_copyleft, p_undeclared]:
@@ -526,13 +535,7 @@ def scan(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if (
-        not args.scan_dir
-        and not args.wfp
-        and not args.stdin
-        and not args.dep
-        and not args.files
-    ):
+    if not args.scan_dir and not args.wfp and not args.stdin and not args.dep and not args.files:
         print_stderr(
             'Please specify a file/folder, files (--files), fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)'
         )
@@ -542,54 +545,36 @@ def scan(parser, args):
         print_stderr('Please specify one of --proxy or --pac, not both')
         parser.parse_args([args.subparser, '-h'])
         exit(1)
-
     if args.identify and args.settings:
-        print_stderr(f'ERROR: Cannot specify both --identify and --settings options.')
+        print_stderr('ERROR: Cannot specify both --identify and --settings options.')
         exit(1)
-
-    def is_valid_file(file_path: str) -> bool:
-        if not os.path.exists(file_path) or not os.path.isfile(file_path):
-            print_stderr(f'Specified file does not exist or is not a file: {file_path}')
-            return False
-        if not Scanner.valid_json_file(file_path):
-            return False
-        return True
-
-    scan_settings = ScanossSettings(
-        debug=args.debug, trace=args.trace, quiet=args.quiet
-    )
-
-    if args.identify:
-        if not is_valid_file(args.identify) or args.ignore:
+    if args.settings and args.skip_settings_file:
+        print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
+        exit(1)
+    # Figure out which settings (if any) to load before processing
+    scan_settings = None
+    if not args.skip_settings_file:
+        scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        try:
+            if args.identify:
+                scan_settings.load_json_file(args.identify).set_file_type('legacy').set_scan_type('identify')
+            elif args.ignore:
+                scan_settings.load_json_file(args.ignore).set_file_type('legacy').set_scan_type('blacklist')
+            else:
+                scan_settings.load_json_file(args.settings).set_file_type('new').set_scan_type('identify')
+        except ScanossSettingsError as e:
+            print_stderr(f'Error: {e}')
             exit(1)
-        scan_settings.load_json_file(args.identify).set_file_type(
-            'legacy'
-        ).set_scan_type('identify')
-    elif args.ignore:
-        if not is_valid_file(args.ignore):
-            exit(1)
-        scan_settings.load_json_file(args.ignore).set_file_type('legacy').set_scan_type(
-            'blacklist'
-        )
-    elif args.settings:
-        if not is_valid_file(args.settings):
-            exit(1)
-        scan_settings.load_json_file(args.settings).set_file_type('new').set_scan_type(
-            'identify'
-        )
-
     if args.dep:
         if not os.path.exists(args.dep) or not os.path.isfile(args.dep):
-            print_stderr(
-                f'Specified --dep file does not exist or is not a file: {args.dep}'
-            )
+            print_stderr(f'Specified --dep file does not exist or is not a file: {args.dep}')
             exit(1)
-        if not Scanner.valid_json_file(args.dep):  # Make sure it's a valid JSON file
+        result = validate_json_file(args.dep)
+        if not result.is_valid:
+            print_stderr(f'Error: Dependency file is not valid: {result.error}')
             exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
-        print_stderr(
-            f'Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.'
-        )
+        print_stderr('Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
 
     scan_output: str = None
     if args.output:
@@ -598,6 +583,8 @@ def scan(parser, args):
     output_format = args.format if args.format else 'plain'
     flags = args.flags if args.flags else None
     if args.debug and not args.quiet:
+        if args.skip_settings_file:
+            print_stderr('Skipping Settings file...')
         if args.all_extensions:
             print_stderr("Scanning all file extensions/types...")
         if args.all_folders:
@@ -628,17 +615,11 @@ def scan(parser, args):
             print_stderr(f'Using flags {flags}...')
     elif not args.quiet:
         if args.timeout < 5:
-            print_stderr(
-                f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.'
-            )
+            print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
         if args.retry < 0:
-            print_stderr(
-                f'POST retry (--retry) too small: {args.retry}. Reverting to default.'
-            )
+            print_stderr(f'POST retry (--retry) too small: {args.retry}. Reverting to default.')
 
-    if not os.access(
-        os.getcwd(), os.W_OK
-    ):  # Make sure the current directory is writable. If not disable saving WFP
+    if not os.access(os.getcwd(), os.W_OK):  # Make sure the current directory is writable. If not disable saving WFP
         print_stderr(f'Warning: Current directory is not writable: {os.getcwd()}')
         args.no_wfp_output = True
     if args.ca_cert and not os.path.exists(args.ca_cert):
@@ -648,11 +629,8 @@ def scan(parser, args):
     scan_options = get_scan_options(args)  # Figure out what scanning options we have
 
     scanner = Scanner(
-        debug=args.debug,
-        trace=args.trace,
-        quiet=args.quiet,
-        api_key=args.key,
-        url=args.apiurl,
+        debug=args.debug, trace=args.trace, quiet=args.quiet,
+        api_key=args.key, url=args.apiurl,
         scan_output=scan_output,
         output_format=output_format,
         flags=flags,
@@ -681,19 +659,14 @@ def scan(parser, args):
         skip_md5_ids=args.skip_md5,
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
-        scan_settings=scan_settings
+        scan_settings=scan_settings,
     )
-
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
-            print_stderr(
-                f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})'
-            )
+            print_stderr(f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})')
             exit(1)
         if scanner.is_dependency_scan() and not args.dep:
-            print_stderr(
-                f'Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)'
-            )
+            print_stderr(f'Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)')
             exit(1)
         scanner.scan_wfp_with_options(args.wfp, args.dep)
     elif args.stdin:
@@ -707,9 +680,7 @@ def scan(parser, args):
             exit(1)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
-            print_stderr(
-                f'Error: File or folder specified does not exist: {args.scan_dir}.'
-            )
+            print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
             exit(1)
         if os.path.isdir(args.scan_dir):
             if not scanner.scan_folder_with_options(args.scan_dir, args.dep, scanner.winnowing.file_map,
@@ -720,9 +691,7 @@ def scan(parser, args):
                                                   args.dep_scope, args.dep_scope_inc, args.dep_scope_exc):
                 exit(1)
         else:
-            print_stderr(
-                f'Error: Path specified is neither a file or a folder: {args.scan_dir}.'
-            )
+            print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
             exit(1)
     elif args.dep:
         if not args.dependencies_only:
@@ -857,7 +826,7 @@ def inspect_undeclared(parser, args):
         open(status_output, 'w').close()
     i_undeclared = UndeclaredComponent(debug=args.debug, trace=args.trace, quiet=args.quiet,
                                        filepath=args.input, format_type=args.format,
-                                       status=status_output, output=output)
+                                       status=status_output, output=output, sbom_format=args.sbom_format)
     status, _ = i_undeclared.run()
     sys.exit(status)
 
