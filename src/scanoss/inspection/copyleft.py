@@ -23,7 +23,7 @@
 """
 import json
 from typing import Dict, Any
-from scanoss.inspection.policy_check import PolicyCheck, PolicyStatus
+from .policy_check import PolicyCheck, PolicyStatus
 
 class Copyleft(PolicyCheck):
     """

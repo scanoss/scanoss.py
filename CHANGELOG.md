@@ -9,12 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.17.2] - 2024-10-29
+## [1.18.1] - 2024-11-19
+### Added
+- Added 'component' field in CycloneDX output
+
+## [1.18.0] - 2024-11-11
+### Fixed
+- Fixed post processor being accesed if not set
+### Added
+- Added support for replace action when specifying a settings file
+- Added replaced files as context to scan request
+- Added sbom format flag to define status output for undeclared policy
+
+## [1.17.5] - 2024-11-12
+### Fixed
+- Fix dependencies scan result structure
+  
+## [1.17.4] - 2024-11-08
+### Fixed
+- Fix backslashes in file paths on Windows
+
+## [1.17.3] - 2024-11-05
+### Fixed
+- Fixed undeclared policy
+
+
+## [1.17.2] - 2024-11-01
 ### Fixed
 - Fixed parsing of dependencies in Policy Checks
 - Fixed legacy SBOM.json support
 ### Added
 - Added supplier to SPDX packages
+### Changed
+- Changed undeclared summary output 
 
 ## [1.17.1] - 2024-10-24
 ### Fixed
@@ -377,3 +404,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.17.0]: https://github.com/scanoss/scanoss.py/compare/v1.16.0...v1.17.0
 [1.17.1]: https://github.com/scanoss/scanoss.py/compare/v1.17.0...v1.17.1
 [1.17.2]: https://github.com/scanoss/scanoss.py/compare/v1.17.1...v1.17.2
+[1.17.3]: https://github.com/scanoss/scanoss.py/compare/v1.17.2...v1.17.3
+[1.17.4]: https://github.com/scanoss/scanoss.py/compare/v1.17.3...v1.17.4
+[1.17.5]: https://github.com/scanoss/scanoss.py/compare/v1.17.4...v1.17.5
+[1.18.0]: https://github.com/scanoss/scanoss.py/compare/v1.17.5...v1.18.0
+[1.18.1]: https://github.com/scanoss/scanoss.py/compare/v1.17.5...v1.18.1
