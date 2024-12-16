@@ -332,6 +332,11 @@ class FileFilters(ScanossBase):
 
             try:
                 file_size = os.path.getsize(file_path)
+
+                if file_size == 0:
+                    self.print_debug(f'Skipping file: {rel_path} (empty file)')
+                    continue
+
                 min_size, max_size = self._get_operation_size_limits(operation_type, file_path)
                 if min_size <= file_size <= max_size:
                     filtered_files.append(rel_path)
