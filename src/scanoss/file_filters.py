@@ -26,7 +26,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from pathspec import PathSpec
+from pathspec import GitIgnoreSpec
 
 from scanoss.scanoss_settings import ScanossSettings
 from scanoss.scanossbase import ScanossBase
@@ -257,14 +257,8 @@ class FileFilters(ScanossBase):
 
         self.hidden_files_folders = hidden_files_folders
         self.scanoss_settings = scanoss_settings
-
-        self.default_skip_patterns = []
-        self.default_skip_patterns.extend(DEFAULT_SKIPPED_FILES)
-        if not all_extensions:
-            self.default_skip_patterns.extend(f'*{ext}' for ext in DEFAULT_SKIPPED_EXT)
-            self.default_skip_patterns.extend(f'*{ext}/' for ext in DEFAULT_SKIPPED_DIR_EXT)
-        if not all_folders:
-            self.default_skip_patterns.extend(f'{dir_path}/' for dir_path in DEFAULT_SKIPPED_DIRS)
+        self.all_extensions = all_extensions
+        self.all_folders = all_folders
 
     def get_filtered_files_from_folder(self, root: str, operation_type: str) -> List[str]:
         """Retrieve a list of files to scan or fingerprint from a given directory root based on filter settings.
@@ -304,9 +298,6 @@ class FileFilters(ScanossBase):
         Returns:
             list[str]: Filtered list of files to scan or fingerprint
         """
-        skip_patterns = self._get_operation_patterns(operation_type)
-        path_spec = PathSpec.from_lines('gitwildmatch', skip_patterns)
-
         filtered_files = []
         for file_path in files:
             if not os.path.isfile(file_path):
@@ -322,12 +313,7 @@ class FileFilters(ScanossBase):
                 self.print_debug(f'Ignoring file: {file_path} (broken symlink)')
                 continue
 
-            if not self.hidden_files_folders and ('/' + '.' in rel_path or rel_path.startswith('.')):
-                self.print_debug(f'Skipping file: {rel_path} (hidden file)')
-                continue
-
-            if path_spec.match_file(rel_path.lower()):
-                self.print_debug(f'Skipping file: {rel_path} (matched skip pattern)')
+            if self._should_skip_file(rel_path, operation_type):
                 continue
 
             try:
@@ -358,12 +344,10 @@ class FileFilters(ScanossBase):
         Returns:
             List[str]: Combined list of patterns to skip
         """
-        patterns = self.default_skip_patterns.copy()
+        patterns = []
 
         if self.scanoss_settings:
-            settings_patterns = self.scanoss_settings.get_skip_patterns(operation_type)
-            if settings_patterns:
-                patterns.extend(settings_patterns)
+            patterns.extend(self.scanoss_settings.get_skip_patterns(operation_type))
 
         return patterns
 
@@ -397,7 +381,7 @@ class FileFilters(ScanossBase):
             if not patterns:
                 continue
 
-            path_spec = PathSpec.from_lines('gitwildmatch', patterns)
+            path_spec = GitIgnoreSpec.from_lines(patterns)
 
             if path_spec.match_file(rel_path.lower()):
                 return (rule.get('min', min_size), rule.get('max', max_size))
@@ -405,7 +389,8 @@ class FileFilters(ScanossBase):
         return min_size, max_size
 
     def _should_skip_dir(self, dir_rel_path: str, operation_type: str) -> bool:
-        """Check if a directory should be skipped based on operation type and patterns.
+        """
+        Check if a directory should be skipped based on operation type and default rules.
 
         Args:
             dir_rel_path (str): Relative path to the directory
@@ -414,18 +399,72 @@ class FileFilters(ScanossBase):
         Returns:
             bool: True if directory should be skipped, False otherwise
         """
+        dir_name = os.path.basename(dir_rel_path)
         dir_path = Path(dir_rel_path)
-        is_hidden = dir_path != Path('.') and any(part.startswith('.') for part in dir_path.parts)
 
-        if is_hidden and not self.hidden_files_folders:
+        if (
+            not self.hidden_files_folders
+            and dir_path != Path('.')
+            and any(part.startswith('.') for part in dir_path.parts)
+        ):
             self.print_debug(f'Skipping directory: {dir_rel_path} (hidden directory)')
             return True
 
-        skip_patterns = self._get_operation_patterns(operation_type)
-        path_spec = PathSpec.from_lines('gitwildmatch', skip_patterns)
+        if self.all_folders:
+            return False
 
-        if path_spec.match_file(dir_rel_path.lower() + '/'):
-            self.print_debug(f'Skipping directory: {dir_rel_path} (matched skip pattern)')
+        if dir_name.lower() in DEFAULT_SKIPPED_DIRS:
+            self.print_debug(f'Skipping directory: {dir_rel_path} (matches default skip directory)')
             return True
+
+        for ext in DEFAULT_SKIPPED_DIR_EXT:
+            if dir_name.lower().endswith(ext):
+                self.print_debug(f'Skipping directory: {dir_rel_path} (matches default skip extension: {ext})')
+                return True
+
+        patterns = self._get_operation_patterns(operation_type)
+        if patterns:
+            spec = GitIgnoreSpec.from_lines(patterns)
+            if spec.match_file(dir_rel_path):
+                self.print_debug(f'Skipping directory: {dir_rel_path} (matches custom pattern)')
+                return True
+
+        return False
+
+    def _should_skip_file(self, file_rel_path: str, operation_type: str) -> bool:
+        """
+        Check if a file should be skipped based on operation type and default rules.
+
+        Args:
+            file_rel_path (str): Relative path to the file
+            operation_type (str): Type of operation ('scanning' or 'fingerprinting')
+
+        Returns:
+            bool: True if file should be skipped, False otherwise
+        """
+        file_name = os.path.basename(file_rel_path)
+
+        if not self.hidden_files_folders and file_name.startswith('.'):
+            self.print_debug(f'Skipping file: {file_rel_path} (hidden file)')
+            return True
+
+        if self.all_extensions:
+            return False
+
+        if file_name.lower() in DEFAULT_SKIPPED_FILES:
+            self.print_debug(f'Skipping file: {file_rel_path} (matches default skip file)')
+            return True
+
+        for ending in DEFAULT_SKIPPED_EXT:
+            if file_name.lower().endswith(ending):
+                self.print_debug(f'Skipping file: {file_rel_path} (matches default skip ending: {ending})')
+                return True
+
+        patterns = self._get_operation_patterns(operation_type)
+        if patterns:
+            spec = GitIgnoreSpec.from_lines(patterns)
+            if spec.match_file(file_rel_path):
+                self.print_debug(f'Skipping file: {file_rel_path} (matches custom pattern)')
+                return True
 
         return False
