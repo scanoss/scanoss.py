@@ -163,20 +163,133 @@ class TestFileFilters(unittest.TestCase):
 
     def test_get_filtered_files_from_files(self):
         files = [
-            'file1.js',
-            'file2.css',  # Should be skipped
-            'dir1/file3.py',
-            'dir1/__pycache__/file4.py',  # Should be skipped
+            os.path.join(self.test_dir, 'file1.js'),
+            os.path.join(self.test_dir, 'file2.css'),  # Should be skipped
+            os.path.join(self.test_dir, 'dir1/file3.py'),
+            os.path.join(self.test_dir, 'dir1/__pycache__/file4.py'),
         ]
         self.create_files(files)
 
-        file_paths = [os.path.join(self.test_dir, f) for f in files]
-        filtered_files = self.file_filters.get_filtered_files_from_files(file_paths, 'scanning', self.test_dir)
+        filtered_files = self.file_filters.get_filtered_files_from_files(files, 'scanning')
 
         expected_files = [
-            'file1.js',
-            'dir1/file3.py',
+            os.path.relpath(os.path.join(self.test_dir, 'file1.js'), os.getcwd()),
+            os.path.relpath(os.path.join(self.test_dir, 'dir1', 'file3.py'), os.getcwd()),
+            os.path.relpath(os.path.join(self.test_dir, 'dir1', '__pycache__', 'file4.py'), os.getcwd()),
         ]
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
+
+    def test_hidden_files_and_folders_enabled(self):
+        files = [
+            '.hidden_file.py',
+            '.hidden_dir/visible_file.py',
+            '.hidden_dir/.nested_hidden_file.js',
+            'visible_dir/.hidden_file.go',
+            '.git/config',
+            '.hidden_dir/nested_dir/.hidden_nested_file.py'
+        ]
+        self.create_files(files)
+
+        expected_files = [
+            '.hidden_file.py',
+            '.hidden_dir/visible_file.py',
+            '.hidden_dir/.nested_hidden_file.js',
+            'visible_dir/.hidden_file.go',
+            '.hidden_dir/nested_dir/.hidden_nested_file.py'
+        ]
+
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
+
+    def test_hidden_files_and_folders_disabled(self):
+        file_filters = FileFilters(debug=True, hidden_files_folders=False)
+        files = [
+            '.hidden_file.py',
+            '.hidden_dir/visible_file.py',
+            '.hidden_dir/.nested_hidden_file.js',
+            'visible_dir/.hidden_file.go',
+            'visible_file.py',
+            '.git/config'
+        ]
+        self.create_files(files)
+
+        expected_files = [
+            'visible_file.py'
+        ]
+
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
+
+    def test_all_extensions_mode(self):
+        file_filters = FileFilters(debug=True, all_extensions=True, hidden_files_folders=True)
+        files = [
+            'file1.css',
+            'file2.doc',
+            'file3.csv',
+            '.hidden_file.dat',
+            'dir1/file4.bmp',
+            'dir1/.hidden/file5.class',
+            'file6.py'
+        ]
+        self.create_files(files)
+
+        expected_files = [
+            'file1.css',
+            'file2.doc',
+            'file3.csv',
+            '.hidden_file.dat',
+            'dir1/file4.bmp',
+            'dir1/.hidden/file5.class',
+            'file6.py'
+        ]
+
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
+
+    def test_all_folders_mode(self):
+        file_filters = FileFilters(debug=True, all_folders=True, hidden_files_folders=True)
+        files = [
+            '__pycache__/cache.py',
+            'venv/lib.py',
+            'eggs/module.py',
+            'wheels/util.py',
+            'normal_dir/file.py',
+            '.git/config.py'
+        ]
+        self.create_files(files)
+
+        expected_files = [
+            '__pycache__/cache.py',
+            'venv/lib.py',
+            'eggs/module.py',
+            'wheels/util.py',
+            'normal_dir/file.py',
+            '.git/config.py'
+        ]
+
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        self.assertEqual(sorted(filtered_files), sorted(expected_files))
+
+    def test_combined_all_modes(self):
+        file_filters = FileFilters(debug=True, all_extensions=True, all_folders=True, hidden_files_folders=True)
+        files = [
+            '.hidden_dir/file1.css',
+            '__pycache__/cache.dat',
+            'venv/.hidden_file.class',
+            'normal_dir/file.py',
+            '.config/settings.bmp'
+        ]
+        self.create_files(files)
+
+        expected_files = [
+            '.hidden_dir/file1.css',
+            '__pycache__/cache.dat',
+            'venv/.hidden_file.class',
+            'normal_dir/file.py',
+            '.config/settings.bmp'
+        ]
+
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
 
