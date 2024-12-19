@@ -29,9 +29,8 @@ from typing import List, TypedDict
 import importlib_resources
 from jsonschema import validate
 
-from scanoss.utils.file import validate_json_file
-
 from .scanossbase import ScanossBase
+from .utils.file import validate_json_file
 
 DEFAULT_SCANOSS_JSON_FILE = 'scanoss.json'
 
@@ -49,6 +48,25 @@ class SizeFilter(TypedDict, total=False):
 
 class ScanossSettingsError(Exception):
     pass
+
+
+def _load_settings_schema() -> dict:
+    """
+    Load the SCANOSS settings schema from a JSON file.
+
+    Returns:
+        dict: The parsed JSON content of the SCANOSS settings schema.
+
+    Raises:
+        ScanossSettingsError: If there is any issue in locating, reading, or parsing the JSON file
+    """
+    try:
+        schema_path = importlib_resources.files(__name__) / 'data' / 'scanoss-settings-schema.json'
+        with importlib_resources.as_file(schema_path) as f:
+            with open(f, 'r', encoding='utf-8') as file:
+                return json.load(file)
+    except Exception as e:
+        raise ScanossSettingsError(f'ERROR: Problem parsing Scanoss Settings Schema JSON file: {e}') from e
 
 
 class ScanossSettings(ScanossBase):
@@ -70,34 +88,13 @@ class ScanossSettings(ScanossBase):
             quiet (bool, optional): Quiet. Defaults to False.
             filepath (str, optional): Path to settings file. Defaults to None.
         """
-
         super().__init__(debug, trace, quiet)
         self.data = {}
         self.settings_file_type = None
         self.scan_type = None
-
-        self.schema = self._load_settings_schema()
-
+        self.schema = _load_settings_schema()
         if filepath:
             self.load_json_file(filepath)
-
-    def _load_settings_schema(self) -> dict:
-        """
-        Load the SCANOSS settings schema from a JSON file.
-
-        Returns:
-            dict: The parsed JSON content of the SCANOSS settings schema.
-
-        Raises:
-            ScanossSettingsError: If there is any issue in locating, reading, or parsing the JSON file
-        """
-        try:
-            schema_path = importlib_resources.files(__name__) / 'data' / 'scanoss-settings-schema.json'
-            with importlib_resources.as_file(schema_path) as f:
-                with open(f, 'r', encoding='utf-8') as file:
-                    return json.load(file)
-        except Exception as e:
-            raise ScanossSettingsError(f'ERROR: Problem parsing Scanoss Settings Schema JSON file: {e}') from e
 
     def load_json_file(self, filepath: 'str | None' = None) -> 'ScanossSettings':
         """

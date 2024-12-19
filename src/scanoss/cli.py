@@ -27,9 +27,6 @@ from pathlib import Path
 import sys
 import pypac
 
-from scanoss.utils.file import validate_json_file
-
-
 from .inspection.copyleft import Copyleft
 from .inspection.undeclared_component import UndeclaredComponent
 from .threadeddependencies import SCOPE
@@ -45,6 +42,7 @@ from .components import Components
 from . import __version__
 from .scanner import FAST_WINNOWING
 from .results import Results
+from .utils.file import validate_json_file
 
 
 def print_stderr(*args, **kwargs):
