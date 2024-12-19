@@ -1,30 +1,31 @@
+"""
+SPDX-License-Identifier: MIT
+
+  Copyright (c) 2024, SCANOSS
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+"""
 import json
 import os
 import sys
 from dataclasses import dataclass
 from typing import Optional
-
-
-def print_stderr(*args, **kwargs):
-    """
-    Print the given message to STDERR
-    """
-    print(*args, file=sys.stderr, **kwargs)
-
-
-def is_valid_file(file_path: str) -> bool:
-    """Check if the specified file exists and is a file
-
-    Args:
-        file_path (str): The file path
-
-    Returns:
-        bool: True if valid, False otherwise
-    """
-    if not os.path.exists(file_path) or not os.path.isfile(file_path):
-        print_stderr(f'Specified file does not exist or is not a file: {file_path}')
-        return False
-    return True
 
 
 @dataclass
@@ -35,7 +36,8 @@ class JsonValidation:
 
 
 def validate_json_file(json_file_path: str) -> JsonValidation:
-    """Validate if the specified file is indeed a valid JSON file
+    """
+    Validate if the specified file is indeed a valid JSON file
 
     Args:
         json_file_path (str): The JSON file to validate

@@ -10,3 +10,5 @@ pyOpenSSL
 google-api-core
 importlib_resources
 packageurl-python
+pathspec
+jsonschema
