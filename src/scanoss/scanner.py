@@ -52,37 +52,11 @@ from . import __version__
 FAST_WINNOWING = False
 try:
     from scanoss_winnowing.winnowing import Winnowing
-
     FAST_WINNOWING = True
 except ModuleNotFoundError or ImportError:
     FAST_WINNOWING = False
     from .winnowing import Winnowing
 
-FILTERED_EXT = [  # File extensions to skip
-    ".1", ".2", ".3", ".4", ".5", ".6", ".7", ".8", ".9", ".ac", ".adoc", ".am",
-    ".asciidoc", ".bmp", ".build", ".cfg", ".chm", ".class", ".cmake", ".cnf",
-    ".conf", ".config", ".contributors", ".copying", ".crt", ".csproj", ".css",
-    ".csv", ".dat", ".data", ".doc", ".docx", ".dtd", ".dts", ".iws", ".c9", ".c9revisions",
-    ".dtsi", ".dump", ".eot", ".eps", ".geojson", ".gdoc", ".gif",
-    ".glif", ".gmo", ".gradle", ".guess", ".hex", ".htm", ".html", ".ico", ".iml",
-    ".in", ".inc", ".info", ".ini", ".ipynb", ".jpeg", ".jpg", ".json", ".jsonld", ".lock",
-    ".log", ".m4", ".map", ".markdown", ".md", ".md5", ".meta", ".mk", ".mxml",
-    ".o", ".otf", ".out", ".pbtxt", ".pdf", ".pem", ".phtml", ".plist", ".png",
-    ".po", ".ppt", ".prefs", ".properties", ".pyc", ".qdoc", ".result", ".rgb",
-    ".rst", ".scss", ".sha", ".sha1", ".sha2", ".sha256", ".sln", ".spec", ".sql",
-    ".sub", ".svg", ".svn-base", ".tab", ".template", ".test", ".tex", ".tiff",
-    ".toml", ".ttf", ".txt", ".utf-8", ".vim", ".wav", ".woff", ".woff2", ".xht",
-    ".xhtml", ".xls", ".xlsx", ".xml", ".xpm", ".xsd", ".xul", ".yaml", ".yml", ".wfp",
-    ".editorconfig", ".dotcover", ".pid", ".lcov", ".egg", ".manifest", ".cache", ".coverage", ".cover",
-    ".gem", ".lst", ".pickle", ".pdb", ".gml", ".pot", ".plt",
-    # File endings
-    "-doc", "changelog", "config", "copying", "license", "authors", "news", "licenses", "notice",
-    "readme", "swiftdoc", "texidoc", "todo", "version", "ignore", "manifest", "sqlite", "sqlite3"
-]
-FILTERED_FILES = {  # Files to skip
-    "gradlew", "gradlew.bat", "mvnw", "mvnw.cmd", "gradle-wrapper.jar", "maven-wrapper.jar",
-    "thumbs.db", "babel.config.js", "license.txt", "license.md", "copying.lib", "makefile"
-}
 WFP_FILE_START = "file="
 MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 
@@ -152,6 +126,7 @@ class Scanner(ScanossBase):
         self.hpsm = hpsm
         self.skip_folders = skip_folders
         self.skip_size = skip_size
+        self.skip_extensions = skip_extensions
         ver_details = Scanner.version_details()
 
         self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
@@ -184,16 +159,6 @@ class Scanner(ScanossBase):
         self.scan_settings = scan_settings
         self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
         self._maybe_set_api_sbom()
-        
-        self.file_filters = FileFilters(
-            debug=self.debug,
-            trace=self.trace,
-            quiet=self.quiet,
-            scanoss_settings=self.scan_settings,
-            all_extensions=all_extensions,
-            all_folders=all_folders,
-            hidden_files_folders=hidden_files_folders,
-        )
 
     def _maybe_set_api_sbom(self):
         if not self.scan_settings:
@@ -337,6 +302,16 @@ class Scanner(ScanossBase):
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
 
+        file_filters = FileFilters(debug=self.debug, trace=self.trace, quiet=self.quiet,
+                                   scanoss_settings=self.scan_settings,
+                                   all_extensions=self.all_extensions,
+                                   all_folders=self.all_folders,
+                                   hidden_files_folders=self.hidden_files_folders,
+                                   skip_size=self.skip_size,
+                                   skip_folders=self.skip_folders,
+                                   skip_extensions=self.skip_extensions,
+                                   operation_type='scanning'
+                                   )
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
         if not self.quiet and self.isatty:
@@ -349,11 +324,9 @@ class Scanner(ScanossBase):
         file_count = 0  # count all files fingerprinted
         wfp_file_count = 0  # count number of files in each queue post
         scan_started = False
-        
-        
-        to_scan_files = self.file_filters.get_filtered_files_from_folder(scan_dir, operation_type='scanning')
-        
-        for to_scan_file in to_scan_files: 
+
+        to_scan_files = file_filters.get_filtered_files_from_folder(scan_dir)
+        for to_scan_file in to_scan_files:
             if self.threaded_scan and self.threaded_scan.stop_scanning():
                 self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
                 break
@@ -390,7 +363,6 @@ class Scanner(ScanossBase):
                     if not self.threaded_scan.run(wait=False):
                         self.print_stderr('Warning: Some errors encounted while scanning. Results might be incomplete.')
                         success = False
-
         # End for loop
         if self.threaded_scan and scan_block != '':
             self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
@@ -583,6 +555,17 @@ class Scanner(ScanossBase):
         success = True
         if not files:
             raise Exception(f"ERROR: Please provide a non-empty list of filenames to scan")
+
+        file_filters = FileFilters(debug=self.debug, trace=self.trace, quiet=self.quiet,
+                                   scanoss_settings=self.scan_settings,
+                                   all_extensions=self.all_extensions,
+                                   all_folders=self.all_folders,
+                                   hidden_files_folders=self.hidden_files_folders,
+                                   skip_size=self.skip_size,
+                                   skip_folders=self.skip_folders,
+                                   skip_extensions=self.skip_extensions,
+                                   operation_type='scanning'
+                                   )
         spinner = None
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
@@ -595,8 +578,7 @@ class Scanner(ScanossBase):
         wfp_file_count = 0  # count number of files in each queue post
         scan_started = False
         
-        to_scan_files = self.file_filters.get_filtered_files_from_files(files, operation_type='scanning')
-        
+        to_scan_files = file_filters.get_filtered_files_from_files(files)
         for file in to_scan_files:
             if self.threaded_scan and self.threaded_scan.stop_scanning():
                 self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
@@ -983,16 +965,23 @@ class Scanner(ScanossBase):
             raise Exception(f'ERROR: Please specify a folder to fingerprint')
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
+        file_filters = FileFilters(debug=self.debug, trace=self.trace, quiet=self.quiet,
+                                   scanoss_settings=self.scan_settings,
+                                   all_extensions=self.all_extensions,
+                                   all_folders=self.all_folders,
+                                   hidden_files_folders=self.hidden_files_folders,
+                                   skip_size=self.skip_size,
+                                   skip_folders=self.skip_folders,
+                                   skip_extensions=self.skip_extensions,
+                                   operation_type='scanning'
+                                   )
         wfps = ''
-
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
 
-        to_fingerprint_files = self.file_filters.get_filtered_files_from_folder(
-            scan_dir, operation_type='fingerprinting'
-        )
+        to_fingerprint_files = file_filters.get_filtered_files_from_folder(scan_dir)
         for file in to_fingerprint_files:
             if spinner:
                 spinner.next()

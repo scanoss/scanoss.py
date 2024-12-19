@@ -1,3 +1,26 @@
+"""
+ SPDX-License-Identifier: MIT
+
+   Copyright (c) 2024, SCANOSS
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE.
+"""
 import os
 import shutil
 import tempfile
@@ -9,7 +32,7 @@ from scanoss.scanoss_settings import ScanossSettings
 
 class TestFileFilters(unittest.TestCase):
     def setUp(self):
-        self.file_filters = FileFilters(debug=True, hidden_files_folders=True)
+        self.file_filters = FileFilters(debug=True, hidden_files_folders=True, operation_type='scanning')
         self.test_dir = tempfile.mkdtemp()
 
     def tearDown(self):
@@ -45,7 +68,7 @@ class TestFileFilters(unittest.TestCase):
             'dir2/file8.js',
         ]
 
-        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_default_folders(self):
@@ -68,7 +91,7 @@ class TestFileFilters(unittest.TestCase):
             'dir2/file5.js',
         ]
 
-        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_default_skipped_files(self):
@@ -89,7 +112,7 @@ class TestFileFilters(unittest.TestCase):
             'dir1/normal_file.js',
         ]
 
-        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_size_limits(self):
@@ -104,8 +127,6 @@ class TestFileFilters(unittest.TestCase):
                 }
             }
         }
-        file_filters = FileFilters(debug=True, scanoss_settings=settings, hidden_files_folders=True)
-
         files = [
             'file1.js',  # 100 bytes
             'file2.py',  # 200 bytes - within limits
@@ -125,17 +146,20 @@ class TestFileFilters(unittest.TestCase):
                 else:
                     f.write('a' * 100)
 
+        file_filters = FileFilters(debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='scanning')
+
         # For scanning, only *.py files have size limits
-        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), ['file1.js', 'file2.py'])
 
+        file_filters = FileFilters(debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='fingerprinting')
+
         # For fingerprinting, all files have size limits
-        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'fingerprinting')
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), ['file2.py'])
 
     def test_all_extensions_flag(self):
-        file_filters = FileFilters(debug=True, all_extensions=True, hidden_files_folders=True)
-
+        file_filters = FileFilters(debug=True, all_extensions=True, hidden_files_folders=True, operation_type='scanning')
         files = [
             'file1.js',
             'file2.css',  # Would normally be skipped
@@ -144,11 +168,11 @@ class TestFileFilters(unittest.TestCase):
         ]
         self.create_files(files)
 
-        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(files))
 
     def test_all_folders_flag(self):
-        file_filters = FileFilters(debug=True, all_folders=True, hidden_files_folders=True)
+        file_filters = FileFilters(debug=True, all_folders=True, hidden_files_folders=True, operation_type='scanning')
 
         files = [
             '__pycache__/file1.py',  # Would normally be skipped
@@ -158,7 +182,7 @@ class TestFileFilters(unittest.TestCase):
         ]
         self.create_files(files)
 
-        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(files))
 
     def test_get_filtered_files_from_files(self):
@@ -170,7 +194,7 @@ class TestFileFilters(unittest.TestCase):
         ]
         self.create_files(files)
 
-        filtered_files = self.file_filters.get_filtered_files_from_files(files, 'scanning')
+        filtered_files = self.file_filters.get_filtered_files_from_files(files)
 
         expected_files = [
             os.path.relpath(os.path.join(self.test_dir, 'file1.js'), os.getcwd()),
@@ -198,11 +222,11 @@ class TestFileFilters(unittest.TestCase):
             '.hidden_dir/nested_dir/.hidden_nested_file.py'
         ]
 
-        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_hidden_files_and_folders_disabled(self):
-        file_filters = FileFilters(debug=True, hidden_files_folders=False)
+        file_filters = FileFilters(debug=True, hidden_files_folders=False, operation_type='scanning')
         files = [
             '.hidden_file.py',
             '.hidden_dir/visible_file.py',
@@ -217,7 +241,7 @@ class TestFileFilters(unittest.TestCase):
             'visible_file.py'
         ]
 
-        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_all_extensions_mode(self):
@@ -243,11 +267,11 @@ class TestFileFilters(unittest.TestCase):
             'file6.py'
         ]
 
-        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_all_folders_mode(self):
-        file_filters = FileFilters(debug=True, all_folders=True, hidden_files_folders=True)
+        file_filters = FileFilters(debug=True, all_folders=True, hidden_files_folders=True, operation_type='scanning')
         files = [
             '__pycache__/cache.py',
             'venv/lib.py',
@@ -267,11 +291,11 @@ class TestFileFilters(unittest.TestCase):
             '.git/config.py'
         ]
 
-        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_combined_all_modes(self):
-        file_filters = FileFilters(debug=True, all_extensions=True, all_folders=True, hidden_files_folders=True)
+        file_filters = FileFilters(debug=True, all_extensions=True, all_folders=True, hidden_files_folders=True, operation_type='scanning')
         files = [
             '.hidden_dir/file1.css',
             '__pycache__/cache.dat',
@@ -289,7 +313,7 @@ class TestFileFilters(unittest.TestCase):
             '.config/settings.bmp'
         ]
 
-        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir, 'scanning')
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
 
