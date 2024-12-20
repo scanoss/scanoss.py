@@ -25,6 +25,237 @@ The ``self`` section contains basic information about your project:
         }
     }
 
+
+Settings
+========
+The ``settings`` object allows you to configure various aspects of the scanning process. Currently, it provides control over which files should be skipped during scanning through the ``skip`` property.
+
+Skip Configuration
+------------------
+The ``skip`` object lets you define rules for excluding files from being scanned or fingerprinted. This can be useful for improving scan performance and avoiding unnecessary processing of certain files.
+
+Properties
+~~~~~~~~~~
+
+skip.patterns.scanning
+^^^^^^^^^^^^^^^^^^^^^^
+A list of patterns that determine which files should be skipped during scanning. The patterns follow the same format as ``.gitignore`` files. For more information, see the `gitignore patterns documentation <https://git-scm.com/docs/gitignore#_pattern_format>`_.
+
+:Type: Array of strings
+:Required: No
+:Example:
+    .. code-block:: json
+
+        {
+            "settings": {
+                "skip": {
+                    "patterns": {
+                        "scanning": [
+                            "*.log",
+                            "!important.log",
+                            "temp/",
+                            "debug[0-9]*.txt",
+                            "src/client/specific-file.js",
+                            "src/nested/folder/"
+                        ]
+                    }
+                }
+            }
+        }
+
+skip.patterns.fingerprinting
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A list of patterns that determine which files should be skipped during fingerprinting. The patterns follow the same format as ``.gitignore`` files. For more information, see the `gitignore patterns documentation <https://git-scm.com/docs/gitignore#_pattern_format>`_.
+
+:Type: Array of strings
+:Required: No
+:Example:
+    .. code-block:: json
+
+        {
+            "settings": {
+                "skip": {
+                    "patterns": {
+                        "fingerprinting": [
+                            "*.log",
+                            "!important.log",
+                            "temp/",
+                            "debug[0-9]*.txt",
+                            "src/client/specific-file.js",
+                            "src/nested/folder/"
+                        ]
+                    }
+                }
+            }
+        }
+
+skip.sizes.scanning
+^^^^^^^^^^^^^^^^^^^
+Rules for skipping files based on their size during scanning.
+
+:Type: Object
+:Required: No
+:Properties:
+    * ``patterns`` (array of strings): List of glob patterns to apply the min/max size rule
+    * ``min`` (integer): Minimum file size in bytes
+    * ``max`` (integer): Maximum file size in bytes (Required)
+:Example:
+    .. code-block:: json
+
+        {
+            "settings": {
+                "skip": {
+                    "sizes": {
+                        "scanning": [
+                            {
+                                "patterns": [
+                                    "*.log",
+                                    "!important.log",
+                                    "temp/",
+                                    "debug[0-9]*.txt",
+                                    "src/client/specific-file.js",
+                                    "src/nested/folder/"
+                                ],
+                                "min": 100,
+                                "max": 1000000
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+
+skip.sizes.fingerprinting
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Rules for skipping files based on their size during fingerprinting.
+
+:Type: Object
+:Required: No
+:Properties:
+    * ``patterns`` (array of strings): List of glob patterns to apply the min/max size rule
+    * ``min`` (integer): Minimum file size in bytes
+    * ``max`` (integer): Maximum file size in bytes (Required)
+:Example:
+    .. code-block:: json
+
+        {
+            "settings": {
+                "skip": {
+                    "sizes": {
+                        "fingerprinting": [
+                            {
+                                "patterns": [
+                                    "*.log",
+                                    "!important.log",
+                                    "temp/",
+                                    "debug[0-9]*.txt",
+                                    "src/client/specific-file.js",
+                                    "src/nested/folder/"
+                                ],
+                                "min": 100,
+                                "max": 1000000
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+
+Pattern Format Rules
+''''''''''''''''''''
+* Patterns are matched **relative to the scan root directory**
+* A trailing slash indicates a directory (e.g., ``path/`` matches only directories)
+* An asterisk ``*`` matches anything except a slash
+* Two asterisks ``**`` match zero or more directories (e.g., ``path/**/folder`` matches ``path/to``, ``path/to/folder``, ``path/to/folder/b``)
+* Range notations like ``[0-9]`` match any character in the range
+* Question mark ``?`` matches any single character except a slash
+
+
+Examples with Explanations
+''''''''''''''''''''''''''
+.. code-block:: none
+
+    # Match all .txt files
+    *.txt
+
+    # Match all .log files except important.log
+    *.log
+    !important.log
+
+    # Match all files in the build directory
+    build/
+
+    # Match all .pdf files in docs directory and its subdirectories
+    docs/**/*.pdf
+
+    # Match files like test1.js, test2.js, etc.
+    test[0-9].js
+
+
+
+Complete Example
+-------------------
+Here's a comprehensive example combining pattern and size-based skipping:
+
+.. code-block:: json
+
+    {
+      "settings": {
+        "skip": {
+          "patterns": {
+            "scanning": [
+              "# Node.js dependencies",
+              "node_modules/",
+              
+              "# Build outputs",
+              "dist/",
+              "build/"
+            ],
+            "fingerprinting": [
+              "# Logs except important ones",
+              "*.log",
+              "!important.log",
+              
+              "# Temporary files",
+              "temp/",
+              "*.tmp",
+              
+              "# Debug files with numbers",
+              "debug[0-9]*.txt",
+              
+              "# All test files in any directory",
+              "**/*test.js"
+            ]
+          },
+          "sizes": {
+            "scanning": [
+              {
+                "patterns": [
+                  "*.log",
+                  "!important.log"
+                ],
+                "min": 512,
+                "max": 5242880
+              }
+            ],
+            "fingerprinting": [
+              {
+                "patterns": [
+                  "temp/",
+                  "*.tmp",
+                  "debug[0-9]*.txt",
+                  "src/client/specific-file.js",
+                  "src/nested/folder/"
+                ],
+                "min": 512,
+                "max": 5242880
+              }
+            ]
+          }
+        }
+      }
+    }
+
 BOM Rules
 ---------
 
@@ -145,8 +376,51 @@ Here's a complete example showing all sections:
     {
         "self": {
             "name": "example-project",
-            "license": "Apache-2.0",
+            "license": "Apache-2.0", 
             "description": "Example project configuration"
+        },
+        "settings": {
+            "skip": {
+                "patterns": {
+                    "scanning": [
+                        "node_modules/",
+                        "dist/",
+                        "build/",
+                    ],
+                    "fingerprinting": [
+                        "*.log",
+                        "!important.log",
+                        "temp/",
+                        "*.tmp", 
+                        "debug[0-9]*.txt",
+                        "**/*test.js"
+                    ]
+                },
+                "sizes": {
+                    "scanning": [
+                        {
+                            "patterns": [
+                                "*.log",
+                                "!important.log",
+                            ],
+                            "min": 512,
+                            "max": 5242880
+                        }
+                    ],
+                    "fingerprinting": [
+                        {
+                            "patterns": [
+                                "temp/",
+                                "debug[0-9]*.txt",
+                                "src/client/specific-file.js",
+                                "src/nested/folder/"
+                            ],
+                            "min": 512,
+                            "max": 5242880
+                        }
+                    ]
+                }
+            }
         },
         "bom": {
             "include": [
@@ -159,7 +433,7 @@ Here's a complete example showing all sections:
             "remove": [
                 {
                     "purl": "pkg:npm/deprecated-pkg@1.0.0",
-                    "comment": "Remove deprecated package"
+                    "comment": "Remove deprecated package" 
                 }
             ],
             "replace": [
