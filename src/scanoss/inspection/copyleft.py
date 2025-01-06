@@ -58,6 +58,7 @@ class Copyleft(PolicyCheck):
         self.exclude = exclude
         self.explicit = explicit
 
+
     def _json(self, components: list) -> Dict[str, Any]:
         """
            Format the components with copyleft licenses as JSON.
@@ -97,6 +98,33 @@ class Copyleft(PolicyCheck):
         # End component loop
         return  {
             'details': f'### Copyleft licenses\n{self.generate_table(headers,rows,centered_columns)}\n',
+            'summary' : f'{len(components)} component(s) with copyleft licenses were found.\n'
+        }
+
+    def _jira_markdown(self, components: list) -> Dict[str,Any]:
+        """
+        Format the components with copyleft licenses as Markdown.
+
+        :param components: List of components with copyleft licenses
+        :return: Dictionary with formatted Markdown details and summary
+        """
+        headers = ['Component', 'Version', 'License', 'URL', 'Copyleft']
+        centered_columns = [1, 4]
+        rows: [[]]= []
+        for component in components:
+            for lic in component['licenses']:
+                row = [
+                    component['purl'],
+                    component['version'],
+                    lic['spdxid'],
+                    lic['url'],
+                    'YES' if lic['copyleft'] else 'NO'
+                ]
+                rows.append(row)
+            # End license loop
+        # End component loop
+        return  {
+            'details': f'{self.generate_jira_table(headers,rows,centered_columns)}',
             'summary' : f'{len(components)} component(s) with copyleft licenses were found.\n'
         }
 

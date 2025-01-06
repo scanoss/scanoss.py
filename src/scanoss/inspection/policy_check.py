@@ -76,7 +76,7 @@ class PolicyCheck(ScanossBase):
         ScanossBase: A base class providing common functionality for SCANOSS-related operations.
     """
 
-    VALID_FORMATS = {'md', 'json'}
+    VALID_FORMATS = {'md', 'json', 'jira_md'}
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
                  format_type: str = None, status: str = None, output: str = None, name: str = None):
@@ -123,6 +123,19 @@ class PolicyCheck(ScanossBase):
 
     @abstractmethod
     def _markdown(self, components: list) -> Dict[str, Any]:
+        """
+        Generate Markdown output for the policy check results.
+
+        This method should be implemented by subclasses to create a Markdown representation
+        of the policy check results.
+
+        :param components: List of components to be included in the output.
+        :return: A dictionary representing the Markdown output.
+        """
+        pass
+
+    @abstractmethod
+    def _jira_markdown(self, components: list) -> Dict[str, Any]:
         """
         Generate Markdown output for the policy check results.
 
@@ -270,6 +283,20 @@ class PolicyCheck(ScanossBase):
         table_rows.extend(col_sep + col_sep.join(row) + col_sep for row in rows)
         return '\n'.join(table_rows)
 
+    def generate_jira_table(self, headers, rows, centered_columns=None):
+        col_sep = '*|*'
+        if headers is None:
+            self.print_stderr('ERROR: Header are no set')
+            return None
+
+        table_header = '|*' + col_sep.join(headers) + '*|\\n'
+        table = table_header
+        for row in rows:
+            if len(headers) == len(row):
+                table += '|' + '|'.join(row) + '|\\n'
+
+        return table
+
     def _get_formatter(self)-> Callable[[List[dict]], Dict[str,Any]] or None:
         """
         Get the appropriate formatter function based on the specified format.
@@ -282,7 +309,8 @@ class PolicyCheck(ScanossBase):
         # a map of which format function to return
         function_map = {
             'json': self._json,
-            'md': self._markdown
+            'md': self._markdown,
+            'jira_md': self._jira_markdown,
         }
         return function_map[self.format_type]
 
