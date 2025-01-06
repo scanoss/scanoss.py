@@ -1,8 +1,11 @@
 
 #vars
+IMAGE_BASE=scanoss-py-base
 IMAGE_NAME=scanoss-py
 REPO=scanoss
+DOCKER_FULLNAME_BASE=${REPO}/${IMAGE_BASE}
 DOCKER_FULLNAME=${REPO}/${IMAGE_NAME}
+GHCR_FULLNAME_BASE=ghcr.io/${REPO}/${IMAGE_BASE}
 GHCR_FULLNAME=ghcr.io/${REPO}/${IMAGE_NAME}
 VERSION=$(shell ./version.py)
 
@@ -55,15 +58,19 @@ package_all: dist publish  ## Build & Publish Python package to PyPI
 
 ghcr_build: dist  ## Build GitHub container image with local arch
 	@echo "Building GHCR container image..."
-	docker build -t $(GHCR_FULLNAME) .
+	docker build --target with_entry_point -t $(GHCR_FULLNAME) .
+
+ghcr_build_base: dist  ## Build GitHub container base image with local arch (no entrypoint)
+	@echo "Building GHCR base container image..."
+	docker build --target no_entry_point -t $(GHCR_FULLNAME_BASE) .
 
 ghcr_amd64: dist  ## Build GitHub AMD64 container image
 	@echo "Building GHCR AMD64 container image..."
-	docker build -t $(GHCR_FULLNAME)  --platform linux/amd64 .
+	docker build --target with_entry_point -t $(GHCR_FULLNAME)  --platform linux/amd64 .
 
 ghcr_arm64: dist  ## Build GitHub ARM64 container image
 	@echo "Building GHCR ARM64 container image..."
-	docker build -t $(GHCR_FULLNAME)  --platform linux/arm64 .
+	docker build --target with_entry_point -t $(GHCR_FULLNAME)  --platform linux/arm64 .
 
 ghcr_tag:  ## Tag the latest GH container image with the version from Python
 	@echo "Tagging GHCR latest image with $(VERSION)..."
@@ -76,21 +83,25 @@ ghcr_push:  ## Push the GH container image to GH Packages
 
 ghcr_release: dist  ## Build/Publish GitHub multi-platform container image
 	@echo "Building & Releasing GHCR multi-platform container image $(VERSION)..."
-	docker buildx build --push -t $(GHCR_FULLNAME):$(VERSION) --platform linux/arm64,linux/amd64 .
+	docker buildx build --push --target with_entry_point -t $(GHCR_FULLNAME):$(VERSION) --platform linux/arm64,linux/amd64 .
 
 ghcr_all: ghcr_release  ## Execute all GHCR container actions
 
-docker_build:  ## Build Docker container image with local arch
+docker_build: dist  ## Build Docker container image with local arch
 	@echo "Building Docker image..."
-	docker build --no-cache -t $(DOCKER_FULLNAME) .
+	docker build --no-cache --target with_entry_point -t $(DOCKER_FULLNAME) .
+
+docker_build_base: dist  ## Build Docker container image with local arch
+	@echo "Building Docker image..."
+	docker build --no-cache --target no_entry_point -t $(DOCKER_FULLNAME_BASE) .
 
 docker_amd64: dist  ## Build Docker AMD64 container image
 	@echo "Building Docker AMD64 container image..."
-	docker build -t $(DOCKER_FULLNAME)  --platform linux/amd64 .
+	docker build --target with_entry_point -t $(DOCKER_FULLNAME)  --platform linux/amd64 .
 
 docker_arm64: dist  ## Build Docker ARM64 container image
 	@echo "Building Docker ARM64 container image..."
-	docker build -t $(DOCKER_FULLNAME)  --platform linux/arm64 .
+	docker build --target with_entry_point -t $(DOCKER_FULLNAME)  --platform linux/arm64 .
 
 docker_tag:  ## Tag the latest Docker container image with the version from Python
 	@echo "Tagging Docker latest image with $(VERSION)..."
@@ -103,6 +114,6 @@ docker_push:  ## Push the Docker container image to DockerHub
 
 docker_release: dist  ## Build/Publish Docker multi-platform container image
 	@echo "Building & Releasing Docker multi-platform container image $(VERSION)..."
-	docker buildx build --push -t $(DOCKER_FULLNAME):$(VERSION) --platform linux/arm64,linux/amd64 .
+	docker buildx build --push --target with_entry_point -t $(DOCKER_FULLNAME):$(VERSION) --platform linux/arm64,linux/amd64 .
 
 docker_all: docker_release  ## Execute all DockerHub container actions
