@@ -35,6 +35,7 @@ jobs:
       - name: Install Test Package
         uses: nick-fields/retry@v3
         with:
+          timeout_minutes: 2
           retry_wait_seconds: 10
           max_attempts: 3
           retry_on: error
