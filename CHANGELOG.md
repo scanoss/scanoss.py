@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.19.1] - 2025-01-06
+### Fixed
+- Fixed undeclared components inspection
+
 ## [1.19.0] - 2024-11-20
 ### Fixed
 - Check if legacy sbom file before post processing
@@ -419,3 +423,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.18.0]: https://github.com/scanoss/scanoss.py/compare/v1.17.5...v1.18.0
 [1.18.1]: https://github.com/scanoss/scanoss.py/compare/v1.18.0...v1.18.1
 [1.19.0]: https://github.com/scanoss/scanoss.py/compare/v1.18.1...v1.19.0
+[1.19.1]: https://github.com/scanoss/scanoss.py/compare/v1.19.0...v1.19.1
