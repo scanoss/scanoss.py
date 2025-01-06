@@ -88,6 +88,7 @@ class UndeclaredComponent(PolicyCheck):
             summary += (f'Add the following snippet into your `sbom.json` file\n'
                         f'\n```json\n{json.dumps(self._generate_sbom_file(components), indent=2)}\n```\n')
             return summary
+        return summary
 
     def _json(self, components: list) -> Dict[str, Any]:
         """
