@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.19.2] - 2025-01-06
+### Added
+- Add second container image `scanoss-py-base` with no `ENTRYPOINT`
+  - This is useful for calls from container pipelines (i.e. Jenkins)
+
 ## [1.19.1] - 2025-01-06
 ### Fixed
 - Fixed undeclared components inspection
@@ -424,3 +429,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.18.1]: https://github.com/scanoss/scanoss.py/compare/v1.18.0...v1.18.1
 [1.19.0]: https://github.com/scanoss/scanoss.py/compare/v1.18.1...v1.19.0
 [1.19.1]: https://github.com/scanoss/scanoss.py/compare/v1.19.0...v1.19.1
+[1.19.2]: https://github.com/scanoss/scanoss.py/compare/v1.19.1...v1.19.2
