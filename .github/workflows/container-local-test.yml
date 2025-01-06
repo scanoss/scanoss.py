@@ -41,7 +41,7 @@ jobs:
 
       # Build Docker image with Buildx - Base
       - name: Build Docker Image - No Entrypoint
-        id: build-and-push
+        id: build-no-ep
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -52,7 +52,7 @@ jobs:
 
       # Build Docker image with Buildx - Entrypoint
       - name: Build Docker Image - With Entrypoint
-        id: build-and-push
+        id: build-with-ep
         uses: docker/build-push-action@v5
         with:
           context: .
