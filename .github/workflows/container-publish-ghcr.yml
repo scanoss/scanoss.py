@@ -9,6 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME_BASE: scanoss/scanoss-py-base
   IMAGE_NAME: scanoss/scanoss-py
 
 jobs:
@@ -56,14 +57,36 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Extract metadata (tags, labels) for Docker
-      - name: Extract Docker metadata
+      - name: Extract Docker metadata - no entrypoint
+        id: meta-ne
+        uses: docker/metadata-action@v4
+        with:
+          images: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BASE }}"
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      - name: Build and push Docker image - Base (no entrypoint)
+        id: build-and-push-ne
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-ne.outputs.tags }}
+          labels: ${{ steps.meta-ne.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          target: no_entry_point
+
+      # Extract metadata (tags, labels) for Docker
+      - name: Extract Docker metadata - entrypoint
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
 
       # Build and push Docker image with Buildx (don't push on PR)
-      - name: Build and push Docker image
+      - name: Build and push Docker image - EP (entrypoint)
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
@@ -75,6 +98,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
+          target: with_entry_point
 
       # Test the docker image
       - name: Test Published Image
