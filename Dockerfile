@@ -37,7 +37,7 @@ RUN tar -xvzf /install/v5.39.210212.tar.gz -C /install \
 RUN rm -rf /root/.local/lib/python3.10/site-packages/licensedcode/data/rules /root/.local/lib/python3.10/site-packages/licensedcode/data/cache
 RUN mkdir  /root/.local/lib/python3.10/site-packages/licensedcode/data/rules /root/.local/lib/python3.10/site-packages/licensedcode/data/cache
 
-FROM base
+FROM base AS no_entry_point
 
 # Copy the Python user packages from the build image to here
 COPY --from=builder /root/.local /root/.local
@@ -55,6 +55,8 @@ WORKDIR /scanoss
 
 # Run scancode once to setup any initial files, etc. so that it'll run faster later
 RUN scancode -p --only-findings --quiet --json /scanoss/scancode-dependencies.json /scanoss && rm -f /scanoss/scancode-dependencies.json
+
+FROM no_entry_point AS with_entry_point
 
 ENTRYPOINT ["scanoss-py"]
 CMD ["--help"]

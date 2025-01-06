@@ -11,6 +11,7 @@ on:
       - 'main'
 
 env:
+  IMAGE_BASE: scanoss/scanoss-py-base
   IMAGE_NAME: scanoss/scanoss-py
 
 jobs:
@@ -38,17 +39,35 @@ jobs:
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v3
 
-      # Build Docker image with Buildx
-      - name: Build Docker Image
+      # Build Docker image with Buildx - Base
+      - name: Build Docker Image - No Entrypoint
+        id: build-and-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_BASE }}:latest
+          target: no_entry_point
+          outputs: type=docker,dest=/tmp/scanoss-py-base.tar
+
+      # Build Docker image with Buildx - Entrypoint
+      - name: Build Docker Image - With Entrypoint
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: false
           tags: ${{ env.IMAGE_NAME }}:latest
+          target: with_entry_point
           outputs: type=docker,dest=/tmp/scanoss-py.tar
 
-      - name: Test Docker Image
+      - name: Test Docker Image - No Entrypoint
+        run: |
+          docker load --input /tmp/scanoss-py-base.tar
+          docker image ls -a
+          docker run ${{ env.IMAGE_BASE }} scanoss-py version
+
+      - name: Test Docker Image - With Entrypoint
         run: |
           docker load --input /tmp/scanoss-py.tar
           docker image ls -a
