@@ -83,11 +83,10 @@ class UndeclaredComponent(PolicyCheck):
             if self.sbom_format == 'settings':
                 summary += (f'Add the following snippet into your `scanoss.json` file\n'
                             f'\n```json\n{json.dumps(self._generate_scanoss_file(components), indent=2)}\n```\n')
-                return summary
-
-            summary += (f'Add the following snippet into your `sbom.json` file\n'
+            else:
+                summary += (f'Add the following snippet into your `sbom.json` file\n'
                         f'\n```json\n{json.dumps(self._generate_sbom_file(components), indent=2)}\n```\n')
-            return summary
+
         return summary
 
     def _json(self, components: list) -> Dict[str, Any]:
