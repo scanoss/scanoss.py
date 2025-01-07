@@ -73,13 +73,19 @@ jobs:
           python-version: '3.10.x'
 
       - name: Install Remote Package
-        run: |
-          scanoss_version=$(python ./version.py)
-          echo "Sleeping before checking PyPI for new release version ${scanoss_version}..."
-          sleep 60
-          echo "Installing scanoss ${scanoss_version}..."
-          pip install --upgrade scanoss==$scanoss_version
-          which scanoss-py
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 3
+          retry_wait_seconds: 10
+          max_attempts: 3
+          retry_on: error
+          command: |
+            scanoss_version=$(python ./version.py)
+            echo "Sleeping before checking PyPI for new release version ${scanoss_version}..."
+            sleep 60
+            echo "Installing scanoss ${scanoss_version}..."
+            pip install --upgrade scanoss==$scanoss_version
+            which scanoss-py
 
       - name: Run Tests
         run: |
