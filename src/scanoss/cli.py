@@ -334,7 +334,7 @@ def setup_args() -> None:
 
     for p in [p_copyleft, p_undeclared]:
         p.add_argument('-i', '--input', nargs='?', help='Path to results file')
-        p.add_argument('-f', '--format',required=False ,choices=['json', 'md'], default='json', help='Output format (default: json)')
+        p.add_argument('-f', '--format',required=False ,choices=['json', 'md', 'jira_md'], default='json', help='Output format (default: json)')
         p.add_argument('-o', '--output', type=str, help='Save details into a file')
         p.add_argument('-s', '--status', type=str, help='Save summary data into Markdown file')
 

@@ -153,7 +153,7 @@ class MyTestCase(unittest.TestCase):
        Inspect for undeclared components empty path
     """
     def test_copyleft_policy_empty_path(self):
-        copyleft = UndeclaredComponent(filepath='', format_type='json')
+        copyleft = Copyleft(filepath='', format_type='json')
         success, results = copyleft.run()
         self.assertTrue(success,2)
 
@@ -331,6 +331,33 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(len(details['components']), 5)
         self.assertEqual(re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary),
                          re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output))
+
+    def test_undeclared_policy_jira_markdown_output(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = "result.json"
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        undeclared = UndeclaredComponent(filepath=input_file_name, format_type='jira_md')
+        status, results = undeclared.run()
+        details = results['details']
+        summary = results['summary']
+        expected_details_output = "|*Component*|*Version*|*License*|\\n|pkg:github/scanoss/scanner.c|1.3.3|BSD-2-Clause - GPL-2.0-only|\\n|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|\\n|pkg:github/scanoss/wfp|6afc1f6|Zlib - GPL-2.0-only|\\n|pkg:npm/%40electron/rebuild|3.7.0|MIT|\\n|pkg:npm/%40emotion/react|11.13.3|MIT|\\n"
+        expected_summary_output = r"5 undeclared component(s) were found.\nAdd the following snippet into your `scanoss.json` file\n{code:json}\n{\n  \"bom\": {\n    \"include\": [\n      {\n        \"purl\": \"pkg:github/scanoss/scanner.c\"\n      },\n      {\n        \"purl\": \"pkg:github/scanoss/wfp\"\n      },\n      {\n        \"purl\": \"pkg:npm/%40electron/rebuild\"\n      },\n      {\n        \"purl\": \"pkg:npm/%40emotion/react\"\n      }\n    ]\n  }\n}\n{code}\n"
+        self.assertEqual(status, 0)
+        self.assertEqual(expected_details_output, details)
+        self.assertEqual(summary, expected_summary_output)
+
+    def test_copyleft_policy_jira_markdown_output(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = "result.json"
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(filepath=input_file_name, format_type='jira_md')
+        status, results = copyleft.run()
+        details = results['details']
+        expected_details_output = r"|*Component*|*Version*|*License*|*URL*|*Copyleft*|\n|pkg:github/scanoss/scanner.c|1.3.3|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n|pkg:github/scanoss/engine|5.4.0|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n|pkg:github/scanoss/wfp|6afc1f6|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n|pkg:github/scanoss/engine|4.0.4|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n"
+        self.assertEqual(status, 0)
+        self.assertEqual(expected_details_output, details)
+
+
 
 if __name__ == '__main__':
     unittest.main()
