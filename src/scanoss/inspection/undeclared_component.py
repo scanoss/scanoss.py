@@ -71,6 +71,26 @@ class UndeclaredComponent(PolicyCheck):
         # end component loop
         return undeclared_components
 
+    def _get_jira_summary(self, components: list) -> str:
+        """
+                Get a summary of the undeclared components.
+
+                :param components: List of all components
+                :return: Component summary markdown
+                """
+        if len(components) > 0:
+            if self.sbom_format == 'settings':
+                json_str = (json.dumps(self._generate_scanoss_file(components), indent=2).replace('\n', '\\n')
+                            .replace('"', '\\"'))
+                return f'{len(components)} undeclared component(s) were found.\\nAdd the following snippet into your `scanoss.json` file\\n{{code:json}}\\n{json_str}\\n{{code}}\\n'
+            else:
+                json_str = (json.dumps(self._generate_scanoss_file(components), indent=2).replace('\n', '\\n')
+                            .replace('"', '\\"'))
+                return f'{len(components)} undeclared component(s) were found.\\nAdd the following snippet into your `sbom.json` file\\n{{code:json}}\\n{json_str}\\n{{code}}\\n'
+
+        return f'{len(components)} undeclared component(s) were found.\\n'
+
+
     def _get_summary(self, components: list) -> str:
         """
         Get a summary of the undeclared components.
@@ -120,6 +140,24 @@ class UndeclaredComponent(PolicyCheck):
         return  {
             'details': f'### Undeclared components\n{self.generate_table(headers,rows)}\n',
             'summary': self._get_summary(components),
+        }
+
+    def _jira_markdown(self, components: list) -> Dict[str,Any]:
+        """
+         Format the undeclared components as Markdown.
+
+         :param components: List of undeclared components
+         :return: Dictionary with formatted Markdown details and summary
+         """
+        headers = ['Component', 'Version', 'License']
+        rows: [[]]= []
+        # TODO look at using SpdxLite license name lookup method
+        for component in components:
+            licenses = " - ".join(lic.get('spdxid', 'Unknown') for lic in component['licenses'])
+            rows.append([component['purl'], component['version'], licenses])
+        return  {
+            'details': f'{self.generate_jira_table(headers,rows)}',
+            'summary': self._get_jira_summary(components),
         }
 
     def _get_unique_components(self, components: list) -> list:
