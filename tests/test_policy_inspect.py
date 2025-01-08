@@ -340,8 +340,36 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = results['details']
         summary = results['summary']
-        expected_details_output = "|*Component*|*Version*|*License*|\\n|pkg:github/scanoss/scanner.c|1.3.3|BSD-2-Clause - GPL-2.0-only|\\n|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|\\n|pkg:github/scanoss/wfp|6afc1f6|Zlib - GPL-2.0-only|\\n|pkg:npm/%40electron/rebuild|3.7.0|MIT|\\n|pkg:npm/%40emotion/react|11.13.3|MIT|\\n"
-        expected_summary_output = r"5 undeclared component(s) were found.\nAdd the following snippet into your `scanoss.json` file\n{code:json}\n{\n  \"bom\": {\n    \"include\": [\n      {\n        \"purl\": \"pkg:github/scanoss/scanner.c\"\n      },\n      {\n        \"purl\": \"pkg:github/scanoss/wfp\"\n      },\n      {\n        \"purl\": \"pkg:npm/%40electron/rebuild\"\n      },\n      {\n        \"purl\": \"pkg:npm/%40emotion/react\"\n      }\n    ]\n  }\n}\n{code}\n"
+        expected_details_output = """|*Component*|*Version*|*License*|
+|pkg:github/scanoss/scanner.c|1.3.3|BSD-2-Clause - GPL-2.0-only|
+|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|
+|pkg:github/scanoss/wfp|6afc1f6|Zlib - GPL-2.0-only|
+|pkg:npm/%40electron/rebuild|3.7.0|MIT|
+|pkg:npm/%40emotion/react|11.13.3|MIT|
+"""
+        expected_summary_output = """5 undeclared component(s) were found.
+Add the following snippet into your `scanoss.json` file
+{code:json}
+{
+  "bom": {
+    "include": [
+      {
+        "purl": "pkg:github/scanoss/scanner.c"
+      },
+      {
+        "purl": "pkg:github/scanoss/wfp"
+      },
+      {
+        "purl": "pkg:npm/%40electron/rebuild"
+      },
+      {
+        "purl": "pkg:npm/%40emotion/react"
+      }
+    ]
+  }
+}
+{code}
+"""
         self.assertEqual(status, 0)
         self.assertEqual(expected_details_output, details)
         self.assertEqual(summary, expected_summary_output)
@@ -353,7 +381,13 @@ class MyTestCase(unittest.TestCase):
         copyleft = Copyleft(filepath=input_file_name, format_type='jira_md')
         status, results = copyleft.run()
         details = results['details']
-        expected_details_output = r"|*Component*|*Version*|*License*|*URL*|*Copyleft*|\n|pkg:github/scanoss/scanner.c|1.3.3|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n|pkg:github/scanoss/engine|5.4.0|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n|pkg:github/scanoss/wfp|6afc1f6|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n|pkg:github/scanoss/engine|4.0.4|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|\n"
+        expected_details_output = """|*Component*|*Version*|*License*|*URL*|*Copyleft*|
+|pkg:github/scanoss/scanner.c|1.3.3|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
+|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
+|pkg:github/scanoss/engine|5.4.0|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
+|pkg:github/scanoss/wfp|6afc1f6|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
+|pkg:github/scanoss/engine|4.0.4|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
+"""
         self.assertEqual(status, 0)
         self.assertEqual(expected_details_output, details)
 
