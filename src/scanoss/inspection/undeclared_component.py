@@ -82,11 +82,11 @@ class UndeclaredComponent(PolicyCheck):
             if self.sbom_format == 'settings':
                 json_str = (json.dumps(self._generate_scanoss_file(components), indent=2).replace('\n', '\\n')
                             .replace('"', '\\"'))
-                return f'{len(components)} undeclared component(s) were found.\\nAdd the following snippet into your `scanoss.json` file\\n{{code:json}}\\n{json_str}\\n{{code}}\\n'
+                return f'{len(components)} undeclared component(s) were found.\nAdd the following snippet into your `scanoss.json` file\n{{code:json}}\n{json.dumps(self._generate_scanoss_file(components), indent=2)}\n{{code}}\n'
             else:
                 json_str = (json.dumps(self._generate_scanoss_file(components), indent=2).replace('\n', '\\n')
                             .replace('"', '\\"'))
-                return f'{len(components)} undeclared component(s) were found.\\nAdd the following snippet into your `sbom.json` file\\n{{code:json}}\\n{json_str}\\n{{code}}\\n'
+                return f'{len(components)} undeclared component(s) were found.\nAdd the following snippet into your `sbom.json` file\n{{code:json}}\n{json.dumps(self._generate_scanoss_file(components), indent=2)}\n{{code}}\n'
 
         return f'{len(components)} undeclared component(s) were found.\\n'
 

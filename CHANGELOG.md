@@ -9,9 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.19.4] - 2025-01-08
+### Added
+- Refactor on Jira Markdown output on inspect command
+
 ## [1.19.3] - 2025-01-07
 ### Added
-- Add Jira Markdown output on inspect command ç
+- Add Jira Markdown output on inspect command
 - This is useful for calls from integrations (i.e. Jenkins)
 
 ## [1.19.2] - 2025-01-06
@@ -436,3 +440,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.19.1]: https://github.com/scanoss/scanoss.py/compare/v1.19.0...v1.19.1
 [1.19.2]: https://github.com/scanoss/scanoss.py/compare/v1.19.1...v1.19.2
 [1.19.3]: https://github.com/scanoss/scanoss.py/compare/v1.19.2...v1.19.3
+[1.19.4]: https://github.com/scanoss/scanoss.py/compare/v1.19.3...v1.19.4

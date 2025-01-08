@@ -289,11 +289,11 @@ class PolicyCheck(ScanossBase):
             self.print_stderr('ERROR: Header are no set')
             return None
 
-        table_header = '|*' + col_sep.join(headers) + '*|\\n'
+        table_header = '|*' + col_sep.join(headers) + '*|\n'
         table = table_header
         for row in rows:
             if len(headers) == len(row):
-                table += '|' + '|'.join(row) + '|\\n'
+                table += '|' + '|'.join(row) + '|\n'
 
         return table
 
