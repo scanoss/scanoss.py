@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.19.5] - 2025-01-14
+### Added
+- Add Docker image with SCANOSS user
+
 ## [1.19.4] - 2025-01-08
 ### Added
 - Refactor on Jira Markdown output on inspect command
@@ -441,3 +445,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.19.2]: https://github.com/scanoss/scanoss.py/compare/v1.19.1...v1.19.2
 [1.19.3]: https://github.com/scanoss/scanoss.py/compare/v1.19.2...v1.19.3
 [1.19.4]: https://github.com/scanoss/scanoss.py/compare/v1.19.3...v1.19.4
+[1.19.5]: https://github.com/scanoss/scanoss.py/compare/v1.19.4...v1.19.5
