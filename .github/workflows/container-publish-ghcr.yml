@@ -11,6 +11,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME_BASE: scanoss/scanoss-py-base
   IMAGE_NAME: scanoss/scanoss-py
+  IMAGE_JENKINS: scanoss/scanoss-py-jenkins
 
 jobs:
   deploy:
@@ -77,6 +78,28 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: false
           target: no_entry_point
+
+      # Extract metadata (tags, labels) for Docker
+      - name: Extract Docker metadata - jenkins
+        id: meta-je
+        uses: docker/metadata-action@v4
+        with:
+          images: "${{ env.REGISTRY }}/${{ env.IMAGE_JENKINS }}"
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      - name: Build and push Docker image - Jenkins
+        id: build-and-push-je
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-je.outputs.tags }}
+          labels: ${{ steps.meta-je.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          target: jenkins
 
       # Extract metadata (tags, labels) for Docker
       - name: Extract Docker metadata - entrypoint

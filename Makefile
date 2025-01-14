@@ -64,6 +64,10 @@ ghcr_build_base: dist  ## Build GitHub container base image with local arch (no 
 	@echo "Building GHCR base container image..."
 	docker build --target no_entry_point -t $(GHCR_FULLNAME_BASE) .
 
+ghcr_build_jenkins: dist  ## Build GitHub container jenkins image with local arch
+	@echo "Building GHCR base container image..."
+	docker build --target jenkins -t $(GHCR_FULLNAME_BASE) .
+
 ghcr_amd64: dist  ## Build GitHub AMD64 container image
 	@echo "Building GHCR AMD64 container image..."
 	docker build --target with_entry_point -t $(GHCR_FULLNAME)  --platform linux/amd64 .
@@ -91,9 +95,13 @@ docker_build: dist  ## Build Docker container image with local arch
 	@echo "Building Docker image..."
 	docker build --no-cache --target with_entry_point -t $(DOCKER_FULLNAME) .
 
-docker_build_base: dist  ## Build Docker container image with local arch
+docker_build_base: dist  ## Build Base Docker container image with local arch - no entrypoint
 	@echo "Building Docker image..."
 	docker build --no-cache --target no_entry_point -t $(DOCKER_FULLNAME_BASE) .
+
+docker_build_jenkins: dist  ## Build Jenkins Docker container image with local arch
+	@echo "Building Docker image..."
+	docker build --no-cache --target jenkins -t $(DOCKER_FULLNAME_BASE) .
 
 docker_amd64: dist  ## Build Docker AMD64 container image
 	@echo "Building Docker AMD64 container image..."

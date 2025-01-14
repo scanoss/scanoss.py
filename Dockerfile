@@ -48,10 +48,6 @@ RUN mkdir  /opt/venv/lib/python3.10/site-packages/licensedcode/data/rules /opt/v
 # Image with no default entry point
 FROM base AS no_entry_point
 
-# Create scanoss user for compatibility
-RUN groupadd -g 1000 scanoss && \
-    useradd -u 1000 -g scanoss -m -s /bin/bash scanoss
-
 # Copy the Python user packages from the build image to here
 COPY --from=builder /opt/venv /opt/venv
 # Setup the path and explicitly set GRPC Polling strategy
@@ -66,10 +62,19 @@ RUN apt-get update \
 
 # Setup working directory and user
 WORKDIR /scanoss
-RUN chown -R scanoss:scanoss /scanoss /opt/venv
-USER scanoss
 # Run scancode once to setup any initial files, etc. so that it'll run faster later
 RUN scancode -p --only-findings --quiet --json /scanoss/scancode-dependencies.json /scanoss && rm -f /scanoss/scancode-dependencies.json
+
+# Image with no default entry point
+FROM no_entry_point AS jenkins
+
+# Create scanoss user for compatibility
+RUN groupadd -g 1000 jenkins && \
+    useradd -u 1000 -g jenkins -m -s /bin/bash jenkins
+
+# Copy the Python user packages from the build image to here
+RUN chown -R jenkins:jenkins /scanoss /opt/venv
+USER jenkins
 
 # Image with a default scanoss-py entry point
 FROM no_entry_point AS with_entry_point
