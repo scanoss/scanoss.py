@@ -13,6 +13,7 @@ on:
 env:
   IMAGE_BASE: scanoss/scanoss-py-base
   IMAGE_NAME: scanoss/scanoss-py
+  IMAGE_JENKINS: scanoss/scanoss-py-jenkins
 
 jobs:
   build:
@@ -50,6 +51,17 @@ jobs:
           target: no_entry_point
           outputs: type=docker,dest=/tmp/scanoss-py-base.tar
 
+      # Build Docker image with Buildx - Jenkins
+      - name: Build Docker Image - Jenkins
+        id: build-je
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_JENKINS }}:latest
+          target: jenkins
+          outputs: type=docker,dest=/tmp/scanoss-py-jenkins.tar
+
       # Build Docker image with Buildx - Entrypoint
       - name: Build Docker Image - With Entrypoint
         id: build-with-ep
@@ -66,6 +78,12 @@ jobs:
           docker load --input /tmp/scanoss-py-base.tar
           docker image ls -a
           docker run ${{ env.IMAGE_BASE }} scanoss-py version
+
+      - name: Test Docker Image - Jenkins
+        run: |
+          docker load --input /tmp/scanoss-py-jenkins.tar
+          docker image ls -a
+          docker run ${{ env.IMAGE_JENKINS }} scanoss-py version
 
       - name: Test Docker Image - With Entrypoint
         run: |
