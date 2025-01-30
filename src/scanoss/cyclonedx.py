@@ -197,12 +197,12 @@ class CycloneDx(ScanossBase):
                         'name': 'scanoss-py',
                         'version': __version__,
                     }
-                ]
-            },
-            'component': {
-                'type': 'application',
-                'name': 'NOASSERTION',
-                'version': 'NOASSERTION'
+                ],
+                'component': {
+                    'type': 'application',
+                    'name': 'NOASSERTION',
+                    'version': 'NOASSERTION'
+                }
             },
             'components': [],
             'vulnerabilities': []

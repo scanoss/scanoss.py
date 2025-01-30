@@ -21,11 +21,16 @@ SPDX-License-Identifier: MIT
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 """
+
 import json
 import os
-import sys
 from dataclasses import dataclass
 from typing import Optional
+
+JSON_ERROR_PARSE = 1
+JSON_ERROR_FILE_NOT_FOUND = 2
+JSON_ERROR_FILE_EMPTY = 3
+JSON_ERROR_FILE_SIZE = 4
 
 
 @dataclass
@@ -33,6 +38,7 @@ class JsonValidation:
     is_valid: bool
     data: Optional[dict] = None
     error: Optional[str] = None
+    error_code: Optional[int] = None
 
 
 def validate_json_file(json_file_path: str) -> JsonValidation:
@@ -46,12 +52,33 @@ def validate_json_file(json_file_path: str) -> JsonValidation:
         Tuple[bool, str]: A tuple containing a boolean indicating if the file is valid and a message
     """
     if not json_file_path:
-        return JsonValidation(is_valid=False, error='No JSON file specified')
+        return JsonValidation(is_valid=False, error="No JSON file specified")
     if not os.path.isfile(json_file_path):
-        return JsonValidation(is_valid=False, error=f'File not found: {json_file_path}')
+        return JsonValidation(
+            is_valid=False,
+            error=f"File not found: {json_file_path}",
+            error_code=JSON_ERROR_FILE_NOT_FOUND,
+        )
+    try:
+        if os.stat(json_file_path).st_size == 0:
+            return JsonValidation(
+                is_valid=False,
+                error=f"File is empty: {json_file_path}",
+                error_code=JSON_ERROR_FILE_EMPTY,
+            )
+    except OSError as e:
+        return JsonValidation(
+            is_valid=False,
+            error=f"Problem checking file size: {json_file_path}: {e}",
+            error_code=JSON_ERROR_FILE_SIZE,
+        )
     try:
         with open(json_file_path) as f:
             data = json.load(f)
             return JsonValidation(is_valid=True, data=data)
     except json.JSONDecodeError as e:
-        return JsonValidation(is_valid=False, error=f'Problem parsing JSON file: "{json_file_path}": {e}')
+        return JsonValidation(
+            is_valid=False,
+            error=f'Problem parsing JSON file: "{json_file_path}": {e}',
+            error_code=JSON_ERROR_PARSE,
+        )
