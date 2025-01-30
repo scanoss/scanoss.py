@@ -30,7 +30,7 @@ import importlib_resources
 from jsonschema import validate
 
 from .scanossbase import ScanossBase
-from .utils.file import validate_json_file
+from .utils.file import JSON_ERROR_FILE_NOT_FOUND, validate_json_file
 
 DEFAULT_SCANOSS_JSON_FILE = 'scanoss.json'
 
@@ -114,7 +114,11 @@ class ScanossSettings(ScanossBase):
 
         result = validate_json_file(json_file)
         if not result.is_valid:
-            raise ScanossSettingsError(f'Problem with settings file. {result.error}')
+            if result.error_code == JSON_ERROR_FILE_NOT_FOUND:
+                self.print_debug(f'The provided settings file "{filepath}" was not found. Skipping...')
+                return self
+            else:
+                raise ScanossSettingsError(f'Problem with settings file. {result.error}')
         try:
             validate(result.data, self.schema)
         except Exception as e:
