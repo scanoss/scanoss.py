@@ -30,9 +30,9 @@ import importlib_resources
 from jsonschema import validate
 
 from .scanossbase import ScanossBase
-from .utils.file import JSON_ERROR_FILE_NOT_FOUND, validate_json_file
+from .utils.file import JSON_ERROR_FILE_NOT_FOUND, JSON_ERROR_FILE_EMPTY, validate_json_file
 
-DEFAULT_SCANOSS_JSON_FILE = 'scanoss.json'
+DEFAULT_SCANOSS_JSON_FILE = Path('scanoss.json')
 
 
 class BomEntry(TypedDict, total=False):
@@ -96,16 +96,20 @@ class ScanossSettings(ScanossBase):
         if filepath:
             self.load_json_file(filepath)
 
-    def load_json_file(self, filepath: 'str | None' = None) -> 'ScanossSettings':
+    def load_json_file(self, filepath: 'str | None' = None, scan_root: 'str | None' = None) -> 'ScanossSettings':
         """
         Load the scan settings file. If no filepath is provided, scanoss.json will be used as default.
 
         Args:
             filepath (str): Path to the SCANOSS settings file
         """
+
         if not filepath:
             filepath = DEFAULT_SCANOSS_JSON_FILE
-        json_file = Path(filepath).resolve()
+
+        filepath = Path(scan_root) / filepath if scan_root else Path(filepath)
+
+        json_file = filepath.resolve()
 
         if filepath == DEFAULT_SCANOSS_JSON_FILE and not json_file.exists():
             self.print_debug(f'Default settings file "{filepath}" not found. Skipping...')
@@ -114,8 +118,8 @@ class ScanossSettings(ScanossBase):
 
         result = validate_json_file(json_file)
         if not result.is_valid:
-            if result.error_code == JSON_ERROR_FILE_NOT_FOUND:
-                self.print_debug(f'The provided settings file "{filepath}" was not found. Skipping...')
+            if result.error_code == JSON_ERROR_FILE_NOT_FOUND or result.error_code == JSON_ERROR_FILE_EMPTY:
+                self.print_msg(f'WARNING: The supplied settings file "{filepath}" was not found or is empty. Skipping...')
                 return self
             else:
                 raise ScanossSettingsError(f'Problem with settings file. {result.error}')

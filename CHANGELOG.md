@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.6] - 2025-01-30
 ### Added
 - Omit settings file if it does not exist instead of throwing an error.
+- Look settings file inside the folder being scanned instead of the cwd.
 
 ## [1.19.5] - 2025-01-14
 ### Added
