@@ -575,11 +575,11 @@ def scan(parser, args):
         scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
         try:
             if args.identify:
-                scan_settings.load_json_file(args.identify).set_file_type('legacy').set_scan_type('identify')
+                scan_settings.load_json_file(args.identify, args.scan_dir).set_file_type('legacy').set_scan_type('identify')
             elif args.ignore:
-                scan_settings.load_json_file(args.ignore).set_file_type('legacy').set_scan_type('blacklist')
+                scan_settings.load_json_file(args.ignore, args.scan_dir).set_file_type('legacy').set_scan_type('blacklist')
             else:
-                scan_settings.load_json_file(args.settings).set_file_type('new').set_scan_type('identify')
+                scan_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new').set_scan_type('identify')
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
             exit(1)

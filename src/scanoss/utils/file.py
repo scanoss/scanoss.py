@@ -29,6 +29,8 @@ from typing import Optional
 
 JSON_ERROR_PARSE = 1
 JSON_ERROR_FILE_NOT_FOUND = 2
+JSON_ERROR_FILE_EMPTY = 3
+JSON_ERROR_FILE_SIZE = 4
 
 
 @dataclass
@@ -56,6 +58,19 @@ def validate_json_file(json_file_path: str) -> JsonValidation:
             is_valid=False,
             error=f"File not found: {json_file_path}",
             error_code=JSON_ERROR_FILE_NOT_FOUND,
+        )
+    try:
+        if os.stat(json_file_path).st_size == 0:
+            return JsonValidation(
+                is_valid=False,
+                error=f"File is empty: {json_file_path}",
+                error_code=JSON_ERROR_FILE_EMPTY,
+            )
+    except OSError as e:
+        return JsonValidation(
+            is_valid=False,
+            error=f"Problem checking file size: {json_file_path}: {e}",
+            error_code=JSON_ERROR_FILE_SIZE,
         )
     try:
         with open(json_file_path) as f:
