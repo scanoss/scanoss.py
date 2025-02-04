@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2024, SCANOSS
+  Copyright (c) 2024, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import os
 import shutil
 import tempfile
@@ -146,20 +147,26 @@ class TestFileFilters(unittest.TestCase):
                 else:
                     f.write('a' * 100)
 
-        file_filters = FileFilters(debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='scanning')
+        file_filters = FileFilters(
+            debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='scanning'
+        )
 
         # For scanning, only *.py files have size limits
         filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), ['file1.js', 'file2.py'])
 
-        file_filters = FileFilters(debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='fingerprinting')
+        file_filters = FileFilters(
+            debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='fingerprinting'
+        )
 
         # For fingerprinting, all files have size limits
         filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), ['file2.py'])
 
     def test_all_extensions_flag(self):
-        file_filters = FileFilters(debug=True, all_extensions=True, hidden_files_folders=True, operation_type='scanning')
+        file_filters = FileFilters(
+            debug=True, all_extensions=True, hidden_files_folders=True, operation_type='scanning'
+        )
         files = [
             'file1.js',
             'file2.css',  # Would normally be skipped
@@ -210,7 +217,7 @@ class TestFileFilters(unittest.TestCase):
             '.hidden_dir/.nested_hidden_file.js',
             'visible_dir/.hidden_file.go',
             '.git/config',
-            '.hidden_dir/nested_dir/.hidden_nested_file.py'
+            '.hidden_dir/nested_dir/.hidden_nested_file.py',
         ]
         self.create_files(files)
 
@@ -219,7 +226,7 @@ class TestFileFilters(unittest.TestCase):
             '.hidden_dir/visible_file.py',
             '.hidden_dir/.nested_hidden_file.js',
             'visible_dir/.hidden_file.go',
-            '.hidden_dir/nested_dir/.hidden_nested_file.py'
+            '.hidden_dir/nested_dir/.hidden_nested_file.py',
         ]
 
         filtered_files = self.file_filters.get_filtered_files_from_folder(self.test_dir)
@@ -233,13 +240,11 @@ class TestFileFilters(unittest.TestCase):
             '.hidden_dir/.nested_hidden_file.js',
             'visible_dir/.hidden_file.go',
             'visible_file.py',
-            '.git/config'
+            '.git/config',
         ]
         self.create_files(files)
 
-        expected_files = [
-            'visible_file.py'
-        ]
+        expected_files = ['visible_file.py']
 
         filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
@@ -253,7 +258,7 @@ class TestFileFilters(unittest.TestCase):
             '.hidden_file.dat',
             'dir1/file4.bmp',
             'dir1/.hidden/file5.class',
-            'file6.py'
+            'file6.py',
         ]
         self.create_files(files)
 
@@ -264,7 +269,7 @@ class TestFileFilters(unittest.TestCase):
             '.hidden_file.dat',
             'dir1/file4.bmp',
             'dir1/.hidden/file5.class',
-            'file6.py'
+            'file6.py',
         ]
 
         filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
@@ -278,7 +283,7 @@ class TestFileFilters(unittest.TestCase):
             'eggs/module.py',
             'wheels/util.py',
             'normal_dir/file.py',
-            '.git/config.py'
+            '.git/config.py',
         ]
         self.create_files(files)
 
@@ -288,20 +293,22 @@ class TestFileFilters(unittest.TestCase):
             'eggs/module.py',
             'wheels/util.py',
             'normal_dir/file.py',
-            '.git/config.py'
+            '.git/config.py',
         ]
 
         filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
     def test_combined_all_modes(self):
-        file_filters = FileFilters(debug=True, all_extensions=True, all_folders=True, hidden_files_folders=True, operation_type='scanning')
+        file_filters = FileFilters(
+            debug=True, all_extensions=True, all_folders=True, hidden_files_folders=True, operation_type='scanning'
+        )
         files = [
             '.hidden_dir/file1.css',
             '__pycache__/cache.dat',
             'venv/.hidden_file.class',
             'normal_dir/file.py',
-            '.config/settings.bmp'
+            '.config/settings.bmp',
         ]
         self.create_files(files)
 
@@ -310,7 +317,7 @@ class TestFileFilters(unittest.TestCase):
             '__pycache__/cache.dat',
             'venv/.hidden_file.class',
             'normal_dir/file.py',
-            '.config/settings.bmp'
+            '.config/settings.bmp',
         ]
 
         filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)

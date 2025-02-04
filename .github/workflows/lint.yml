@@ -1,0 +1,52 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+
+      - name: Get changed Python files
+        id: changed_files
+        run: |
+          # Find the merge base between the main branch and the current HEAD.
+          merge_base=$(git merge-base origin/main HEAD)
+          # List all changed Python files since the merge base.
+          files=$(git diff --name-only "$merge_base" HEAD | grep '\.py$' || true)
+
+          # Use the multi-line syntax for outputs.
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${files}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          echo "Changed files: ${files}"
+
+      - name: Run Ruff on changed files
+        run: |
+          if [ -z "${{ steps.changed_files.outputs.files }}" ]; then
+            echo "No Python files changed. Exiting."
+            exit 0
+          else
+            echo "Linting the following files:"
+            echo "${{ steps.changed_files.outputs.files }}"
+            # Pass the list of changed files to Ruff.
+            echo "${{ steps.changed_files.outputs.files }}" | xargs ruff check
+          fi

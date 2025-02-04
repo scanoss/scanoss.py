@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2023, SCANOSS
+  Copyright (c) 2023, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import json
 import os
 import sys
@@ -38,10 +39,19 @@ class Components(ScanossBase):
     Class for Component functionality
     """
 
-    def __init__(self, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 grpc_url: str = None, api_key: str = None, timeout: int = 600,
-                 proxy: str = None, grpc_proxy: str = None, ca_cert: str = None, pac: PACFile = None
-                 ):
+    def __init__(
+        self,
+        debug: bool = False,
+        trace: bool = False,
+        quiet: bool = False,
+        grpc_url: str = None,
+        api_key: str = None,
+        timeout: int = 600,
+        proxy: str = None,
+        grpc_proxy: str = None,
+        ca_cert: str = None,
+        pac: PACFile = None,
+    ):
         """
         Handle all component style requests
 
@@ -58,9 +68,19 @@ class Components(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         ver_details = Scanner.version_details()
-        self.grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace, api_key=api_key,
-                                    ver_details=ver_details, ca_cert=ca_cert, proxy=proxy, pac=pac,
-                                    grpc_proxy=grpc_proxy, timeout=timeout)
+        self.grpc_api = ScanossGrpc(
+            url=grpc_url,
+            debug=debug,
+            quiet=quiet,
+            trace=trace,
+            api_key=api_key,
+            ver_details=ver_details,
+            ca_cert=ca_cert,
+            proxy=proxy,
+            pac=pac,
+            grpc_proxy=grpc_proxy,
+            timeout=timeout,
+        )
 
     def load_purls(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None) -> Optional[dict]:
         """
@@ -222,9 +242,17 @@ class Components(ScanossBase):
         self._close_file(output_file, file)
         return success
 
-    def search_components(self, output_file: str = None, json_file: str = None,
-                          search: str = None, vendor: str = None, comp: str = None, package: str = None,
-                          limit: int = None, offset: int = None) -> bool:
+    def search_components(
+        self,
+        output_file: str = None,
+        json_file: str = None,
+        search: str = None,
+        vendor: str = None,
+        comp: str = None,
+        package: str = None,
+        limit: int = None,
+        offset: int = None,
+    ) -> bool:
         """
         Search for a component based on the given search criteria
 
@@ -245,16 +273,11 @@ class Components(ScanossBase):
             if request is None:
                 return False
         else:  # Construct a query dictionary from parameters
-            request = {
-                "search": search,
-                "vendor": vendor,
-                "component": comp,
-                "package": package
-            }
+            request = {'search': search, 'vendor': vendor, 'component': comp, 'package': package}
             if limit is not None and limit > 0:
-                request["limit"] = limit
+                request['limit'] = limit
             if offset is not None and offset > 0:
-                request["offset"] = offset
+                request['offset'] = offset
 
         file = self._open_file_or_sdtout(output_file)
         if file is None:
@@ -269,8 +292,9 @@ class Components(ScanossBase):
         self._close_file(output_file, file)
         return success
 
-    def get_component_versions(self, output_file: str = None, json_file: str = None,
-                               purl: str = None, limit: int = None) -> bool:
+    def get_component_versions(
+        self, output_file: str = None, json_file: str = None, purl: str = None, limit: int = None
+    ) -> bool:
         """
         Search for a component versions based on the given search criteria
 
@@ -287,11 +311,9 @@ class Components(ScanossBase):
             if request is None:
                 return False
         else:  # Construct a query dictionary from parameters
-            request = {
-                "purl": purl
-            }
+            request = {'purl': purl}
             if limit is not None and limit > 0:
-                request["limit"] = limit
+                request['limit'] = limit
 
         file = self._open_file_or_sdtout(output_file)
         if file is None:

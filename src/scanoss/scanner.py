@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+  Copyright (c) 2021, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import json
 import os
 from pathlib import Path
@@ -52,12 +53,13 @@ from . import __version__
 FAST_WINNOWING = False
 try:
     from scanoss_winnowing.winnowing import Winnowing
+
     FAST_WINNOWING = True
 except ModuleNotFoundError or ImportError:
     FAST_WINNOWING = False
     from .winnowing import Winnowing
 
-WFP_FILE_START = "file="
+WFP_FILE_START = 'file='
 MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 
 
@@ -103,7 +105,7 @@ class Scanner(ScanossBase):
         strip_hpsm_ids=None,
         strip_snippet_ids=None,
         skip_md5_ids=None,
-        scan_settings: 'ScanossSettings | None' = None
+        scan_settings: 'ScanossSettings | None' = None,
     ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
@@ -113,7 +115,7 @@ class Scanner(ScanossBase):
             skip_folders = []
         if skip_extensions is None:
             skip_extensions = []
-        self.wfp = wfp if wfp else "scanner_output.wfp"
+        self.wfp = wfp if wfp else 'scanner_output.wfp'
         self.scan_output = scan_output
         self.output_format = output_format
         self.no_wfp_file = no_wfp_file
@@ -129,26 +131,51 @@ class Scanner(ScanossBase):
         self.skip_extensions = skip_extensions
         ver_details = Scanner.version_details()
 
-        self.winnowing = Winnowing(debug=debug, quiet=quiet, skip_snippets=self._skip_snippets,
-                                   all_extensions=all_extensions, obfuscate=obfuscate, hpsm=self.hpsm,
-                                   strip_hpsm_ids=strip_hpsm_ids, strip_snippet_ids=strip_snippet_ids,
-                                   skip_md5_ids=skip_md5_ids
-                                   )
-        self.scanoss_api = ScanossApi(debug=debug, trace=trace, quiet=quiet, api_key=api_key, url=url,
-                                      flags=flags, timeout=timeout,
-                                      ver_details=ver_details, ignore_cert_errors=ignore_cert_errors,
-                                      proxy=proxy, ca_cert=ca_cert, pac=pac, retry=retry
-                                      )
+        self.winnowing = Winnowing(
+            debug=debug,
+            quiet=quiet,
+            skip_snippets=self._skip_snippets,
+            all_extensions=all_extensions,
+            obfuscate=obfuscate,
+            hpsm=self.hpsm,
+            strip_hpsm_ids=strip_hpsm_ids,
+            strip_snippet_ids=strip_snippet_ids,
+            skip_md5_ids=skip_md5_ids,
+        )
+        self.scanoss_api = ScanossApi(
+            debug=debug,
+            trace=trace,
+            quiet=quiet,
+            api_key=api_key,
+            url=url,
+            flags=flags,
+            timeout=timeout,
+            ver_details=ver_details,
+            ignore_cert_errors=ignore_cert_errors,
+            proxy=proxy,
+            ca_cert=ca_cert,
+            pac=pac,
+            retry=retry,
+        )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
-        grpc_api = ScanossGrpc(url=grpc_url, debug=debug, quiet=quiet, trace=trace, api_key=api_key,
-                               ver_details=ver_details, ca_cert=ca_cert, proxy=proxy, pac=pac, grpc_proxy=grpc_proxy
-                               )
+        grpc_api = ScanossGrpc(
+            url=grpc_url,
+            debug=debug,
+            quiet=quiet,
+            trace=trace,
+            api_key=api_key,
+            ver_details=ver_details,
+            ca_cert=ca_cert,
+            proxy=proxy,
+            pac=pac,
+            grpc_proxy=grpc_proxy,
+        )
         self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads
         if nb_threads and nb_threads > 0:
-            self.threaded_scan = ThreadedScanning(self.scanoss_api, debug=debug, trace=trace, quiet=quiet,
-                                                  nb_threads=nb_threads
-                                                  )
+            self.threaded_scan = ThreadedScanning(
+                self.scanoss_api, debug=debug, trace=trace, quiet=quiet, nb_threads=nb_threads
+            )
         else:
             self.threaded_scan = None
         self.max_post_size = post_size * 1024 if post_size > 0 else MAX_POST_SIZE  # Set the max post size (default 64k)
@@ -157,7 +184,9 @@ class Scanner(ScanossBase):
             self.max_post_size = 8 * 1024  # 8k Max post size if we're skipping snippets
 
         self.scan_settings = scan_settings
-        self.post_processor = ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
+        self.post_processor = (
+            ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
+        )
         self._maybe_set_api_sbom()
 
     def _maybe_set_api_sbom(self):
@@ -183,7 +212,6 @@ class Scanner(ScanossBase):
                     if WFP_FILE_START in line:
                         count += 1
         return count
-    
 
     @staticmethod
     def version_details() -> str:
@@ -211,7 +239,7 @@ class Scanner(ScanossBase):
         if not outfile and self.scan_output:
             outfile = self.scan_output
         if outfile:
-            with open(outfile, "a") as rf:
+            with open(outfile, 'a') as rf:
                 rf.write(string + '\n')
         else:
             print(string)
@@ -252,9 +280,15 @@ class Scanner(ScanossBase):
             return True
         return False
 
-    def scan_folder_with_options(self, scan_dir: str, deps_file: str = None, file_map: dict = None,
-                                 dep_scope: SCOPE = None, dep_scope_include: str = None,
-                                 dep_scope_exclude: str = None) -> bool:
+    def scan_folder_with_options(
+        self,
+        scan_dir: str,
+        deps_file: str = None,
+        file_map: dict = None,
+        dep_scope: SCOPE = None,
+        dep_scope_include: str = None,
+        dep_scope_exclude: str = None,
+    ) -> bool:
         """
         Scan the given folder for whatever scaning options that have been configured
         :param dep_scope_exclude: comma separated list of dependency scopes to exclude
@@ -268,17 +302,23 @@ class Scanner(ScanossBase):
 
         success = True
         if not scan_dir:
-            raise Exception(f"ERROR: Please specify a folder to scan")
+            raise Exception(f'ERROR: Please specify a folder to scan')
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
-            raise Exception(f"ERROR: Specified folder does not exist or is not a folder: {scan_dir}")
+            raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
         if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
-            raise Exception(f"ERROR: No scan options defined to scan folder: {scan_dir}")
+            raise Exception(f'ERROR: No scan options defined to scan folder: {scan_dir}')
 
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
-            if not self.threaded_deps.run(what_to_scan=scan_dir, deps_file=deps_file, wait=False, dep_scope=dep_scope,
-                                          dep_scope_include= dep_scope_include, dep_scope_exclude=dep_scope_exclude):  # Kick off a background dependency scan
+            if not self.threaded_deps.run(
+                what_to_scan=scan_dir,
+                deps_file=deps_file,
+                wait=False,
+                dep_scope=dep_scope,
+                dep_scope_include=dep_scope_include,
+                dep_scope_exclude=dep_scope_exclude,
+            ):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_folder(scan_dir):
@@ -302,16 +342,19 @@ class Scanner(ScanossBase):
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
 
-        file_filters = FileFilters(debug=self.debug, trace=self.trace, quiet=self.quiet,
-                                   scanoss_settings=self.scan_settings,
-                                   all_extensions=self.all_extensions,
-                                   all_folders=self.all_folders,
-                                   hidden_files_folders=self.hidden_files_folders,
-                                   skip_size=self.skip_size,
-                                   skip_folders=self.skip_folders,
-                                   skip_extensions=self.skip_extensions,
-                                   operation_type='scanning'
-                                   )
+        file_filters = FileFilters(
+            debug=self.debug,
+            trace=self.trace,
+            quiet=self.quiet,
+            scanoss_settings=self.scan_settings,
+            all_extensions=self.all_extensions,
+            all_folders=self.all_folders,
+            hidden_files_folders=self.hidden_files_folders,
+            skip_size=self.skip_size,
+            skip_folders=self.skip_folders,
+            skip_extensions=self.skip_extensions,
+            operation_type='scanning',
+        )
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
         if not self.quiet and self.isatty:
@@ -342,15 +385,15 @@ class Scanner(ScanossBase):
                 wfp_list.append(wfp)
             file_count += 1
             if self.threaded_scan:
-                wfp_size = len(wfp.encode("utf-8"))
+                wfp_size = len(wfp.encode('utf-8'))
                 # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue
                 if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
-                        self.threaded_scan.queue_add(scan_block)
-                        queue_size += 1
-                        scan_block = ''
-                        wfp_file_count = 0
+                    self.threaded_scan.queue_add(scan_block)
+                    queue_size += 1
+                    scan_block = ''
+                    wfp_file_count = 0
                 scan_block += wfp
-                scan_size = len(scan_block.encode("utf-8"))
+                scan_size = len(scan_block.encode('utf-8'))
                 wfp_file_count += 1
                 # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue
                 if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
@@ -421,9 +464,7 @@ class Scanner(ScanossBase):
         if self.is_dependency_scan():
             self.print_msg('Retrieving dependency data...')
             if not self.threaded_deps.complete():
-                self.print_stderr(
-                    f'Warning: Dependency analysis ran into some trouble.'
-                )
+                self.print_stderr(f'Warning: Dependency analysis ran into some trouble.')
                 success = False
             dep_responses = self.threaded_deps.responses
 
@@ -453,7 +494,7 @@ class Scanner(ScanossBase):
     def _merge_scan_results(
         self,
         scan_responses: Optional[List],
-        dep_responses: Optional[Dict[str,Any]],
+        dep_responses: Optional[Dict[str, Any]],
         file_map: Optional[Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Merge scan and dependency responses into a single dictionary"""
@@ -466,10 +507,10 @@ class Scanner(ScanossBase):
                         response = self._deobfuscate_filenames(response, file_map)
                     results.update(response)
 
-        dep_files = dep_responses.get("files", None) if dep_responses else None
+        dep_files = dep_responses.get('files', None) if dep_responses else None
         if dep_files:
             for dep_file in dep_files:
-                file = dep_file.pop("file", None)
+                file = dep_file.pop('file', None)
                 if file:
                     results[file] = [dep_file]
 
@@ -486,8 +527,15 @@ class Scanner(ScanossBase):
                 deobfuscated[key] = value
         return deobfuscated
 
-    def scan_file_with_options(self, file: str, deps_file: str = None, file_map: dict = None, dep_scope: SCOPE = None,
-                               dep_scope_include: str = None, dep_scope_exclude: str = None) -> bool:
+    def scan_file_with_options(
+        self,
+        file: str,
+        deps_file: str = None,
+        file_map: dict = None,
+        dep_scope: SCOPE = None,
+        dep_scope_include: str = None,
+        dep_scope_exclude: str = None,
+    ) -> bool:
         """
         Scan the given file for whatever scaning options that have been configured
         :param dep_scope:
@@ -498,17 +546,23 @@ class Scanner(ScanossBase):
         """
         success = True
         if not file:
-            raise Exception(f"ERROR: Please specify a file to scan")
+            raise Exception(f'ERROR: Please specify a file to scan')
         if not os.path.exists(file) or not os.path.isfile(file):
-            raise Exception(f"ERROR: Specified file does not exist or is not a file: {file}")
+            raise Exception(f'ERROR: Specified file does not exist or is not a file: {file}')
         if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
-            raise Exception(f"ERROR: No scan options defined to scan file: {file}")
+            raise Exception(f'ERROR: No scan options defined to scan file: {file}')
 
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
-            if not self.threaded_deps.run(what_to_scan=file, deps_file=deps_file, wait=False, dep_scope=dep_scope,
-                                          dep_scope_include=dep_scope_include, dep_scope_exclude=dep_scope_exclude):  # Kick off a background dependency scan
+            if not self.threaded_deps.run(
+                what_to_scan=file,
+                deps_file=deps_file,
+                wait=False,
+                dep_scope=dep_scope,
+                dep_scope_include=dep_scope_include,
+                dep_scope_exclude=dep_scope_exclude,
+            ):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
             if not self.scan_file(file):
@@ -529,9 +583,9 @@ class Scanner(ScanossBase):
         """
         success = True
         if not file:
-            raise Exception(f"ERROR: Please specify a file to scan")
+            raise Exception(f'ERROR: Please specify a file to scan')
         if not os.path.exists(file) or not os.path.isfile(file):
-            raise Exception(f"ERROR: Specified files does not exist or is not a file: {file}")
+            raise Exception(f'ERROR: Specified files does not exist or is not a file: {file}')
         self.print_debug(f'Fingerprinting {file}...')
         wfp = self.winnowing.wfp_for_file(file, file)
         if wfp is not None and wfp != '':
@@ -554,18 +608,21 @@ class Scanner(ScanossBase):
         """
         success = True
         if not files:
-            raise Exception(f"ERROR: Please provide a non-empty list of filenames to scan")
+            raise Exception(f'ERROR: Please provide a non-empty list of filenames to scan')
 
-        file_filters = FileFilters(debug=self.debug, trace=self.trace, quiet=self.quiet,
-                                   scanoss_settings=self.scan_settings,
-                                   all_extensions=self.all_extensions,
-                                   all_folders=self.all_folders,
-                                   hidden_files_folders=self.hidden_files_folders,
-                                   skip_size=self.skip_size,
-                                   skip_folders=self.skip_folders,
-                                   skip_extensions=self.skip_extensions,
-                                   operation_type='scanning'
-                                   )
+        file_filters = FileFilters(
+            debug=self.debug,
+            trace=self.trace,
+            quiet=self.quiet,
+            scanoss_settings=self.scan_settings,
+            all_extensions=self.all_extensions,
+            all_folders=self.all_folders,
+            hidden_files_folders=self.hidden_files_folders,
+            skip_size=self.skip_size,
+            skip_folders=self.skip_folders,
+            skip_extensions=self.skip_extensions,
+            operation_type='scanning',
+        )
         spinner = None
         if not self.quiet and self.isatty:
             spinner = Spinner('Fingerprinting ')
@@ -577,7 +634,7 @@ class Scanner(ScanossBase):
         file_count = 0  # count all files fingerprinted
         wfp_file_count = 0  # count number of files in each queue post
         scan_started = False
-        
+
         to_scan_files = file_filters.get_filtered_files_from_files(files)
         for file in to_scan_files:
             if self.threaded_scan and self.threaded_scan.stop_scanning():
@@ -617,7 +674,7 @@ class Scanner(ScanossBase):
                             f'Warning: Some errors encounted while scanning. Results might be incomplete.'
                         )
                         success = False
-                
+
         # End for loop
         if self.threaded_scan and scan_block != '':
             self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
@@ -647,11 +704,13 @@ class Scanner(ScanossBase):
         """
         success = True
         if not files:
-            raise Exception(f"ERROR: Please specify a list of files to scan")
+            raise Exception(f'ERROR: Please specify a list of files to scan')
         if not self.is_file_or_snippet_scan():
-            raise Exception(f"ERROR: file or snippet scan options have to be set to scan files: {files}")
+            raise Exception(f'ERROR: file or snippet scan options have to be set to scan files: {files}')
         if self.is_dependency_scan() or deps_file:
-            raise Exception(f"ERROR: The dependency scan option is currently not supported when scanning a list of files")
+            raise Exception(
+                f'ERROR: The dependency scan option is currently not supported when scanning a list of files'
+            )
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_file_or_snippet_scan():
@@ -672,9 +731,9 @@ class Scanner(ScanossBase):
         """
         success = True
         if not filename:
-            raise Exception(f"ERROR: Please specify a filename to scan")
+            raise Exception(f'ERROR: Please specify a filename to scan')
         if not contents:
-            raise Exception(f"ERROR: Please specify a file contents to scan")
+            raise Exception(f'ERROR: Please specify a file contents to scan')
 
         self.print_debug(f'Fingerprinting {filename}...')
         wfp = self.winnowing.wfp_for_contents(filename, False, contents)
@@ -700,7 +759,7 @@ class Scanner(ScanossBase):
         success = True
         wfp_file = file if file else self.wfp  # If a WFP file is specified, use it, otherwise us the default
         if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
-            raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
+            raise Exception(f'ERROR: Specified WFP file does not exist or is not a file: {wfp_file}')
         file_count = Scanner.__count_files_in_wfp_file(wfp_file)
         cur_files = 0
         cur_size = 0
@@ -709,7 +768,7 @@ class Scanner(ScanossBase):
         max_component = {'name': '', 'hits': 0}
         components = {}
         self.print_debug(f'Found {file_count} files to process.')
-        raw_output = "{\n"
+        raw_output = '{\n'
         file_print = ''
         bar = None
         if not self.quiet and self.isatty:
@@ -720,7 +779,7 @@ class Scanner(ScanossBase):
                 if line.startswith(WFP_FILE_START):
                     if file_print:
                         wfp += file_print  # Store the WFP for the current file
-                        cur_size = len(wfp.encode("utf-8"))
+                        cur_size = len(wfp.encode('utf-8'))
                     file_print = line  # Start storing the next file
                     cur_files += 1
                     batch_files += 1
@@ -729,8 +788,10 @@ class Scanner(ScanossBase):
                 l_size = cur_size + len(file_print.encode('utf-8'))
                 # Hit the max post size, so sending the current batch and continue processing
                 if l_size >= self.max_post_size and wfp:
-                    self.print_debug(f'Sending {batch_files} ({cur_files}) of'
-                                     f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.')
+                    self.print_debug(
+                        f'Sending {batch_files} ({cur_files}) of'
+                        f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.'
+                    )
                     if self.debug and cur_size > self.max_post_size:
                         Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
                     scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
@@ -738,7 +799,7 @@ class Scanner(ScanossBase):
                         bar.next(batch_files)
                     if scan_resp is not None:
                         for key, value in scan_resp.items():
-                            raw_output += "  \"%s\":%s," % (key, json.dumps(value, indent=2))
+                            raw_output += '  "%s":%s,' % (key, json.dumps(value, indent=2))
                             for v in value:
                                 if hasattr(v, 'get'):
                                     if v.get('id') != 'none':
@@ -756,8 +817,10 @@ class Scanner(ScanossBase):
         if file_print:
             wfp += file_print  # Store the WFP for the current file
         if wfp:
-            self.print_debug(f'Sending {batch_files} ({cur_files}) of'
-                             f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.')
+            self.print_debug(
+                f'Sending {batch_files} ({cur_files}) of'
+                f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.'
+            )
             scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
             if bar:
                 bar.next(batch_files)
@@ -765,13 +828,13 @@ class Scanner(ScanossBase):
             if scan_resp is not None:
                 for key, value in scan_resp.items():
                     if first:
-                        raw_output += "  \"%s\":%s" % (key, json.dumps(value, indent=2))
+                        raw_output += '  "%s":%s' % (key, json.dumps(value, indent=2))
                         first = False
                     else:
-                        raw_output += ",\n  \"%s\":%s" % (key, json.dumps(value, indent=2))
+                        raw_output += ',\n  "%s":%s' % (key, json.dumps(value, indent=2))
             else:
                 success = False
-        raw_output += "\n}"
+        raw_output += '\n}'
         if bar:
             bar.finish()
         if self.output_format == 'plain':
@@ -802,10 +865,10 @@ class Scanner(ScanossBase):
         success = True
         wfp_file = wfp if wfp else self.wfp  # If a WFP file is specified, use it, otherwise us the default
         if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
-            raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
+            raise Exception(f'ERROR: Specified WFP file does not exist or is not a file: {wfp_file}')
 
         if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
-            raise Exception(f"ERROR: No scan options defined to scan WFP: {wfp}")
+            raise Exception(f'ERROR: No scan options defined to scan WFP: {wfp}')
 
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
@@ -829,7 +892,7 @@ class Scanner(ScanossBase):
         success = True
         wfp_file = file if file else self.wfp  # If a WFP file is specified, use it, otherwise us the default
         if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
-            raise Exception(f"ERROR: Specified WFP file does not exist or is not a file: {wfp_file}")
+            raise Exception(f'ERROR: Specified WFP file does not exist or is not a file: {wfp_file}')
         cur_size = 0
         queue_size = 0
         file_count = 0  # count all files fingerprinted
@@ -842,7 +905,7 @@ class Scanner(ScanossBase):
                 if line.startswith(WFP_FILE_START):
                     if scan_block:
                         wfp += scan_block  # Store the WFP for the current file
-                        cur_size = len(wfp.encode("utf-8"))
+                        cur_size = len(wfp.encode('utf-8'))
                     scan_block = line  # Start storing the next file
                     file_count += 1
                     wfp_file_count += 1
@@ -861,7 +924,8 @@ class Scanner(ScanossBase):
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
                             self.print_stderr(
-                                f'Warning: Some errors encounted while scanning. Results might be incomplete.')
+                                f'Warning: Some errors encounted while scanning. Results might be incomplete.'
+                            )
                             success = False
             # End for loop
         if scan_block:
@@ -884,15 +948,15 @@ class Scanner(ScanossBase):
         """
         success = True
         if not wfp:
-            raise Exception(f"ERROR: Please specify a WFP to scan")
-        raw_output = "{\n"
+            raise Exception(f'ERROR: Please specify a WFP to scan')
+        raw_output = '{\n'
         scan_resp = self.scanoss_api.scan(wfp)
         if scan_resp is not None:
             for key, value in scan_resp.items():
-                raw_output += "  \"%s\":%s" % (key, json.dumps(value, indent=2))
+                raw_output += '  "%s":%s' % (key, json.dumps(value, indent=2))
         else:
             success = False
-        raw_output += "\n}"
+        raw_output += '\n}'
         if self.output_format == 'plain':
             self.__log_result(raw_output)
         elif self.output_format == 'cyclonedx':
@@ -920,9 +984,9 @@ class Scanner(ScanossBase):
         :return:
         """
         if not filename:
-            raise Exception(f"ERROR: Please specify a filename to scan")
+            raise Exception(f'ERROR: Please specify a filename to scan')
         if not contents:
-            raise Exception(f"ERROR: Please specify a file contents to scan")
+            raise Exception(f'ERROR: Please specify a file contents to scan')
 
         self.print_debug(f'Fingerprinting {filename}...')
         wfp = self.winnowing.wfp_for_contents(filename, False, contents)
@@ -941,9 +1005,9 @@ class Scanner(ScanossBase):
         Fingerprint the specified file
         """
         if not scan_file:
-            raise Exception(f"ERROR: Please specify a file to fingerprint")
+            raise Exception(f'ERROR: Please specify a file to fingerprint')
         if not os.path.exists(scan_file) or not os.path.isfile(scan_file):
-            raise Exception(f"ERROR: Specified file does not exist or is not a file: {scan_file}")
+            raise Exception(f'ERROR: Specified file does not exist or is not a file: {scan_file}')
 
         self.print_debug(f'Fingerprinting {scan_file}...')
         wfp = self.winnowing.wfp_for_file(scan_file, scan_file)
@@ -965,16 +1029,19 @@ class Scanner(ScanossBase):
             raise Exception(f'ERROR: Please specify a folder to fingerprint')
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
-        file_filters = FileFilters(debug=self.debug, trace=self.trace, quiet=self.quiet,
-                                   scanoss_settings=self.scan_settings,
-                                   all_extensions=self.all_extensions,
-                                   all_folders=self.all_folders,
-                                   hidden_files_folders=self.hidden_files_folders,
-                                   skip_size=self.skip_size,
-                                   skip_folders=self.skip_folders,
-                                   skip_extensions=self.skip_extensions,
-                                   operation_type='scanning'
-                                   )
+        file_filters = FileFilters(
+            debug=self.debug,
+            trace=self.trace,
+            quiet=self.quiet,
+            scanoss_settings=self.scan_settings,
+            all_extensions=self.all_extensions,
+            all_folders=self.all_folders,
+            hidden_files_folders=self.hidden_files_folders,
+            skip_size=self.skip_size,
+            skip_folders=self.skip_folders,
+            skip_extensions=self.skip_extensions,
+            operation_type='scanning',
+        )
         wfps = ''
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
         spinner = None
@@ -999,6 +1066,7 @@ class Scanner(ScanossBase):
                 print(wfps)
         else:
             Scanner.print_stderr(f'Warning: No files found to fingerprint in folder: {scan_dir}')
+
 
 #
 # End of ScanOSS Class

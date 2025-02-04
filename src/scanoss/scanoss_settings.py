@@ -119,7 +119,9 @@ class ScanossSettings(ScanossBase):
         result = validate_json_file(json_file)
         if not result.is_valid:
             if result.error_code == JSON_ERROR_FILE_NOT_FOUND or result.error_code == JSON_ERROR_FILE_EMPTY:
-                self.print_msg(f'WARNING: The supplied settings file "{filepath}" was not found or is empty. Skipping...')
+                self.print_msg(
+                    f'WARNING: The supplied settings file "{filepath}" was not found or is empty. Skipping...'
+                )
                 return self
             else:
                 raise ScanossSettingsError(f'Problem with settings file. {result.error}')
@@ -234,8 +236,8 @@ class ScanossSettings(ScanossBase):
             replace_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_replace()))
             self.print_debug(
                 f"Scan type set to 'identify'. Adding {len(include_bom_entries) + len(replace_bom_entries)} components as context to the scan. \n"
-                f"From Include list: {[entry['purl'] for entry in include_bom_entries]} \n"
-                f"From Replace list: {[entry['purl'] for entry in replace_bom_entries]} \n"
+                f'From Include list: {[entry["purl"] for entry in include_bom_entries]} \n'
+                f'From Replace list: {[entry["purl"] for entry in replace_bom_entries]} \n'
             )
             return include_bom_entries + replace_bom_entries
         return self.normalize_bom_entries(self.get_bom_remove())
