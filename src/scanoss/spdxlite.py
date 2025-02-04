@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+  Copyright (c) 2021, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import json
 import os.path
 import sys
@@ -77,18 +78,18 @@ class SpdxLite:
             file_details = data.get(f)
             # print(f'File: {f}: {file_details}\n')
             for d in file_details:
-                id_details = d.get("id")
+                id_details = d.get('id')
                 if not id_details or id_details == 'none':  # Ignore files with no ids
                     continue
                 purl = None
                 if id_details == 'dependency':  # Process dependency data
-                    dependencies = d.get("dependencies")
+                    dependencies = d.get('dependencies')
                     if not dependencies:
                         self.print_stderr(f'Warning: No Dependencies found for {f}: {file_details}')
                         continue
                     for deps in dependencies:
                         # print(f'File: {f} Deps: {deps}')
-                        purl = deps.get("purl")
+                        purl = deps.get('purl')
                         if not purl:
                             self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
                             continue
@@ -103,7 +104,7 @@ class SpdxLite:
                         if licenses:
                             dc = []
                             for lic in licenses:
-                                name = lic.get("name")
+                                name = lic.get('name')
                                 if name not in dc:  # Only save the license name once
                                     fdl.append({'id': name})
                                     dc.append(name)
@@ -132,7 +133,7 @@ class SpdxLite:
                     if licenses:
                         dc = []
                         for lic in licenses:
-                            name = lic.get("name")
+                            name = lic.get('name')
                             if name not in dc:  # Only save the license name once
                                 fdl.append({'id': name})
                                 dc.append(name)
@@ -175,7 +176,7 @@ class SpdxLite:
         # pip3 install jsonschema
         # jsonschema -i spdxlite.json  <(curl https://raw.githubusercontent.com/spdx/spdx-spec/v2.2/schemas/spdx-schema.json)
         # Validation can also be done online here: https://tools.spdx.org/app/validate/
-        now = datetime.datetime.utcnow() # TODO replace with recommended format
+        now = datetime.datetime.utcnow()  # TODO replace with recommended format
         md5hex = hashlib.md5(f'{raw_data}-{now}'.encode('utf-8')).hexdigest()
         data = {
             'spdxVersion': 'SPDX-2.2',
@@ -184,12 +185,12 @@ class SpdxLite:
             'name': 'SCANOSS-SBOM',
             'creationInfo': {
                 'created': now.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'creators': [f'Tool: SCANOSS-PY: {__version__}', f'Person: {getpass.getuser()}']
+                'creators': [f'Tool: SCANOSS-PY: {__version__}', f'Person: {getpass.getuser()}'],
             },
             'documentNamespace': f'https://spdx.org/spdxdocs/scanoss-py-{__version__}-{md5hex}',
             'documentDescribes': [],
             'hasExtractedLicensingInfos': [],
-            'packages': []
+            'packages': [],
         }
         lic_refs = set()  # Hash Set of non-SPDX license references
         for purl in raw_data:
@@ -215,27 +216,27 @@ class SpdxLite:
             comp_ver = comp.get('version')
             purl_ver = f'{purl}@{comp_ver}'
             vendor = comp.get('vendor', 'NOASSERTION')
-            supplier = f"Organization: {vendor}" if vendor != 'NOASSERTION' else vendor
+            supplier = f'Organization: {vendor}' if vendor != 'NOASSERTION' else vendor
             purl_hash = hashlib.md5(f'{purl_ver}'.encode('utf-8')).hexdigest()
             purl_spdx = f'SPDXRef-{purl_hash}'
             data['documentDescribes'].append(purl_spdx)
-            data['packages'].append({
-                'name': comp_name,
-                'SPDXID': purl_spdx,
-                'versionInfo': comp_ver,
-                'downloadLocation': 'NOASSERTION',  # TODO Add actual download location
-                'homepage': comp.get('url', ''),
-                'licenseDeclared': lic_text,
-                'licenseConcluded': 'NOASSERTION',
-                'filesAnalyzed': False,
-                'copyrightText': 'NOASSERTION',
-                'supplier':  supplier,
-                'externalRefs': [{
-                    'referenceCategory': 'PACKAGE-MANAGER',
-                    'referenceLocator': purl_ver,
-                    'referenceType': 'purl'
-                }]
-            })
+            data['packages'].append(
+                {
+                    'name': comp_name,
+                    'SPDXID': purl_spdx,
+                    'versionInfo': comp_ver,
+                    'downloadLocation': 'NOASSERTION',  # TODO Add actual download location
+                    'homepage': comp.get('url', ''),
+                    'licenseDeclared': lic_text,
+                    'licenseConcluded': 'NOASSERTION',
+                    'filesAnalyzed': False,
+                    'copyrightText': 'NOASSERTION',
+                    'supplier': supplier,
+                    'externalRefs': [
+                        {'referenceCategory': 'PACKAGE-MANAGER', 'referenceLocator': purl_ver, 'referenceType': 'purl'}
+                    ],
+                }
+            )
         # End purls for loop
         for lic_ref in lic_refs:  # Insert all the non-SPDX license references
             source = ''
@@ -247,12 +248,14 @@ class SpdxLite:
                 name = lic_ref
             name = name.replace('-', ' ')
             source = f' by {source}.' if source else '.'
-            data['hasExtractedLicensingInfos'].append({
-                'licenseId': lic_ref,
-                'name': name,
-                'extractedText': 'Detected license, please review component source code.',
-                'comment': f'Detected license{source}'
-            })
+            data['hasExtractedLicensingInfos'].append(
+                {
+                    'licenseId': lic_ref,
+                    'name': name,
+                    'extractedText': 'Detected license, please review component source code.',
+                    'comment': f'Detected license{source}',
+                }
+            )
         # End license refs for loop
         file = sys.stdout
         if not output_file and self.output_file:
@@ -352,6 +355,8 @@ class SpdxLite:
             return lic_id
         self.print_debug(f'Warning: Failed to find valid SPDX license identifier for: {lic_name}')
         return None
+
+
 #
 # End of SpdxLite Class
 #

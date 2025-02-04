@@ -207,8 +207,9 @@ class ScanPostProcessor(ScanossBase):
 
         return result
 
-    def _should_replace_result(self, result_path: str, result: dict, to_replace_entries: List[BomEntry]
-                               ) -> Tuple[bool, str]:
+    def _should_replace_result(
+        self, result_path: str, result: dict, to_replace_entries: List[BomEntry]
+    ) -> Tuple[bool, str]:
         """
         Check if a result should be replaced based on the SCANOSS settings
 
@@ -278,14 +279,16 @@ class ScanPostProcessor(ScanossBase):
         :return:
         """
         message = (
-            f"{_get_match_type_message(result_path, bom_entry, action)} \n"
-            f"Details:\n"
-            f"  - PURLs: {', '.join(result_purls)}\n"
+            f'{_get_match_type_message(result_path, bom_entry, action)} \n'
+            f'Details:\n'
+            f'  - PURLs: {", ".join(result_purls)}\n'
             f"  - Path: '{result_path}'\n"
         )
         if action == 'Replacing':
             message += f" - {action} with '{bom_entry.get('replace_with')}'"
         self.print_debug(message)
+
+
 #
 # End of ScanPostProcessor Class
 #

@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2022, SCANOSS
+  Copyright (c) 2022, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import json
 import os.path
 import sys
@@ -59,21 +60,21 @@ class CsvOutput(ScanossBase):
             file_details = data.get(f)
             # print(f'File: {f}: {file_details}')
             for d in file_details:
-                id_details = d.get("id")
+                id_details = d.get('id')
                 if not id_details or id_details == 'none':
                     continue
-                matched = d.get("matched", '')
-                lines = d.get("lines", '').replace(',', ';')  # swap comma with semicolon to help basic parsers
-                oss_lines = d.get("oss_lines", '').replace(',', ';')
+                matched = d.get('matched', '')
+                lines = d.get('lines', '').replace(',', ';')  # swap comma with semicolon to help basic parsers
+                oss_lines = d.get('oss_lines', '').replace(',', ';')
                 detected = {}
                 if id_details == 'dependency':
-                    dependencies = d.get("dependencies")
+                    dependencies = d.get('dependencies')
                     if not dependencies:
                         self.print_stderr(f'Warning: No Dependencies found for {f}: {file_details}')
                         continue
                     for deps in dependencies:
                         detected = {}
-                        purl = deps.get("purl")
+                        purl = deps.get('purl')
                         if not purl:
                             self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
                             continue
@@ -84,7 +85,7 @@ class CsvOutput(ScanossBase):
                         dc = []
                         if licenses:
                             for lic in licenses:
-                                name = lic.get("name")
+                                name = lic.get('name')
                                 if name and name not in dc:  # Only save the license name once
                                     dc.append(name)
                         if not dc or len(dc) == 0:
@@ -92,17 +93,23 @@ class CsvOutput(ScanossBase):
                         else:
                             detected['licenses'] = ';'.join(dc)
                         # inventory_id,path,usage,detected_component,detected_license,detected_version,detected_latest,purl
-                        csv_dict.append({'inventory_id': row_id, 'path': f, 'detected_usage': id_details,
-                                         'detected_component': detected.get('component'),
-                                         'detected_license': detected.get('licenses'),
-                                         'detected_version': detected.get('version'),
-                                         'detected_latest': detected.get('latest'),
-                                         'detected_purls': detected.get('purls'),
-                                         'detected_url': detected.get('url'),
-                                         'detected_path': detected.get('file', ''),
-                                         'detected_match': matched, 'detected_lines': lines,
-                                         'detected_oss_lines': oss_lines
-                                         })
+                        csv_dict.append(
+                            {
+                                'inventory_id': row_id,
+                                'path': f,
+                                'detected_usage': id_details,
+                                'detected_component': detected.get('component'),
+                                'detected_license': detected.get('licenses'),
+                                'detected_version': detected.get('version'),
+                                'detected_latest': detected.get('latest'),
+                                'detected_purls': detected.get('purls'),
+                                'detected_url': detected.get('url'),
+                                'detected_path': detected.get('file', ''),
+                                'detected_match': matched,
+                                'detected_lines': lines,
+                                'detected_oss_lines': oss_lines,
+                            }
+                        )
                         row_id = row_id + 1
                 else:
                     purls = d.get('purl')
@@ -123,25 +130,31 @@ class CsvOutput(ScanossBase):
                     dc = []
                     if licenses:
                         for lic in licenses:
-                            name = lic.get("name")
+                            name = lic.get('name')
                             if name and name not in dc:  # Only save the license name once
-                                dc.append(lic.get("name"))
+                                dc.append(lic.get('name'))
                     if not dc or len(dc) == 0:
                         detected['licenses'] = ''
                     else:
                         detected['licenses'] = ';'.join(dc)
                     # inventory_id,path,usage,detected_component,detected_license,detected_version,detected_latest,purl
-                    csv_dict.append({'inventory_id': row_id, 'path': f, 'detected_usage': id_details,
-                                     'detected_component': detected.get('component'),
-                                     'detected_license': detected.get('licenses'),
-                                     'detected_version': detected.get('version'),
-                                     'detected_latest': detected.get('latest'),
-                                     'detected_purls': detected.get('purls'),
-                                     'detected_url': detected.get('url'),
-                                     'detected_path': detected.get('file', ''),
-                                     'detected_match': matched, 'detected_lines': lines,
-                                     'detected_oss_lines': oss_lines
-                                     })
+                    csv_dict.append(
+                        {
+                            'inventory_id': row_id,
+                            'path': f,
+                            'detected_usage': id_details,
+                            'detected_component': detected.get('component'),
+                            'detected_license': detected.get('licenses'),
+                            'detected_version': detected.get('version'),
+                            'detected_latest': detected.get('latest'),
+                            'detected_purls': detected.get('purls'),
+                            'detected_url': detected.get('url'),
+                            'detected_path': detected.get('file', ''),
+                            'detected_match': matched,
+                            'detected_lines': lines,
+                            'detected_oss_lines': oss_lines,
+                        }
+                    )
                     row_id = row_id + 1
         return csv_dict
 
@@ -174,16 +187,28 @@ class CsvOutput(ScanossBase):
             self.print_stderr('ERROR: No CSV data returned for the JSON string provided.')
             return False
         # Header row/column details
-        fields = ['inventory_id', 'path', 'detected_usage', 'detected_component', 'detected_license',
-                  'detected_version', 'detected_latest', 'detected_purls', 'detected_url', 'detected_match',
-                  'detected_lines', 'detected_oss_lines', 'detected_path']
+        fields = [
+            'inventory_id',
+            'path',
+            'detected_usage',
+            'detected_component',
+            'detected_license',
+            'detected_version',
+            'detected_latest',
+            'detected_purls',
+            'detected_url',
+            'detected_match',
+            'detected_lines',
+            'detected_oss_lines',
+            'detected_path',
+        ]
         file = sys.stdout
         if not output_file and self.output_file:
             output_file = self.output_file
         if output_file:
             file = open(output_file, 'w')
         writer = csv.DictWriter(file, fieldnames=fields)
-        writer.writeheader()        # writing headers (field names)
+        writer.writeheader()  # writing headers (field names)
         writer.writerows(csv_data)  # writing data rows
         if output_file:
             file.close()
@@ -206,6 +231,8 @@ class CsvOutput(ScanossBase):
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
             return False
         return self.produce_from_json(data, output_file)
+
+
 #
 # End of CsvOutput Class
 #

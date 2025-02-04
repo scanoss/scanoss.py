@@ -1,3 +1,18 @@
 [build-system]
 requires = ["setuptools", "wheel", "twine"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+# Enable pycodestyle (E), pyflakes (F), isort (I), pylint (PL)
+select = ["E", "F", "I", "PL"]
+line-length = 120
+# Assume Python 3.7+
+target-version = "py37"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+known-first-party = ["scanoss"]

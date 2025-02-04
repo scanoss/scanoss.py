@@ -1,32 +1,33 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+  Copyright (c) 2021, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 
-   Winnowing Algorithm implementation for SCANOSS.
+  Winnowing Algorithm implementation for SCANOSS.
 
-   This module implements an adaptation of the original winnowing algorithm by S. Schleimer, D. S. Wilkerson and
-   A. Aiken as described in their seminal article which can be found here:
-   https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf
+  This module implements an adaptation of the original winnowing algorithm by S. Schleimer, D. S. Wilkerson and
+  A. Aiken as described in their seminal article which can be found here:
+  https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf
 """
+
 import hashlib
 import pathlib
 import platform
@@ -55,11 +56,56 @@ MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 MIN_FILE_SIZE = 256
 
 SKIP_SNIPPET_EXT = {  # File extensions to ignore snippets for
-    ".exe", ".zip", ".tar", ".tgz", ".gz", ".7z", ".rar", ".jar", ".war", ".ear", ".class", ".pyc",
-    ".o", ".a", ".so", ".obj", ".dll", ".lib", ".out", ".app", ".bin",
-    ".lst", ".dat", ".json", ".htm", ".html", ".xml", ".md", ".txt",
-    ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp", ".pages", ".key", ".numbers",
-    ".pdf", ".min.js", ".mf", ".sum", ".woff", ".woff2", '.xsd', ".pom", ".whl",
+    '.exe',
+    '.zip',
+    '.tar',
+    '.tgz',
+    '.gz',
+    '.7z',
+    '.rar',
+    '.jar',
+    '.war',
+    '.ear',
+    '.class',
+    '.pyc',
+    '.o',
+    '.a',
+    '.so',
+    '.obj',
+    '.dll',
+    '.lib',
+    '.out',
+    '.app',
+    '.bin',
+    '.lst',
+    '.dat',
+    '.json',
+    '.htm',
+    '.html',
+    '.xml',
+    '.md',
+    '.txt',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.ppt',
+    '.pptx',
+    '.odt',
+    '.ods',
+    '.odp',
+    '.pages',
+    '.key',
+    '.numbers',
+    '.pdf',
+    '.min.js',
+    '.mf',
+    '.sum',
+    '.woff',
+    '.woff2',
+    '.xsd',
+    '.pom',
+    '.whl',
 }
 
 CRC8_MAXIM_DOW_TABLE_SIZE = 0x100
@@ -111,11 +157,21 @@ class Winnowing(ScanossBase):
     a list of WFP fingerprints with their corresponding line numbers.
     """
 
-    def __init__(self, size_limit: bool = False, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 skip_snippets: bool = False, post_size: int = 32, all_extensions: bool = False,
-                 obfuscate: bool = False, hpsm: bool = False,
-                 strip_hpsm_ids=None, strip_snippet_ids=None, skip_md5_ids=None
-                 ):
+    def __init__(
+        self,
+        size_limit: bool = False,
+        debug: bool = False,
+        trace: bool = False,
+        quiet: bool = False,
+        skip_snippets: bool = False,
+        post_size: int = 32,
+        all_extensions: bool = False,
+        obfuscate: bool = False,
+        hpsm: bool = False,
+        strip_hpsm_ids=None,
+        strip_snippet_ids=None,
+        skip_md5_ids=None,
+    ):
         """
         Instantiate Winnowing class
         Parameters
@@ -190,12 +246,16 @@ class Winnowing(ScanossBase):
         if src_len == 0 or src_len <= MIN_FILE_SIZE:  # Ignore empty or files that are too small
             self.print_trace(f'Skipping snippets as the file is too small: {file} - {src_len}')
             return True
-        prefix = src[0:(MIN_FILE_SIZE - 1)].lower().strip()
-        if len(prefix) > 0 and (prefix[0] == "{" or prefix[0] == "["):  # Ignore json
+        prefix = src[0 : (MIN_FILE_SIZE - 1)].lower().strip()
+        if len(prefix) > 0 and (prefix[0] == '{' or prefix[0] == '['):  # Ignore json
             self.print_trace(f'Skipping snippets as the file appears to be JSON: {file}')
             return True
-        if prefix.startswith("<?xml") or prefix.startswith("<html") or prefix.startswith("<ac3d") or prefix.startswith(
-                "<!doc"):
+        if (
+            prefix.startswith('<?xml')
+            or prefix.startswith('<html')
+            or prefix.startswith('<ac3d')
+            or prefix.startswith('<!doc')
+        ):
             self.print_trace(f'Skipping snippets as the file appears to be xml/html/binary: {file}')
             return True  # Ignore xml & html & ac3d
         index = src.index('\n') if '\n' in src else (src_len - 1)  # TODO still necessary if we have a binary check?
@@ -258,11 +318,12 @@ class Winnowing(ScanossBase):
                 elif hpsm_id_len % 2 == 1:
                     hpsm_id_len = hpsm_id_len + 1
 
-                to_remove = hpsm[hpsm_id_index:hpsm_id_index + hpsm_id_len]
+                to_remove = hpsm[hpsm_id_index : hpsm_id_index + hpsm_id_len]
                 self.print_debug(f'HPSM ID {to_remove} to replace')
                 # Calculate the XOR of each byte to produce the correct ignore sequence.
                 replacement = ''.join(
-                    [format(int(to_remove[i:i + 2], 16) ^ 0xFF, '02x') for i in range(0, len(to_remove), 2)])
+                    [format(int(to_remove[i : i + 2], 16) ^ 0xFF, '02x') for i in range(0, len(to_remove), 2)]
+                )
 
                 self.print_debug(f'HPSM ID replacement {replacement}')
                 # Overwrite HPSM bytes to be removed.
@@ -309,7 +370,7 @@ class Winnowing(ScanossBase):
         # Print file line
         content_length = len(contents)
         original_filename = file
-        
+
         if platform.system() == 'Windows':
             original_filename = file.replace('\\', '/')
         wfp_filename = repr(original_filename).strip("'")  # return a utf-8 compatible version of the filename
@@ -361,14 +422,16 @@ class Winnowing(ScanossBase):
                             crc_hex = '{:08x}'.format(crc)
                             if last_line != line:
                                 if output != '':
-                                    if self.size_limit and \
-                                            (len(wfp.encode("utf-8")) + len(
-                                                output.encode("utf-8"))) > self.max_post_size:
+                                    if (
+                                        self.size_limit
+                                        and (len(wfp.encode('utf-8')) + len(output.encode('utf-8')))
+                                        > self.max_post_size
+                                    ):
                                         self.print_debug(f'Truncating WFP ({self.max_post_size} limit) for: {file}')
                                         output = ''
                                         break  # Stop collecting snippets as it's over 64k
                                     wfp += output + '\n'
-                                output = "%d=%s" % (line, crc_hex)
+                                output = '%d=%s' % (line, crc_hex)
                             else:
                                 output += ',' + crc_hex
 
@@ -379,7 +442,7 @@ class Winnowing(ScanossBase):
                     # Shift gram
                     gram = gram[1:]
         if output != '':
-            if not self.size_limit or (len(wfp.encode("utf-8")) + len(output.encode("utf-8"))) < self.max_post_size:
+            if not self.size_limit or (len(wfp.encode('utf-8')) + len(output.encode('utf-8'))) < self.max_post_size:
                 wfp += output + '\n'
             else:
                 self.print_debug(f'Warning: skipping output in WFP for {file} - "{output}"')
@@ -403,13 +466,13 @@ class Winnowing(ScanossBase):
         last_line = 0
         for i, byte in enumerate(content):
             c = byte
-            if c == ASCII_LF:   # When there is a new line
-                if len(list_normalized): 
+            if c == ASCII_LF:  # When there is a new line
+                if len(list_normalized):
                     crc_lines.append(self.crc8_buffer(list_normalized))
                     list_normalized = []
-                elif last_line+1 == i:
+                elif last_line + 1 == i:
                     crc_lines.append(0xFF)
-                elif i-last_line > 1:
+                elif i - last_line > 1:
                     crc_lines.append(0x00)
                 last_line = i
             else:
@@ -469,6 +532,7 @@ class Winnowing(ScanossBase):
             crc = self.crc8_byte(crc, buffer[index])
         crc ^= CRC8_MAXIM_DOW_FINAL  # Bitwise OR (XOR) of crc in Maxim Dow Final
         return crc
+
 
 #
 # End of Winnowing Class
