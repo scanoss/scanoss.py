@@ -1,25 +1,25 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+  Copyright (c) 2021, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
 
 import os
@@ -43,15 +43,19 @@ from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, Dep
 from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode, PurlRequest
 from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import VulnerabilityResponse
 from .api.semgrep.v2.scanoss_semgrep_pb2 import SemgrepResponse
-from .api.components.v2.scanoss_components_pb2 import (CompSearchRequest, CompSearchResponse,
-                                                       CompVersionRequest, CompVersionResponse)
+from .api.components.v2.scanoss_components_pb2 import (
+    CompSearchRequest,
+    CompSearchResponse,
+    CompVersionRequest,
+    CompVersionResponse,
+)
 from .scanossbase import ScanossBase
 from . import __version__
 
-DEFAULT_URL = "https://api.osskb.org"  # default free service URL
-DEFAULT_URL2 = "https://api.scanoss.com"  # default premium service URL
-SCANOSS_GRPC_URL = os.environ.get("SCANOSS_GRPC_URL") if os.environ.get("SCANOSS_GRPC_URL") else DEFAULT_URL
-SCANOSS_API_KEY = os.environ.get("SCANOSS_API_KEY") if os.environ.get("SCANOSS_API_KEY") else ''
+DEFAULT_URL = 'https://api.osskb.org'  # default free service URL
+DEFAULT_URL2 = 'https://api.scanoss.com'  # default premium service URL
+SCANOSS_GRPC_URL = os.environ.get('SCANOSS_GRPC_URL') if os.environ.get('SCANOSS_GRPC_URL') else DEFAULT_URL
+SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_API_KEY') else ''
 
 
 class ScanossGrpc(ScanossBase):
@@ -59,9 +63,20 @@ class ScanossGrpc(ScanossBase):
     Client for gRPC functionality
     """
 
-    def __init__(self, url: str = None, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 ca_cert: str = None, api_key: str = None, ver_details: str = None, timeout: int = 600,
-                 proxy: str = None, grpc_proxy: str = None, pac: PACFile = None):
+    def __init__(
+        self,
+        url: str = None,
+        debug: bool = False,
+        trace: bool = False,
+        quiet: bool = False,
+        ca_cert: str = None,
+        api_key: str = None,
+        ver_details: str = None,
+        timeout: int = 600,
+        proxy: str = None,
+        grpc_proxy: str = None,
+        pac: PACFile = None,
+    ):
         """
 
         :param url:
@@ -80,7 +95,7 @@ class ScanossGrpc(ScanossBase):
         super().__init__(debug, trace, quiet)
         self.url = url if url else SCANOSS_GRPC_URL
         self.api_key = api_key if api_key else SCANOSS_API_KEY
-        if self.api_key and not url and not os.environ.get("SCANOSS_GRPC_URL"):
+        if self.api_key and not url and not os.environ.get('SCANOSS_GRPC_URL'):
             self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
         self.url = self.url.lower()
         self.orig_url = self.url  # Used for proxy lookup
@@ -143,8 +158,9 @@ class ScanossGrpc(ScanossBase):
             metadata.append(('x-request-id', request_id))  # Set a Request ID
             resp = self.dependencies_stub.Echo(EchoRequest(message=message), metadata=metadata, timeout=3)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             # self.print_stderr(f'resp: {resp} - call: {call}')
             # response_id = ""
@@ -176,8 +192,9 @@ class ScanossGrpc(ScanossBase):
             metadata.append(('x-request-id', request_id))  # Set a Request ID
             resp = self.crypto_stub.Echo(EchoRequest(message=message), metadata=metadata, timeout=3)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             if resp:
                 return resp.message
@@ -206,7 +223,7 @@ class ScanossGrpc(ScanossBase):
         request_id = str(uuid.uuid4())
         resp: DependencyResponse
         try:
-            files_json = dependencies.get("files")
+            files_json = dependencies.get('files')
             if files_json is None or len(files_json) == 0:
                 self.print_stderr(f'ERROR: No dependency data supplied to send to gRPC service.')
                 return None
@@ -217,8 +234,9 @@ class ScanossGrpc(ScanossBase):
             self.print_debug(f'Sending dependency data for decoration (rqId: {request_id})...')
             resp = self.dependencies_stub.GetDependencies(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             if resp:
                 if not self._check_status_response(resp.status, request_id):
@@ -244,8 +262,9 @@ class ScanossGrpc(ScanossBase):
             self.print_debug(f'Sending crypto data for decoration (rqId: {request_id})...')
             resp = self.crypto_stub.GetAlgorithms(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             if resp:
                 if not self._check_status_response(resp.status, request_id):
@@ -273,8 +292,9 @@ class ScanossGrpc(ScanossBase):
             self.print_debug(f'Sending crypto data for decoration (rqId: {request_id})...')
             resp = self.vuln_stub.GetVulnerabilities(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             if resp:
                 if not self._check_status_response(resp.status, request_id):
@@ -302,8 +322,9 @@ class ScanossGrpc(ScanossBase):
             self.print_debug(f'Sending semgrep data for decoration (rqId: {request_id})...')
             resp = self.semgrep_stub.GetIssues(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             if resp:
                 if not self._check_status_response(resp.status, request_id):
@@ -331,8 +352,9 @@ class ScanossGrpc(ScanossBase):
             self.print_debug(f'Sending component search data (rqId: {request_id})...')
             resp = self.comp_search_stub.SearchComponents(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             if resp:
                 if not self._check_status_response(resp.status, request_id):
@@ -360,8 +382,9 @@ class ScanossGrpc(ScanossBase):
             self.print_debug(f'Sending component version data (rqId: {request_id})...')
             resp = self.comp_search_stub.GetComponentVersions(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             if resp:
                 if not self._check_status_response(resp.status, request_id):
@@ -383,11 +406,11 @@ class ScanossGrpc(ScanossBase):
         self.print_debug(f'Checking response status (rqId: {request_id}): {status_response}')
         status_code: StatusCode = status_response.status
         if status_code > 1:
-            msg = "Unsuccessful"
+            msg = 'Unsuccessful'
             if status_code == 2:
-                msg = "Succeeded with warnings"
+                msg = 'Succeeded with warnings'
             elif status_code == 3:
-                msg = "Failed with warnings"
+                msg = 'Failed with warnings'
             self.print_stderr(f'{msg} (rqId: {request_id} - status: {status_code}): {status_response.message}')
             return False
         return True
@@ -400,19 +423,20 @@ class ScanossGrpc(ScanossBase):
         """
         if self.grpc_proxy:
             self.print_debug(f'Setting GRPC (grpc_proxy) proxy...')
-            os.environ["grpc_proxy"] = self.grpc_proxy
+            os.environ['grpc_proxy'] = self.grpc_proxy
         elif self.proxy:
             self.print_debug(f'Setting GRPC (http_proxy/https_proxy) proxies...')
-            os.environ["http_proxy"] = self.proxy
-            os.environ["https_proxy"] = self.proxy
+            os.environ['http_proxy'] = self.proxy
+            os.environ['https_proxy'] = self.proxy
         elif self.pac:
             self.print_debug(f'Attempting to get GRPC proxy details from PAC for {self.orig_url}...')
             resolver = ProxyResolver(self.pac)
             proxies = resolver.get_proxy_for_requests(self.orig_url)
             if proxies:
                 self.print_trace(f'Setting proxies: {proxies}')
-            os.environ["http_proxy"] = proxies.get("http") or ""
-            os.environ["https_proxy"] = proxies.get("https") or ""
+            os.environ['http_proxy'] = proxies.get('http') or ''
+            os.environ['https_proxy'] = proxies.get('https') or ''
+
 
 #
 # End of ScanossGrpc Class

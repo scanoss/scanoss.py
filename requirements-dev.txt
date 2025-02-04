@@ -3,3 +3,5 @@ wheel
 twine
 build
 grpcio-tools
+ruff
+pre-commit

@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+  Copyright (c) 2021, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import json
 import os.path
 import sys
@@ -64,17 +65,17 @@ class CycloneDx(ScanossBase):
             file_details = data.get(f)
             # print(f'File: {f}: {file_details}')
             for d in file_details:
-                id_details = d.get("id")
+                id_details = d.get('id')
                 if not id_details or id_details == 'none':
                     continue
                 purl = None
                 if id_details == 'dependency':
-                    dependencies = d.get("dependencies")
+                    dependencies = d.get('dependencies')
                     if not dependencies:
                         self.print_stderr(f'Warning: No Dependencies found for {f}: {file_details}')
                         continue
                     for deps in dependencies:
-                        purl = deps.get("purl")
+                        purl = deps.get('purl')
                         if not purl:
                             self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
                             continue
@@ -89,7 +90,7 @@ class CycloneDx(ScanossBase):
                         if licenses:
                             dc = []
                             for lic in licenses:
-                                name = lic.get("name")
+                                name = lic.get('name')
                                 if name not in dc:  # Only save the license name once
                                     fdl.append({'id': name})
                                     dc.append(name)
@@ -108,30 +109,33 @@ class CycloneDx(ScanossBase):
                         self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
                         continue
                     fd = {}
-                    vulnerabilities = d.get("vulnerabilities")
+                    vulnerabilities = d.get('vulnerabilities')
                     if vulnerabilities:
                         for vuln in vulnerabilities:
-                            vuln_id = vuln.get("ID")
+                            vuln_id = vuln.get('ID')
                             if vuln_id == '':
-                                vuln_id = vuln.get("id")
+                                vuln_id = vuln.get('id')
                             if not vuln_id or vuln_id == '':  # Skip empty ids
                                 continue
-                            vuln_cve = vuln.get("CVE", '')
+                            vuln_cve = vuln.get('CVE', '')
                             if vuln_cve == '':
-                                vuln_cve = vuln.get("cve", '')
-                            if vuln_id.upper().startswith("CPE:"):
-                                fd['cpe'] = vuln_id                 # Save the component CPE if we have one
+                                vuln_cve = vuln.get('cve', '')
+                            if vuln_id.upper().startswith('CPE:'):
+                                fd['cpe'] = vuln_id  # Save the component CPE if we have one
                                 if vuln_cve != '':
                                     vuln_id = vuln_cve
                             vd = vdx.get(vuln_id)  # Check if we've already encountered this vulnerability
                             if not vd:
                                 vuln_source = vuln.get('source', '').lower()
-                                vd = {'cve': vuln_cve,
-                                      'source': 'NVD' if vuln_source == 'nvd' else 'GitHub Advisories',
-                                      'url': f'https://nvd.nist.gov/vuln/detail/{vuln_cve}' if vuln_source == 'nvd' else f'https://github.com/advisories/{vuln_id}',
-                                      'severity': self._sev_lookup(vuln.get('severity', 'unknown').lower()),
-                                      'affects': set()
-                                      }
+                                vd = {
+                                    'cve': vuln_cve,
+                                    'source': 'NVD' if vuln_source == 'nvd' else 'GitHub Advisories',
+                                    'url': f'https://nvd.nist.gov/vuln/detail/{vuln_cve}'
+                                    if vuln_source == 'nvd'
+                                    else f'https://github.com/advisories/{vuln_id}',
+                                    'severity': self._sev_lookup(vuln.get('severity', 'unknown').lower()),
+                                    'affects': set(),
+                                }
                             vd.get('affects').add(purl)
                             vdx[vuln_id] = vd
                     if cdx.get(purl):
@@ -143,7 +147,7 @@ class CycloneDx(ScanossBase):
                     fdl = []
                     if licenses:
                         for lic in licenses:
-                            fdl.append({'id': lic.get("name")})
+                            fdl.append({'id': lic.get('name')})
                     fd['licenses'] = fdl
                     cdx[purl] = fd
         # self.print_stderr(f'VD: {vdx}')
@@ -190,7 +194,7 @@ class CycloneDx(ScanossBase):
             'serialNumber': f'urn:uuid:{uuid.uuid4()}',
             'version': 1,
             'metadata': {
-                'timestamp': datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                'timestamp': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'tools': [
                     {
                         'vendor': 'SCANOSS',
@@ -198,14 +202,10 @@ class CycloneDx(ScanossBase):
                         'version': __version__,
                     }
                 ],
-                'component': {
-                    'type': 'application',
-                    'name': 'NOASSERTION',
-                    'version': 'NOASSERTION'
-                }
+                'component': {'type': 'application', 'name': 'NOASSERTION', 'version': 'NOASSERTION'},
             },
             'components': [],
-            'vulnerabilities': []
+            'vulnerabilities': [],
         }
         for purl in cdx:
             comp = cdx.get(purl)
@@ -230,7 +230,7 @@ class CycloneDx(ScanossBase):
                 'version': comp.get('version'),
                 'purl': purl,
                 'bom-ref': purl,
-                'licenses': lic_text
+                'licenses': lic_text,
             }
             cpe = comp.get('cpe', '')
             if cpe and cpe != '':
@@ -250,7 +250,7 @@ class CycloneDx(ScanossBase):
                     'id': vuln_id,
                     'source': {'name': v_source, 'url': vulns.get('url')},
                     'ratings': [{'severity': vulns.get('severity', 'unknown')}],
-                    'affects': affects
+                    'affects': affects,
                 }
                 data['vulnerabilities'].append(vd)
             # End for loop
@@ -298,8 +298,10 @@ class CycloneDx(ScanossBase):
             'low': 'low',
             'info': 'info',
             'none': 'none',
-            'unknown': 'unknown'
-            }.get(value, 'unknown')
+            'unknown': 'unknown',
+        }.get(value, 'unknown')
+
+
 #
 # End of CycloneDX Class
 #

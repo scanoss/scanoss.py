@@ -1,25 +1,25 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2024, SCANOSS
+  Copyright (c) 2024, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
 
 import json
@@ -27,27 +27,27 @@ from typing import Any, Dict, List
 
 from .scanossbase import ScanossBase
 
-MATCH_TYPES = ["file", "snippet"]
-STATUSES = ["pending", "identified"]
+MATCH_TYPES = ['file', 'snippet']
+STATUSES = ['pending', 'identified']
 
 
 AVAILABLE_FILTER_VALUES = {
-    "match_type": [e for e in MATCH_TYPES],
-    "status": [e for e in STATUSES],
+    'match_type': [e for e in MATCH_TYPES],
+    'status': [e for e in STATUSES],
 }
 
 
 ARG_TO_FILTER_MAP = {
-    "match_type": "id",
-    "status": "status",
+    'match_type': 'id',
+    'status': 'status',
 }
 
 PENDING_IDENTIFICATION_FILTERS = {
-    "match_type": ["file", "snippet"],
-    "status": ["pending"],
+    'match_type': ['file', 'snippet'],
+    'status': ['pending'],
 }
 
-AVAILABLE_OUTPUT_FORMATS = ["json", "plain"]
+AVAILABLE_OUTPUT_FORMATS = ['json', 'plain']
 
 
 class Results(ScanossBase):
@@ -95,11 +95,11 @@ class Results(ScanossBase):
         Returns:
             Dict[str, Any]: The parsed JSON data
         """
-        with open(file, "r") as jsonfile:
+        with open(file, 'r') as jsonfile:
             try:
                 return json.load(jsonfile)
             except Exception as e:
-                self.print_stderr(f"ERROR: Problem parsing input JSON: {e}")
+                self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
 
     def _load_and_transform(self, file: str) -> List[Dict[str, Any]]:
         """
@@ -143,7 +143,7 @@ class Results(ScanossBase):
 
     @staticmethod
     def _extract_comma_separated_values(values: str):
-        return [value.strip() for value in values.split(",")]
+        return [value.strip() for value in values.split(',')]
 
     def apply_filters(self):
         """Apply the filters to the data"""
@@ -172,14 +172,11 @@ class Results(ScanossBase):
 
     @staticmethod
     def _validate_filter_values(filter_key: str, filter_value: List[str]):
-        if any(
-            value not in AVAILABLE_FILTER_VALUES.get(filter_key, [])
-            for value in filter_value
-        ):
-            valid_values = ", ".join(AVAILABLE_FILTER_VALUES.get(filter_key, []))
+        if any(value not in AVAILABLE_FILTER_VALUES.get(filter_key, []) for value in filter_value):
+            valid_values = ', '.join(AVAILABLE_FILTER_VALUES.get(filter_key, []))
             raise Exception(
                 f"ERROR: Invalid filter value '{filter_value}' for filter '{filter_key.value}'. "
-                f"Valid values are: {valid_values}"
+                f'Valid values are: {valid_values}'
             )
 
     def get_pending_identifications(self):
@@ -226,9 +223,7 @@ class Results(ScanossBase):
         Args:
             file (str, optional): Output file. Defaults to None.
         """
-        self.print_to_file_or_stdout(
-            json.dumps(self._format_json_output(), indent=2), file
-        )
+        self.print_to_file_or_stdout(json.dumps(self._format_json_output(), indent=2), file)
 
     def _format_json_output(self):
         """
@@ -240,15 +235,11 @@ class Results(ScanossBase):
             formatted_data.append(
                 {
                     'file': item.get('filename'),
-                    'status': item.get('status', "N/A"),
+                    'status': item.get('status', 'N/A'),
                     'match_type': item['id'],
-                    'matched': item.get('matched', "N/A"),
-                    'purl': (item.get('purl')[0] if item.get('purl') else "N/A"),
-                    'license': (
-                        item.get('licenses')[0].get('name', "N/A")
-                        if item.get('licenses')
-                        else "N/A"
-                    ),
+                    'matched': item.get('matched', 'N/A'),
+                    'purl': (item.get('purl')[0] if item.get('purl') else 'N/A'),
+                    'license': (item.get('licenses')[0].get('name', 'N/A') if item.get('licenses') else 'N/A'),
                 }
             )
         return {'results': formatted_data, 'total': len(formatted_data)}
@@ -263,7 +254,7 @@ class Results(ScanossBase):
             None
         """
         if not self.data:
-            return self.print_stderr("No results to present")
+            return self.print_stderr('No results to present')
         self.print_to_file_or_stdout(self._format_plain_output(), file)
 
     def _present_stdout(self):
@@ -273,7 +264,7 @@ class Results(ScanossBase):
             None
         """
         if not self.data:
-            return self.print_stderr("No results to present")
+            return self.print_stderr('No results to present')
         self.print_to_file_or_stdout(self._format_plain_output())
 
     def _format_plain_output(self):
@@ -281,9 +272,9 @@ class Results(ScanossBase):
         Format the output data into a plain text string
         """
 
-        formatted = ""
+        formatted = ''
         for item in self.data:
-            formatted += f"{self._format_plain_output_item(item)} \n"
+            formatted += f'{self._format_plain_output_item(item)} \n'
         return formatted
 
     @staticmethod
@@ -292,10 +283,10 @@ class Results(ScanossBase):
         licenses = item.get('licenses', [])
 
         return (
-            f"File: {item.get('filename')}\n"
-            f"Match type: {item.get('id')}\n"
-            f"Status: {item.get('status', 'N/A')}\n"
-            f"Matched: {item.get('matched', 'N/A')}\n"
-            f"Purl: {purls[0] if purls else 'N/A'}\n"
-            f"License: {licenses[0].get('name', 'N/A') if licenses else 'N/A'}\n"
+            f'File: {item.get("filename")}\n'
+            f'Match type: {item.get("id")}\n'
+            f'Status: {item.get("status", "N/A")}\n'
+            f'Matched: {item.get("matched", "N/A")}\n'
+            f'Purl: {purls[0] if purls else "N/A"}\n'
+            f'License: {licenses[0].get("name", "N/A") if licenses else "N/A"}\n'
         )
