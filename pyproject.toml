@@ -8,6 +8,7 @@ select = ["E", "F", "I", "PL"]
 line-length = 120
 # Assume Python 3.7+
 target-version = "py37"
+exclude = ["tests/*", "test_*.py"]
 
 [tool.ruff.format]
 quote-style = "single"
