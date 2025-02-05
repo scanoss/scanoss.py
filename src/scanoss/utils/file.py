@@ -25,7 +25,8 @@ SPDX-License-Identifier: MIT
 import json
 import os
 from dataclasses import dataclass
-from typing import Optional
+from pathlib import Path
+from typing import List, Optional
 
 JSON_ERROR_PARSE = 1
 JSON_ERROR_FILE_NOT_FOUND = 2
@@ -82,3 +83,14 @@ def validate_json_file(json_file_path: str) -> JsonValidation:
             error=f'Problem parsing JSON file: "{json_file_path}": {e}',
             error_code=JSON_ERROR_PARSE,
         )
+
+
+def get_all_files_from_dir(dir_path: str) -> List[str]:
+    """
+    Recursively get all files from a directory and return sorted paths
+    """
+    files = []
+    for path in Path(dir_path).rglob('*'):
+        if path.is_file():
+            files.append(str(path))
+    return sorted(files)
