@@ -388,13 +388,15 @@ class ScanossGrpc(ScanossBase):
         self.print_debug(f'Checking response status (rqId: {request_id}): {status_response}')
         status_code: StatusCode = status_response.status
         if status_code > 1:
+            ret_val = False  # default to failed
             msg = "Unsuccessful"
             if status_code == 2:
                 msg = "Succeeded with warnings"
+                ret_val = True  # No need to fail as it succeeded with warnings
             elif status_code == 3:
                 msg = "Failed with warnings"
             self.print_stderr(f'{msg} (rqId: {request_id} - status: {status_code}): {status_response.message}')
-            return False
+            return ret_val
         return True
 
     def _get_proxy_config(self):
