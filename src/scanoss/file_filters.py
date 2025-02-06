@@ -205,6 +205,13 @@ DEFAULT_SKIPPED_EXT = {
     '.gml',
     '.pot',
     '.plt',
+    '.whml',
+    '.pom',
+    '.smtml',
+    '.min.js',
+    '.mf',
+    '.base64',
+    '.s',
     # File endings
     '-doc',
     'changelog',
@@ -309,7 +316,7 @@ class FileFilters(ScanossBase):
             if dirpath.is_symlink():  # TODO should we skip symlink folders?
                 self.print_msg(f'WARNING: Found symbolic link folder: {dirpath}')
 
-            if self._should_skip_dir(str(rel_path)):  # Current directory should be skipped
+            if self.should_skip_dir(str(rel_path)):  # Current directory should be skipped
                 dirnames.clear()
                 continue
             for filename in filenames:
@@ -445,7 +452,7 @@ class FileFilters(ScanossBase):
         # End rules loop
         return min_size, max_size
 
-    def _should_skip_dir(self, dir_rel_path: str) -> bool:
+    def should_skip_dir(self, dir_rel_path: str) -> bool:
         """
         Check if a directory should be skipped based on operation type and default rules.
 

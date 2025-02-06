@@ -156,18 +156,6 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_scan.add_argument('--dep-scope-inc', '-dsi', type=str, help='Include dependencies with declared scopes')
     p_scan.add_argument('--dep-scope-exc', '-dse', type=str, help='Exclude dependencies with declared scopes')
-    p_scan.add_argument(
-        '--settings',
-        '-st',
-        type=str,
-        help='Settings file to use for scanning (optional - default scanoss.json)',
-    )
-    p_scan.add_argument(
-        '--skip-settings-file',
-        '-stf',
-        action='store_true',
-        help='Skip default settings file (scanoss.json) if it exists',
-    )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser(
@@ -186,18 +174,6 @@ def setup_args() -> None:  # noqa: PLR0915
         help='Fingerprint the file contents supplied via STDIN (optional)',
     )
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
-    p_wfp.add_argument(
-        '--settings',
-        '-st',
-        type=str,
-        help='Settings file to use for fingerprinting (optional - default scanoss.json)',
-    )
-    p_wfp.add_argument(
-        '--skip-settings-file',
-        '-stf',
-        action='store_true',
-        help='Skip default settings file (scanoss.json) if it exists',
-    )
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser(
@@ -485,13 +461,29 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_undeclared.set_defaults(func=inspect_undeclared)
 
-    p_hfh = subparsers.add_parser(
-        'hfh',
+    p_folder_scan = subparsers.add_parser(
+        'folder-scan',
         description=f'Scan the given directory using folder hashing: {__version__}',
         help='Scan the given directory using folder hashing',
     )
-    p_hfh.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='The root directory to scan')
-    p_hfh.set_defaults(func=folder_hashing_scan)
+    p_folder_scan.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='The root directory to scan')
+
+    p_folder_scan.set_defaults(func=folder_hashing_scan)
+
+    # Scanoss settings options
+    for p in [p_folder_scan, p_scan, p_wfp]:
+        p.add_argument(
+            '--settings',
+            '-st',
+            type=str,
+            help='Settings file to use for scanning (optional - default scanoss.json)',
+        )
+        p.add_argument(
+            '--skip-settings-file',
+            '-stf',
+            action='store_true',
+            help='Skip default settings file (scanoss.json) if it exists',
+        )
 
     for p in [p_copyleft, p_undeclared]:
         p.add_argument('-i', '--input', nargs='?', help='Path to results file')
@@ -507,7 +499,7 @@ def setup_args() -> None:  # noqa: PLR0915
         p.add_argument('-s', '--status', type=str, help='Save summary data into Markdown file')
 
     # Global Scan command options
-    for p in [p_scan, p_hfh]:
+    for p in [p_scan, p_folder_scan]:
         p.add_argument(
             '--apiurl', type=str, help='SCANOSS API URL (optional - default: https://api.osskb.org/scan/direct)'
         )
@@ -535,7 +527,7 @@ def setup_args() -> None:  # noqa: PLR0915
         p.add_argument('--strip-snippet', '-N', type=str, action='append', help='Strip Snippet ID string from WFP.')
 
     # Global Scan/GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_hfh]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_folder_scan]:
         p.add_argument(
             '--key', '-k', type=str, help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
         )
@@ -561,7 +553,7 @@ def setup_args() -> None:  # noqa: PLR0915
         )
 
     # Global GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_hfh]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_folder_scan]:
         p.add_argument(
             '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
         )
@@ -590,7 +582,7 @@ def setup_args() -> None:  # noqa: PLR0915
         p_results,
         p_undeclared,
         p_copyleft,
-        p_hfh,
+        p_folder_scan,
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -1453,17 +1445,32 @@ def folder_hashing_scan(parser, args):
         sys.exit(1)
 
     scanner_config = create_scanner_config_from_args(args)
-    grpc_config = create_grpc_config_from_args(args)
 
+    grpc_config = create_grpc_config_from_args(args)
     client = ScanossGrpc(**asdict(grpc_config))
+
+    scanoss_settings = get_scanoss_settings_from_args(args)
 
     scanner = ScannerHFH(
         scan_dir=args.scan_dir,
         config=scanner_config,
         client=client,
+        scanoss_settings=scanoss_settings,
     )
 
     scanner.scan()
+
+
+def get_scanoss_settings_from_args(args):
+    scanoss_settings = None
+    if not args.skip_settings_file:
+        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        try:
+            scanoss_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new').set_scan_type('identify')
+        except ScanossSettingsError as e:
+            print_stderr(f'Error: {e}')
+            sys.exit(1)
+        return scanoss_settings
 
 
 def main():
