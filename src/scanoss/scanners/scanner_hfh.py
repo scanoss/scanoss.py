@@ -22,6 +22,7 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import json
 import os
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -31,6 +32,7 @@ from scanoss.scanners.scanner_config import ScannerConfig
 from scanoss.scanoss_settings import ScanossSettings
 from scanoss.scanossbase import ScanossBase
 from scanoss.scanossgrpc import ScanossGrpc
+from scanoss.utils.abstract_presenter import AbstractPresenter
 from scanoss.utils.crc64 import CRC64
 from scanoss.utils.simhash import WordFeatureSet, fingerprint, simhash, vectorize_bytes
 
@@ -58,7 +60,7 @@ class DirectoryFile:
         self.key_str = key_str
 
 
-class ScannerHFH(ScanossBase):
+class ScannerHFH(AbstractPresenter, ScanossBase):
     """
     Folder Hashing Scanner.
 
@@ -82,20 +84,28 @@ class ScannerHFH(ScanossBase):
             client (ScanossGrpc): gRPC client for communicating with the scanning service.
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
         """
-        super().__init__(
+        AbstractPresenter.__init__(
+            self,
             debug=config.debug,
             trace=config.trace,
             quiet=config.quiet,
         )
-
-        self.scan_dir = scan_dir
-        self.client = client
+        ScanossBase.__init__(
+            self,
+            debug=config.debug,
+            trace=config.trace,
+            quiet=config.quiet,
+        )
         self.file_filters = FileFilters(
             debug=config.debug,
             trace=config.trace,
             quiet=config.quiet,
             scanoss_settings=scanoss_settings,
         )
+
+        self.scan_dir = scan_dir
+        self.client = client
+        self.scan_results = None
 
     def scan(self) -> Optional[Dict]:
         """
@@ -111,7 +121,9 @@ class ScannerHFH(ScanossBase):
         }
 
         response = self.client.folder_hash_scan(hfh_request)
-        return response
+        self.scan_results = response
+
+        return self.scan_results
 
     def hfh_request_from_path(self, path: str) -> dict:
         """
@@ -266,3 +278,18 @@ class ScannerHFH(ScanossBase):
             total += b * 2
         # Shift right by 4 bits and extract the lowest 8 bits
         return (total >> 4) & 0xFF
+
+    def _format_json_output(self) -> str:
+        """
+        Format the scan output data into a JSON object
+
+        Returns:
+            str: The formatted JSON string
+        """
+        return json.dumps(self.scan_results, indent=2)
+
+    def _format_plain_output(self) -> str:
+        """
+        Format the scan output data into a plain text string
+        """
+        return self.scan_results

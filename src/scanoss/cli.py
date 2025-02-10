@@ -472,6 +472,13 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_folder_scan.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='The root directory to scan')
     p_folder_scan.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
+    p_folder_scan.add_argument(
+        '--format',
+        '-f',
+        type=str,
+        choices=['plain', 'json'],
+        help='Result output format (optional - default: plain)',
+    )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
     # Scanoss settings options
@@ -1461,11 +1468,8 @@ def folder_hashing_scan(parser, args):
             scanoss_settings=scanoss_settings,
         )
 
-        scan_response = scanner.scan()
-        import json
-
-        # TODO: Decide how to handle the response
-        print(json.dumps(scan_response, indent=4))
+        scanner.scan()
+        scanner.present(output_file=args.output, output_format=args.format)
     except ScanossGrpcError as e:
         print_stderr(f'ERROR: {e}')
         sys.exit(1)
