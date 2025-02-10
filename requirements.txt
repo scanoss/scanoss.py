@@ -13,4 +13,3 @@ packageurl-python
 pathspec
 jsonschema
 crc
-simhash

@@ -2,14 +2,13 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from simhash import Simhash
-
 from scanoss.file_filters import FileFilters
 from scanoss.scanners.scanner_config import ScannerConfig
 from scanoss.scanoss_settings import ScanossSettings
 from scanoss.scanossbase import ScanossBase
 from scanoss.scanossgrpc import ScanossGrpc
 from scanoss.utils.crc64 import CRC64
+from scanoss.utils.simhash import WordFeatureSet, fingerprint, simhash, vectorize_bytes
 
 
 class DirectoryNode:
@@ -21,7 +20,18 @@ class DirectoryNode:
         self.path = path
         self.is_dir = True
         self.children: Dict[str, DirectoryNode] = {}
-        self.files: List[dict] = []
+        self.files: List[DirectoryFile] = []
+
+
+class DirectoryFile:
+    """
+    Represents a file in the directory tree for folder hashing.
+    """
+
+    def __init__(self, path: str, key: bytes, key_str: str):
+        self.path = path
+        self.key = key
+        self.key_str = key_str
 
 
 def head_calc(sim_hash: int) -> int:
@@ -94,6 +104,7 @@ class ScannerHFH(ScanossBase):
         """
         hfh_request = {
             'root': self.hfh_request_from_path(self.scan_dir),
+            # TODO: make this configurable
             'threshold': 100,
             'best_match': False,
         }
@@ -138,6 +149,8 @@ class ScannerHFH(ScanossBase):
         root_node = DirectoryNode(str(root))
 
         filtered_files = [Path(f) for f in self.file_filters.get_filtered_files_from_folder(path)]
+        # Sort the files by name to ensure the hash is the same for the same folder
+        filtered_files.sort()
 
         for file_path in filtered_files:
             try:
@@ -148,7 +161,7 @@ class ScannerHFH(ScanossBase):
                 key_str = ''.join(f'{b:02x}' for b in key)
                 rel_path = str(full_file_path.relative_to(root))
 
-                file_item = {'path': rel_path, 'key': key, 'key_str': key_str, 'actions': {'store_in_file': True}}
+                file_item = DirectoryFile(rel_path, key, key_str)
 
                 current_node = root_node
                 for part in Path(rel_path).parent.parts:
@@ -202,30 +215,32 @@ class ScannerHFH(ScanossBase):
         Returns:
             dict: A dictionary with 'name_hash' and 'content_hash' keys.
         """
-        processed = set()
+        processed_hashes = set()
         file_hashes = []
-        sorted_names = []
+        selected_names = []
 
-        for file_item in node.files:
-            if not file_item['actions']['store_in_file']:
+        for file in node.files:
+            key_str = file.key_str
+            if key_str in processed_hashes:
                 continue
-            if file_item['key_str'] in processed:
-                continue
-            processed.add(file_item['key_str'])
-            sorted_names.append(os.path.basename(file_item['path']))
-            file_hashes.append(file_item['key_str'])
+            processed_hashes.add(key_str)
 
-        sorted_names.sort()
-        concatenated_names = ''.join(sorted_names)
+            selected_names.append(os.path.basename(file.path))
 
-        name_simhash = Simhash(concatenated_names).value
-        content_simhash = Simhash(' '.join(file_hashes)).value
+            file_key = bytes(file.key)
+            file_hashes.append(file_key)
+
+        selected_names.sort()
+        concatenated_names = ''.join(selected_names)
+
+        names_simhash = simhash(WordFeatureSet(concatenated_names.encode('utf-8')))
+        content_simhash = fingerprint(vectorize_bytes(file_hashes))
 
         # Calculate head and overwrite MS byte
-        head = head_calc(name_simhash)
-        name_simhash = (name_simhash & 0x00FFFFFFFFFFFFFF) | (head << 56)
+        head = head_calc(names_simhash)
+        names_simhash = (names_simhash & 0x00FFFFFFFFFFFFFF) | (head << 56)
 
         return {
-            'name_hash': name_simhash,
+            'name_hash': names_simhash,
             'content_hash': content_simhash,
         }
