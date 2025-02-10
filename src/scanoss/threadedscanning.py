@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+  Copyright (c) 2021, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import os
 import sys
 import threading
@@ -34,8 +35,10 @@ from progress.bar import Bar
 from .scanossapi import ScanossApi
 from .scanossbase import ScanossBase
 
-WFP_FILE_START = "file="
-MAX_ALLOWED_THREADS = int(os.environ.get("SCANOSS_MAX_ALLOWED_THREADS")) if os.environ.get("SCANOSS_MAX_ALLOWED_THREADS") else 30
+WFP_FILE_START = 'file='
+MAX_ALLOWED_THREADS = (
+    int(os.environ.get('SCANOSS_MAX_ALLOWED_THREADS')) if os.environ.get('SCANOSS_MAX_ALLOWED_THREADS') else 30
+)
 
 
 @dataclass
@@ -45,13 +48,14 @@ class ThreadedScanning(ScanossBase):
     WFP scan requests are loaded into the input queue.
     Multiple threads pull messages off this queue, process the request and put the results into an output queue
     """
+
     inputs: queue.Queue = queue.Queue()
     output: queue.Queue = queue.Queue()
     bar: Bar = None
 
-    def __init__(self, scanapi: ScanossApi, debug: bool = False, trace: bool = False, quiet: bool = False,
-                 nb_threads: int = 5
-                 ) -> None:
+    def __init__(
+        self, scanapi: ScanossApi, debug: bool = False, trace: bool = False, quiet: bool = False, nb_threads: int = 5
+    ) -> None:
         """
         Initialise the ThreadedScanning class
         :param scanapi: SCANOSS API to send scan requests to
@@ -158,8 +162,9 @@ class ThreadedScanning(ScanossBase):
         """
         qsize = self.inputs.qsize()
         if qsize < self.nb_threads:
-            self.print_debug(f'Input queue ({qsize}) smaller than requested threads: {self.nb_threads}. '
-                             f'Reducing to queue size.')
+            self.print_debug(
+                f'Input queue ({qsize}) smaller than requested threads: {self.nb_threads}. Reducing to queue size.'
+            )
             self.nb_threads = qsize
         else:
             self.print_debug(f'Starting {self.nb_threads} threads to process {qsize} requests...')
@@ -171,7 +176,7 @@ class ThreadedScanning(ScanossBase):
         except Exception as e:
             self.print_stderr(f'ERROR: Problem running threaded scanning: {e}')
             self._errors = True
-        if wait:                    # Wait for all inputs to complete
+        if wait:  # Wait for all inputs to complete
             self.complete()
         return False if self._errors else True
 
@@ -180,7 +185,7 @@ class ThreadedScanning(ScanossBase):
         Wait for input queue to complete processing and complete the worker threads
         """
         self.inputs.join()
-        self._stop_event.set()       # Tell the worker threads to stop
+        self._stop_event.set()  # Tell the worker threads to stop
         try:
             for t in self._threads:  # Complete the threads
                 t.join(timeout=5)
@@ -199,7 +204,7 @@ class ThreadedScanning(ScanossBase):
         api_error = False
         while not self._stop_event.is_set():
             wfp = None
-            if not self.inputs.empty():          # Only try to get a message if there is one on the queue
+            if not self.inputs.empty():  # Only try to get a message if there is one on the queue
                 try:
                     wfp = self.inputs.get(timeout=5)
                     if api_error:  # API error encountered, so stop processing anymore requests
@@ -227,6 +232,7 @@ class ThreadedScanning(ScanossBase):
             else:
                 time.sleep(1)  # Sleep while waiting for the queue depth to build up
         self.print_trace(f'Thread complete ({current_thread}).')
+
 
 #
 # End of ThreadedScanning Class

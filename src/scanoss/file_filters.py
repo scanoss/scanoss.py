@@ -61,9 +61,7 @@ DEFAULT_SKIPPED_DIRS = {
     '__pypackages__',
 }
 # Folder endings to skip
-DEFAULT_SKIPPED_DIR_EXT = {
-    '.egg-info'
-}
+DEFAULT_SKIPPED_DIR_EXT = {'.egg-info'}
 # File extensions to skip
 DEFAULT_SKIPPED_EXT = {
     '.1',
@@ -236,18 +234,18 @@ class FileFilters(ScanossBase):
     """
 
     def __init__(
-            self,
-            debug: bool = False,
-            trace: bool = False,
-            quiet: bool = False,
-            scanoss_settings: 'ScanossSettings | None' = None,
-            all_extensions: bool = False,
-            all_folders: bool = False,
-            hidden_files_folders: bool = False,
-            operation_type: str = 'scanning',
-            skip_size: int = 0,
-            skip_extensions = None,
-            skip_folders = None
+        self,
+        debug: bool = False,
+        trace: bool = False,
+        quiet: bool = False,
+        scanoss_settings: 'ScanossSettings | None' = None,
+        all_extensions: bool = False,
+        all_folders: bool = False,
+        hidden_files_folders: bool = False,
+        operation_type: str = 'scanning',
+        skip_size: int = 0,
+        skip_extensions=None,
+        skip_folders=None,
     ):
         """
         Initialize scan filters based on default settings. Optionally append custom settings.

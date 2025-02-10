@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2022, SCANOSS
+  Copyright (c) 2022, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import csv
 import os
 import pathlib
@@ -36,9 +37,15 @@ class FileCount(ScanossBase):
     SCANOSS File Type Count class
     Handle the scanning of files, snippets and dependencies
     """
-    def __init__(self, scan_output: str = None, hidden_files_folders: bool = False,
-                 debug: bool = False, trace: bool = False, quiet: bool = False
-                 ):
+
+    def __init__(
+        self,
+        scan_output: str = None,
+        hidden_files_folders: bool = False,
+        debug: bool = False,
+        trace: bool = False,
+        quiet: bool = False,
+    ):
         """
         Initialise scanning class
         """
@@ -56,7 +63,7 @@ class FileCount(ScanossBase):
         file_list = []
         for f in files:
             ignore = False
-            if f.startswith(".") and not self.hidden_files_folders:  # Ignore all . files unless requested
+            if f.startswith('.') and not self.hidden_files_folders:  # Ignore all . files unless requested
                 ignore = True
             if not ignore:
                 file_list.append(f)
@@ -71,7 +78,7 @@ class FileCount(ScanossBase):
         dir_list = []
         for d in dirs:
             ignore = False
-            if d.startswith(".") and not self.hidden_files_folders:  # Ignore all . folders unless requested
+            if d.startswith('.') and not self.hidden_files_folders:  # Ignore all . folders unless requested
                 ignore = True
             if not ignore:
                 dir_list.append(d)
@@ -84,7 +91,7 @@ class FileCount(ScanossBase):
         if not outfile and self.scan_output:
             outfile = self.scan_output
         if outfile:
-            with open(outfile, "a") as rf:
+            with open(outfile, 'a') as rf:
                 rf.write(string + '\n')
         else:
             print(string)
@@ -98,9 +105,9 @@ class FileCount(ScanossBase):
         """
         success = True
         if not scan_dir:
-            raise Exception(f"ERROR: Please specify a folder to scan")
+            raise Exception(f'ERROR: Please specify a folder to scan')
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
-            raise Exception(f"ERROR: Specified folder does not exist or is not a folder: {scan_dir}")
+            raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
 
         self.print_msg(f'Searching {scan_dir} for files to count...')
         spinner = None
@@ -111,17 +118,17 @@ class FileCount(ScanossBase):
         file_size = 0
         for root, dirs, files in os.walk(scan_dir):
             self.print_trace(f'U Root: {root}, Dirs: {dirs}, Files {files}')
-            dirs[:] = self.__filter_dirs(dirs)                             # Strip out unwanted directories
-            filtered_files = self.__filter_files(files)                    # Strip out unwanted files
+            dirs[:] = self.__filter_dirs(dirs)  # Strip out unwanted directories
+            filtered_files = self.__filter_files(files)  # Strip out unwanted files
             self.print_trace(f'F Root: {root}, Dirs: {dirs}, Files {filtered_files}')
-            for file in filtered_files:                                       # Cycle through each filtered file
+            for file in filtered_files:  # Cycle through each filtered file
                 path = os.path.join(root, file)
                 f_size = 0
                 try:
                     f_size = os.stat(path).st_size
                 except Exception as e:
                     self.print_trace(f'Ignoring missing symlink file: {file} ({e})')  # broken symlink
-                if f_size > 0:                                                 # Ignore broken links and empty files
+                if f_size > 0:  # Ignore broken links and empty files
                     file_count = file_count + 1
                     file_size = file_size + f_size
                     f_suffix = pathlib.Path(file).suffix
@@ -140,18 +147,18 @@ class FileCount(ScanossBase):
         # End for loop
         if spinner:
             spinner.finish()
-        self.print_stderr(f'Found {file_count:,.0f} files with a total size of {file_size/(1<<20):,.2f} MB.')
+        self.print_stderr(f'Found {file_count:,.0f} files with a total size of {file_size / (1 << 20):,.2f} MB.')
         if file_types:
             csv_dict = []
             for k in file_types:
                 d = file_types[k]
-                csv_dict.append({'extension': k, 'count': d[0], 'size(MB)': f'{d[1]/(1<<20):,.2f}'})
+                csv_dict.append({'extension': k, 'count': d[0], 'size(MB)': f'{d[1] / (1 << 20):,.2f}'})
             fields = ['extension', 'count', 'size(MB)']
             file = sys.stdout
             if self.scan_output:
                 file = open(self.scan_output, 'w')
             writer = csv.DictWriter(file, fieldnames=fields)
-            writer.writeheader()        # writing headers (field names)
+            writer.writeheader()  # writing headers (field names)
             writer.writerows(csv_dict)  # writing data rows
             if self.scan_output:
                 file.close()

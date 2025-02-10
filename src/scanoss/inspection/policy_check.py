@@ -1,26 +1,27 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2024, SCANOSS
+  Copyright (c) 2024, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
+
 import json
 import os.path
 from abc import abstractmethod
@@ -39,12 +40,16 @@ class PolicyStatus(Enum):
         FAIL (int): Indicates that the policy check failed (value: 1).
         ERROR (int): Indicates that an error occurred during the policy check (value: 2).
     """
+
     SUCCESS = 0
     FAIL = 1
     ERROR = 2
+
+
 #
 # End of PolicyStatus Class
 #
+
 
 class ComponentID(Enum):
     """
@@ -55,12 +60,16 @@ class ComponentID(Enum):
         SNIPPET (str): Represents a code snippet component (value: "snippet").
         DEPENDENCY (str): Represents a dependency component (value: "dependency").
     """
-    FILE = "file"
-    SNIPPET = "snippet"
-    DEPENDENCY = "dependency"
+
+    FILE = 'file'
+    SNIPPET = 'snippet'
+    DEPENDENCY = 'dependency'
+
+
 #
 # End of ComponentID Class
 #
+
 
 class PolicyCheck(ScanossBase):
     """
@@ -78,8 +87,17 @@ class PolicyCheck(ScanossBase):
 
     VALID_FORMATS = {'md', 'json', 'jira_md'}
 
-    def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False, filepath: str = None,
-                 format_type: str = None, status: str = None, output: str = None, name: str = None):
+    def __init__(
+        self,
+        debug: bool = False,
+        trace: bool = True,
+        quiet: bool = False,
+        filepath: str = None,
+        format_type: str = None,
+        status: str = None,
+        output: str = None,
+        name: str = None,
+    ):
         super().__init__(debug, trace, quiet)
         self.license_util = LicenseUtil()
         self.filepath = filepath
@@ -110,14 +128,14 @@ class PolicyCheck(ScanossBase):
     @abstractmethod
     def _json(self, components: list) -> Dict[str, Any]:
         """
-            Format the policy checks results as JSON.
-            This method should be implemented by subclasses to create a Markdown representation
-            of the policy check results.
+        Format the policy checks results as JSON.
+        This method should be implemented by subclasses to create a Markdown representation
+        of the policy check results.
 
-            :param components: List of components to be formatted.
-            :return: A dictionary containing two keys:
-                     - 'details': A JSON-formatted string with the full list of components
-                     - 'summary': A string summarizing the number of components found
+        :param components: List of components to be formatted.
+        :return: A dictionary containing two keys:
+                 - 'details': A JSON-formatted string with the full list of components
+                 - 'summary': A string summarizing the number of components found
         """
         pass
 
@@ -147,8 +165,9 @@ class PolicyCheck(ScanossBase):
         """
         pass
 
-    def _append_component(self,components: Dict[str, Any], new_component: Dict[str, Any],
-                           id: str, status: str) -> Dict[str, Any]:
+    def _append_component(
+        self, components: Dict[str, Any], new_component: Dict[str, Any], id: str, status: str
+    ) -> Dict[str, Any]:
         """
         Append a new component to the component's dictionary.
 
@@ -169,12 +188,12 @@ class PolicyCheck(ScanossBase):
         else:
             purl = new_component['purl']
 
-        component_key = f"{purl}@{new_component['version']}"
+        component_key = f'{purl}@{new_component["version"]}'
         components[component_key] = {
-                'purl': purl,
-                'version': new_component['version'],
-                'licenses': {},
-                'status': status,
+            'purl': purl,
+            'version': new_component['version'],
+            'licenses': {},
+            'status': status,
         }
 
         if not new_component.get('licenses'):
@@ -191,16 +210,16 @@ class PolicyCheck(ScanossBase):
                 }
         return components
 
-    def _get_components_from_results(self,results: Dict[str, Any]) -> list or None:
+    def _get_components_from_results(self, results: Dict[str, Any]) -> list or None:
         """
-            Process the results dictionary to extract and format component information.
+        Process the results dictionary to extract and format component information.
 
-            This function iterates through the results dictionary, identifying components from
-            different sources (files, snippets, and dependencies). It consolidates this information
-            into a list of unique components, each with its associated licenses and other details.
+        This function iterates through the results dictionary, identifying components from
+        different sources (files, snippets, and dependencies). It consolidates this information
+        into a list of unique components, each with its associated licenses and other details.
 
-            :param results: A dictionary containing the raw results of a component scan
-            :return: A list of dictionaries, each representing a unique component with its details
+        :param results: A dictionary containing the raw results of a component scan
+        :return: A list of dictionaries, each representing a unique component with its details
         """
         if results is None:
             self.print_stderr(f'ERROR: Results cannot be empty')
@@ -226,7 +245,7 @@ class PolicyCheck(ScanossBase):
                     if not c.get('version'):
                         self.print_stderr(f'WARNING: Result missing version. Skipping.')
                         continue
-                    component_key = f"{c['purl'][0]}@{c['version']}"
+                    component_key = f'{c["purl"][0]}@{c["version"]}'
                     # Initialize or update the component entry
                     if component_key not in components:
                         components = self._append_component(components, c, component_id, status)
@@ -244,7 +263,7 @@ class PolicyCheck(ScanossBase):
                         if not d.get('version'):
                             self.print_stderr(f'WARNING: Result missing version. Skipping.')
                             continue
-                        component_key = f"{d['purl']}@{d['version']}"
+                        component_key = f'{d["purl"]}@{d["version"]}'
                         if component_key not in components:
                             components = self._append_component(components, d, component_id, status)
                     # End of dependencies loop
@@ -271,11 +290,13 @@ class PolicyCheck(ScanossBase):
         if headers is None:
             self.print_stderr('ERROR: Header are no set')
             return None
+
         # Decide which separator to use
         def create_separator(index):
             if centered_columns is None:
                 return '-'
             return ':-:' if index in centered_column_set else '-'
+
         # Build the row separator
         row_separator = col_sep + col_sep.join(create_separator(index) for index, _ in enumerate(headers)) + col_sep
         # build table rows
@@ -297,7 +318,7 @@ class PolicyCheck(ScanossBase):
 
         return table
 
-    def _get_formatter(self)-> Callable[[List[dict]], Dict[str,Any]] or None:
+    def _get_formatter(self) -> Callable[[List[dict]], Dict[str, Any]] or None:
         """
         Get the appropriate formatter function based on the specified format.
 
@@ -348,11 +369,11 @@ class PolicyCheck(ScanossBase):
 
           Returns:
               Dict[str, Any]: The parsed JSON data
-          """
+        """
         if not os.path.exists(self.filepath):
             self.print_stderr(f'ERROR: The file "{self.filepath}" does not exist.')
             return None
-        with open(self.filepath, "r") as jsonfile:
+        with open(self.filepath, 'r') as jsonfile:
             try:
                 return json.load(jsonfile)
             except Exception as e:
@@ -381,6 +402,8 @@ class PolicyCheck(ScanossBase):
             return None
         components = self._get_components_from_results(self.results)
         return components
+
+
 #
 # End of PolicyCheck Class
 #
