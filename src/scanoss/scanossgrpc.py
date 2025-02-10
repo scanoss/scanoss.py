@@ -72,6 +72,14 @@ SCANOSS_GRPC_URL = os.environ.get('SCANOSS_GRPC_URL') if os.environ.get('SCANOSS
 SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_API_KEY') else ''
 
 
+class ScanossGrpcError(Exception):
+    """
+    Custom exception for SCANOSS gRPC errors
+    """
+
+    pass
+
+
 class ScanossGrpc(ScanossBase):
     """
     Client for gRPC functionality
@@ -455,13 +463,12 @@ class ScanossGrpc(ScanossBase):
         try:
             resp = rpc_method(request_obj, metadata=metadata, timeout=self.timeout)
         except grpc.RpcError as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} while sending gRPC message (rqId: {request_id}): {e.details()}'
+            raise ScanossGrpcError(
+                f'{e.__class__.__name__} while sending gRPC message (rqId: {request_id}): {e.details()}'
             )
-            return None
 
         if resp and not self._check_status_response(resp.status, request_id):
-            return None
+            raise ScanossGrpcError(f'Unsuccessful status response (rqId: {request_id}).')
 
         resp_dict = MessageToDict(resp, preserving_proto_field_name=True)
         resp_dict.pop('status', None)

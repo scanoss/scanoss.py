@@ -30,7 +30,11 @@ from pathlib import Path
 
 import pypac
 
-from scanoss.scanossgrpc import ScanossGrpc, create_grpc_config_from_args
+from scanoss.scanossgrpc import (
+    ScanossGrpc,
+    ScanossGrpcError,
+    create_grpc_config_from_args,
+)
 
 from . import __version__
 from .components import Components
@@ -1429,36 +1433,42 @@ def results(parser, args):
 
 
 def folder_hashing_scan(parser, args):
-    """Run the "hfh" sub-command
+    """Run the "folder-scan" sub-command
 
     Args:
         parser (ArgumentParser): command line parser object
         args (Namespace): Parsed arguments
     """
-    if not args.scan_dir:
-        print_stderr('ERROR: Please specify a directory to scan')
-        parser.parse_args([args.subparser, '-h'])
+    try:
+        if not args.scan_dir:
+            print_stderr('ERROR: Please specify a directory to scan')
+            parser.parse_args([args.subparser, '-h'])
+            sys.exit(1)
+
+        if not os.path.exists(args.scan_dir) or not os.path.isdir(args.scan_dir):
+            print_stderr(f'ERROR: The specified directory {args.scan_dir} does not exist')
+            sys.exit(1)
+
+        scanner_config = create_scanner_config_from_args(args)
+        scanoss_settings = get_scanoss_settings_from_args(args)
+        grpc_config = create_grpc_config_from_args(args)
+
+        client = ScanossGrpc(**asdict(grpc_config))
+        scanner = ScannerHFH(
+            scan_dir=args.scan_dir,
+            config=scanner_config,
+            client=client,
+            scanoss_settings=scanoss_settings,
+        )
+
+        scan_response = scanner.scan()
+        import json
+
+        # TODO: Decide how to handle the response
+        print(json.dumps(scan_response, indent=4))
+    except ScanossGrpcError as e:
+        print_stderr(f'ERROR: {e}')
         sys.exit(1)
-
-    if not os.path.exists(args.scan_dir) or not os.path.isdir(args.scan_dir):
-        print_stderr(f'ERROR: The specified directory {args.scan_dir} does not exist')
-        sys.exit(1)
-
-    scanner_config = create_scanner_config_from_args(args)
-
-    grpc_config = create_grpc_config_from_args(args)
-    client = ScanossGrpc(**asdict(grpc_config))
-
-    scanoss_settings = get_scanoss_settings_from_args(args)
-
-    scanner = ScannerHFH(
-        scan_dir=args.scan_dir,
-        config=scanner_config,
-        client=client,
-        scanoss_settings=scanoss_settings,
-    )
-
-    scanner.scan()
 
 
 def get_scanoss_settings_from_args(args):

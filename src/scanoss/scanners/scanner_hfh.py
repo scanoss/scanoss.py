@@ -34,28 +34,6 @@ class DirectoryFile:
         self.key_str = key_str
 
 
-def head_calc(sim_hash: int) -> int:
-    """
-    Compute the head value from a simhash integer.
-
-    The function extracts each byte from the simhash, multiplies it by 2,
-    sums these values, then shifts the result right by 4 bits and returns the lowest 8 bits.
-
-    Args:
-        sim_hash (int): The input simhash value.
-
-    Returns:
-        int: The computed head value as an 8-bit integer.
-    """
-    total = 0
-    for i in range(8):
-        # Extract each byte and multiply by 2
-        b = (sim_hash >> (i * 8)) & 0xFF
-        total += b * 2
-    # Shift right by 4 bits and extract the lowest 8 bits
-    return (total >> 4) & 0xFF
-
-
 class ScannerHFH(ScanossBase):
     """
     Folder Hashing Scanner.
@@ -104,9 +82,8 @@ class ScannerHFH(ScanossBase):
         """
         hfh_request = {
             'root': self.hfh_request_from_path(self.scan_dir),
-            # TODO: make this configurable
             'threshold': 100,
-            'best_match': False,
+            'best_match': True,
         }
 
         response = self.client.folder_hash_scan(hfh_request)
@@ -237,10 +214,31 @@ class ScannerHFH(ScanossBase):
         content_simhash = fingerprint(vectorize_bytes(file_hashes))
 
         # Calculate head and overwrite MS byte
-        head = head_calc(names_simhash)
+        head = self._head_calc(names_simhash)
         names_simhash = (names_simhash & 0x00FFFFFFFFFFFFFF) | (head << 56)
 
         return {
             'name_hash': names_simhash,
             'content_hash': content_simhash,
         }
+
+    def _head_calc(self, sim_hash: int) -> int:
+        """
+        Compute the head value from a simhash integer.
+
+        The function extracts each byte from the simhash, multiplies it by 2,
+        sums these values, then shifts the result right by 4 bits and returns the lowest 8 bits.
+
+        Args:
+            sim_hash (int): The input simhash value.
+
+        Returns:
+            int: The computed head value as an 8-bit integer.
+        """
+        total = 0
+        for i in range(8):
+            # Extract each byte and multiply by 2
+            b = (sim_hash >> (i * 8)) & 0xFF
+            total += b * 2
+        # Shift right by 4 bits and extract the lowest 8 bits
+        return (total >> 4) & 0xFF
