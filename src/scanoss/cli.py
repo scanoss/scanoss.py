@@ -24,25 +24,25 @@ SPDX-License-Identifier: MIT
 
 import argparse
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
+
 import pypac
 
+from . import __version__
+from .components import Components
+from .csvoutput import CsvOutput
+from .cyclonedx import CycloneDx
+from .filecount import FileCount
 from .inspection.copyleft import Copyleft
 from .inspection.undeclared_component import UndeclaredComponent
-from .threadeddependencies import SCOPE
-from .scanoss_settings import ScanossSettings, ScanossSettingsError
-from .scancodedeps import ScancodeDeps
-from .scanner import Scanner
-from .scantype import ScanType
-from .filecount import FileCount
-from .cyclonedx import CycloneDx
-from .spdxlite import SpdxLite
-from .csvoutput import CsvOutput
-from .components import Components
-from . import __version__
-from .scanner import FAST_WINNOWING
 from .results import Results
+from .scancodedeps import ScancodeDeps
+from .scanner import FAST_WINNOWING, Scanner
+from .scanoss_settings import ScanossSettings, ScanossSettingsError
+from .scantype import ScanType
+from .spdxlite import SpdxLite
+from .threadeddependencies import SCOPE
 from .utils.file import validate_json_file
 
 
@@ -284,11 +284,13 @@ def setup_args() -> None:
     c_semgrep.set_defaults(func=comp_semgrep)
 
     # Component Sub-command: component provenance
-    c_provenance = comp_sub.add_parser('provenance', aliases=['prov', 'prv'],
-                                   description=f'Show Provenance findings: {__version__}',
-                                   help='Retrieve provenance for the given components')
-    c_provenance.set_defaults(func=comp_provenance)
-
+    c_provenance = comp_sub.add_parser(
+        'provenance',
+        aliases=['prov', 'prv'],
+        description=f'Show Provenance findings: {__version__}',
+        help='Retrieve provenance for the given components',
+    )
+    c_provenance.set_defaults(func=c_provenance)
 
     # Component Sub-command: component search
     c_search = comp_sub.add_parser(
@@ -589,18 +591,17 @@ def setup_args() -> None:
     if not args.subparser:
         parser.print_help()  # No sub command subcommand, print general help
         exit(1)
-    else:
-        if (
-            args.subparser == 'utils'
-            or args.subparser == 'ut'
-            or args.subparser == 'component'
-            or args.subparser == 'comp'
-            or args.subparser == 'inspect'
-            or args.subparser == 'insp'
-            or args.subparser == 'ins'
-        ) and not args.subparsercmd:
-            parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
-            exit(1)
+    elif (
+        args.subparser == 'utils'
+        or args.subparser == 'ut'
+        or args.subparser == 'component'
+        or args.subparser == 'comp'
+        or args.subparser == 'inspect'
+        or args.subparser == 'insp'
+        or args.subparser == 'ins'
+    ) and not args.subparsercmd:
+        parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
+        exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
 
 
@@ -671,7 +672,7 @@ def wfp(parser, args):
         parser.parse_args([args.subparser, '-h'])
         exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
-        print_stderr(f'Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
+        print_stderr('Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
     scan_output: str = None
     if args.output:
         scan_output = args.output
@@ -746,11 +747,11 @@ def get_scan_options(args):
 
     if args.debug:
         if ScanType.SCAN_FILES.value & scan_options:
-            print_stderr(f'Scan Files')
+            print_stderr('Scan Files')
         if ScanType.SCAN_SNIPPETS.value & scan_options:
-            print_stderr(f'Scan Snippets')
+            print_stderr('Scan Snippets')
         if ScanType.SCAN_DEPENDENCIES.value & scan_options:
-            print_stderr(f'Scan Dependencies')
+            print_stderr('Scan Dependencies')
     if scan_options <= 0:
         print_stderr(f'Error: No valid scan options configured: {scan_options}')
         exit(1)
@@ -907,7 +908,7 @@ def scan(parser, args):
             print_stderr(f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})')
             exit(1)
         if scanner.is_dependency_scan() and not args.dep:
-            print_stderr(f'Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)')
+            print_stderr('Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)')
             exit(1)
         scanner.scan_wfp_with_options(args.wfp, args.dep)
     elif args.stdin:
@@ -947,7 +948,7 @@ def scan(parser, args):
     elif args.dep:
         if not args.dependencies_only:
             print_stderr(
-                f'Error: No file or folder specified to scan. Please add --dependencies-only to decorate dependency file only.'
+                'Error: No file or folder specified to scan. Please add --dependencies-only to decorate dependency file only.'
             )
             exit(1)
         if not scanner.scan_folder_with_options(
@@ -1005,17 +1006,17 @@ def convert(parser, args):
     success = False
     if args.format == 'cyclonedx':
         if not args.quiet:
-            print_stderr(f'Producing CycloneDX report...')
+            print_stderr('Producing CycloneDX report...')
         cdx = CycloneDx(debug=args.debug, output_file=args.output)
         success = cdx.produce_from_file(args.input)
     elif args.format == 'spdxlite':
         if not args.quiet:
-            print_stderr(f'Producing SPDX Lite report...')
+            print_stderr('Producing SPDX Lite report...')
         spdxlite = SpdxLite(debug=args.debug, output_file=args.output)
         success = spdxlite.produce_from_file(args.input)
     elif args.format == 'csv':
         if not args.quiet:
-            print_stderr(f'Producing CSV report...')
+            print_stderr('Producing CSV report...')
         csvo = CsvOutput(debug=args.debug, output_file=args.output)
         success = csvo.produce_from_file(args.input)
     else:
@@ -1171,7 +1172,7 @@ def utils_pac_proxy(_, args):
     from pypac.resolver import ProxyResolver
 
     if not args.pac:
-        print_stderr(f'Error: No pac file option specified.')
+        print_stderr('Error: No pac file option specified.')
         exit(1)
     pac_file = get_pac_file(args.pac)
     if pac_file is None:
