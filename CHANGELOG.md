@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.20.0] - 2025-02-10
+### Added
+- Add folder-scan subcommand
+
 ## [1.19.6] - 2025-01-30
 ### Added
 - Omit settings file if it does not exist instead of throwing an error.
@@ -451,3 +455,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.19.3]: https://github.com/scanoss/scanoss.py/compare/v1.19.2...v1.19.3
 [1.19.4]: https://github.com/scanoss/scanoss.py/compare/v1.19.3...v1.19.4
 [1.19.5]: https://github.com/scanoss/scanoss.py/compare/v1.19.4...v1.19.5
+[1.19.6]: https://github.com/scanoss/scanoss.py/compare/v1.19.5...v1.19.6
+[1.20.0]: https://github.com/scanoss/scanoss.py/compare/v1.19.6...v1.20.0

@@ -471,7 +471,7 @@ def setup_args() -> None:  # noqa: PLR0915
         help='Scan the given directory using folder hashing',
     )
     p_folder_scan.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='The root directory to scan')
-
+    p_folder_scan.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
     # Scanoss settings options

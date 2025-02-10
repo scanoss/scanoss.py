@@ -393,3 +393,12 @@ The following command can be used to inspect for undeclared components and save 
 ```bash
 scanoss-py insp copyleft -i scan-results.json --output copyleft-summary.jiramd --status copyleft-status.jiramd --format jira_md
 ```
+
+### Folder-Scan a Project Folder
+
+The new `folder-scan` subcommand performs a comprehensive scan on an entire directory by recursively processing files to generate folder-level fingerprints. It computes CRC64 hashes and simhash values to detect directory-level similarities, which is especially useful for comparing large code bases or detecting duplicate folder structures.
+
+**Usage:**
+```shell
+scanoss-py folder-scan /path/to/folder -o folder-scan-results.json 
+```
