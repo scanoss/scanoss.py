@@ -52,24 +52,24 @@ def validate_json_file(json_file_path: str) -> JsonValidation:
         Tuple[bool, str]: A tuple containing a boolean indicating if the file is valid and a message
     """
     if not json_file_path:
-        return JsonValidation(is_valid=False, error="No JSON file specified")
+        return JsonValidation(is_valid=False, error='No JSON file specified')
     if not os.path.isfile(json_file_path):
         return JsonValidation(
             is_valid=False,
-            error=f"File not found: {json_file_path}",
+            error=f'File not found: {json_file_path}',
             error_code=JSON_ERROR_FILE_NOT_FOUND,
         )
     try:
         if os.stat(json_file_path).st_size == 0:
             return JsonValidation(
                 is_valid=False,
-                error=f"File is empty: {json_file_path}",
+                error=f'File is empty: {json_file_path}',
                 error_code=JSON_ERROR_FILE_EMPTY,
             )
     except OSError as e:
         return JsonValidation(
             is_valid=False,
-            error=f"Problem checking file size: {json_file_path}: {e}",
+            error=f'Problem checking file size: {json_file_path}: {e}',
             error_code=JSON_ERROR_FILE_SIZE,
         )
     try:

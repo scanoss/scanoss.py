@@ -1,25 +1,25 @@
 """
- SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT
 
-   Copyright (c) 2021, SCANOSS
+  Copyright (c) 2021, SCANOSS
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 """
 
 import json
@@ -33,8 +33,17 @@ class ScancodeDeps(ScanossBase):
     """
     SCANOSS dependency scanning class
     """
-    def __init__(self, debug: bool = False, quiet: bool = False, trace: bool = False, output_file: str = None,
-                 scan_output: str = None, timeout: int = 600, sc_command: str = None):
+
+    def __init__(
+        self,
+        debug: bool = False,
+        quiet: bool = False,
+        trace: bool = False,
+        output_file: str = None,
+        scan_output: str = None,
+        timeout: int = 600,
+        sc_command: str = None,
+    ):
         """
         Initialise ScancodeDeps class
         """
@@ -54,11 +63,10 @@ class ScancodeDeps(ScanossBase):
         if not outfile and self.scan_output:
             outfile = self.scan_output
         if outfile:
-            with open(outfile, "a") as rf:
+            with open(outfile, 'a') as rf:
                 rf.write(string + '\n')
         else:
             print(string)
-
 
     def remove_interim_file(self, output_file: str = None):
         """
@@ -86,7 +94,7 @@ class ScancodeDeps(ScanossBase):
         self.print_debug(f'Processing Scancode results into Dependency data...')
         files = []
         for t in data:
-            if t == 'files':    # Only interested in 'files' details
+            if t == 'files':  # Only interested in 'files' details
                 files_details = data.get(t)
                 if not files_details or files_details == '':
                     continue
@@ -121,7 +129,7 @@ class ScancodeDeps(ScanossBase):
                             dp_data = {'purl': dp}
                             rq = d.get('extracted_requirement')  # scancode format 2.0
                             if not rq or rq == '':
-                                rq = d.get('requirement')        # scancode format 1.0
+                                rq = d.get('requirement')  # scancode format 1.0
                             # skip requirement if it ends with the purl (i.e. exact version) or if it's local (file)
                             if rq and rq != '' and not dp.endswith(rq) and not rq.startswith('file:'):
                                 dp_data['requirement'] = rq
@@ -206,17 +214,32 @@ class ScancodeDeps(ScanossBase):
             output_file = self.output_file
         try:
             open(output_file, 'w').close()
-            self.print_trace(f'About to execute {self.sc_command} -p --only-findings --quiet --json {output_file}'
-                             f' {what_to_scan}')
-            result = subprocess.run([self.sc_command, '-p', '--only-findings', '--quiet', '--strip-root', '--json',
-                                     output_file, what_to_scan],
-                                    cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                    text=True, timeout=self.timeout
-                                    )
+            self.print_trace(
+                f'About to execute {self.sc_command} -p --only-findings --quiet --json {output_file} {what_to_scan}'
+            )
+            result = subprocess.run(
+                [
+                    self.sc_command,
+                    '-p',
+                    '--only-findings',
+                    '--quiet',
+                    '--strip-root',
+                    '--json',
+                    output_file,
+                    what_to_scan,
+                ],
+                cwd=os.getcwd(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=self.timeout,
+            )
             self.print_trace(f'Subprocess return: {result}')
             if result.returncode:
-                self.print_stderr(f'ERROR: Scancode dependency scan of {what_to_scan} failed with exit code'
-                                  f' {result.returncode}:\n{result.stdout}')
+                self.print_stderr(
+                    f'ERROR: Scancode dependency scan of {what_to_scan} failed with exit code'
+                    f' {result.returncode}:\n{result.stdout}'
+                )
                 return False
         except subprocess.TimeoutExpired as e:
             self.print_stderr(f'ERROR: Timed out attempting to run scancode dependency scan on {what_to_scan}: {e}')
@@ -245,21 +268,21 @@ class ScancodeDeps(ScanossBase):
                 self.print_stderr(f'ERROR: Problem loading input JSON: {e}')
         return None
 
-
     @staticmethod
-    def __remove_dep_scope(deps: json)->json:
+    def __remove_dep_scope(deps: json) -> json:
         """
         :param deps: dependencies with scopes
         :return dependencies without scopes
         """
-        files = deps.get("files")
+        files = deps.get('files')
         for file in files:
             if 'purls' in file:
-                purls = file.get("purls")
+                purls = file.get('purls')
                 for purl in purls:
-                    purl.pop("scope",None)
+                    purl.pop('scope', None)
 
-        return {"files": files }
+        return {'files': files}
+
 
 #
 # End of ScancodeDeps Class
