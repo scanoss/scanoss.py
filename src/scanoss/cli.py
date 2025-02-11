@@ -488,6 +488,17 @@ def setup_args() -> None:  # noqa: PLR0915
         choices=['plain', 'json'],
         help='Result output format (optional - default: plain)',
     )
+    p_folder_scan.add_argument(
+        '--best-match',
+        '-bm',
+        action='store_true',
+        help='Enable best match mode (optional - default: False)',
+    )
+    p_folder_scan.add_argument(
+        '--threshold',
+        type=int,
+        help='Threshold for result matching (optional - default: 100)',
+    )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
     # Scanoss settings options
@@ -1470,12 +1481,16 @@ def folder_hashing_scan(parser, args):
         grpc_config = create_grpc_config_from_args(args)
 
         client = ScanossGrpc(**asdict(grpc_config))
+
         scanner = ScannerHFH(
             scan_dir=args.scan_dir,
             config=scanner_config,
             client=client,
             scanoss_settings=scanoss_settings,
         )
+
+        scanner.best_match = args.best_match
+        scanner.threshold = args.threshold
 
         scanner.scan()
         scanner.present(output_file=args.output, output_format=args.format)

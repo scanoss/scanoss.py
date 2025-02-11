@@ -106,6 +106,8 @@ class ScannerHFH(AbstractPresenter, ScanossBase):
         self.scan_dir = scan_dir
         self.client = client
         self.scan_results = None
+        self.best_match = False
+        self.threshold = 100
 
     def scan(self) -> Optional[Dict]:
         """
@@ -116,8 +118,8 @@ class ScannerHFH(AbstractPresenter, ScanossBase):
         """
         hfh_request = {
             'root': self.hfh_request_from_path(self.scan_dir),
-            'threshold': 100,
-            'best_match': True,
+            'threshold': self.threshold,
+            'best_match': self.best_match,
         }
 
         response = self.client.folder_hash_scan(hfh_request)
