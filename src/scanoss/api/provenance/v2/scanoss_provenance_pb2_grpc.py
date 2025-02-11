@@ -42,7 +42,7 @@ class ProvenanceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetComponentProvenance(self, request, context):
-        """Get Provenance countrues associated with a list of PURLs
+        """Get Provenance countries associated with a list of PURLs
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
