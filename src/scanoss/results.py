@@ -25,6 +25,8 @@ SPDX-License-Identifier: MIT
 import json
 from typing import Any, Dict, List
 
+from scanoss.utils.abstract_presenter import AbstractPresenter
+
 from .scanossbase import ScanossBase
 
 MATCH_TYPES = ['file', 'snippet']
@@ -47,16 +49,14 @@ PENDING_IDENTIFICATION_FILTERS = {
     'status': ['pending'],
 }
 
-AVAILABLE_OUTPUT_FORMATS = ['json', 'plain']
 
-
-class Results(ScanossBase):
+class Results(AbstractPresenter, ScanossBase):
     """
     SCANOSS Results class \n
     Handles the parsing and filtering of the scan results
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         debug: bool = False,
         trace: bool = False,
@@ -80,11 +80,10 @@ class Results(ScanossBase):
             output_format (str, optional): Output format. Defaults to None.
         """
 
-        super().__init__(debug, trace, quiet)
+        AbstractPresenter.__init__(self, output_file=output_file, output_format=output_format)
+        ScanossBase.__init__(self, debug, trace, quiet)
         self.data = self._load_and_transform(filepath)
         self.filters = self._load_filters(match_type=match_type, status=status)
-        self.output_file = output_file
-        self.output_format = output_format
 
     def load_file(self, file: str) -> Dict[str, Any]:
         """Load the JSON file
@@ -189,43 +188,7 @@ class Results(ScanossBase):
     def has_results(self):
         return bool(self.data)
 
-    def present(self, output_format: str = None, output_file: str = None):
-        """Format and present the results. If no output format is provided, the results will be printed to stdout
-
-        Args:
-            output_format (str, optional): Output format. Defaults to None.
-            output_file (str, optional): Output file. Defaults to None.
-
-        Raises:
-            Exception: Invalid output format
-
-        Returns:
-            None
-        """
-        file_path = output_file or self.output_file
-        fmt = output_format or self.output_format
-
-        if fmt and fmt not in AVAILABLE_OUTPUT_FORMATS:
-            raise Exception(
-                f"ERROR: Invalid output format '{output_format}'. Valid values are: {', '.join(AVAILABLE_OUTPUT_FORMATS)}"
-            )
-
-        if fmt == 'json':
-            return self._present_json(file_path)
-        elif fmt == 'plain':
-            return self._present_plain(file_path)
-        else:
-            return self._present_stdout()
-
-    def _present_json(self, file: str = None):
-        """Present the results in JSON format
-
-        Args:
-            file (str, optional): Output file. Defaults to None.
-        """
-        self.print_to_file_or_stdout(json.dumps(self._format_json_output(), indent=2), file)
-
-    def _format_json_output(self):
+    def _format_json_output(self) -> str:
         """
         Format the output data into a JSON object
         """
@@ -242,39 +205,22 @@ class Results(ScanossBase):
                     'license': (item.get('licenses')[0].get('name', 'N/A') if item.get('licenses') else 'N/A'),
                 }
             )
-        return {'results': formatted_data, 'total': len(formatted_data)}
+        return json.dumps({'results': formatted_data, 'total': len(formatted_data)}, indent=2)
 
-    def _present_plain(self, file: str = None):
-        """Present the results in plain text format
-
-        Args:
-            file (str, optional): Output file. Defaults to None.
+    def _format_plain_output(self) -> str:
+        """Format the output data into a plain text string
 
         Returns:
-            None
+            str: The formatted output data
         """
         if not self.data:
-            return self.print_stderr('No results to present')
-        self.print_to_file_or_stdout(self._format_plain_output(), file)
-
-    def _present_stdout(self):
-        """Present the results to stdout
-
-        Returns:
-            None
-        """
-        if not self.data:
-            return self.print_stderr('No results to present')
-        self.print_to_file_or_stdout(self._format_plain_output())
-
-    def _format_plain_output(self):
-        """
-        Format the output data into a plain text string
-        """
+            msg = 'No results to present'
+            self.print_stderr(msg)
+            return msg
 
         formatted = ''
         for item in self.data:
-            formatted += f'{self._format_plain_output_item(item)} \n'
+            formatted += f'{self._format_plain_output_item(item)}\n'
         return formatted
 
     @staticmethod
