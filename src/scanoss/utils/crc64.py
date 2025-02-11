@@ -40,7 +40,7 @@ class CRC64:
             CRC64._TABLE = self._make_table()
         self.crc = 0xFFFFFFFFFFFFFFFF  # Initial value
 
-    def _make_table(self) -> list[int]:
+    def _make_table(self) -> list:
         """Generate the CRC64 lookup table."""
         table = []
         for i in range(256):
