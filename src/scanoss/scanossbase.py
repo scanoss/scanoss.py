@@ -80,15 +80,15 @@ class ScanossBase:
             **kwargs,
         )
 
-    def print_to_file_or_stdout(self, msg: str, file: str = None):
+    def print_to_file_or_stdout(self, content: str, file: str = None):
         """
         Print message to file if provided or stdout
         """
         if file:
             with open(file, 'w') as f:
-                f.write(msg)
+                f.write(content)
         else:
-            self.print_stdout(msg)
+            self.print_stdout(content)
 
     def print_to_file_or_stderr(self, msg: str, file: str = None):
         """

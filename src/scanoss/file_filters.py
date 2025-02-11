@@ -29,7 +29,6 @@ from typing import List
 
 from pathspec import GitIgnoreSpec
 
-from .scanoss_settings import ScanossSettings
 from .scanossbase import ScanossBase
 
 # Files to skip
@@ -47,6 +46,19 @@ DEFAULT_SKIPPED_FILES = {
     'copying.lib',
     'makefile',
 }
+
+DEFAULT_SKIPPED_FILES_HFH = {
+    'gradlew',
+    'gradlew.bat',
+    'mvnw',
+    'mvnw.cmd',
+    'gradle-wrapper.jar',
+    'maven-wrapper.jar',
+    'thumbs.db',
+    'babel.config.js',
+}
+
+
 # Folders to skip
 DEFAULT_SKIPPED_DIRS = {
     'nbproject',
@@ -59,9 +71,34 @@ DEFAULT_SKIPPED_DIRS = {
     'wheels',
     'htmlcov',
     '__pypackages__',
+    'example',
+    'examples',
+    'docs',
+    'tests',
+    'doc',
+    'test',
 }
+
+DEFAULT_SKIPPED_DIRS_HFH = {
+    'nbproject',
+    'nbbuild',
+    'nbdist',
+    '__pycache__',
+    'venv',
+    '_yardoc',
+    'eggs',
+    'wheels',
+    'htmlcov',
+    '__pypackages__',
+    'example',
+    'examples',
+}
+
+
 # Folder endings to skip
 DEFAULT_SKIPPED_DIR_EXT = {'.egg-info'}
+DEFAULT_SKIPPED_DIR_EXT_HFH = {'.egg-info'}
+
 # File extensions to skip
 DEFAULT_SKIPPED_EXT = {
     '.1',
@@ -205,6 +242,16 @@ DEFAULT_SKIPPED_EXT = {
     '.gml',
     '.pot',
     '.plt',
+    '.whml',
+    '.pom',
+    '.smtml',
+    '.min.js',
+    '.mf',
+    '.base64',
+    '.s',
+    '.diff',
+    '.patch',
+    '.rules',
     # File endings
     '-doc',
     'changelog',
@@ -226,6 +273,162 @@ DEFAULT_SKIPPED_EXT = {
     'sqlite3',
 }
 
+# TODO: For hfh add the .gitignore patterns
+DEFAULT_SKIPPED_EXT_HFH = {
+    '.1',
+    '.2',
+    '.3',
+    '.4',
+    '.5',
+    '.6',
+    '.7',
+    '.8',
+    '.9',
+    '.ac',
+    '.adoc',
+    '.am',
+    '.asciidoc',
+    '.bmp',
+    '.build',
+    '.cfg',
+    '.chm',
+    '.class',
+    '.cmake',
+    '.cnf',
+    '.conf',
+    '.config',
+    '.contributors',
+    '.copying',
+    '.crt',
+    '.csproj',
+    '.css',
+    '.csv',
+    '.dat',
+    '.data',
+    '.dtd',
+    '.dts',
+    '.iws',
+    '.c9',
+    '.c9revisions',
+    '.dtsi',
+    '.dump',
+    '.eot',
+    '.eps',
+    '.geojson',
+    '.gif',
+    '.glif',
+    '.gmo',
+    '.guess',
+    '.hex',
+    '.htm',
+    '.html',
+    '.ico',
+    '.iml',
+    '.in',
+    '.inc',
+    '.info',
+    '.ini',
+    '.ipynb',
+    '.jpeg',
+    '.jpg',
+    '.json',
+    '.jsonld',
+    '.lock',
+    '.log',
+    '.m4',
+    '.map',
+    '.md5',
+    '.meta',
+    '.mk',
+    '.mxml',
+    '.o',
+    '.otf',
+    '.out',
+    '.pbtxt',
+    '.pdf',
+    '.pem',
+    '.phtml',
+    '.plist',
+    '.png',
+    '.prefs',
+    '.properties',
+    '.pyc',
+    '.qdoc',
+    '.result',
+    '.rgb',
+    '.rst',
+    '.scss',
+    '.sha',
+    '.sha1',
+    '.sha2',
+    '.sha256',
+    '.sln',
+    '.spec',
+    '.sub',
+    '.svg',
+    '.svn-base',
+    '.tab',
+    '.template',
+    '.test',
+    '.tex',
+    '.tiff',
+    '.ttf',
+    '.txt',
+    '.utf-8',
+    '.vim',
+    '.wav',
+    '.woff',
+    '.woff2',
+    '.xht',
+    '.xhtml',
+    '.xml',
+    '.xpm',
+    '.xsd',
+    '.xul',
+    '.yaml',
+    '.yml',
+    '.wfp',
+    '.editorconfig',
+    '.dotcover',
+    '.pid',
+    '.lcov',
+    '.egg',
+    '.manifest',
+    '.cache',
+    '.coverage',
+    '.cover',
+    '.gem',
+    '.lst',
+    '.pickle',
+    '.pdb',
+    '.gml',
+    '.pot',
+    '.plt',
+    '.whml',
+    '.pom',
+    '.smtml',
+    '.min.js',
+    '.mf',
+    '.base64',
+    '.s',
+    '.diff',
+    '.patch',
+    '.rules',
+    # File endings
+    '-doc',
+    'config',
+    'news',
+    'readme',
+    'swiftdoc',
+    'texidoc',
+    'todo',
+    'version',
+    'ignore',
+    'manifest',
+    'sqlite',
+    'sqlite3',
+}
+
 
 class FileFilters(ScanossBase):
     """
@@ -233,20 +436,7 @@ class FileFilters(ScanossBase):
     Handles both inclusion and exclusion rules based on file paths, extensions, and sizes.
     """
 
-    def __init__(
-        self,
-        debug: bool = False,
-        trace: bool = False,
-        quiet: bool = False,
-        scanoss_settings: 'ScanossSettings | None' = None,
-        all_extensions: bool = False,
-        all_folders: bool = False,
-        hidden_files_folders: bool = False,
-        operation_type: str = 'scanning',
-        skip_size: int = 0,
-        skip_extensions=None,
-        skip_folders=None,
-    ):
+    def __init__(self, debug: bool = False, trace: bool = False, quiet: bool = False, **kwargs):
         """
         Initialize scan filters based on default settings. Optionally append custom settings.
 
@@ -254,27 +444,29 @@ class FileFilters(ScanossBase):
             debug (bool): Enable debug output
             trace (bool): Enable trace output
             quiet (bool): Suppress output
-            scanoss_settings (ScanossSettings): Custom settings to override defaults
-            all_extensions (bool): Include all file extensions
-            all_folders (bool): Include all folders
-            hidden_files_folders (bool): Include hidden files and folders
-            operation_type: operation type. can be either 'scanning' or 'fingerprinting'
+            **kwargs: Additional arguments including:
+                scanoss_settings (ScanossSettings): Custom settings to override defaults
+                all_extensions (bool): Include all file extensions
+                all_folders (bool): Include all folders
+                hidden_files_folders (bool): Include hidden files and folders
+                operation_type (str): Operation type ('scanning' or 'fingerprinting')
+                skip_size (int): Size to skip
+                skip_extensions (list): Extensions to skip
+                skip_folders (list): Folders to skip
+                is_folder_hashing_scan (bool): Whether the operation is a folder hashing scan
         """
         super().__init__(debug, trace, quiet)
 
-        if skip_folders is None:
-            skip_folders = []
-        if skip_extensions is None:
-            skip_extensions = []
-        self.hidden_files_folders = hidden_files_folders
-        self.scanoss_settings = scanoss_settings
-        self.all_extensions = all_extensions
-        self.all_folders = all_folders
-        self.skip_folders = skip_folders
-        self.skip_size = skip_size
-        self.skip_extensions = skip_extensions
-        self.file_folder_pat_spec = self._get_file_folder_pattern_spec(operation_type)
-        self.size_pat_rules = self._get_size_limit_pattern_rules(operation_type)
+        self.hidden_files_folders = kwargs.get('hidden_files_folders', False)
+        self.scanoss_settings = kwargs.get('scanoss_settings')
+        self.all_extensions = kwargs.get('all_extensions', False)
+        self.all_folders = kwargs.get('all_folders', False)
+        self.skip_folders = kwargs.get('skip_folders', [])
+        self.skip_size = kwargs.get('skip_size', 0)
+        self.skip_extensions = kwargs.get('skip_extensions', [])
+        self.is_folder_hashing_scan = kwargs.get('is_folder_hashing_scan', False)
+        self.file_folder_pat_spec = self._get_file_folder_pattern_spec(kwargs.get('operation_type', 'scanning'))
+        self.size_pat_rules = self._get_size_limit_pattern_rules(kwargs.get('operation_type', 'scanning'))
 
     def get_filtered_files_from_folder(self, root: str) -> List[str]:
         """
@@ -304,16 +496,16 @@ class FileFilters(ScanossBase):
             return all_files
         # Walk the tree looking for files to process. While taking into account files/folders to skip
         for dirpath, dirnames, filenames in os.walk(root_path):
-            dirpath = Path(dirpath)
-            rel_path = dirpath.relative_to(root_path)
-            if dirpath.is_symlink():  # TODO should we skip symlink folders?
-                self.print_msg(f'WARNING: Found symbolic link folder: {dirpath}')
+            dir_path = Path(dirpath)
+            rel_path = dir_path.relative_to(root_path)
+            if dir_path.is_symlink():  # TODO should we skip symlink folders?
+                self.print_msg(f'WARNING: Found symbolic link folder: {dir_path}')
 
-            if self._should_skip_dir(str(rel_path)):  # Current directory should be skipped
+            if self.should_skip_dir(str(rel_path)):  # Current directory should be skipped
                 dirnames.clear()
                 continue
             for filename in filenames:
-                file_path = dirpath / filename
+                file_path = dir_path / filename
                 all_files.append(str(file_path))
         # End os.walk loop
         # Now filter the files and return the reduced list
@@ -332,30 +524,36 @@ class FileFilters(ScanossBase):
         """
         filtered_files = []
         for file_path in files:
-            if not os.path.exists(file_path) or not os.path.isfile(file_path) or os.path.islink(file_path):
-                self.print_debug(
-                    f'WARNING: File {file_path} does not exist, is not a file, or is a symbolic link. Ignoring.'
-                )
-                continue
+            path_obj = Path(file_path)
             try:
                 if scan_root:
-                    rel_path = os.path.relpath(file_path, scan_root)
+                    rel_path = path_obj.relative_to(scan_root)
                 else:
-                    rel_path = os.path.relpath(file_path)
+                    rel_path = str(path_obj)
             except ValueError:
-                # If file_path is broken, symlink ignore it
                 self.print_debug(f'Ignoring file: {file_path} (broken symlink)')
                 continue
+
+            if not path_obj.exists() or not path_obj.is_file() or path_obj.is_symlink():
+                self.print_debug(
+                    f'WARNING: File {rel_path} does not exist, is not a file, or is a symbolic link. Ignoring.'
+                )
+                continue
+
+            if not self.hidden_files_folders and any(part.startswith('.') for part in path_obj.parts):
+                self.print_debug(f'Skipping file: {rel_path} (in hidden directory or is hidden file)')
+                continue
+
             if self._should_skip_file(rel_path):
                 continue
             try:
-                file_size = os.path.getsize(file_path)
+                file_size = path_obj.stat().st_size
                 if file_size == 0:
                     self.print_debug(f'Skipping file: {rel_path} (empty file)')
                     continue
                 min_size, max_size = self._get_operation_size_limits(file_path)
                 if min_size <= file_size <= max_size:
-                    filtered_files.append(rel_path)
+                    filtered_files.append(str(rel_path))
                 else:
                     self.print_debug(
                         f'Skipping file: {rel_path} (size {file_size} outside limits {min_size}-{max_size})'
@@ -369,8 +567,11 @@ class FileFilters(ScanossBase):
         """
         Get file path pattern specification.
 
-        :param operation_type: which operation is being performed
-        :return:  List of file path patterns
+        Args:
+            operation_type (str): Type of operation ('scanning' or 'fingerprinting')
+
+        Returns:
+            GitIgnoreSpec: GitIgnoreSpec object containing the file path patterns
         """
         patterns = self._get_operation_patterns(operation_type)
         if patterns:
@@ -381,8 +582,11 @@ class FileFilters(ScanossBase):
         """
         Get size limit pattern rules.
 
-        :param operation_type: which operation is being performed
-        :return: List of size limit pattern rules
+        Args:
+            operation_type (str): Type of operation ('scanning' or 'fingerprinting')
+
+        Returns:
+            List of size limit pattern rules
         """
         if self.scanoss_settings:
             size_rules = self.scanoss_settings.get_skip_sizes(operation_type)
@@ -407,6 +611,14 @@ class FileFilters(ScanossBase):
             List[str]: Combined list of patterns to skip
         """
         patterns = []
+
+        # Default patterns for skipping directories
+        if not self.all_folders:
+            DEFAULT_SKIPPED_DIR_LIST = DEFAULT_SKIPPED_DIRS_HFH if self.is_folder_hashing_scan else DEFAULT_SKIPPED_DIRS
+            for dir_name in DEFAULT_SKIPPED_DIR_LIST:
+                patterns.append(f'{dir_name}/')
+
+        # Custom patterns added in SCANOSS settings file
         if self.scanoss_settings:
             patterns.extend(self.scanoss_settings.get_skip_patterns(operation_type))
         return patterns
@@ -445,7 +657,7 @@ class FileFilters(ScanossBase):
         # End rules loop
         return min_size, max_size
 
-    def _should_skip_dir(self, dir_rel_path: str) -> bool:
+    def should_skip_dir(self, dir_rel_path: str) -> bool:  # noqa: PLR0911
         """
         Check if a directory should be skipped based on operation type and default rules.
 
@@ -483,7 +695,7 @@ class FileFilters(ScanossBase):
             return True
         return False
 
-    def _should_skip_file(self, file_rel_path: str) -> bool:
+    def _should_skip_file(self, file_rel_path: str) -> bool:  # noqa: PLR0911
         """
         Check if a file should be skipped based on operation type and default rules.
 
@@ -495,6 +707,9 @@ class FileFilters(ScanossBase):
         """
         file_name = os.path.basename(file_rel_path)
 
+        DEFAULT_SKIPPED_FILES_LIST = DEFAULT_SKIPPED_FILES_HFH if self.is_folder_hashing_scan else DEFAULT_SKIPPED_FILES
+        DEFAULT_SKIPPED_EXT_LIST = DEFAULT_SKIPPED_EXT_HFH if self.is_folder_hashing_scan else DEFAULT_SKIPPED_EXT
+
         if not self.hidden_files_folders and file_name.startswith('.'):
             self.print_debug(f'Skipping file: {file_rel_path} (hidden file)')
             return True
@@ -502,11 +717,11 @@ class FileFilters(ScanossBase):
             return False
         file_name_lower = file_name.lower()
         # Look for exact files
-        if file_name_lower in DEFAULT_SKIPPED_FILES:
+        if file_name_lower in DEFAULT_SKIPPED_FILES_LIST:
             self.print_debug(f'Skipping file: {file_rel_path} (matches default skip file)')
             return True
         # Look for file endings
-        for ending in DEFAULT_SKIPPED_EXT:
+        for ending in DEFAULT_SKIPPED_EXT_LIST:
             if file_name_lower.endswith(ending):
                 self.print_debug(f'Skipping file: {file_rel_path} (matches default skip ending: {ending})')
                 return True

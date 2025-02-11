@@ -25,13 +25,31 @@ SPDX-License-Identifier: MIT
 import argparse
 import os
 import sys
+from dataclasses import asdict
 from pathlib import Path
+from typing import List
 
 import pypac
-from typing import List
+
+from scanoss.scanners.folder_hasher import (
+    FolderHasher,
+    create_folder_hasher_config_from_args,
+)
+from scanoss.scanossgrpc import (
+    ScanossGrpc,
+    ScanossGrpcError,
+    create_grpc_config_from_args,
+)
 
 from . import __version__
 from .components import Components
+from .constants import (
+    DEFAULT_POST_SIZE,
+    DEFAULT_RETRY,
+    DEFAULT_TIMEOUT,
+    MIN_TIMEOUT,
+    PYTHON_MAJOR_VERSION,
+)
 from .csvoutput import CsvOutput
 from .cyclonedx import CycloneDx
 from .filecount import FileCount
@@ -40,6 +58,8 @@ from .inspection.undeclared_component import UndeclaredComponent
 from .results import Results
 from .scancodedeps import ScancodeDeps
 from .scanner import FAST_WINNOWING, Scanner
+from .scanners.scanner_config import create_scanner_config_from_args
+from .scanners.scanner_hfh import ScannerHFH
 from .scanoss_settings import ScanossSettings, ScanossSettingsError
 from .scantype import ScanType
 from .spdxlite import SpdxLite
@@ -52,6 +72,7 @@ MIN_TIMEOUT_VALUE = 5
 DEFAULT_RETRY = 5
 PYTHON3_OR_LATER = 3
 HEADER_PARTS_COUNT = 2
+
 
 def print_stderr(*args, **kwargs):
     """
@@ -132,15 +153,17 @@ def setup_args() -> None:  # noqa: PLR0915
         help='Timeout (in seconds) for API communication (optional - default 180)',
     )
     p_scan.add_argument(
-        '--retry', '-R', type=int, default=DEFAULT_RETRY,
-        help='Retry limit for API communication (optional - default 5)'
+        '--retry',
+        '-R',
+        type=int,
+        default=DEFAULT_RETRY,
+        help='Retry limit for API communication (optional - default 5)',
     )
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
     p_scan.add_argument(
-        '--sc-command', type=str,
-        help='Scancode command and path if required (optional - default scancode).'
+        '--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).'
     )
     p_scan.add_argument(
         '--sc-timeout',
@@ -153,18 +176,6 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_scan.add_argument('--dep-scope-inc', '-dsi', type=str, help='Include dependencies with declared scopes')
     p_scan.add_argument('--dep-scope-exc', '-dse', type=str, help='Exclude dependencies with declared scopes')
-    p_scan.add_argument(
-        '--settings',
-        '-st',
-        type=str,
-        help='Settings file to use for scanning (optional - default scanoss.json)',
-    )
-    p_scan.add_argument(
-        '--skip-settings-file',
-        '-stf',
-        action='store_true',
-        help='Skip default settings file (scanoss.json) if it exists',
-    )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser(
@@ -183,18 +194,6 @@ def setup_args() -> None:  # noqa: PLR0915
         help='Fingerprint the file contents supplied via STDIN (optional)',
     )
     p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
-    p_wfp.add_argument(
-        '--settings',
-        '-st',
-        type=str,
-        help='Settings file to use for fingerprinting (optional - default scanoss.json)',
-    )
-    p_wfp.add_argument(
-        '--skip-settings-file',
-        '-stf',
-        action='store_true',
-        help='Skip default settings file (scanoss.json) if it exists',
-    )
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser(
@@ -333,6 +332,7 @@ def setup_args() -> None:  # noqa: PLR0915
     for p in [c_crypto, c_vulns, c_semgrep, c_provenance]:
         p.add_argument('--purl', '-p', type=str, nargs='*', help='Package URL - PURL to process.')
         p.add_argument('--input', '-i', type=str, help='Input file name')
+
     # Common Component sub-command options
     for p in [c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
         p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
@@ -491,6 +491,81 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_undeclared.set_defaults(func=inspect_undeclared)
 
+    # Sub-command: folder-scan
+    p_folder_scan = subparsers.add_parser(
+        'folder-scan',
+        aliases=['fs'],
+        description=f'Scan the given directory using folder hashing: {__version__}',
+        help='Scan the given directory using folder hashing',
+    )
+    p_folder_scan.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='The root directory to scan')
+    p_folder_scan.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
+    p_folder_scan.add_argument(
+        '--timeout',
+        '-M',
+        type=int,
+        default=600,
+        help='Timeout (in seconds) for API communication (optional - default 600)',
+    )
+    p_folder_scan.add_argument(
+        '--format',
+        '-f',
+        type=str,
+        choices=['json'],
+        default='json',
+        help='Result output format (optional - default: json)',
+    )
+    p_folder_scan.add_argument(
+        '--best-match',
+        '-bm',
+        action='store_true',
+        default=False,
+        help='Enable best match mode (optional - default: False)',
+    )
+    p_folder_scan.add_argument(
+        '--threshold',
+        type=int,
+        choices=range(1, 101),
+        metavar='1-100',
+        default=100,
+        help='Threshold for result matching (optional - default: 100)',
+    )
+    p_folder_scan.set_defaults(func=folder_hashing_scan)
+
+    # Sub-command: folder-hash
+    p_folder_hash = subparsers.add_parser(
+        'folder-hash',
+        aliases=['fh'],
+        description=f'Produce a folder hash for the given directory: {__version__}',
+        help='Produce a folder hash for the given directory',
+    )
+    p_folder_hash.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
+    p_folder_hash.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
+    p_folder_hash.add_argument(
+        '--format',
+        '-f',
+        type=str,
+        choices=['json'],
+        default='json',
+        help='Result output format (optional - default: json)',
+    )
+    p_folder_hash.set_defaults(func=folder_hash)
+
+    # Scanoss settings options
+    for p in [p_folder_scan, p_scan, p_wfp, p_folder_hash]:
+        p.add_argument(
+            '--settings',
+            '-st',
+            type=str,
+            help='Settings file to use for scanning (optional - default scanoss.json)',
+        )
+        p.add_argument(
+            '--skip-settings-file',
+            '-stf',
+            action='store_true',
+            help='Skip default settings file (scanoss.json) if it exists',
+        )
+
     for p in [p_copyleft, p_undeclared]:
         p.add_argument('-i', '--input', nargs='?', help='Path to results file')
         p.add_argument(
@@ -559,7 +634,7 @@ def setup_args() -> None:  # noqa: PLR0915
         )
 
     # Global GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance, p_folder_scan]:
         p.add_argument(
             '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
         )
@@ -570,10 +645,11 @@ def setup_args() -> None:  # noqa: PLR0915
             'Can also use the environment variable "grcp_proxy=<ip>:<port>"',
         )
         p.add_argument(
-            '--header','-hdr',
+            '--header',
+            '-hdr',
             action='append',  # This allows multiple -H flags
             type=str,
-            help='Headers to be sent on request (e.g., -hdr "Name: Value") - can be used multiple times'
+            help='Headers to be sent on request (e.g., -hdr "Name: Value") - can be used multiple times',
         )
 
     # Help/Trace command options
@@ -594,7 +670,8 @@ def setup_args() -> None:  # noqa: PLR0915
         p_results,
         p_undeclared,
         p_copyleft,
-        c_provenance
+        c_provenance,
+        p_folder_scan,
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -607,11 +684,11 @@ def setup_args() -> None:  # noqa: PLR0915
     if not args.subparser:
         parser.print_help()  # No sub command subcommand, print general help
         sys.exit(1)
-    elif (
-        args.subparser in {'utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins'} and not args.subparsercmd):
+    elif (args.subparser in ('utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins')) and not args.subparsercmd:
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
+
 
 def ver(*_):
     """
@@ -766,7 +843,7 @@ def get_scan_options(args):
     return scan_options
 
 
-def scan(parser, args): # noqa: PLR0912, PLR0915
+def scan(parser, args):  # noqa: PLR0912, PLR0915
     """
     Run the "scan" sub-command
     Parameters
@@ -861,7 +938,7 @@ def scan(parser, args): # noqa: PLR0912, PLR0915
         if flags:
             print_stderr(f'Using flags {flags}...')
     elif not args.quiet:
-        if args.timeout < MIN_TIMEOUT_VALUE:
+        if args.timeout < MIN_TIMEOUT:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
         if args.retry < 0:
             print_stderr(f'POST retry (--retry) too small: {args.retry}. Reverting to default.')
@@ -910,7 +987,7 @@ def scan(parser, args): # noqa: PLR0912, PLR0915
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
         scan_settings=scan_settings,
-        req_headers= process_req_headers(args.header),
+        req_headers=process_req_headers(args.header),
     )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
@@ -1122,7 +1199,7 @@ def utils_certloc(*_):
     print(f'CA Cert File: {certifi.where()}')
 
 
-def utils_cert_download(_, args): # pylint: disable=PLR0912 # noqa: PLR0912
+def utils_cert_download(_, args):  # pylint: disable=PLR0912 # noqa: PLR0912
     """
     Run the "utils cert-download" sub-command
     :param _: ignore/unused
@@ -1149,13 +1226,14 @@ def utils_cert_download(_, args): # pylint: disable=PLR0912 # noqa: PLR0912
         certs = conn.get_peer_cert_chain()
         for index, cert in enumerate(certs):
             cert_components = dict(cert.get_subject().get_components())
-            if sys.version_info[0] >= PYTHON3_OR_LATER:
+            if sys.version_info[0] >= PYTHON_MAJOR_VERSION:
                 cn = cert_components.get(b'CN')
             else:
+                # Fallback for Python versions less than PYTHON_MAJOR_VERSION
                 cn = cert_components.get('CN')
             if not args.quiet:
                 print_stderr(f'Certificate {index} - CN: {cn}')
-            if sys.version_info[0] >= PYTHON3_OR_LATER:
+            if sys.version_info[0] >= PYTHON_MAJOR_VERSION:
                 print(
                     (crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode('utf-8')).strip(), file=file
                 )  # Print the downloaded PEM certificate
@@ -1248,7 +1326,7 @@ def comp_crypto(parser, args):
         grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
-        req_headers= process_req_headers(args.header),
+        req_headers=process_req_headers(args.header),
     )
     if not comps.get_crypto_details(args.input, args.purl, args.output):
         sys.exit(1)
@@ -1406,6 +1484,7 @@ def comp_versions(parser, args):
     if not comps.get_component_versions(args.output, json_file=args.input, purl=args.purl, limit=args.limit):
         sys.exit(1)
 
+
 def comp_provenance(parser, args):
     """
     Run the "component semgrep" sub-command
@@ -1424,11 +1503,22 @@ def comp_provenance(parser, args):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
         sys.exit(1)
     pac_file = get_pac_file(args.pac)
-    comps = Components(debug=args.debug, trace=args.trace, quiet=args.quiet, grpc_url=args.api2url, api_key=args.key,
-                       ca_cert=args.ca_cert, proxy=args.proxy, grpc_proxy=args.grpc_proxy, pac=pac_file,
-                       timeout=args.timeout, req_headers=process_req_headers(args.header))
+    comps = Components(
+        debug=args.debug,
+        trace=args.trace,
+        quiet=args.quiet,
+        grpc_url=args.api2url,
+        api_key=args.key,
+        ca_cert=args.ca_cert,
+        proxy=args.proxy,
+        grpc_proxy=args.grpc_proxy,
+        pac=pac_file,
+        timeout=args.timeout,
+        req_headers=process_req_headers(args.header),
+    )
     if not comps.get_provenance_details(args.input, args.purl, args.output):
         sys.exit(1)
+
 
 def results(parser, args):
     """
@@ -1488,12 +1578,98 @@ def process_req_headers(headers_array: List[str]) -> dict:
     dict_headers = {}
     for header_str in headers_array:
         # Split each "Name: Value" header
-        parts = header_str.split(":", 1)
+        parts = header_str.split(':', 1)
         if len(parts) == HEADER_PARTS_COUNT:
             name = parts[0].strip()
             value = parts[1].strip()
             dict_headers[name] = value
     return dict_headers
+
+
+def folder_hashing_scan(parser, args):
+    """Run the "folder-scan" sub-command
+
+    Args:
+        parser (ArgumentParser): command line parser object
+        args (Namespace): Parsed arguments
+    """
+    try:
+        if not args.scan_dir:
+            print_stderr('ERROR: Please specify a directory to scan')
+            parser.parse_args([args.subparser, '-h'])
+            sys.exit(1)
+
+        if not os.path.exists(args.scan_dir) or not os.path.isdir(args.scan_dir):
+            print_stderr(f'ERROR: The specified directory {args.scan_dir} does not exist')
+            sys.exit(1)
+
+        scanner_config = create_scanner_config_from_args(args)
+        scanoss_settings = get_scanoss_settings_from_args(args)
+        grpc_config = create_grpc_config_from_args(args)
+
+        client = ScanossGrpc(**asdict(grpc_config))
+
+        scanner = ScannerHFH(
+            scan_dir=args.scan_dir,
+            config=scanner_config,
+            client=client,
+            scanoss_settings=scanoss_settings,
+        )
+
+        scanner.best_match = args.best_match
+        scanner.threshold = args.threshold
+
+        scanner.scan()
+        scanner.present(output_file=args.output, output_format=args.format)
+    except ScanossGrpcError as e:
+        print_stderr(f'ERROR: {e}')
+        sys.exit(1)
+
+
+def folder_hash(parser, args):
+    """Run the "folder-hash" sub-command
+
+    Args:
+        parser (ArgumentParser): command line parser object
+        args (Namespace): Parsed arguments
+    """
+    try:
+        if not args.scan_dir:
+            print_stderr('ERROR: Please specify a directory to scan')
+            parser.parse_args([args.subparser, '-h'])
+            sys.exit(1)
+
+        if not os.path.exists(args.scan_dir) or not os.path.isdir(args.scan_dir):
+            print_stderr(f'ERROR: The specified directory {args.scan_dir} does not exist')
+            sys.exit(1)
+
+        folder_hasher_config = create_folder_hasher_config_from_args(args)
+        scanoss_settings = get_scanoss_settings_from_args(args)
+
+        folder_hasher = FolderHasher(
+            scan_dir=args.scan_dir,
+            config=folder_hasher_config,
+            scanoss_settings=scanoss_settings,
+        )
+
+        folder_hasher.hash_directory(args.scan_dir)
+        folder_hasher.present(output_file=args.output, output_format=args.format)
+    except Exception as e:
+        print_stderr(f'ERROR: {e}')
+        sys.exit(1)
+
+
+def get_scanoss_settings_from_args(args):
+    scanoss_settings = None
+    if not args.skip_settings_file:
+        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        try:
+            scanoss_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new').set_scan_type('identify')
+        except ScanossSettingsError as e:
+            print_stderr(f'Error: {e}')
+            sys.exit(1)
+        return scanoss_settings
+
 
 def main():
     """
