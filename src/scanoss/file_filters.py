@@ -514,3 +514,39 @@ class FileFilters(ScanossBase):
             self.print_debug(f'Skipping file: {file_rel_path} (matches custom pattern)')
             return True
         return False
+
+    def _should_skip_file_for_hfh(self, file_path: Path) -> bool:
+        """
+        Check if a file should be skipped during folder hashing scan.
+
+        Args:
+            file_path (Path): The path to the file to check.
+
+        Returns:
+            bool: True if the file should be skipped, False otherwise.
+        """
+        try:
+            if (
+                any(part.startswith('.') for part in file_path.parts)  # Hidden files/folders
+                or file_path.is_symlink()  # Symlinks
+                or file_path.stat().st_size == 0  # Empty files
+            ):
+                self.print_debug(f'Skipping file: {file_path} (hidden/symlink/empty)')
+                return True
+
+            # Files ending with null
+            if file_path.suffix.lower() == '.txt':
+                try:
+                    with open(file_path, 'rb') as f:
+                        if f.read().endswith(b'\x00'):
+                            self.print_debug(f'Skipping file: {file_path} (text file ending with null)')
+                            return True
+                except (OSError, IOError):
+                    self.print_debug(f'Skipping file: {file_path} (cannot read file content)')
+                    return True
+
+            return False
+
+        except Exception as e:
+            self.print_debug(f'Error checking file {file_path}: {str(e)}')
+            return True

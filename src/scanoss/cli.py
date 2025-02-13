@@ -30,6 +30,10 @@ from pathlib import Path
 
 import pypac
 
+from scanoss.scanners.folder_hasher import (
+    FolderHasher,
+    create_folder_hasher_config_from_args,
+)
 from scanoss.scanossgrpc import (
     ScanossGrpc,
     ScanossGrpcError,
@@ -316,6 +320,7 @@ def setup_args() -> None:  # noqa: PLR0915
     for p in [c_crypto, c_vulns, c_semgrep]:
         p.add_argument('--purl', '-p', type=str, nargs='*', help='Package URL - PURL to process.')
         p.add_argument('--input', '-i', type=str, help='Input file name')
+
     # Common Component sub-command options
     for p in [c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
         p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
@@ -474,35 +479,68 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_undeclared.set_defaults(func=inspect_undeclared)
 
+    # Sub-command: folder-scan
     p_folder_scan = subparsers.add_parser(
         'folder-scan',
+        aliases=['fs'],
         description=f'Scan the given directory using folder hashing: {__version__}',
         help='Scan the given directory using folder hashing',
     )
     p_folder_scan.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='The root directory to scan')
     p_folder_scan.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_folder_scan.add_argument(
+        '--timeout',
+        '-M',
+        type=int,
+        default=600,
+        help='Timeout (in seconds) for API communication (optional - default 600)',
+    )
+    p_folder_scan.add_argument(
         '--format',
         '-f',
         type=str,
-        choices=['plain', 'json'],
-        help='Result output format (optional - default: plain)',
+        choices=['json'],
+        default='json',
+        help='Result output format (optional - default: json)',
     )
     p_folder_scan.add_argument(
         '--best-match',
         '-bm',
         action='store_true',
+        default=False,
         help='Enable best match mode (optional - default: False)',
     )
     p_folder_scan.add_argument(
         '--threshold',
         type=int,
+        choices=range(1, 101),
+        metavar='1-100',
+        default=100,
         help='Threshold for result matching (optional - default: 100)',
     )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
+    # Sub-command: folder-hash
+    p_folder_hash = subparsers.add_parser(
+        'folder-hash',
+        aliases=['fh'],
+        description=f'Produce a folder hash for the given directory: {__version__}',
+        help='Produce a folder hash for the given directory',
+    )
+    p_folder_hash.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
+    p_folder_hash.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
+    p_folder_hash.add_argument(
+        '--format',
+        '-f',
+        type=str,
+        choices=['json'],
+        default='json',
+        help='Result output format (optional - default: json)',
+    )
+    p_folder_hash.set_defaults(func=folder_hash)
+
     # Scanoss settings options
-    for p in [p_folder_scan, p_scan, p_wfp]:
+    for p in [p_folder_scan, p_scan, p_wfp, p_folder_hash]:
         p.add_argument(
             '--settings',
             '-st',
@@ -530,7 +568,7 @@ def setup_args() -> None:  # noqa: PLR0915
         p.add_argument('-s', '--status', type=str, help='Save summary data into Markdown file')
 
     # Global Scan command options
-    for p in [p_scan, p_folder_scan]:
+    for p in [p_scan]:
         p.add_argument(
             '--apiurl', type=str, help='SCANOSS API URL (optional - default: https://api.osskb.org/scan/direct)'
         )
@@ -614,6 +652,7 @@ def setup_args() -> None:  # noqa: PLR0915
         p_undeclared,
         p_copyleft,
         p_folder_scan,
+        p_folder_hash,
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -1495,6 +1534,39 @@ def folder_hashing_scan(parser, args):
         scanner.scan()
         scanner.present(output_file=args.output, output_format=args.format)
     except ScanossGrpcError as e:
+        print_stderr(f'ERROR: {e}')
+        sys.exit(1)
+
+
+def folder_hash(parser, args):
+    """Run the "folder-hash" sub-command
+
+    Args:
+        parser (ArgumentParser): command line parser object
+        args (Namespace): Parsed arguments
+    """
+    try:
+        if not args.scan_dir:
+            print_stderr('ERROR: Please specify a directory to scan')
+            parser.parse_args([args.subparser, '-h'])
+            sys.exit(1)
+
+        if not os.path.exists(args.scan_dir) or not os.path.isdir(args.scan_dir):
+            print_stderr(f'ERROR: The specified directory {args.scan_dir} does not exist')
+            sys.exit(1)
+
+        folder_hasher_config = create_folder_hasher_config_from_args(args)
+        scanoss_settings = get_scanoss_settings_from_args(args)
+
+        folder_hasher = FolderHasher(
+            scan_dir=args.scan_dir,
+            config=folder_hasher_config,
+            scanoss_settings=scanoss_settings,
+        )
+
+        folder_hasher.hash_directory(args.scan_dir)
+        folder_hasher.present(output_file=args.output, output_format=args.format)
+    except Exception as e:
         print_stderr(f'ERROR: {e}')
         sys.exit(1)
 

@@ -5,7 +5,7 @@ from scanoss.scanossbase import ScanossBase
 AVAILABLE_OUTPUT_FORMATS = ['json', 'plain']
 
 
-class AbstractPresenter(ABC, ScanossBase):
+class AbstractPresenter(ABC):
     """
     Abstract presenter class for presenting output in a given format.
     Subclasses must implement the _format_json_output and _format_plain_output methods.
@@ -22,7 +22,7 @@ class AbstractPresenter(ABC, ScanossBase):
         """
         Initialize the presenter with the given output file and format.
         """
-        super().__init__(debug=debug, trace=trace, quiet=quiet)
+        self.base = ScanossBase(debug=debug, trace=trace, quiet=quiet)
         self.output_file = output_file
         self.output_format = output_format
 
@@ -51,7 +51,7 @@ class AbstractPresenter(ABC, ScanossBase):
         """
         If a file path is provided, write to that file; otherwise, print the content to stdout.
         """
-        self.print_to_file_or_stdout(content, file_path)
+        self.base.print_to_file_or_stdout(content, file_path)
 
     @abstractmethod
     def _format_json_output(self) -> str:
