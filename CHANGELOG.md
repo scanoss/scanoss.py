@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.20.1] - 2025-02-18
+### Added
+- Enhanced SPDX Lite report to achieve Telco compliance
+
 ## [1.20.0] - 2025-02-02
 ### Added
 - Added support for component provenance reporting
@@ -457,3 +461,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.19.4]: https://github.com/scanoss/scanoss.py/compare/v1.19.3...v1.19.4
 [1.19.5]: https://github.com/scanoss/scanoss.py/compare/v1.19.4...v1.19.5
 [1.20.0]: https://github.com/scanoss/scanoss.py/compare/v1.19.5...v1.20.0
+[1.20.1]: https://github.com/scanoss/scanoss.py/compare/v1.20.0...v1.20.1
