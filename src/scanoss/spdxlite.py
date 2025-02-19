@@ -22,15 +22,15 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-import json
-import os.path
-import sys
-import hashlib
 import datetime
 import getpass
+import hashlib
+import json
+import os.path
 import re
+import sys
+
 import importlib_resources
-from commoncode.fetch import download_url
 
 from . import __version__
 
@@ -73,74 +73,102 @@ class SpdxLite:
         if not data:
             self.print_stderr('ERROR: No JSON data provided to parse.')
             return None
-        self.print_debug(f'Processing raw results into summary format...')
+
+        self.print_debug('Processing raw results into summary format...')
+        return self._process_files(data)
+
+    def _process_files(self, data: json) -> dict:
+        """Process each file in the data and build summary."""
         summary = {}
-        for f in data:
-            file_details = data.get(f)
-            # print(f'File: {f}: {file_details}\n')
-            for d in file_details:
-                id_details = d.get('id')
-                if not id_details or id_details == 'none':  # Ignore files with no ids
-                    continue
-                purl = None
-                if id_details == 'dependency':  # Process dependency data
-                    dependencies = d.get('dependencies')
-                    if not dependencies:
-                        self.print_stderr(f'Warning: No Dependencies found for {f}: {file_details}')
-                        continue
-                    for deps in dependencies:
-                        # print(f'File: {f} Deps: {deps}')
-                        purl = deps.get('purl')
-                        if not purl:
-                            self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
-                            continue
-                        if summary.get(purl):
-                            self.print_debug(f'Component {purl} already stored: {summary.get(purl)}')
-                            continue
-                        fd = {}
-                        for field in ['component', 'version', 'url']:
-                            fd[field] = deps.get(field, '')
-                        licenses = deps.get('licenses')
-                        fdl = []
-                        if licenses:
-                            dc = []
-                            for lic in licenses:
-                                name = lic.get('name')
-                                if name not in dc:  # Only save the license name once
-                                    fdl.append({'id': name})
-                                    dc.append(name)
-                        fd['licenses'] = fdl
-                        summary[purl] = fd
-                else:  # Normal file id type
-                    purls = d.get('purl')
-                    if not purls:
-                        self.print_stderr(f'Purl block missing for {f}: {file_details}')
-                        continue
-                    for p in purls:
-                        self.print_debug(f'Purl: {p}')
-                        purl = p
-                        break
-                    if not purl:
-                        self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
-                        continue
-                    if summary.get(purl):
-                        self.print_debug(f'Component {purl} already stored: {summary.get(purl)}')
-                        continue
-                    fd = {}
-                    for field in ['id', 'vendor', 'component', 'version', 'latest', 'url', 'url_hash', 'download_url']:
-                        fd[field] = d.get(field)
-                    licenses = d.get('licenses')
-                    fdl = []
-                    if licenses:
-                        dc = []
-                        for lic in licenses:
-                            name = lic.get('name')
-                            if name not in dc:  # Only save the license name once
-                                fdl.append({'id': name})
-                                dc.append(name)
-                    fd['licenses'] = fdl
-                    summary[purl] = fd
+        for file_path in data:
+            file_details = data.get(file_path)
+            self._process_file_entries(file_path, file_details, summary)
         return summary
+
+    def _process_file_entries(self, file_path: str, file_details: list, summary: dict):
+        """Process entries for a single file."""
+        for entry in file_details:
+            id_details = entry.get('id')
+            if not id_details or id_details == 'none':
+                continue
+
+            if id_details == 'dependency':
+                self._process_dependency_entry(file_path, entry, summary)
+            else:
+                self._process_normal_entry(file_path, entry, summary)
+
+    def _process_dependency_entry(self, file_path: str, entry: dict, summary: dict):
+        """Process a dependency type entry."""
+        dependencies = entry.get('dependencies')
+        if not dependencies:
+            self.print_stderr(f'Warning: No Dependencies found for {file_path}')
+            return
+
+        for dep in dependencies:
+            purl = dep.get('purl')
+            if not self._is_valid_purl(file_path, dep, purl, summary):
+                continue
+
+            summary[purl] = self._create_dependency_summary(dep)
+
+    def _process_normal_entry(self, file_path: str, entry: dict, summary: dict):
+        """Process a normal file type entry."""
+        purls = entry.get('purl')
+        if not purls:
+            self.print_stderr(f'Purl block missing for {file_path}')
+            return
+
+        purl = purls[0] if purls else None
+        if not self._is_valid_purl(file_path, entry, purl, summary):
+            return
+
+        summary[purl] = self._create_normal_summary(entry)
+
+    def _is_valid_purl(self, file_path: str, entry: dict, purl: str, summary: dict) -> bool:
+        """Check if PURL is valid and not already processed."""
+        if not purl:
+            self.print_stderr(f'Warning: No PURL found for {file_path}: {entry}')
+            return False
+
+        if summary.get(purl):
+            self.print_debug(f'Component {purl} already stored: {summary.get(purl)}')
+            return False
+
+        return True
+
+    def _create_dependency_summary(self, dep: dict) -> dict:
+        """Create summary for dependency entry."""
+        summary = {}
+        for field in ['component', 'version', 'url']:
+            summary[field] = dep.get(field, '')
+        summary['licenses'] = self._process_licenses(dep.get('licenses'))
+        return summary
+
+    def _create_normal_summary(self, entry: dict) -> dict:
+        """Create summary for normal file entry."""
+        summary = {}
+        fields = ['id', 'vendor', 'component', 'version', 'latest',
+                  'url', 'url_hash', 'download_url']
+        for field in fields:
+            summary[field] = entry.get(field)
+        summary['licenses'] = self._process_licenses(entry.get('licenses'))
+        return summary
+
+    def _process_licenses(self, licenses: list) -> list:
+        """Process license information and remove duplicates."""
+        if not licenses:
+            return []
+
+        processed_licenses = []
+        seen_names = set()
+
+        for license_info in licenses:
+            name = license_info.get('name')
+            if name and name not in seen_names:
+                processed_licenses.append({'id': name})
+                seen_names.add(name)
+
+        return processed_licenses
 
     def produce_from_file(self, json_file: str, output_file: str = None) -> bool:
         """
@@ -170,116 +198,163 @@ class SpdxLite:
         if not raw_data:
             self.print_stderr('ERROR: No SPDX data returned for the JSON string provided.')
             return False
+
         self.load_license_data()
-        # Using this SPDX version as the spec
-        # https://github.com/spdx/spdx-spec/blob/development/v2.2.2/examples/SPDXJSONExample-v2.2.spdx.json
-        # Validate using:
-        # pip3 install jsonschema
-        # jsonschema -i spdxlite.json  <(curl https://raw.githubusercontent.com/spdx/spdx-spec/v2.2/schemas/spdx-schema.json)
-        # Validation can also be done online here: https://tools.spdx.org/app/validate/
-        now = datetime.datetime.utcnow()  # TODO replace with recommended format
+        spdx_document = self._create_base_document(raw_data)
+        self._process_packages(raw_data, spdx_document)
+        return self._write_output(spdx_document, output_file)
+
+    def _create_base_document(self, raw_data: dict) -> dict:
+        """Create the base SPDX document structure."""
+        now = datetime.datetime.utcnow()
         md5hex = hashlib.md5(f'{raw_data}-{now}'.encode('utf-8')).hexdigest()
-        data = {
+
+        return {
             'spdxVersion': 'SPDX-2.2',
             'dataLicense': 'CC0-1.0',
-            'SPDXID': f'SPDXRef-DOCUMENT',
+            'SPDXID': 'SPDXRef-DOCUMENT',
             'name': 'SCANOSS-SBOM',
-            'creationInfo': {
-                'created': now.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'creators': [
-                    f'Tool: SCANOSS-PY: {__version__}',
-                    f'Person: {getpass.getuser()}',
-                    f'Organization: SCANOSS'
-                ],
-                "comment": "SBOM Build information - SBOM Type: Build",
-            },
+            'creationInfo': self._create_creation_info(now),
             'documentNamespace': f'https://spdx.org/spdxdocs/scanoss-py-{__version__}-{md5hex}',
             'documentDescribes': [],
             'hasExtractedLicensingInfos': [],
             'packages': [],
         }
-        lic_refs = set()  # Hash Set of non-SPDX license references
-        for purl in raw_data:
-            comp = raw_data.get(purl)
-            licenses = comp.get('licenses')
-            lic_text = 'NOASSERTION'
-            if licenses:
-                lic_set = set()
-                for lic in licenses:
-                    lc_id = lic.get('id')
-                    if lc_id:
-                        spdx_id = self.get_spdx_license_id(lc_id)
-                        if not spdx_id:
-                            if not lc_id.startswith('LicenseRef'):
-                                lc_id = f'LicenseRef-{lc_id}'  # Make sure it has a license ref in its name
-                            lic_refs.add(lc_id)  # save non-SPDX license for later reference
-                        lic_set.add(spdx_id if spdx_id else lc_id)
-                if len(lic_set) > 0:
-                    lic_text = ' AND '.join(lic_set)
-                if len(lic_set) > 1:
-                    lic_text = f'({lic_text})'  # wrap the names in () if there is more than one
-            comp_name = comp.get('component')
-            comp_ver = comp.get('version')
-            purl_ver = f'{purl}@{comp_ver}'
-            vendor = comp.get('vendor', 'NOASSERTION')
-            supplier = f'Organization: {vendor}'
-            purl_hash = hashlib.md5(f'{purl_ver}'.encode('utf-8')).hexdigest()
-            purl_spdx = f'SPDXRef-{purl_hash}'
-            data['documentDescribes'].append(purl_spdx)
-            download_location = comp.get('download_url') or comp.get('url')
-            url_hash = comp.get('url_hash') or '0' * 32 #Creates a string of 32 zeros to represent an empty MD5 hash for components missing a checksum
-            data['packages'].append(
+
+    def _create_creation_info(self, timestamp: datetime.datetime) -> dict:
+        """Create the creation info section."""
+        return {
+            'created': timestamp.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'creators': [
+                f'Tool: SCANOSS-PY: {__version__}',
+                f'Person: {getpass.getuser()}',
+                'Organization: SCANOSS'
+            ],
+            'comment': 'SBOM Build information - SBOM Type: Build',
+        }
+
+    def _process_packages(self, raw_data: dict, spdx_document: dict):
+        """Process packages and add them to the SPDX document."""
+        lic_refs = set()
+
+        for purl, comp in raw_data.items():
+            package_info = self._create_package_info(purl, comp, lic_refs)
+            spdx_document['packages'].append(package_info)
+            spdx_document['documentDescribes'].append(package_info['SPDXID'])
+
+        self._process_license_refs(lic_refs, spdx_document)
+
+    def _create_package_info(self, purl: str, comp: dict, lic_refs: set) -> dict:
+        """Create package information for SPDX document."""
+        lic_text = self._process_package_licenses(comp.get('licenses', []), lic_refs)
+        comp_ver = comp.get('version')
+        purl_ver = f'{purl}@{comp_ver}'
+        purl_hash = hashlib.md5(purl_ver.encode('utf-8')).hexdigest()
+
+        return {
+            'name': comp.get('component'),
+            'SPDXID': f'SPDXRef-{purl_hash}',
+            'versionInfo': comp_ver,
+            'downloadLocation': comp.get('download_url') or comp.get('url'),
+            'homepage': comp.get('url', ''),
+            'licenseDeclared': lic_text,
+            'licenseConcluded': 'NOASSERTION',
+            'filesAnalyzed': False,
+            'copyrightText': 'NOASSERTION',
+            'supplier': f'Organization: {comp.get("vendor", "NOASSERTION")}',
+            'externalRefs': [
                 {
-                    'name': comp_name,
-                    'SPDXID': purl_spdx,
-                    'versionInfo': comp_ver,
-                    'downloadLocation': download_location,
-                    'homepage': comp.get('url', ''),
-                    'licenseDeclared': lic_text,
-                    'licenseConcluded': 'NOASSERTION',
-                    'filesAnalyzed': False,
-                    'copyrightText': 'NOASSERTION',
-                    'supplier': supplier,
-                    'externalRefs': [
-                        {'referenceCategory': 'PACKAGE-MANAGER', 'referenceLocator': purl_ver, 'referenceType': 'purl'}
-                    ],
-                    "checksums": [
-                        {
-                            "algorithm": "MD5",
-                            "checksumValue": url_hash,
-                        }
-                    ],
+                    'referenceCategory': 'PACKAGE-MANAGER',
+                    'referenceLocator': purl_ver,
+                    'referenceType': 'purl'
                 }
-            )
-        # End purls for loop
-        for lic_ref in lic_refs:  # Insert all the non-SPDX license references
+            ],
+            'checksums': [
+                {
+                    'algorithm': 'MD5',
+                    'checksumValue': comp.get('url_hash') or '0' * 32
+                }
+            ],
+        }
+
+    def _process_package_licenses(self, licenses: list, lic_refs: set) -> str:
+        """Process licenses and return license text."""
+        if not licenses:
+            return 'NOASSERTION'
+
+        lic_set = set()
+        for lic in licenses:
+            lc_id = lic.get('id')
+            if lc_id:
+                self._process_license_id(lc_id, lic_refs, lic_set)
+
+        return self._format_license_text(lic_set)
+
+    def _process_license_id(self, lc_id: str, lic_refs: set, lic_set: set):
+        """Process individual license ID."""
+        spdx_id = self.get_spdx_license_id(lc_id)
+        if not spdx_id:
+            if not lc_id.startswith('LicenseRef'):
+                lc_id = f'LicenseRef-{lc_id}'
+            lic_refs.add(lc_id)
+        lic_set.add(spdx_id if spdx_id else lc_id)
+
+    def _format_license_text(self, lic_set: set) -> str:
+        """Format the license text with proper syntax."""
+        if not lic_set:
+            return 'NOASSERTION'
+
+        lic_text = ' AND '.join(lic_set)
+        if len(lic_set) > 1:
+            lic_text = f'({lic_text})'
+        return lic_text
+
+    def _process_license_refs(self, lic_refs: set, spdx_document: dict):
+        """Process and add license references to the document."""
+        for lic_ref in lic_refs:
+            license_info = self._parse_license_ref(lic_ref)
+            spdx_document['hasExtractedLicensingInfos'].append(license_info)
+
+    def _parse_license_ref(self, lic_ref: str) -> dict:
+        """Parse license reference and create info dictionary."""
+        source, name = self._extract_license_info(lic_ref)
+        source_text = f' by {source}.' if source else '.'
+
+        return {
+            'licenseId': lic_ref,
+            'name': name.replace('-', ' '),
+            'extractedText': 'Detected license, please review component source code.',
+            'comment': f'Detected license{source_text}',
+        }
+
+    def _extract_license_info(self, lic_ref: str):
+        """Extract source and name from license reference."""
+        match = re.search(r'^LicenseRef-(scancode-|scanoss-|)(\S+)$', lic_ref, re.IGNORECASE)
+        if match:
+            source = match.group(1).replace('-', '')
+            name = match.group(2)
+        else:
             source = ''
-            match = re.search(r'^LicenseRef-(scancode-|scanoss-|)(\S+)$', lic_ref, re.IGNORECASE)
-            if match:
-                source = match.group(1).replace('-', '')  # source for the custom license
-                name = match.group(2)  # license name (without references, etc.)
-            else:
-                name = lic_ref
-            name = name.replace('-', ' ')
-            source = f' by {source}.' if source else '.'
-            data['hasExtractedLicensingInfos'].append(
-                {
-                    'licenseId': lic_ref,
-                    'name': name,
-                    'extractedText': 'Detected license, please review component source code.',
-                    'comment': f'Detected license{source}',
-                }
-            )
-        # End license refs for loop
-        file = sys.stdout
+            name = lic_ref
+        return source, name
+
+    def _write_output(self, data: dict, output_file: str = None) -> bool:
+        """Write the SPDX document to output."""
+        try:
+            file = self._get_output_file(output_file)
+            print(json.dumps(data, indent=2), file=file)
+            if output_file:
+                file.close()
+            return True
+        except Exception as e:
+            self.print_stderr(f'Error writing output: {str(e)}')
+            return False
+
+    def _get_output_file(self, output_file: str = None):
+        """Get the appropriate output file handle."""
         if not output_file and self.output_file:
             output_file = self.output_file
-        if output_file:
-            file = open(output_file, 'w')
-        print(json.dumps(data, indent=2), file=file)
-        if output_file:
-            file.close()
-        return True
+        return open(output_file, 'w') if output_file else sys.stdout
 
     def produce_from_str(self, json_str: str, output_file: str = None) -> bool:
         """
