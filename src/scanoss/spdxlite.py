@@ -30,6 +30,7 @@ import datetime
 import getpass
 import re
 import importlib_resources
+from commoncode.fetch import download_url
 
 from . import __version__
 
@@ -126,7 +127,7 @@ class SpdxLite:
                         self.print_debug(f'Component {purl} already stored: {summary.get(purl)}')
                         continue
                     fd = {}
-                    for field in ['id', 'vendor', 'component', 'version', 'latest', 'url']:
+                    for field in ['id', 'vendor', 'component', 'version', 'latest', 'url', 'url_hash', 'download_url']:
                         fd[field] = d.get(field)
                     licenses = d.get('licenses')
                     fdl = []
@@ -185,7 +186,12 @@ class SpdxLite:
             'name': 'SCANOSS-SBOM',
             'creationInfo': {
                 'created': now.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'creators': [f'Tool: SCANOSS-PY: {__version__}', f'Person: {getpass.getuser()}'],
+                'creators': [
+                    f'Tool: SCANOSS-PY: {__version__}',
+                    f'Person: {getpass.getuser()}',
+                    f'Organization: SCANOSS'
+                ],
+                "comment": "SBOM Build information - SBOM Type: Build",
             },
             'documentNamespace': f'https://spdx.org/spdxdocs/scanoss-py-{__version__}-{md5hex}',
             'documentDescribes': [],
@@ -216,16 +222,18 @@ class SpdxLite:
             comp_ver = comp.get('version')
             purl_ver = f'{purl}@{comp_ver}'
             vendor = comp.get('vendor', 'NOASSERTION')
-            supplier = f'Organization: {vendor}' if vendor != 'NOASSERTION' else vendor
+            supplier = f'Organization: {vendor}'
             purl_hash = hashlib.md5(f'{purl_ver}'.encode('utf-8')).hexdigest()
             purl_spdx = f'SPDXRef-{purl_hash}'
             data['documentDescribes'].append(purl_spdx)
+            download_location = comp.get('download_url') or comp.get('url')
+            url_hash = comp.get('url_hash') or '0' * 32 #Creates a string of 32 zeros to represent an empty MD5 hash for components missing a checksum
             data['packages'].append(
                 {
                     'name': comp_name,
                     'SPDXID': purl_spdx,
                     'versionInfo': comp_ver,
-                    'downloadLocation': 'NOASSERTION',  # TODO Add actual download location
+                    'downloadLocation': download_location,
                     'homepage': comp.get('url', ''),
                     'licenseDeclared': lic_text,
                     'licenseConcluded': 'NOASSERTION',
@@ -234,6 +242,12 @@ class SpdxLite:
                     'supplier': supplier,
                     'externalRefs': [
                         {'referenceCategory': 'PACKAGE-MANAGER', 'referenceLocator': purl_ver, 'referenceType': 'purl'}
+                    ],
+                    "checksums": [
+                        {
+                            "algorithm": "MD5",
+                            "checksumValue": url_hash,
+                        }
                     ],
                 }
             )
