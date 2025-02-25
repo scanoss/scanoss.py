@@ -58,7 +58,15 @@ DEFAULT_SKIPPED_DIRS = {
     'wheels',
     'htmlcov',
     '__pypackages__',
+    'example',
+    'examples',
+    'docs',
+    'tests',
+    'doc',
+    'test',
 }
+
+
 # Folder endings to skip
 DEFAULT_SKIPPED_DIR_EXT = {'.egg-info'}
 # File extensions to skip
@@ -211,6 +219,9 @@ DEFAULT_SKIPPED_EXT = {
     '.mf',
     '.base64',
     '.s',
+    '.diff',
+    '.patch',
+    '.rules',
     # File endings
     '-doc',
     'changelog',

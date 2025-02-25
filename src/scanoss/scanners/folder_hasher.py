@@ -134,18 +134,19 @@ class FolderHasher:
         root = Path(path).resolve()
         root_node = DirectoryNode(str(root))
 
-        filtered_files = [
-            f for f in root.rglob('*') if f.is_file() and not self.file_filters._should_skip_file_for_hfh(f)
-        ]
+        all_files = [f for f in root.rglob('*') if f.is_file()]
+        filtered_files = self.file_filters.get_filtered_files_from_files(all_files, str(root))
+
         # Sort the files by name to ensure the hash is the same for the same folder
         filtered_files.sort()
 
         bar = Bar('Hashing files...', max=len(filtered_files))
         for file_path in filtered_files:
             try:
-                self.base.print_debug(f'\nHashing file {file_path}')
+                file_path_obj = Path(file_path) if isinstance(file_path, str) else file_path
+                full_file_path = file_path_obj if file_path_obj.is_absolute() else root / file_path_obj
 
-                full_file_path = file_path if file_path.is_absolute() else root / file_path
+                self.base.print_debug(f'\nHashing file {str(full_file_path)}')
 
                 file_bytes = full_file_path.read_bytes()
                 key = CRC64.get_hash_buff(file_bytes)
@@ -165,7 +166,7 @@ class FolderHasher:
                 root_node.files.append(file_item)
 
             except Exception as e:
-                self.print_debug(f'Skipping file {full_file_path}: {str(e)}')
+                self.base.print_debug(f'Skipping file {full_file_path}: {str(e)}')
 
             bar.next()
 
