@@ -45,6 +45,11 @@ from .spdxlite import SpdxLite
 from .threadeddependencies import SCOPE
 from .utils.file import validate_json_file
 
+DEFAULT_POST_SIZE = 32
+DEFAULT_TIMEOUT = 180
+MIN_TIMEOUT_VALUE = 5
+DEFAULT_RETRY = 5
+PYTHON3_OR_LATER = 3
 
 def print_stderr(*args, **kwargs):
     """
@@ -53,7 +58,7 @@ def print_stderr(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def setup_args() -> None:
+def setup_args() -> None:  # noqa: PLR0915
     """
     Setup all the command line arguments for processing
     """
@@ -114,24 +119,26 @@ def setup_args() -> None:
         '--post-size',
         '-P',
         type=int,
-        default=32,
+        default=DEFAULT_POST_SIZE,
         help='Number of kilobytes to limit the post to while scanning (optional - default 32)',
     )
     p_scan.add_argument(
         '--timeout',
         '-M',
         type=int,
-        default=180,
+        default=DEFAULT_TIMEOUT,
         help='Timeout (in seconds) for API communication (optional - default 180)',
     )
     p_scan.add_argument(
-        '--retry', '-R', type=int, default=5, help='Retry limit for API communication (optional - default 5)'
+        '--retry', '-R', type=int, default=DEFAULT_RETRY,
+        help='Retry limit for API communication (optional - default 5)'
     )
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
     p_scan.add_argument(
-        '--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).'
+        '--sc-command', type=str,
+        help='Scancode command and path if required (optional - default scancode).'
     )
     p_scan.add_argument(
         '--sc-timeout',
@@ -290,7 +297,7 @@ def setup_args() -> None:
         description=f'Show Provenance findings: {__version__}',
         help='Retrieve provenance for the given components',
     )
-    c_provenance.set_defaults(func=c_provenance)
+    c_provenance.set_defaults(func=comp_provenance)
 
     # Component Sub-command: component search
     c_search = comp_sub.add_parser(
@@ -321,7 +328,7 @@ def setup_args() -> None:
     c_versions.set_defaults(func=comp_versions)
 
     # Common purl Component sub-command options
-    for p in [c_crypto, c_vulns, c_semgrep]:
+    for p in [c_crypto, c_vulns, c_semgrep, c_provenance]:
         p.add_argument('--purl', '-p', type=str, nargs='*', help='Package URL - PURL to process.')
         p.add_argument('--input', '-i', type=str, help='Input file name')
     # Common Component sub-command options
@@ -524,7 +531,7 @@ def setup_args() -> None:
         p.add_argument('--strip-snippet', '-N', type=str, action='append', help='Strip Snippet ID string from WFP.')
 
     # Global Scan/GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
         p.add_argument(
             '--key', '-k', type=str, help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
         )
@@ -550,7 +557,7 @@ def setup_args() -> None:
         )
 
     # Global GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
         p.add_argument(
             '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
         )
@@ -579,6 +586,7 @@ def setup_args() -> None:
         p_results,
         p_undeclared,
         p_copyleft,
+        c_provenance
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -587,21 +595,14 @@ def setup_args() -> None:
     args = parser.parse_args()
     if args.version:
         ver(parser, args)
-        exit(0)
+        sys.sys.exit(0)
     if not args.subparser:
         parser.print_help()  # No sub command subcommand, print general help
-        exit(1)
+        sys.exit(1)
     elif (
-        args.subparser == 'utils'
-        or args.subparser == 'ut'
-        or args.subparser == 'component'
-        or args.subparser == 'comp'
-        or args.subparser == 'inspect'
-        or args.subparser == 'insp'
-        or args.subparser == 'ins'
-    ) and not args.subparsercmd:
+        args.subparser in {'utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins'} and not args.subparsercmd):
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
-        exit(1)
+        sys.exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
 
 
@@ -634,7 +635,7 @@ def file_count(parser, args):
     if not args.scan_dir:
         print_stderr('Please specify a folder')
         parser.parse_args([args.subparser, '-h'])
-        exit(1)
+        sys.exit(1)
     scan_output: str = None
     if args.output:
         scan_output = args.output
@@ -649,12 +650,12 @@ def file_count(parser, args):
     )
     if not os.path.exists(args.scan_dir):
         print_stderr(f'Error: Folder specified does not exist: {args.scan_dir}.')
-        exit(1)
+        sys.exit(1)
     if os.path.isdir(args.scan_dir):
         counter.count_files(args.scan_dir)
     else:
         print_stderr(f'Error: Path specified is not a folder: {args.scan_dir}.')
-        exit(1)
+        sys.exit(1)
 
 
 def wfp(parser, args):
@@ -670,7 +671,7 @@ def wfp(parser, args):
     if not args.scan_dir and not args.stdin:
         print_stderr('Please specify a file/folder or STDIN (--stdin)')
         parser.parse_args([args.subparser, '-h'])
-        exit(1)
+        sys.exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
         print_stderr('Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
     scan_output: str = None
@@ -686,7 +687,7 @@ def wfp(parser, args):
             scan_settings.load_json_file(args.settings)
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
-            exit(1)
+            sys.exit(1)
 
     scan_options = 0 if args.skip_snippets else ScanType.SCAN_SNIPPETS.value  # Skip snippet generation or not
     scanner = Scanner(
@@ -713,17 +714,17 @@ def wfp(parser, args):
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
-            exit(1)
+            sys.exit(1)
         if os.path.isdir(args.scan_dir):
             scanner.wfp_folder(args.scan_dir, scan_output)
         elif os.path.isfile(args.scan_dir):
             scanner.wfp_file(args.scan_dir, scan_output)
         else:
             print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
-            exit(1)
+            sys.exit(1)
     else:
         print_stderr('No action found to process')
-        exit(1)
+        sys.exit(1)
 
 
 def get_scan_options(args):
@@ -754,11 +755,11 @@ def get_scan_options(args):
             print_stderr('Scan Dependencies')
     if scan_options <= 0:
         print_stderr(f'Error: No valid scan options configured: {scan_options}')
-        exit(1)
+        sys.exit(1)
     return scan_options
 
 
-def scan(parser, args):
+def scan(parser, args): # noqa: PLR0912, PLR0915
     """
     Run the "scan" sub-command
     Parameters
@@ -773,17 +774,17 @@ def scan(parser, args):
             'Please specify a file/folder, files (--files), fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)'
         )
         parser.parse_args([args.subparser, '-h'])
-        exit(1)
+        sys.exit(1)
     if args.pac and args.proxy:
         print_stderr('Please specify one of --proxy or --pac, not both')
         parser.parse_args([args.subparser, '-h'])
-        exit(1)
+        sys.exit(1)
     if args.identify and args.settings:
         print_stderr('ERROR: Cannot specify both --identify and --settings options.')
-        exit(1)
+        sys.exit(1)
     if args.settings and args.skip_settings_file:
         print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
-        exit(1)
+        sys.exit(1)
     # Figure out which settings (if any) to load before processing
     scan_settings = None
     if not args.skip_settings_file:
@@ -803,15 +804,15 @@ def scan(parser, args):
                 )
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
-            exit(1)
+            sys.exit(1)
     if args.dep:
         if not os.path.exists(args.dep) or not os.path.isfile(args.dep):
             print_stderr(f'Specified --dep file does not exist or is not a file: {args.dep}')
-            exit(1)
+            sys.exit(1)
         result = validate_json_file(args.dep)
         if not result.is_valid:
             print_stderr(f'Error: Dependency file is not valid: {result.error}')
-            exit(1)
+            sys.exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
         print_stderr('Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
 
@@ -832,11 +833,11 @@ def scan(parser, args):
             print_stderr('Scanning all hidden files/folders...')
         if args.skip_snippets:
             print_stderr('Skipping snippets...')
-        if args.post_size != 32:
+        if args.post_size != DEFAULT_POST_SIZE:
             print_stderr(f'Changing scanning POST size to: {args.post_size}k...')
-        if args.timeout != 180:
+        if args.timeout != DEFAULT_TIMEOUT:
             print_stderr(f'Changing scanning POST timeout to: {args.timeout}...')
-        if args.retry != 5:
+        if args.retry != DEFAULT_RETRY:
             print_stderr(f'Changing scanning POST retry to: {args.retry}...')
         if args.obfuscate:
             print_stderr('Obfuscating file fingerprints...')
@@ -853,7 +854,7 @@ def scan(parser, args):
         if flags:
             print_stderr(f'Using flags {flags}...')
     elif not args.quiet:
-        if args.timeout < 5:
+        if args.timeout < MIN_TIMEOUT_VALUE:
             print_stderr(f'POST timeout (--timeout) too small: {args.timeout}. Reverting to default.')
         if args.retry < 0:
             print_stderr(f'POST retry (--retry) too small: {args.retry}. Reverting to default.')
@@ -863,7 +864,7 @@ def scan(parser, args):
         args.no_wfp_output = True
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
-        exit(1)
+        sys.exit(1)
     pac_file = get_pac_file(args.pac)
     scan_options = get_scan_options(args)  # Figure out what scanning options we have
 
@@ -906,22 +907,22 @@ def scan(parser, args):
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
             print_stderr(f'Error: Cannot specify WFP scanning if file/snippet options are disabled ({scan_options})')
-            exit(1)
+            sys.exit(1)
         if scanner.is_dependency_scan() and not args.dep:
             print_stderr('Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)')
-            exit(1)
+            sys.exit(1)
         scanner.scan_wfp_with_options(args.wfp, args.dep)
     elif args.stdin:
         contents = sys.stdin.buffer.read()
         if not scanner.scan_contents(args.stdin, contents):
-            exit(1)
+            sys.exit(1)
     elif args.files:
         if not scanner.scan_files_with_options(args.files, args.dep, scanner.winnowing.file_map):
-            exit(1)
+            sys.exit(1)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
-            exit(1)
+            sys.exit(1)
         if os.path.isdir(args.scan_dir):
             if not scanner.scan_folder_with_options(
                 args.scan_dir,
@@ -931,7 +932,7 @@ def scan(parser, args):
                 args.dep_scope_inc,
                 args.dep_scope_exc,
             ):
-                exit(1)
+                sys.exit(1)
         elif os.path.isfile(args.scan_dir):
             if not scanner.scan_file_with_options(
                 args.scan_dir,
@@ -941,23 +942,24 @@ def scan(parser, args):
                 args.dep_scope_inc,
                 args.dep_scope_exc,
             ):
-                exit(1)
+                sys.exit(1)
         else:
             print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
-            exit(1)
+            sys.exit(1)
     elif args.dep:
         if not args.dependencies_only:
             print_stderr(
-                'Error: No file or folder specified to scan. Please add --dependencies-only to decorate dependency file only.'
+                'Error: No file or folder specified to scan.'
+                ' Please add --dependencies-only to decorate dependency file only.'
             )
-            exit(1)
+            sys.exit(1)
         if not scanner.scan_folder_with_options(
             '.', args.dep, scanner.winnowing.file_map, args.dep_scope, args.dep_scope_inc, args.dep_scope_exc
         ):
-            exit(1)
+            sys.exit(1)
     else:
         print_stderr('No action found to process')
-        exit(1)
+        sys.exit(1)
 
 
 def dependency(parser, args):
@@ -973,10 +975,10 @@ def dependency(parser, args):
     if not args.scan_dir:
         print_stderr('Please specify a file/folder')
         parser.parse_args([args.subparser, '-h'])
-        exit(1)
+        sys.exit(1)
     if not os.path.exists(args.scan_dir):
         print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
-        exit(1)
+        sys.exit(1)
     scan_output: str = None
     if args.output:
         scan_output = args.output
@@ -986,7 +988,7 @@ def dependency(parser, args):
         debug=args.debug, quiet=args.quiet, trace=args.trace, sc_command=args.sc_command, timeout=args.sc_timeout
     )
     if not sc_deps.get_dependencies(what_to_scan=args.scan_dir, result_output=scan_output):
-        exit(1)
+        sys.exit(1)
 
 
 def convert(parser, args):
@@ -1002,7 +1004,7 @@ def convert(parser, args):
     if not args.input:
         print_stderr('Please specify an input file to convert')
         parser.parse_args([args.subparser, '-h'])
-        exit(1)
+        sys.exit(1)
     success = False
     if args.format == 'cyclonedx':
         if not args.quiet:
@@ -1022,7 +1024,7 @@ def convert(parser, args):
     else:
         print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
     if not success:
-        exit(1)
+        sys.exit(1)
 
 
 def inspect_copyleft(parser, args):
@@ -1038,7 +1040,7 @@ def inspect_copyleft(parser, args):
     if args.input is None:
         print_stderr('Please specify an input file to inspect')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
-        exit(1)
+        sys.exit(1)
     output: str = None
     if args.output:
         output = args.output
@@ -1062,7 +1064,7 @@ def inspect_copyleft(parser, args):
         explicit=args.explicit,
     )
     status, _ = i_copyleft.run()
-    sys.exit(status)
+    sys.sys.exit(status)
 
 
 def inspect_undeclared(parser, args):
@@ -1078,7 +1080,7 @@ def inspect_undeclared(parser, args):
     if args.input is None:
         print_stderr('Please specify an input file to inspect')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
-        exit(1)
+        sys.exit(1)
     output: str = None
     if args.output:
         output = args.output
@@ -1099,7 +1101,7 @@ def inspect_undeclared(parser, args):
         sbom_format=args.sbom_format,
     )
     status, _ = i_undeclared.run()
-    sys.exit(status)
+    sys.sys.exit(status)
 
 
 def utils_certloc(*_):
@@ -1112,7 +1114,7 @@ def utils_certloc(*_):
     print(f'CA Cert File: {certifi.where()}')
 
 
-def utils_cert_download(_, args):
+def utils_cert_download(_, args): # pylint: disable=PLR0912 # noqa: PLR0912
     """
     Run the "utils cert-download" sub-command
     :param _: ignore/unused
@@ -1139,13 +1141,13 @@ def utils_cert_download(_, args):
         certs = conn.get_peer_cert_chain()
         for index, cert in enumerate(certs):
             cert_components = dict(cert.get_subject().get_components())
-            if sys.version_info[0] >= 3:
+            if sys.version_info[0] >= PYTHON3_OR_LATER:
                 cn = cert_components.get(b'CN')
             else:
                 cn = cert_components.get('CN')
             if not args.quiet:
                 print_stderr(f'Certificate {index} - CN: {cn}')
-            if sys.version_info[0] >= 3:
+            if sys.version_info[0] >= PYTHON3_OR_LATER:
                 print(
                     (crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode('utf-8')).strip(), file=file
                 )  # Print the downloaded PEM certificate
@@ -1155,7 +1157,7 @@ def utils_cert_download(_, args):
         print_stderr(f'ERROR: Exception ({e.__class__.__name__}) Downloading certificate from {hostname}:{port} - {e}.')
         if args.debug:
             traceback.print_exc()
-        exit(1)
+        sys.exit(1)
     else:
         if args.output:
             if args.debug:
@@ -1173,11 +1175,11 @@ def utils_pac_proxy(_, args):
 
     if not args.pac:
         print_stderr('Error: No pac file option specified.')
-        exit(1)
+        sys.exit(1)
     pac_file = get_pac_file(args.pac)
     if pac_file is None:
         print_stderr(f'No proxy configuration for: {args.pac}')
-        exit(1)
+        sys.exit(1)
     resolver = ProxyResolver(pac_file)
     proxies = resolver.get_proxy_for_requests(args.url)
     print(f'Proxies: {proxies}\n')
@@ -1197,14 +1199,14 @@ def get_pac_file(pac: str):
             pac_local = pac.strip('file://')
             if not os.path.exists(pac_local):
                 print_stderr(f'Error: PAC file does not exist: {pac_local}.')
-                exit(1)
+                sys.exit(1)
             with open(pac_local) as pf:
                 pac_file = pypac.get_pac(js=pf.read())
         elif pac.startswith('http'):
             pac_file = pypac.get_pac(url=pac)
         else:
             print_stderr(f'Error: Unknown PAC file option: {pac}. Should be one of "auto", "file://", "https://"')
-            exit(1)
+            sys.exit(1)
     return pac_file
 
 
@@ -1221,10 +1223,10 @@ def comp_crypto(parser, args):
     if (not args.purl and not args.input) or (args.purl and args.input):
         print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
-        exit(1)
+        sys.exit(1)
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
-        exit(1)
+        sys.exit(1)
     pac_file = get_pac_file(args.pac)
     comps = Components(
         debug=args.debug,
@@ -1239,7 +1241,7 @@ def comp_crypto(parser, args):
         timeout=args.timeout,
     )
     if not comps.get_crypto_details(args.input, args.purl, args.output):
-        exit(1)
+        sys.exit(1)
 
 
 def comp_vulns(parser, args):
@@ -1255,10 +1257,10 @@ def comp_vulns(parser, args):
     if (not args.purl and not args.input) or (args.purl and args.input):
         print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
-        exit(1)
+        sys.exit(1)
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
-        exit(1)
+        sys.exit(1)
     pac_file = get_pac_file(args.pac)
     comps = Components(
         debug=args.debug,
@@ -1273,7 +1275,7 @@ def comp_vulns(parser, args):
         timeout=args.timeout,
     )
     if not comps.get_vulnerabilities(args.input, args.purl, args.output):
-        exit(1)
+        sys.exit(1)
 
 
 def comp_semgrep(parser, args):
@@ -1289,10 +1291,10 @@ def comp_semgrep(parser, args):
     if (not args.purl and not args.input) or (args.purl and args.input):
         print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
-        exit(1)
+        sys.exit(1)
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
-        exit(1)
+        sys.exit(1)
     pac_file = get_pac_file(args.pac)
     comps = Components(
         debug=args.debug,
@@ -1307,7 +1309,7 @@ def comp_semgrep(parser, args):
         timeout=args.timeout,
     )
     if not comps.get_semgrep_details(args.input, args.purl, args.output):
-        exit(1)
+        sys.exit(1)
 
 
 def comp_search(parser, args):
@@ -1325,11 +1327,11 @@ def comp_search(parser, args):
     ):
         print_stderr('Please specify an input file or search terms (--input or --search, or --vendor or --comp.)')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
-        exit(1)
+        sys.exit(1)
 
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
-        exit(1)
+        sys.exit(1)
     pac_file = get_pac_file(args.pac)
     comps = Components(
         debug=args.debug,
@@ -1353,7 +1355,7 @@ def comp_search(parser, args):
         limit=args.limit,
         offset=args.offset,
     ):
-        exit(1)
+        sys.exit(1)
 
 
 def comp_versions(parser, args):
@@ -1369,11 +1371,11 @@ def comp_versions(parser, args):
     if (not args.input and not args.purl) or (args.input and args.purl):
         print_stderr('Please specify an input file or search terms (--input or --purl.)')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
-        exit(1)
+        sys.exit(1)
 
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
-        exit(1)
+        sys.exit(1)
     pac_file = get_pac_file(args.pac)
     comps = Components(
         debug=args.debug,
@@ -1388,8 +1390,31 @@ def comp_versions(parser, args):
         timeout=args.timeout,
     )
     if not comps.get_component_versions(args.output, json_file=args.input, purl=args.purl, limit=args.limit):
-        exit(1)
+        sys.exit(1)
 
+def comp_provenance(parser, args):
+    """
+    Run the "component semgrep" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if (not args.purl and not args.input) or (args.purl and args.input):
+        print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        sys.exit(1)
+    if args.ca_cert and not os.path.exists(args.ca_cert):
+        print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
+        sys.exit(1)
+    pac_file = get_pac_file(args.pac)
+    comps = Components(debug=args.debug, trace=args.trace, quiet=args.quiet, grpc_url=args.api2url, api_key=args.key,
+                       ca_cert=args.ca_cert, proxy=args.proxy, grpc_proxy=args.grpc_proxy, pac=pac_file,
+                       timeout=args.timeout)
+    if not comps.get_provenance_details(args.input, args.purl, args.output):
+        sys.exit(1)
 
 def results(parser, args):
     """
@@ -1404,13 +1429,13 @@ def results(parser, args):
     if not args.filepath:
         print_stderr('ERROR: Please specify a file containing the results')
         parser.parse_args([args.subparser, '-h'])
-        exit(1)
+        sys.exit(1)
 
     file_path = Path(args.filepath).resolve()
 
     if not file_path.is_file():
         print_stderr(f'The specified file {args.filepath} does not exist')
-        exit(1)
+        sys.exit(1)
 
     results = Results(
         debug=args.debug,
@@ -1426,7 +1451,7 @@ def results(parser, args):
     if args.has_pending:
         results.get_pending_identifications().present()
         if results.has_results():
-            exit(1)
+            sys.exit(1)
     else:
         results.apply_filters().present()
 
