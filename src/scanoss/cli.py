@@ -595,7 +595,7 @@ def setup_args() -> None:  # noqa: PLR0915
     args = parser.parse_args()
     if args.version:
         ver(parser, args)
-        sys.sys.exit(0)
+        sys.exit(0)
     if not args.subparser:
         parser.print_help()  # No sub command subcommand, print general help
         sys.exit(1)
@@ -1064,7 +1064,7 @@ def inspect_copyleft(parser, args):
         explicit=args.explicit,
     )
     status, _ = i_copyleft.run()
-    sys.sys.exit(status)
+    sys.exit(status)
 
 
 def inspect_undeclared(parser, args):
@@ -1101,7 +1101,7 @@ def inspect_undeclared(parser, args):
         sbom_format=args.sbom_format,
     )
     status, _ = i_undeclared.run()
-    sys.sys.exit(status)
+    sys.exit(status)
 
 
 def utils_certloc(*_):
