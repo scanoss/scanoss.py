@@ -1064,7 +1064,7 @@ def inspect_copyleft(parser, args):
         explicit=args.explicit,
     )
     status, _ = i_copyleft.run()
-    sys.sys.exit(status)
+    sys.exit(status)
 
 
 def inspect_undeclared(parser, args):
@@ -1101,7 +1101,7 @@ def inspect_undeclared(parser, args):
         sbom_format=args.sbom_format,
     )
     status, _ = i_undeclared.run()
-    sys.sys.exit(status)
+    sys.exit(status)
 
 
 def utils_certloc(*_):
