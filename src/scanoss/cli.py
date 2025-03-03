@@ -595,7 +595,7 @@ def setup_args() -> None:  # noqa: PLR0915
     args = parser.parse_args()
     if args.version:
         ver(parser, args)
-        sys.sys.exit(0)
+        sys.exit(0)
     if not args.subparser:
         parser.print_help()  # No sub command subcommand, print general help
         sys.exit(1)
