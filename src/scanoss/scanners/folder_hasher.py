@@ -13,6 +13,9 @@ from scanoss.utils.abstract_presenter import AbstractPresenter
 from scanoss.utils.crc64 import CRC64
 from scanoss.utils.simhash import WordFeatureSet, fingerprint, simhash, vectorize_bytes
 
+MINIMUM_FILE_COUNT = 8
+MINIMUM_CONCATENATED_NAME_LENGTH = 32
+
 
 class DirectoryNode:
     """
@@ -190,8 +193,8 @@ class FolderHasher:
 
         return {
             'path_id': node.path,
-            'sim_hash_names': f'{hash_data["name_hash"]:02x}',
-            'sim_hash_content': f'{hash_data["content_hash"]:02x}',
+            'sim_hash_names': f'{hash_data["name_hash"]:02x}' if hash_data['name_hash'] is not None else None,
+            'sim_hash_content': f'{hash_data["content_hash"]:02x}' if hash_data['content_hash'] is not None else None,
             'children': [self._hash_calc_from_node(child) for child in node.children.values()],
         }
 
@@ -225,8 +228,20 @@ class FolderHasher:
             file_key = bytes(file.key)
             file_hashes.append(file_key)
 
+        if len(selected_names) < MINIMUM_FILE_COUNT:
+            return {
+                'name_hash': None,
+                'content_hash': None,
+            }
+
         selected_names.sort()
         concatenated_names = ''.join(selected_names)
+
+        if len(concatenated_names) < MINIMUM_CONCATENATED_NAME_LENGTH:
+            return {
+                'name_hash': None,
+                'content_hash': None,
+            }
 
         names_simhash = simhash(WordFeatureSet(concatenated_names.encode('utf-8')))
         content_simhash = fingerprint(vectorize_bytes(file_hashes))
