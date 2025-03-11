@@ -15,6 +15,7 @@ from scanoss.utils.simhash import WordFeatureSet, fingerprint, simhash, vectoriz
 
 MINIMUM_FILE_COUNT = 8
 MINIMUM_CONCATENATED_NAME_LENGTH = 32
+MINIMUM_FILE_NAME_LENGTH = 32
 
 
 class DirectoryNode:
@@ -137,7 +138,9 @@ class FolderHasher:
         root = Path(path).resolve()
         root_node = DirectoryNode(str(root))
 
-        all_files = [f for f in root.rglob('*') if f.is_file()]
+        all_files = [
+            f for f in root.rglob('*') if f.is_file() and len(f.name.encode('utf-8')) < MINIMUM_FILE_NAME_LENGTH
+        ]
         filtered_files = self.file_filters.get_filtered_files_from_files(all_files, str(root))
 
         # Sort the files by name to ensure the hash is the same for the same folder
@@ -237,7 +240,7 @@ class FolderHasher:
         selected_names.sort()
         concatenated_names = ''.join(selected_names)
 
-        if len(concatenated_names) < MINIMUM_CONCATENATED_NAME_LENGTH:
+        if len(concatenated_names.encode('utf-8')) < MINIMUM_CONCATENATED_NAME_LENGTH:
             return {
                 'name_hash': None,
                 'content_hash': None,

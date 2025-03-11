@@ -58,12 +58,12 @@ DEFAULT_SKIPPED_DIRS = {
     'wheels',
     'htmlcov',
     '__pypackages__',
-    # 'example',
-    # 'examples',
-    # 'docs',
-    # 'tests',
-    # 'doc',
-    # 'test',
+    'example',
+    'examples',
+    'docs',
+    'tests',
+    'doc',
+    'test',
 }
 
 
