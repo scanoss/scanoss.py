@@ -285,7 +285,8 @@ class SpdxLite:
         lic_set = set()
         for lic in licenses:
             lc_id = lic.get('id')
-            if lc_id:
+            source = lic.get('source')
+            if lc_id and (source == "component_declared" or source == "license_file"):
                 self._process_license_id(lc_id, lic_refs, lic_set)
 
         return self._format_license_text(lic_set)
