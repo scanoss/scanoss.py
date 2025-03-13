@@ -78,15 +78,31 @@ class SpdxLite:
         return self._process_files(data)
 
     def _process_files(self, data: json) -> dict:
-        """Process each file in the data and build summary."""
+        """
+            Process raw results and build a component summary.
+
+            Args:
+                data: JSON data containing raw results
+
+            Returns:
+                dict: The built summary dictionary
+        """
         summary = {}
         for file_path in data:
             file_details = data.get(file_path)
-            self._process_file_entries(file_path, file_details, summary)
+            # summary is passed by reference and modified inside the function
+            self._process_entries(file_path, file_details, summary)
         return summary
 
-    def _process_file_entries(self, file_path: str, file_details: list, summary: dict):
-        """Process entries for a single file."""
+    def _process_entries(self, file_path: str, file_details: list, summary: dict):
+        """
+        Process entries for a single file.
+
+        Args:
+            file_path: Path to the file being processed
+            file_details: Results of the file
+            summary: Reference to summary dictionary that will be modified in place
+        """
         for entry in file_details:
             id_details = entry.get('id')
             if not id_details or id_details == 'none':
@@ -95,10 +111,17 @@ class SpdxLite:
             if id_details == 'dependency':
                 self._process_dependency_entry(file_path, entry, summary)
             else:
-                self._process_normal_entry(file_path, entry, summary)
+                self._process_file_entry(file_path, entry, summary)
 
     def _process_dependency_entry(self, file_path: str, entry: dict, summary: dict):
-        """Process a dependency type entry."""
+        """
+        Process a dependency type entry.
+
+        Args:
+            file_path: Path to the file being processed
+            entry: The dependency entry to process
+            summary: Reference to summary dictionary that will be modified in place
+        """
         dependencies = entry.get('dependencies')
         if not dependencies:
             self.print_stderr(f'Warning: No Dependencies found for {file_path}')
@@ -108,11 +131,18 @@ class SpdxLite:
             purl = dep.get('purl')
             if not self._is_valid_purl(file_path, dep, purl, summary):
                 continue
-
+            # Modifying the summary dictionary directly as it's passed by reference
             summary[purl] = self._create_dependency_summary(dep)
 
-    def _process_normal_entry(self, file_path: str, entry: dict, summary: dict):
-        """Process a normal file type entry."""
+    def _process_file_entry(self, file_path: str, entry: dict, summary: dict):
+        """
+        Process file entry.
+
+        Args:
+            file_path: Path to the file being processed
+            entry: Process file match entry
+            summary: Reference to summary dictionary that will be modified in place
+        """
         purls = entry.get('purl')
         if not purls:
             self.print_stderr(f'Purl block missing for {file_path}')
@@ -122,10 +152,21 @@ class SpdxLite:
         if not self._is_valid_purl(file_path, entry, purl, summary):
             return
 
-        summary[purl] = self._create_normal_summary(entry)
+        summary[purl] = self._create_file_summary(entry)
 
     def _is_valid_purl(self, file_path: str, entry: dict, purl: str, summary: dict) -> bool:
-        """Check if PURL is valid and not already processed."""
+        """
+        Check if purl is valid and not already processed.
+
+        Args:
+            file_path: Path to the file being processed
+            entry: The entry containing the PURL
+            purl: The PURL to validate
+            summary: Reference to summary dictionary to check for existing entries
+
+        Returns:
+            bool: True if purl is valid and not already processed
+        """
         if not purl:
             self.print_stderr(f'Warning: No PURL found for {file_path}: {entry}')
             return False
@@ -137,15 +178,37 @@ class SpdxLite:
         return True
 
     def _create_dependency_summary(self, dep: dict) -> dict:
-        """Create summary for dependency entry."""
+        """
+        Create summary for dependency entry.
+
+        This method extracts relevant fields from a dependency entry and creates a
+        standardized summary dictionary. It handles fields like component, version,
+        and URL, with special processing for licenses.
+
+        Args:
+            dep (dict): The dependency entry containing component information
+
+        Returns:
+            dict: A new summary dictionary containing the extracted and processed fields
+        """
         summary = {}
         for field in ['component', 'version', 'url']:
             summary[field] = dep.get(field, '')
         summary['licenses'] = self._process_licenses(dep.get('licenses'))
         return summary
 
-    def _create_normal_summary(self, entry: dict) -> dict:
-        """Create summary for normal file entry."""
+    def _create_file_summary(self, entry: dict) -> dict:
+        """
+        Create summary for file entry.
+
+        This method extracts set of fields from file entry and creates a standardized summary dictionary.
+
+        Args:
+            entry (dict): The file entry containing the metadata to summarize
+
+        Returns:
+            dict: A new summary dictionary containing all extracted and processed fields
+        """
         summary = {}
         fields = ['id', 'vendor', 'component', 'version', 'latest',
                   'url', 'url_hash', 'download_url']
@@ -155,7 +218,22 @@ class SpdxLite:
         return summary
 
     def _process_licenses(self, licenses: list) -> list:
-        """Process license information and remove duplicates."""
+        """
+            Process license information and remove duplicates.
+
+            This method filters license information to include only licenses from trusted sources
+            ('component_declared' or 'license_file') and removes any duplicate license names.
+            The result is a simplified list of license dictionaries containing only the 'id' field.
+
+            Args:
+                licenses (list): A list of license dictionaries, each containing at least 'name'
+                                 and 'source' fields. Can be None or empty.
+
+            Returns:
+                list: A filtered and deduplicated list of license dictionaries, where each
+                      dictionary contains only an 'id' field matching the original license name.
+                      Returns an empty list if input is None or empty.
+            """
         if not licenses:
             return []
 
@@ -205,7 +283,30 @@ class SpdxLite:
         return self._write_output(spdx_document, output_file)
 
     def _create_base_document(self, raw_data: dict) -> dict:
-        """Create the base SPDX document structure."""
+        """
+            Create the base SPDX document structure.
+
+            This method initializes a new SPDX document with standard fields required by
+            the SPDX 2.2 specification. It generates a unique document namespace using
+            a hash of the raw data and current timestamp.
+
+            Args:
+                raw_data (dict): The raw component data used to create a unique identifier
+                                for the document namespace
+
+            Returns:
+                dict: A dictionary containing the base SPDX document structure with the
+                      following fields:
+                      - spdxVersion: The SPDX specification version
+                      - dataLicense: The license for the SPDX document itself
+                      - SPDXID: The document's unique identifier
+                      - name: The name of the SBOM
+                      - creationInfo: Information about when and how the document was created
+                      - documentNamespace: A unique URI for this document
+                      - documentDescribes: List of packages described (initially empty)
+                      - hasExtractedLicensingInfos: List of licenses (initially empty)
+                      - packages: List of package information (initially empty)
+        """
         now = datetime.datetime.utcnow()
         md5hex = hashlib.md5(f'{raw_data}-{now}'.encode('utf-8')).hexdigest()
 
@@ -222,7 +323,23 @@ class SpdxLite:
         }
 
     def _create_creation_info(self, timestamp: datetime.datetime) -> dict:
-        """Create the creation info section."""
+        """
+            Create the creation info section of an SPDX document.
+
+            This method generates the creation information required by the SPDX specification,
+            including timestamps, creator information, and document type.
+
+            Args:
+                timestamp (datetime.datetime): The UTC timestamp representing when the
+                                              document was created
+
+            Returns:
+                dict: A dictionary containing creation information with the following fields:
+                      - created: ISO 8601 formatted timestamp
+                      - creators: List of entities involved in creating the document
+                        (tool, person, and organization)
+                      - comment: Additional information about the SBOM type
+        """
         return {
             'created': timestamp.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'creators': [
@@ -234,7 +351,25 @@ class SpdxLite:
         }
 
     def _process_packages(self, raw_data: dict, spdx_document: dict):
-        """Process packages and add them to the SPDX document."""
+        """
+            Process packages and add them to the SPDX document.
+
+            This method iterates through the raw component data, creates package information
+            for each component, and adds them to the SPDX document. It also collects
+            license references to be processed separately.
+
+            Args:
+                raw_data (dict): Dictionary of package data indexed by PURL
+                                (Package URL identifiers)
+                spdx_document (dict): Reference to the SPDX document being built,
+                                     which will be modified in place
+
+            Note:
+                This method modifies the spdx_document dictionary in place by:
+                1. Adding package information to the 'packages' list
+                2. Adding package SPDXIDs to the 'documentDescribes' list
+                3. Indirectly populating 'hasExtractedLicensingInfos' via _process_license_refs()
+        """
         lic_refs = set()
 
         for purl, comp in raw_data.items():
@@ -245,7 +380,36 @@ class SpdxLite:
         self._process_license_refs(lic_refs, spdx_document)
 
     def _create_package_info(self, purl: str, comp: dict, lic_refs: set) -> dict:
-        """Create package information for SPDX document."""
+        """
+            Create package information for SPDX document.
+
+            This method generates a complete package information entry following the SPDX
+            specification format. It creates a unique identifier for the package based on
+            its PURL and version, processes license information, and formats all required
+            fields for the SPDX document.
+
+            Args:
+                purl (str): Package URL identifier for the component
+                comp (dict): Component information dictionary containing metadata like
+                            component name, version, URLs, and license information
+                lic_refs (set): Reference to a set that will be populated with license
+                               references found in this package. This set is modified in place.
+
+            Returns:
+                dict: A dictionary containing all required SPDX package fields including:
+                      - name: Component name
+                      - SPDXID: Unique identifier for this package within the document
+                      - versionInfo: Component version
+                      - downloadLocation: URL where the package can be downloaded
+                      - homepage: Component homepage URL
+                      - licenseDeclared: Formatted license expression
+                      - licenseConcluded: NOASSERTION as automated conclusion isn't possible
+                      - filesAnalyzed: False as files are not individually analyzed
+                      - copyrightText: NOASSERTION as copyright text isn't available
+                      - supplier: Organization name from vendor information
+                      - externalRefs: Package URL reference for package manager integration
+                      - checksums: MD5 hash of the package if available
+        """
         lic_text = self._process_package_licenses(comp.get('licenses', []), lic_refs)
         comp_ver = comp.get('version')
         purl_ver = f'{purl}@{comp_ver}'
@@ -278,7 +442,23 @@ class SpdxLite:
         }
 
     def _process_package_licenses(self, licenses: list, lic_refs: set) -> str:
-        """Process licenses and return license text."""
+        """
+           Process licenses and return license text formatted for SPDX.
+
+           This method processes a list of license objects, extracts valid license IDs,
+           converts them to SPDX format, and combines them into a properly formatted
+           license expression.
+
+           Args:
+               licenses (list): List of license dictionaries, each containing at least
+                               an 'id' field
+               lic_refs (set): Reference to a set that will collect license references.
+                              This set is modified in place.
+
+           Returns:
+               str: A formatted license expression string following SPDX syntax.
+                    Returns 'NOASSERTION' if no valid licenses are found.
+        """
         if not licenses:
             return 'NOASSERTION'
 
@@ -292,7 +472,19 @@ class SpdxLite:
         return self._format_license_text(lic_set)
 
     def _process_license_id(self, lc_id: str, lic_refs: set, lic_set: set):
-        """Process individual license ID."""
+        """
+         Process individual license ID and add to appropriate sets.
+
+         This method attempts to convert a license ID to its SPDX equivalent.
+         If not found in the SPDX license list, it's formatted as a LicenseRef
+         and added to the license references set.
+
+         Args:
+             lc_id (str): The license ID to process
+             lic_refs (set): Reference to a set that collects license references
+                            for later processing. Modified in place.
+             lic_set (set): Reference to a set collecting all license IDs for
+         """
         spdx_id = self.get_spdx_license_id(lc_id)
         if not spdx_id:
             if not lc_id.startswith('LicenseRef'):
@@ -301,7 +493,20 @@ class SpdxLite:
         lic_set.add(spdx_id if spdx_id else lc_id)
 
     def _format_license_text(self, lic_set: set) -> str:
-        """Format the license text with proper syntax."""
+        """
+            Format the license text with proper SPDX syntax.
+
+            This method combines multiple license IDs with the 'AND' operator
+            according to SPDX specification rules. If multiple licenses are present,
+            the expression is enclosed in parentheses.
+
+            Args:
+                lic_set (set): Set of license IDs to format
+
+            Returns:
+                str: A properly formatted SPDX license expression.
+                     Returns 'NOASSERTION' if the set is empty.
+        """
         if not lic_set:
             return 'NOASSERTION'
 
@@ -311,13 +516,44 @@ class SpdxLite:
         return lic_text
 
     def _process_license_refs(self, lic_refs: set, spdx_document: dict):
-        """Process and add license references to the document."""
+        """
+            Process and add license references to the SPDX document.
+
+            This method processes each license reference in the provided set
+            and adds corresponding license information to the SPDX document's
+            extracted licensing information section.
+
+            Args:
+                lic_refs (set): Set of license references to process
+                spdx_document (dict): Reference to the SPDX document being built,
+                                     which will be modified in place
+
+            Note:
+                This method modifies the spdx_document dictionary in place by adding
+                entries to the 'hasExtractedLicensingInfos' list.
+        """
         for lic_ref in lic_refs:
             license_info = self._parse_license_ref(lic_ref)
             spdx_document['hasExtractedLicensingInfos'].append(license_info)
 
     def _parse_license_ref(self, lic_ref: str) -> dict:
-        """Parse license reference and create info dictionary."""
+        """
+            Parse license reference and create info dictionary for SPDX document.
+
+            This method extracts information from a license reference identifier
+            and formats it into the structure required by the SPDX specification
+            for extracted licensing information.
+
+            Args:
+                lic_ref (str): License reference identifier to parse
+
+            Returns:
+                dict: Dictionary containing required SPDX fields for extracted license info:
+                      - licenseId: The unique identifier for this license
+                      - name: A readable name for the license
+                      - extractedText: A placeholder for the actual license text
+                      - comment: Information about how the license was detected
+        """
         source, name = self._extract_license_info(lic_ref)
         source_text = f' by {source}.' if source else '.'
 
@@ -329,7 +565,21 @@ class SpdxLite:
         }
 
     def _extract_license_info(self, lic_ref: str):
-        """Extract source and name from license reference."""
+        """
+            Extract source and name from license reference.
+
+            This method parses a license reference string to extract the source
+            (e.g., scancode, scanoss) and the actual license name using regular
+            expressions.
+
+            Args:
+                lic_ref (str): License reference identifier to parse
+
+            Returns:
+                tuple: A tuple containing (source, name) where:
+                       - source (str): The tool or system that identified the license
+                       - name (str): The actual license name
+        """
         match = re.search(r'^LicenseRef-(scancode-|scanoss-|)(\S+)$', lic_ref, re.IGNORECASE)
         if match:
             source = match.group(1).replace('-', '')
