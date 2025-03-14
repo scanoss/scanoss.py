@@ -51,6 +51,7 @@ class Components(ScanossBase):
         grpc_proxy: str = None,
         ca_cert: str = None,
         pac: PACFile = None,
+        req_headers: dict = None,
     ):
         """
         Handle all component style requests
@@ -80,6 +81,7 @@ class Components(ScanossBase):
             pac=pac,
             grpc_proxy=grpc_proxy,
             timeout=timeout,
+            req_headers=req_headers,
         )
 
     def load_purls(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None) -> Optional[dict]:

@@ -68,6 +68,7 @@ class ScanossApi(ScanossBase):
         ca_cert: str = None,
         pac: PACFile = None,
         retry: int = 5,
+        req_headers: dict = None,
     ):
         """
         Initialise the SCANOSS API
@@ -96,7 +97,9 @@ class ScanossApi(ScanossBase):
         self.timeout = timeout if timeout > 5 else 180
         self.retry_limit = retry if retry >= 0 else 5
         self.ignore_cert_errors = ignore_cert_errors
+        self.req_headers = req_headers if req_headers else {}
         self.headers = {}
+
         if ver_details:
             self.headers['x-scanoss-client'] = ver_details
         if self.api_key:
@@ -104,6 +107,14 @@ class ScanossApi(ScanossBase):
             self.headers['x-api-key'] = self.api_key
         self.headers['User-Agent'] = f'scanoss-py/{__version__}'
         self.headers['user-agent'] = f'scanoss-py/{__version__}'
+
+        if self.req_headers:  # Load generic headers
+            for key, value in self.req_headers.items():
+                if key == 'x-api-key': # Set premium URL if x-api-key header is set
+                    if not url and not os.environ.get('SCANOSS_GRPC_URL'):
+                        self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+                self.headers.append((key, value))
+
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
             http_client.HTTPConnection.debuglevel = 1

@@ -86,6 +86,7 @@ class ScanossGrpc(ScanossBase):
         proxy: str = None,
         grpc_proxy: str = None,
         pac: PACFile = None,
+        req_headers = dict
     ):
         """
 
@@ -113,12 +114,23 @@ class ScanossGrpc(ScanossBase):
         self.proxy = proxy
         self.grpc_proxy = grpc_proxy
         self.pac = pac
+        self.req_headers = req_headers
         self.metadata = []
+
+
         if self.api_key:
             self.metadata.append(('x-api-key', api_key))  # Set API key if we have one
         if ver_details:
             self.metadata.append(('x-scanoss-client', ver_details))
         self.metadata.append(('user-agent', f'scanoss-py/{__version__}'))
+
+        if self.req_headers:  # Load generic headers
+            for key, value in self.req_headers.items():
+                if key == 'x-api-key': # Set premium URL if x-api-key header is set
+                    if not url and not os.environ.get('SCANOSS_GRPC_URL'):
+                        self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+                self.metadata.append((key, value))
+
         secure = True if self.url.startswith('https:') else False  # Is it a secure connection?
         if self.url.startswith('http'):
             u = urlparse(self.url)
@@ -494,6 +506,7 @@ class ScanossGrpc(ScanossBase):
             metadata = self.metadata[:]
             metadata.append(('x-request-id', request_id))  # Set a Request ID
             self.print_debug(f'Sending data for provenance decoration (rqId: {request_id})...')
+            print("PROVENANCE METADATA", metadata)
             resp = self.provenance_stub.GetComponentProvenance(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
             self.print_stderr(
