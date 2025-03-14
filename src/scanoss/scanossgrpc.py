@@ -24,6 +24,7 @@ SPDX-License-Identifier: MIT
 
 import os
 import uuid
+from typing import List, Optional
 
 import grpc
 import json
@@ -209,7 +210,8 @@ class ScanossGrpc(ScanossBase):
         if not dependencies:
             self.print_stderr('ERROR: No dependency data supplied to submit to the API.')
             return None
-        resp = self.get_dependencies_json(dependencies, depth)
+        #resp = self.get_dependencies_json(dependencies, depth)
+        resp = self.get_dependencies_with_purl_limit(dependencies, 50, 1)
         if not resp:
             self.print_stderr(f'ERROR: No response for dependency request: {dependencies}')
         return resp
@@ -247,6 +249,149 @@ class ScanossGrpc(ScanossBase):
                     return None
                 return MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dictionary
         return None
+
+    def chunk_dependencies_by_purl_count(self, dependencies: dict, max_purls_per_chunk: int) -> List[dict]:
+        """
+        Split the dependencies dict into chunks where each chunk has at most max_purls_per_chunk purls.
+        Maintains file context in each chunk.
+
+        :param dependencies: The dependencies dict containing files and their purls
+        :param max_purls_per_chunk: Maximum number of purls per chunk
+        :return: List of dependency dicts
+        """
+        if not dependencies or 'files' not in dependencies or not dependencies['files']:
+            return []
+
+        chunks = []
+        current_chunk = {'files': []}
+        current_chunk_purl_count = 0
+
+        for file_entry in dependencies['files']:
+            file_path = file_entry.get('file')
+            purls = file_entry.get('purls', [])
+
+            if not purls:
+                # Include empty files in the current chunk
+                if not chunks:
+                    current_chunk['files'].append(file_entry.copy())
+                continue
+
+            # Split this file's purls across chunks if needed
+            remaining_purls = list(purls)
+
+            while remaining_purls:
+                # Calculate how many purls we can add to the current chunk
+                space_in_current_chunk = max_purls_per_chunk - current_chunk_purl_count
+                purls_to_add = remaining_purls[:space_in_current_chunk]
+
+                # Create a file entry for this chunk with the appropriate purls
+                if purls_to_add:
+                    new_file_entry = {
+                        'file': file_path,
+                        'purls': purls_to_add
+                    }
+                    current_chunk['files'].append(new_file_entry)
+                    current_chunk_purl_count += len(purls_to_add)
+                    remaining_purls = remaining_purls[len(purls_to_add):]
+
+                # If we've used up this chunk or have more purls to process, create a new chunk
+                if current_chunk_purl_count >= max_purls_per_chunk or (
+                        remaining_purls and current_chunk_purl_count > 0):
+                    chunks.append(current_chunk)
+                    current_chunk = {'files': []}
+                    current_chunk_purl_count = 0
+
+        # Add the last chunk if it has any files
+        if current_chunk['files']:
+            chunks.append(current_chunk)
+
+        return chunks
+
+    def get_dependencies_with_purl_limit(self, dependencies: dict, max_purls_per_request: int, depth: int = 1) -> List[
+        dict]:
+        """
+        Process dependencies in chunks with a maximum number of purls per request.
+
+        :param dependencies: Dependencies dict with files and purls
+        :param max_purls_per_request: Maximum number of purls per request
+        :param depth: Depth of sub-dependencies search
+        :return: List of successful responses from the gRPC service
+        """
+        if not dependencies:
+            self.print_stderr('ERROR: No dependencies provided.')
+            return []
+
+        chunks = self.chunk_dependencies_by_purl_count(dependencies, max_purls_per_request)
+        results = []
+
+        for i, chunk in enumerate(chunks):
+            request_id = str(uuid.uuid4())
+
+            # Count purls in this chunk for logging
+            purl_count = sum(len(file_entry.get('purls', [])) for file_entry in chunk.get('files', []))
+            self.print_debug(f'Processing chunk {i + 1}/{len(chunks)} with {purl_count} purls (rqId: {request_id})...')
+
+            try:
+                request = ParseDict(chunk, DependencyRequest())
+                request.depth = depth
+
+                metadata = self.metadata[:]
+                metadata.append(('x-request-id', request_id))
+
+                resp = self.dependencies_stub.GetDependencies(request, metadata=metadata, timeout=self.timeout)
+
+                if self._check_status_response(resp.status, request_id):
+                    results.append(MessageToDict(resp, preserving_proto_field_name=True))
+                else:
+                    self.print_stderr(f'ERROR: Request failed for chunk {i + 1} (rqId: {request_id})')
+
+            except Exception as e:
+                self.print_stderr(f'ERROR: {e.__class__.__name__} in chunk {i + 1} (rqId: {request_id}): {e}')
+
+        return results
+
+    def merge_dependency_responses(responses: List[dict]) -> Optional[dict]:
+        """
+        Merge multiple dependency responses into a single response.
+
+        :param responses: List of dependency responses
+        :return: Merged response or None if no valid responses
+        """
+        if not responses:
+            return None
+
+        if len(responses) == 1:
+            return responses[0]
+
+        # Start with the first response as our base
+        merged = responses[0].copy()
+        merged.setdefault('files', [])
+
+        # Map file paths to their index in the merged files list
+        file_map = {f['file']: i for i, f in enumerate(merged['files'])}
+
+        # Process additional responses
+        for response in responses[1:]:
+            for file_entry in response.get('files', []):
+                file_path = file_entry.get('file')
+                if not file_path:
+                    continue
+
+                if file_path in file_map:
+                    # Merge purls for existing file
+                    existing_file = merged['files'][file_map[file_path]]
+                    existing_purls = {p.get('purl'): i for i, p in enumerate(existing_file.get('purls', []))}
+
+                    for purl in file_entry.get('purls', []):
+                        purl_id = purl.get('purl')
+                        if purl_id and purl_id not in existing_purls:
+                            existing_file.setdefault('purls', []).append(purl)
+                else:
+                    # Add new file entry
+                    file_map[file_path] = len(merged['files'])
+                    merged['files'].append(file_entry)
+
+        return merged
 
     def get_crypto_json(self, purls: dict) -> dict:
         """
