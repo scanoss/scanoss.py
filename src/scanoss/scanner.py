@@ -169,6 +169,7 @@ class Scanner(ScanossBase):
             proxy=proxy,
             pac=pac,
             grpc_proxy=grpc_proxy,
+            timeout=timeout,
         )
         self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads
