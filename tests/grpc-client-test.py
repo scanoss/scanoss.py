@@ -121,5 +121,16 @@ class MyTestCase(unittest.TestCase):
         # Ensure the method returned None (indicating a failure)
         self.assertEqual(components,expected_value)
 
+    def test_grpc_generic_metadata(self):
+        grpc_client = ScanossGrpc(debug=True, req_headers={'x-api-key': '123455', 'generic-header': 'generic-header-value'})
+        required_keys = ('x-api-key', 'user-agent', 'x-scanoss-client', 'generic-header')
+        valid_metadata = True
+        for key, value in grpc_client.metadata:
+            if key not in required_keys:
+                valid_metadata = False
+        self.assertTrue(valid_metadata)
+
+
+
 if __name__ == '__main__':
     unittest.main()
