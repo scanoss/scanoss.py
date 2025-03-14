@@ -222,6 +222,16 @@ The following command scans the `src` folder writing the output to `scan-results
 scanoss-py scan -o scan-results.json -5 37f7cd1e657aa3c30ece35995b4c59e5 -E '.h' -Z 512 -O internal -N 'd5e54c33,b03faabe' src
 ```
 
+### Scan with custom headers
+Scan with custom headers. This example scans the `src` folder and sends a custom API key header with the request:
+```bash
+scanoss-py scan -o scan-results.json src --HDR "x-api-key:12345"
+```
+Multiple Headers: You can specify any number of custom headers by repeating the --HDR option:
+```bash
+scanoss-py scan src --HDR "x-api-key:12345" --HDR "custom-header:value" --HDR "another-header:another-value"
+```
+
 ### Converting RAW results into other formats
 The following command provides the capability to convert the RAW scan results from a SCANOSS scan into multiple different formats, including CycloneDX, SPDX Lite, CSV, etc.
 For the full set of formats, please run:
@@ -246,6 +256,12 @@ For the latest list of sub-commands, please run:
 ```bash
 scanoss-py comp --help
 ```
+
+All component sub-commands support custom headers using the `--HDR` option:
+```bash
+scanoss-py comp search "jquery" --HDR "x-api-key:12345"
+scanoss-py comp vulns "jquery@3.6.0" --HDR "x-api-key:12345" --HDR "custom-header:value"
+
 
 #### Component Vulnerabilities
 The following command provides the capability to search the SCANOSS KB for component vulnerabilities:
