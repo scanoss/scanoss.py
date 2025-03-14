@@ -25,9 +25,12 @@ SPDX-License-Identifier: MIT
 import argparse
 import os
 import sys
+from array import array
+from cgi import parse_header
 from pathlib import Path
 
 import pypac
+from typing import List
 
 from . import __version__
 from .components import Components
@@ -567,6 +570,12 @@ def setup_args() -> None:  # noqa: PLR0915
             help='GRPC Proxy URL to use for connections (optional). '
             'Can also use the environment variable "grcp_proxy=<ip>:<port>"',
         )
+        p.add_argument(
+            '--header','-HDR',
+            action='append',  # This allows multiple -H flags
+            type=str,
+            help='Headers to be sent on request (e.g., -H "Name: Value") - can be used multiple times'
+        )
 
     # Help/Trace command options
     for p in [
@@ -707,6 +716,7 @@ def wfp(parser, args):
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
         scan_settings=scan_settings,
+        req_headers = process_req_headers(args.header),
     )
     if args.stdin:
         contents = sys.stdin.buffer.read()
@@ -903,6 +913,7 @@ def scan(parser, args): # noqa: PLR0912, PLR0915
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
         scan_settings=scan_settings,
+        req_headers= process_req_headers(args.header),
     )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
@@ -1228,6 +1239,7 @@ def comp_crypto(parser, args):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
         sys.exit(1)
     pac_file = get_pac_file(args.pac)
+
     comps = Components(
         debug=args.debug,
         trace=args.trace,
@@ -1239,6 +1251,7 @@ def comp_crypto(parser, args):
         grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
+        req_headers= process_req_headers(args.header),
     )
     if not comps.get_crypto_details(args.input, args.purl, args.output):
         sys.exit(1)
@@ -1273,6 +1286,7 @@ def comp_vulns(parser, args):
         grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
+        req_headers=process_req_headers(args.header),
     )
     if not comps.get_vulnerabilities(args.input, args.purl, args.output):
         sys.exit(1)
@@ -1307,6 +1321,7 @@ def comp_semgrep(parser, args):
         grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
+        req_headers=process_req_headers(args.header),
     )
     if not comps.get_semgrep_details(args.input, args.purl, args.output):
         sys.exit(1)
@@ -1344,6 +1359,7 @@ def comp_search(parser, args):
         grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
+        req_headers=process_req_headers(args.header),
     )
     if not comps.search_components(
         args.output,
@@ -1388,6 +1404,7 @@ def comp_versions(parser, args):
         grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
+        req_headers=process_req_headers(args.header),
     )
     if not comps.get_component_versions(args.output, json_file=args.input, purl=args.purl, limit=args.limit):
         sys.exit(1)
@@ -1412,7 +1429,7 @@ def comp_provenance(parser, args):
     pac_file = get_pac_file(args.pac)
     comps = Components(debug=args.debug, trace=args.trace, quiet=args.quiet, grpc_url=args.api2url, api_key=args.key,
                        ca_cert=args.ca_cert, proxy=args.proxy, grpc_proxy=args.grpc_proxy, pac=pac_file,
-                       timeout=args.timeout)
+                       timeout=args.timeout, req_headers=process_req_headers(args.header))
     if not comps.get_provenance_details(args.input, args.purl, args.output):
         sys.exit(1)
 
@@ -1455,6 +1472,31 @@ def results(parser, args):
     else:
         results.apply_filters().present()
 
+
+def process_req_headers(headers_array: List[str]) -> dict:
+    """
+    Process a list of header strings in the format "Name: Value" into a dictionary.
+
+    Args:
+        headers_array (list): List of header strings from command line args
+
+    Returns:
+        dict: Dictionary of header name-value pairs
+    """
+    # Check if headers_array is empty
+    if not headers_array:
+        # Array is empty
+        return {}
+
+    dict_headers = {}
+    for header_str in headers_array:
+        # Split each "Name: Value" header
+        parts = header_str.split(":", 1)
+        if len(parts) == 2:
+            name = parts[0].strip()
+            value = parts[1].strip()
+            dict_headers[name] = value
+    return dict_headers
 
 def main():
     """
