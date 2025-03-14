@@ -107,13 +107,7 @@ class ScanossApi(ScanossBase):
             self.headers['x-api-key'] = self.api_key
         self.headers['User-Agent'] = f'scanoss-py/{__version__}'
         self.headers['user-agent'] = f'scanoss-py/{__version__}'
-
-        if self.req_headers:  # Load generic headers
-            for key, value in self.req_headers.items():
-                if key == 'x-api-key': # Set premium URL if x-api-key header is set
-                    if not url and not os.environ.get('SCANOSS_GRPC_URL'):
-                        self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
-                self.headers.append((key, value))
+        self.load_generic_headers()
 
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
@@ -272,6 +266,19 @@ class ScanossApi(ScanossBase):
         self.sbom = sbom
         return self
 
+    def load_generic_headers(self):
+        """
+         Adds custom headers from req_headers to the headers collection.
+
+         If x-api-key is present and no URL is configured (directly or via
+         environment), sets URL to the premium endpoint (DEFAULT_URL2).
+         """
+        if self.req_headers:  # Load generic headers
+            for key, value in self.req_headers.items():
+                if key == 'x-api-key': # Set premium URL if x-api-key header is set
+                    if not self.url and not os.environ.get('SCANOSS_GRPC_URL'):
+                        self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+                self.headers[key] = value
 
 #
 # End of ScanossApi Class

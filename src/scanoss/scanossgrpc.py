@@ -109,19 +109,12 @@ class ScanossGrpc(ScanossBase):
         self.req_headers = req_headers
         self.metadata = []
 
-
         if self.api_key:
             self.metadata.append(('x-api-key', api_key))  # Set API key if we have one
         if ver_details:
             self.metadata.append(('x-scanoss-client', ver_details))
         self.metadata.append(('user-agent', f'scanoss-py/{__version__}'))
-
-        if self.req_headers:  # Load generic headers
-            for key, value in self.req_headers.items():
-                if key == 'x-api-key': # Set premium URL if x-api-key header is set
-                    if not url and not os.environ.get('SCANOSS_GRPC_URL'):
-                        self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
-                self.metadata.append((key, value))
+        self.load_generic_headers()
 
         secure = True if self.url.startswith('https:') else False  # Is it a secure connection?
         if self.url.startswith('http'):
@@ -483,6 +476,20 @@ class ScanossGrpc(ScanossBase):
                 resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
                 return resp_dict
         return None
+
+    def load_generic_headers(self):
+        """
+           Adds custom headers from req_headers to metadata.
+
+           If x-api-key is present and no URL is configured (directly or via
+           environment), sets URL to the premium endpoint (DEFAULT_URL2).
+           """
+        if self.req_headers:  # Load generic headers
+            for key, value in self.req_headers.items():
+                if key == 'x-api-key': # Set premium URL if x-api-key header is set
+                    if not self.url and not os.environ.get('SCANOSS_GRPC_URL'):
+                        self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+                self.metadata.append((key, value))
 #
 # End of ScanossGrpc Class
 #
