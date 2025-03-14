@@ -31,6 +31,7 @@ import re
 import sys
 
 import importlib_resources
+from packageurl import PackageURL
 
 from . import __version__
 
@@ -242,6 +243,9 @@ class SpdxLite:
 
         for license_info in licenses:
             name = license_info.get('name')
+            source = license_info.get('source')
+            if source not in ("component_declared", "license_file", "file_header"):
+                continue
             if name and name not in seen_names:
                 processed_licenses.append({'id': name})
                 seen_names.add(name)
@@ -429,7 +433,7 @@ class SpdxLite:
             'externalRefs': [
                 {
                     'referenceCategory': 'PACKAGE-MANAGER',
-                    'referenceLocator': purl_ver,
+                    'referenceLocator': PackageURL.from_string(purl_ver).to_string(),
                     'referenceType': 'purl'
                 }
             ],
@@ -465,9 +469,7 @@ class SpdxLite:
         lic_set = set()
         for lic in licenses:
             lc_id = lic.get('id')
-            source = lic.get('source')
-            if lc_id and source in ("component_declared", "license_file"):
-                self._process_license_id(lc_id, lic_refs, lic_set)
+            self._process_license_id(lc_id, lic_refs, lic_set)
 
         return self._format_license_text(lic_set)
 
@@ -667,8 +669,6 @@ class SpdxLite:
                             self._spdx_licenses[lic_id_short] = lic_id
                     if lic_name:
                         self._spdx_lic_names[lic_name] = lic_id
-            # self.print_stderr(f'Licenses: {self._spdx_licenses}')
-            # self.print_stderr(f'Lookup: {self._spdx_lic_lookup}')
         return True
 
     def get_spdx_license_id(self, lic_name: str) -> str:
