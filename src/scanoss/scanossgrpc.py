@@ -22,42 +22,50 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import concurrent.futures
+import json
 import os
 import uuid
+from urllib.parse import urlparse
 
 import grpc
-import json
-
 from google.protobuf.json_format import MessageToDict, ParseDict
 from pypac.parser import PACFile
 from pypac.resolver import ProxyResolver
-from urllib.parse import urlparse
 
-from .api.components.v2.scanoss_components_pb2_grpc import ComponentsStub
-from .api.cryptography.v2.scanoss_cryptography_pb2_grpc import CryptographyStub
-from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
-from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2_grpc import VulnerabilitiesStub
-from .api.provenance.v2.scanoss_provenance_pb2_grpc import ProvenanceStub
-from .api.semgrep.v2.scanoss_semgrep_pb2_grpc import SemgrepStub
-from .api.cryptography.v2.scanoss_cryptography_pb2 import AlgorithmResponse
-from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest, DependencyResponse
-from .api.common.v2.scanoss_common_pb2 import EchoRequest, EchoResponse, StatusResponse, StatusCode, PurlRequest
-from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import VulnerabilityResponse
-from .api.semgrep.v2.scanoss_semgrep_pb2 import SemgrepResponse
+from . import __version__
+from .api.common.v2.scanoss_common_pb2 import (
+    EchoRequest,
+    EchoResponse,
+    PurlRequest,
+    StatusCode,
+    StatusResponse,
+)
 from .api.components.v2.scanoss_components_pb2 import (
     CompSearchRequest,
     CompSearchResponse,
     CompVersionRequest,
     CompVersionResponse,
 )
+from .api.components.v2.scanoss_components_pb2_grpc import ComponentsStub
+from .api.cryptography.v2.scanoss_cryptography_pb2 import AlgorithmResponse
+from .api.cryptography.v2.scanoss_cryptography_pb2_grpc import CryptographyStub
+from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest
+from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
 from .api.provenance.v2.scanoss_provenance_pb2 import ProvenanceResponse
+from .api.provenance.v2.scanoss_provenance_pb2_grpc import ProvenanceStub
+from .api.semgrep.v2.scanoss_semgrep_pb2 import SemgrepResponse
+from .api.semgrep.v2.scanoss_semgrep_pb2_grpc import SemgrepStub
+from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import VulnerabilityResponse
+from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2_grpc import VulnerabilitiesStub
 from .scanossbase import ScanossBase
-from . import __version__
 
 DEFAULT_URL = 'https://api.osskb.org'  # default free service URL
 DEFAULT_URL2 = 'https://api.scanoss.com'  # default premium service URL
 SCANOSS_GRPC_URL = os.environ.get('SCANOSS_GRPC_URL') if os.environ.get('SCANOSS_GRPC_URL') else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_API_KEY') else ''
+
+MAX_CONCURRENT_REQUESTS = 5
 
 
 class ScanossGrpc(ScanossBase):
@@ -65,7 +73,7 @@ class ScanossGrpc(ScanossBase):
     Client for gRPC functionality
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         url: str = None,
         debug: bool = False,
@@ -222,31 +230,54 @@ class ScanossGrpc(ScanossBase):
         :return: Server response or None
         """
         if not dependencies:
-            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
             return None
-        request_id = str(uuid.uuid4())
-        resp: DependencyResponse
-        try:
-            files_json = dependencies.get('files')
-            if files_json is None or len(files_json) == 0:
-                self.print_stderr(f'ERROR: No dependency data supplied to send to gRPC service.')
+
+        files_json = dependencies.get('files')
+
+        if files_json is None or len(files_json) == 0:
+            self.print_stderr('ERROR: No dependency data supplied to send to gRPC service.')
+            return None
+
+        def process_file(file):
+            request_id = str(uuid.uuid4())
+            try:
+                file_request = {'files': [file]}
+
+                request = ParseDict(file_request, DependencyRequest())
+                request.depth = depth
+                metadata = self.metadata[:]
+                metadata.append(('x-request-id', request_id))
+                self.print_debug(f'Sending dependency data for decoration (rqId: {request_id})...')
+                resp = self.dependencies_stub.GetDependencies(request, metadata=metadata, timeout=self.timeout)
+
+                return MessageToDict(resp, preserving_proto_field_name=True)
+            except Exception as e:
+                self.print_stderr(
+                    f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+                )
                 return None
-            request = ParseDict(dependencies, DependencyRequest())  # Parse the JSON/Dict into the dependency object
-            request.depth = depth
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            self.print_debug(f'Sending dependency data for decoration (rqId: {request_id})...')
-            resp = self.dependencies_stub.GetDependencies(request, metadata=metadata, timeout=self.timeout)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                if not self._check_status_response(resp.status, request_id):
-                    return None
-                return MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dictionary
-        return None
+
+        all_responses = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENT_REQUESTS) as executor:
+            future_to_file = {executor.submit(process_file, file): file for file in files_json}
+
+            for future in concurrent.futures.as_completed(future_to_file):
+                response = future.result()
+                if response:
+                    all_responses.append(response)
+
+        SUCCESS_STATUS = 'SUCCESS'
+
+        merged_response = {'files': [], 'status': {'status': SUCCESS_STATUS, 'message': 'Success'}}
+        for response in all_responses:
+            if response:
+                if 'files' in response and len(response['files']) > 0:
+                    merged_response['files'].append(response['files'][0])
+                # Overwrite the status if the any of the responses was not successful
+                if 'status' in response and response['status']['status'] != SUCCESS_STATUS:
+                    merged_response['status'] = response['status']
+        return merged_response
 
     def get_crypto_json(self, purls: dict) -> dict:
         """
@@ -255,7 +286,7 @@ class ScanossGrpc(ScanossBase):
         :return: Server response or None
         """
         if not purls:
-            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
             return None
         request_id = str(uuid.uuid4())
         resp: AlgorithmResponse
@@ -285,7 +316,7 @@ class ScanossGrpc(ScanossBase):
         :return: Server response or None
         """
         if not purls:
-            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
             return None
         request_id = str(uuid.uuid4())
         resp: VulnerabilityResponse
@@ -315,7 +346,7 @@ class ScanossGrpc(ScanossBase):
         :return: Server response or None
         """
         if not purls:
-            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
             return None
         request_id = str(uuid.uuid4())
         resp: SemgrepResponse
@@ -345,7 +376,7 @@ class ScanossGrpc(ScanossBase):
         :return: Server response or None
         """
         if not search:
-            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
             return None
         request_id = str(uuid.uuid4())
         resp: CompSearchResponse
@@ -375,7 +406,7 @@ class ScanossGrpc(ScanossBase):
         :return: Server response or None
         """
         if not search:
-            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
             return None
         request_id = str(uuid.uuid4())
         resp: CompVersionResponse
@@ -404,6 +435,10 @@ class ScanossGrpc(ScanossBase):
         :param status_response: Status Response
         :return: True if successful, False otherwise
         """
+
+        SUCCEDED_WITH_WARNINGS_STATUS_CODE = 2
+        FAILED_STATUS_CODE = 3
+
         if not status_response:
             self.print_stderr(f'Warning: No status response supplied (rqId: {request_id}). Assuming it was ok.')
             return True
@@ -411,11 +446,11 @@ class ScanossGrpc(ScanossBase):
         status_code: StatusCode = status_response.status
         if status_code > 1:
             ret_val = False  # default to failed
-            msg = "Unsuccessful"
-            if status_code == 2:
-                msg = "Succeeded with warnings"
+            msg = 'Unsuccessful'
+            if status_code == SUCCEDED_WITH_WARNINGS_STATUS_CODE:
+                msg = 'Succeeded with warnings'
                 ret_val = True  # No need to fail as it succeeded with warnings
-            elif status_code == 3:
+            elif status_code == FAILED_STATUS_CODE:
                 msg = 'Failed with warnings'
             self.print_stderr(f'{msg} (rqId: {request_id} - status: {status_code}): {status_response.message}')
             return ret_val
@@ -428,10 +463,10 @@ class ScanossGrpc(ScanossBase):
         :param self:
         """
         if self.grpc_proxy:
-            self.print_debug(f'Setting GRPC (grpc_proxy) proxy...')
+            self.print_debug('Setting GRPC (grpc_proxy) proxy...')
             os.environ['grpc_proxy'] = self.grpc_proxy
         elif self.proxy:
-            self.print_debug(f'Setting GRPC (http_proxy/https_proxy) proxies...')
+            self.print_debug('Setting GRPC (http_proxy/https_proxy) proxies...')
             os.environ['http_proxy'] = self.proxy
             os.environ['https_proxy'] = self.proxy
         elif self.pac:
@@ -450,7 +485,7 @@ class ScanossGrpc(ScanossBase):
         :return: Server response or None
         """
         if not purls:
-            self.print_stderr(f'ERROR: No message supplied to send to gRPC service.')
+            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
             return None
         request_id = str(uuid.uuid4())
         resp: ProvenanceResponse
@@ -461,8 +496,9 @@ class ScanossGrpc(ScanossBase):
             self.print_debug(f'Sending data for provenance decoration (rqId: {request_id})...')
             resp = self.provenance_stub.GetComponentProvenance(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
-            self.print_stderr(f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message '
-                              f'(rqId: {request_id}): {e}')
+            self.print_stderr(
+                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
+            )
         else:
             if resp:
                 if not self._check_status_response(resp.status, request_id):
@@ -470,6 +506,8 @@ class ScanossGrpc(ScanossBase):
                 resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
                 return resp_dict
         return None
+
+
 #
 # End of ScanossGrpc Class
 #

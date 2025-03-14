@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upcoming changes...
 
 ## [1.20.5] - 2025-03-13
+### Fixed
+- Fixed timeout issue with dependency scan
 ### Added
 - Improved documentation on spdxlite.py file
 ### Modified
