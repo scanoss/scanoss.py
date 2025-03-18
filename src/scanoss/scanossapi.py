@@ -87,10 +87,8 @@ class ScanossApi(ScanossBase):
             HTTPS_PROXY='http://<ip>:<port>'
         """
         super().__init__(debug, trace, quiet)
-        self.url = url if url else SCANOSS_SCAN_URL
-        self.api_key = api_key if api_key else SCANOSS_API_KEY
-        if self.api_key and not url and not os.environ.get('SCANOSS_SCAN_URL'):
-            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+        self.url = url
+        self.api_key = api_key
         self.sbom = None
         self.scan_format = scan_format if scan_format else 'plain'
         self.flags = flags
@@ -108,6 +106,11 @@ class ScanossApi(ScanossBase):
         self.headers['User-Agent'] = f'scanoss-py/{__version__}'
         self.headers['user-agent'] = f'scanoss-py/{__version__}'
         self.load_generic_headers()
+
+        self.url = url if url else SCANOSS_SCAN_URL
+        self.api_key = api_key if api_key else SCANOSS_API_KEY
+        if self.api_key and not url and not os.environ.get('SCANOSS_SCAN_URL'):
+            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
 
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
@@ -278,6 +281,7 @@ class ScanossApi(ScanossBase):
                 if key == 'x-api-key': # Set premium URL if x-api-key header is set
                     if not self.url and not os.environ.get('SCANOSS_GRPC_URL'):
                         self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+                    self.api_key = value
                 self.headers[key] = value
 
 #

@@ -571,10 +571,10 @@ def setup_args() -> None:  # noqa: PLR0915
             'Can also use the environment variable "grcp_proxy=<ip>:<port>"',
         )
         p.add_argument(
-            '--header','-HDR',
+            '--header','-hdr',
             action='append',  # This allows multiple -H flags
             type=str,
-            help='Headers to be sent on request (e.g., -H "Name: Value") - can be used multiple times'
+            help='Headers to be sent on request (e.g., -hdr "Name: Value") - can be used multiple times'
         )
 
     # Help/Trace command options
