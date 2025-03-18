@@ -104,12 +104,8 @@ class ScanossGrpc(ScanossBase):
             grpc_proxy='http://<ip>:<port>'
         """
         super().__init__(debug, trace, quiet)
-        self.url = url if url else SCANOSS_GRPC_URL
+        self.url = url
         self.api_key = api_key if api_key else SCANOSS_API_KEY
-        if self.api_key and not url and not os.environ.get('SCANOSS_GRPC_URL'):
-            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
-        self.url = self.url.lower()
-        self.orig_url = self.url  # Used for proxy lookup
         self.timeout = timeout
         self.proxy = proxy
         self.grpc_proxy = grpc_proxy
@@ -124,6 +120,12 @@ class ScanossGrpc(ScanossBase):
             self.metadata.append(('x-scanoss-client', ver_details))
         self.metadata.append(('user-agent', f'scanoss-py/{__version__}'))
         self.load_generic_headers()
+
+        self.url = url if url else SCANOSS_GRPC_URL
+        if self.api_key and not url and not os.environ.get('SCANOSS_GRPC_URL'):
+            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+        self.url = self.url.lower()
+        self.orig_url = self.url  # Used for proxy lookup
 
         secure = True if self.url.startswith('https:') else False  # Is it a secure connection?
         if self.url.startswith('http'):
@@ -526,6 +528,7 @@ class ScanossGrpc(ScanossBase):
                 if key == 'x-api-key': # Set premium URL if x-api-key header is set
                     if not self.url and not os.environ.get('SCANOSS_GRPC_URL'):
                         self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+                    self.api_key = value
                 self.metadata.append((key, value))
 #
 # End of ScanossGrpc Class
