@@ -225,11 +225,11 @@ scanoss-py scan -o scan-results.json -5 37f7cd1e657aa3c30ece35995b4c59e5 -E '.h'
 ### Scan with custom headers
 Scan with custom headers. This example scans the `src` folder and sends a custom API key header with the request:
 ```bash
-scanoss-py scan -o scan-results.json src --hdr "x-api-key:12345"
+scanoss-py scan -o scan-results.json src -hdr "x-api-key:12345"
 ```
-Multiple Headers: You can specify any number of custom headers by repeating the --hdr option:
+Multiple Headers: You can specify any number of custom headers by repeating the -hdr option:
 ```bash
-scanoss-py scan src --hdr "x-api-key:12345" --hdr "custom-header:value" --hdr "another-header:another-value"
+scanoss-py scan src -hdr "x-api-key:12345" -hdr "custom-header:value" -hdr "another-header:another-value"
 ```
 
 ### Converting RAW results into other formats
@@ -257,10 +257,11 @@ For the latest list of sub-commands, please run:
 scanoss-py comp --help
 ```
 
-All component sub-commands support custom headers using the `--hdr` option:
+All component sub-commands support custom headers using the `-hdr` option:
 ```bash
-scanoss-py comp search "jquery" --hdr "x-api-key:12345"
-scanoss-py comp vulns "jquery@3.6.0" --hdr "x-api-key:12345" --hdr "custom-header:value"
+scanoss-py comp search "jquery" -hdr "x-api-key:12345"
+scanoss-py comp vulns "jquery@3.6.0" -hdr "x-api-key:12345" -hdr "custom-header:value"
+scanoss-py comp crypto --purl "pkg:github/madler/pigz" -header "x-api-key:12345"
 
 
 #### Component Vulnerabilities
