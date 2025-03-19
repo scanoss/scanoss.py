@@ -86,7 +86,7 @@ class ScanossGrpc(ScanossBase):
         proxy: str = None,
         grpc_proxy: str = None,
         pac: PACFile = None,
-        req_headers = dict
+        req_headers: dict = None,
     ):
         """
 
@@ -502,7 +502,6 @@ class ScanossGrpc(ScanossBase):
             metadata = self.metadata[:]
             metadata.append(('x-request-id', request_id))  # Set a Request ID
             self.print_debug(f'Sending data for provenance decoration (rqId: {request_id})...')
-            print("PROVENANCE METADATA", metadata)
             resp = self.provenance_stub.GetComponentProvenance(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
             self.print_stderr(
