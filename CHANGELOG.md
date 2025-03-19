@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.20.6] - 2025-03-19
+### Added
+- Added HTTP/gRPC generic headers feature using --header flag
+
 ## [1.20.5] - 2025-03-13
 ### Fixed
 - Fixed timeout issue with dependency scan
@@ -486,3 +490,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.20.3]: https://github.com/scanoss/scanoss.py/compare/v1.20.2...v1.20.3
 [1.20.4]: https://github.com/scanoss/scanoss.py/compare/v1.20.3...v1.20.4
 [1.20.5]: https://github.com/scanoss/scanoss.py/compare/v1.20.4...v1.20.5
+[1.20.6]: https://github.com/scanoss/scanoss.py/compare/v1.20.5...v1.20.6

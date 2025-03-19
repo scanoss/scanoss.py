@@ -1,7 +1,7 @@
 """
 SPDX-License-Identifier: MIT
 
-  Copyright (c) 2021, SCANOSS
+  Copyright (c) 2025, SCANOSS
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -22,4 +22,17 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-__version__ = '1.20.6'
+import unittest
+from scanoss.scanossapi import ScanossApi
+
+class MyTestCase(unittest.TestCase):
+
+    def test_scanoss_generic_headers(self):
+        scanoss_api = ScanossApi(debug=True, req_headers={'x-api-key': '123455',
+                                                          'generic-header': 'generic-header-value'})
+        required_keys = ('x-api-key', 'User-Agent', 'user-agent', 'generic-header')
+        valid_headers = True
+        for key, value in scanoss_api.headers.items():
+            if key not in required_keys:
+                valid_headers = False
+        self.assertTrue(valid_headers)

@@ -25,7 +25,7 @@ SPDX-License-Identifier: MIT
 import json
 import os
 import sys
-from typing import TextIO, Optional, List
+from typing import List, Optional, TextIO
 
 from pypac.parser import PACFile
 
@@ -39,7 +39,7 @@ class Components(ScanossBase):
     Class for Component functionality
     """
 
-    def __init__(
+    def __init__( # noqa: PLR0913, PLR0915
         self,
         debug: bool = False,
         trace: bool = False,
@@ -51,6 +51,7 @@ class Components(ScanossBase):
         grpc_proxy: str = None,
         ca_cert: str = None,
         pac: PACFile = None,
+        req_headers: dict = None,
     ):
         """
         Handle all component style requests
@@ -80,6 +81,7 @@ class Components(ScanossBase):
             pac=pac,
             grpc_proxy=grpc_proxy,
             timeout=timeout,
+            req_headers=req_headers,
         )
 
     def load_purls(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None) -> Optional[dict]:
@@ -242,7 +244,7 @@ class Components(ScanossBase):
         self._close_file(output_file, file)
         return success
 
-    def search_components(
+    def search_components( # noqa: PLR0913, PLR0915
         self,
         output_file: str = None,
         json_file: str = None,
