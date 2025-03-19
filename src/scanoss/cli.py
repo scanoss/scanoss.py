@@ -614,7 +614,6 @@ def setup_args() -> None:  # noqa: PLR0915
         sys.exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
 
-
 def ver(*_):
     """
     Run the "ver" sub-command
@@ -716,7 +715,6 @@ def wfp(parser, args):
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
         scan_settings=scan_settings,
-        req_headers = process_req_headers(args.header),
     )
     if args.stdin:
         contents = sys.stdin.buffer.read()
