@@ -25,8 +25,6 @@ SPDX-License-Identifier: MIT
 import argparse
 import os
 import sys
-from array import array
-from cgi import parse_header
 from pathlib import Path
 
 import pypac
@@ -53,6 +51,7 @@ DEFAULT_TIMEOUT = 180
 MIN_TIMEOUT_VALUE = 5
 DEFAULT_RETRY = 5
 PYTHON3_OR_LATER = 3
+HEADER_PARTS_COUNT = 2
 
 def print_stderr(*args, **kwargs):
     """
@@ -1490,7 +1489,7 @@ def process_req_headers(headers_array: List[str]) -> dict:
     for header_str in headers_array:
         # Split each "Name: Value" header
         parts = header_str.split(":", 1)
-        if len(parts) == 2:
+        if len(parts) == HEADER_PARTS_COUNT:
             name = parts[0].strip()
             value = parts[1].strip()
             dict_headers[name] = value

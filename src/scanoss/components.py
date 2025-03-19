@@ -25,7 +25,7 @@ SPDX-License-Identifier: MIT
 import json
 import os
 import sys
-from typing import TextIO, Optional, List
+from typing import List, Optional, TextIO
 
 from pypac.parser import PACFile
 
@@ -39,7 +39,7 @@ class Components(ScanossBase):
     Class for Component functionality
     """
 
-    def __init__(
+    def __init__( # noqa: PLR0913, PLR0915
         self,
         debug: bool = False,
         trace: bool = False,
@@ -244,7 +244,7 @@ class Components(ScanossBase):
         self._close_file(output_file, file)
         return success
 
-    def search_components(
+    def search_components( # noqa: PLR0913, PLR0915
         self,
         output_file: str = None,
         json_file: str = None,

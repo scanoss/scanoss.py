@@ -28,7 +28,8 @@ from scanoss.scanossapi import ScanossApi
 class MyTestCase(unittest.TestCase):
 
     def test_scanoss_generic_headers(self):
-        scanoss_api = ScanossApi(debug=True, req_headers={'x-api-key': '123455', 'generic-header': 'generic-header-value'})
+        scanoss_api = ScanossApi(debug=True, req_headers={'x-api-key': '123455',
+                                                          'generic-header': 'generic-header-value'})
         required_keys = ('x-api-key', 'User-Agent', 'user-agent', 'generic-header')
         valid_headers = True
         for key, value in scanoss_api.headers.items():

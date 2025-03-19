@@ -23,7 +23,9 @@ SPDX-License-Identifier: MIT
 """
 
 import unittest
+
 from scanoss.cli import process_req_headers
+
 
 class MyTestCase(unittest.TestCase):
 
@@ -49,11 +51,15 @@ class MyTestCase(unittest.TestCase):
 
         # Test exact dictionary equality
         self.assertEqual(processed_headers, expected_headers,
-                         f"Headers don't match expected values.\nGot: {processed_headers}\nExpected: {expected_headers}")
+                         f"Headers don't match expected values.\nGot:"
+                         f" {processed_headers}\nExpected: {expected_headers}")
 
         # Additional tests for specific cases
         self.assertIn('x-api-key', processed_headers, "Required header 'x-api-key' missing")
-        self.assertEqual(processed_headers['x-api-key'], '12334', "Header value for 'x-api-key' is incorrect")
+        self.assertEqual(
+            processed_headers['x-api-key'],
+            '12334',
+            "Header value for 'x-api-key' is incorrect")
 
         # Test that the malformed header was not included
         self.assertNotIn('generic-header2', processed_headers,
