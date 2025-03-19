@@ -52,7 +52,7 @@ class ScanossApi(ScanossBase):
     Currently support posting scan requests to the SCANOSS streaming API
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0915
         self,
         scan_format: str = None,
         flags: str = None,
@@ -116,13 +116,13 @@ class ScanossApi(ScanossBase):
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
             http_client.HTTPConnection.debuglevel = 1
         if pac and not proxy:  # Setup PAC session if requested (and no proxy has been explicitly set)
-            self.print_debug(f'Setting up PAC session...')
+            self.print_debug('Setting up PAC session...')
             self.session = PACSession(pac=pac)
         else:
             self.session = requests.sessions.Session()
         self.verify = None
         if self.ignore_cert_errors:
-            self.print_debug(f'Ignoring cert errors...')
+            self.print_debug('Ignoring cert errors...')
             urllib3.disable_warnings(InsecureRequestWarning)
             self.verify = False
             self.session.verify = False

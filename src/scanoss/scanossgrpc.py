@@ -73,7 +73,7 @@ class ScanossGrpc(ScanossBase):
     Client for gRPC functionality
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0915
         self,
         url: str = None,
         debug: bool = False,

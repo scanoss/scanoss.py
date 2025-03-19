@@ -69,7 +69,7 @@ class Scanner(ScanossBase):
     Handle the scanning of files, snippets and dependencies
     """
 
-    def __init__(
+    def __init__( # noqa: PLR0913, PLR0915
         self,
         wfp: str = None,
         scan_output: str = None,
@@ -306,7 +306,7 @@ class Scanner(ScanossBase):
 
         success = True
         if not scan_dir:
-            raise Exception(f'ERROR: Please specify a folder to scan')
+            raise Exception('ERROR: Please specify a folder to scan')
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
         if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
@@ -390,7 +390,8 @@ class Scanner(ScanossBase):
             file_count += 1
             if self.threaded_scan:
                 wfp_size = len(wfp.encode('utf-8'))
-                # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue
+                # If the WFP is bigger than the max post size and we already have something stored in the scan block,
+                # add it to the queue
                 if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
                     self.threaded_scan.queue_add(scan_block)
                     queue_size += 1
@@ -440,7 +441,7 @@ class Scanner(ScanossBase):
         self.threaded_scan.update_bar(create=True, file_count=file_count)
         if not scan_started:
             if not self.threaded_scan.run(wait=False):  # Run the scan but do not wait for it to complete
-                self.print_stderr(f'Warning: Some errors encounted while scanning. Results might be incomplete.')
+                self.print_stderr('Warning: Some errors encounted while scanning. Results might be incomplete.')
                 success = False
         return success
 
@@ -461,14 +462,14 @@ class Scanner(ScanossBase):
         dep_responses = None
         if self.is_file_or_snippet_scan():
             if not self.threaded_scan.complete():  # Wait for the scans to complete
-                self.print_stderr(f'Warning: Scanning analysis ran into some trouble.')
+                self.print_stderr('Warning: Scanning analysis ran into some trouble.')
                 success = False
             self.threaded_scan.complete_bar()
             scan_responses = self.threaded_scan.responses
         if self.is_dependency_scan():
             self.print_msg('Retrieving dependency data...')
             if not self.threaded_deps.complete():
-                self.print_stderr(f'Warning: Dependency analysis ran into some trouble.')
+                self.print_stderr('Warning: Dependency analysis ran into some trouble.')
                 success = False
             dep_responses = self.threaded_deps.responses
 
@@ -550,7 +551,7 @@ class Scanner(ScanossBase):
         """
         success = True
         if not file:
-            raise Exception(f'ERROR: Please specify a file to scan')
+            raise Exception('ERROR: Please specify a file to scan')
         if not os.path.exists(file) or not os.path.isfile(file):
             raise Exception(f'ERROR: Specified file does not exist or is not a file: {file}')
         if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
@@ -587,7 +588,7 @@ class Scanner(ScanossBase):
         """
         success = True
         if not file:
-            raise Exception(f'ERROR: Please specify a file to scan')
+            raise Exception('ERROR: Please specify a file to scan')
         if not os.path.exists(file) or not os.path.isfile(file):
             raise Exception(f'ERROR: Specified files does not exist or is not a file: {file}')
         self.print_debug(f'Fingerprinting {file}...')
@@ -612,7 +613,7 @@ class Scanner(ScanossBase):
         """
         success = True
         if not files:
-            raise Exception(f'ERROR: Please provide a non-empty list of filenames to scan')
+            raise Exception('ERROR: Please provide a non-empty list of filenames to scan')
 
         file_filters = FileFilters(
             debug=self.debug,
@@ -675,7 +676,7 @@ class Scanner(ScanossBase):
                     scan_started = True
                     if not self.threaded_scan.run(wait=False):
                         self.print_stderr(
-                            f'Warning: Some errors encounted while scanning. Results might be incomplete.'
+                            'Warning: Some errors encounted while scanning. Results might be incomplete.'
                         )
                         success = False
 
@@ -708,12 +709,12 @@ class Scanner(ScanossBase):
         """
         success = True
         if not files:
-            raise Exception(f'ERROR: Please specify a list of files to scan')
+            raise Exception('ERROR: Please specify a list of files to scan')
         if not self.is_file_or_snippet_scan():
             raise Exception(f'ERROR: file or snippet scan options have to be set to scan files: {files}')
         if self.is_dependency_scan() or deps_file:
             raise Exception(
-                f'ERROR: The dependency scan option is currently not supported when scanning a list of files'
+                'ERROR: The dependency scan option is currently not supported when scanning a list of files'
             )
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
@@ -735,9 +736,9 @@ class Scanner(ScanossBase):
         """
         success = True
         if not filename:
-            raise Exception(f'ERROR: Please specify a filename to scan')
+            raise Exception('ERROR: Please specify a filename to scan')
         if not contents:
-            raise Exception(f'ERROR: Please specify a file contents to scan')
+            raise Exception('ERROR: Please specify a file contents to scan')
 
         self.print_debug(f'Fingerprinting {filename}...')
         wfp = self.winnowing.wfp_for_contents(filename, False, contents)
@@ -928,7 +929,7 @@ class Scanner(ScanossBase):
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
                             self.print_stderr(
-                                f'Warning: Some errors encounted while scanning. Results might be incomplete.'
+                                'Warning: Some errors uncounted while scanning. Results might be incomplete.'
                             )
                             success = False
             # End for loop
@@ -952,7 +953,7 @@ class Scanner(ScanossBase):
         """
         success = True
         if not wfp:
-            raise Exception(f'ERROR: Please specify a WFP to scan')
+            raise Exception('ERROR: Please specify a WFP to scan')
         raw_output = '{\n'
         scan_resp = self.scanoss_api.scan(wfp)
         if scan_resp is not None:
@@ -988,9 +989,9 @@ class Scanner(ScanossBase):
         :return:
         """
         if not filename:
-            raise Exception(f'ERROR: Please specify a filename to scan')
+            raise Exception('ERROR: Please specify a filename to scan')
         if not contents:
-            raise Exception(f'ERROR: Please specify a file contents to scan')
+            raise Exception('ERROR: Please specify a file contents to scan')
 
         self.print_debug(f'Fingerprinting {filename}...')
         wfp = self.winnowing.wfp_for_contents(filename, False, contents)
@@ -1009,7 +1010,7 @@ class Scanner(ScanossBase):
         Fingerprint the specified file
         """
         if not scan_file:
-            raise Exception(f'ERROR: Please specify a file to fingerprint')
+            raise Exception('ERROR: Please specify a file to fingerprint')
         if not os.path.exists(scan_file) or not os.path.isfile(scan_file):
             raise Exception(f'ERROR: Specified file does not exist or is not a file: {scan_file}')
 
@@ -1030,7 +1031,7 @@ class Scanner(ScanossBase):
         Fingerprint the specified folder producing fingerprints
         """
         if not scan_dir:
-            raise Exception(f'ERROR: Please specify a folder to fingerprint')
+            raise Exception('ERROR: Please specify a folder to fingerprint')
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
         file_filters = FileFilters(
