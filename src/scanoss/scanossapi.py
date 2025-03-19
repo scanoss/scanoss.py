@@ -279,7 +279,7 @@ class ScanossApi(ScanossBase):
         if self.req_headers:  # Load generic headers
             for key, value in self.req_headers.items():
                 if key == 'x-api-key': # Set premium URL if x-api-key header is set
-                    if not self.url and not os.environ.get('SCANOSS_GRPC_URL'):
+                    if not self.url and not os.environ.get('SCANOSS_SCAN_URL'):
                         self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
                     self.api_key = value
                 self.headers[key] = value
