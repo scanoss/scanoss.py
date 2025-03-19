@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.20.6] - 2025-03-19
 ### Added
-- Added HTTP/gRPC generic headers
+- Added HTTP/gRPC generic headers feature using --header flag
 
 ## [1.20.5] - 2025-03-13
 ### Fixed

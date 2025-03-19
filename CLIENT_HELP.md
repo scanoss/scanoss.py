@@ -229,7 +229,7 @@ scanoss-py scan -o scan-results.json src -hdr "x-api-key:12345"
 ```
 Multiple Headers: You can specify any number of custom headers by repeating the -hdr option:
 ```bash
-scanoss-py scan src -hdr "x-api-key:12345" -hdr "custom-header:value" -hdr "another-header:another-value"
+scanoss-py scan src -hdr "x-api-key:12345" -hdr "Authorization: Bearer <access_token>"
 ```
 
 ### Converting RAW results into other formats
