@@ -341,6 +341,12 @@ class FileFilters(ScanossBase):
                     f'WARNING: File {file_path} does not exist, is not a file, or is a symbolic link. Ignoring.'
                 )
                 continue
+
+            path_obj = Path(file_path)
+            if not self.hidden_files_folders and any(part.startswith('.') for part in path_obj.parts):
+                self.print_debug(f'Skipping file: {file_path} (in hidden directory or is hidden file)')
+                continue
+
             try:
                 if scan_root:
                     rel_path = os.path.relpath(file_path, scan_root)
