@@ -1,0 +1,4 @@
+# Parsed Purls
+{{- range .artifacts}}
+{{ if index . "purl" }}{{.purl}}{{end}}
+{{- end}}
