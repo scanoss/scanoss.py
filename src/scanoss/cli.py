@@ -30,6 +30,12 @@ from pathlib import Path
 
 import pypac
 
+from scanoss.scanners.container_scanner import (
+    DEFAULT_SYFT_COMMAND,
+    DEFAULT_SYFT_TIMEOUT,
+    ContainerScanner,
+    create_container_scanner_config_from_args,
+)
 from scanoss.scanners.folder_hasher import (
     FolderHasher,
     create_folder_hasher_config_from_args,
@@ -190,8 +196,7 @@ def setup_args() -> None:  # noqa: PLR0915
         description=f'Produce dependency file summary: {__version__}',
         help='Scan source code for dependencies, but do not decorate them',
     )
-    p_dep.set_defaults(func=dependency)
-    p_dep.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
+    p_dep.add_argument('scan_loc', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
     p_dep.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_dep.add_argument(
         '--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).'
@@ -202,6 +207,27 @@ def setup_args() -> None:  # noqa: PLR0915
         default=600,
         help='Timeout (in seconds) for scancode to complete (optional - default 600)',
     )
+    p_dep.add_argument(
+        '--container',
+        type=str,
+        help=(
+            'Container image to scan. Supports yourrepo/yourimage:tag, Docker tar, '
+            'OCI tar, OCI directory, SIF Container, or generic filesystem directory.'
+        ),
+    )
+    p_dep.add_argument(
+        '--syft-command',
+        type=str,
+        help='Syft command and path if required (optional - default syft).',
+        default=DEFAULT_SYFT_COMMAND,
+    )
+    p_dep.add_argument(
+        '--syft-timeout',
+        type=int,
+        default=DEFAULT_SYFT_TIMEOUT,
+        help='Timeout (in seconds) for syft to complete (optional - default 600)',
+    )
+    p_dep.set_defaults(func=dependency)
 
     # Sub-command: file_count
     p_fc = subparsers.add_parser(
@@ -1036,12 +1062,29 @@ def dependency(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_dir:
-        print_stderr('Please specify a file/folder')
+    if not args.scan_loc and not args.container:
+        print_stderr('Please specify a file/folder or container')
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
-    if not os.path.exists(args.scan_dir):
-        print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
+
+    # Container scanning
+
+    if args.container:
+        try:
+            container_scanner_config = create_container_scanner_config_from_args(args)
+            container_scanner = ContainerScanner(config=container_scanner_config, what_to_scan=args.container)
+
+            container_scanner.scan()
+            return container_scanner.present(
+                output_file=args.output, output_format='json'
+            )  # TODO: support other formats?
+        except Exception as e:
+            print_stderr(f'ERROR: {e}')
+            sys.exit(1)
+
+    # File/folder scanning
+    if not os.path.exists(args.scan_loc):
+        print_stderr(f'Error: File or folder specified does not exist: {args.scan_loc}.')
         sys.exit(1)
     scan_output: str = None
     if args.output:
@@ -1051,7 +1094,7 @@ def dependency(parser, args):
     sc_deps = ScancodeDeps(
         debug=args.debug, quiet=args.quiet, trace=args.trace, sc_command=args.sc_command, timeout=args.sc_timeout
     )
-    if not sc_deps.get_dependencies(what_to_scan=args.scan_dir, result_output=scan_output):
+    if not sc_deps.get_dependencies(what_to_scan=args.scan_loc, result_output=scan_output):
         sys.exit(1)
 
 
