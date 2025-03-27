@@ -59,6 +59,10 @@ class LicenseItem(TypedDict):
     spdxExpression: str
     type: str
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(**data)
+
 
 class SyftArtifactItem(TypedDict):
     name: str
@@ -67,9 +71,23 @@ class SyftArtifactItem(TypedDict):
     purl: str
     licenses: List[LicenseItem]
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            name=data['name'],
+            version=data['version'],
+            type=data['type'],
+            purl=data['purl'],
+            licenses=[LicenseItem.from_dict(lic) for lic in data['licenses']],
+        )
+
 
 class SyftScanResult(TypedDict):
     artifacts: List[SyftArtifactItem]
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(artifacts=[SyftArtifactItem.from_dict(a) for a in data['artifacts']])
 
 
 class SyftScanError(Exception):
@@ -94,6 +112,20 @@ class SyftTimeoutError(SyftScanError):
     """Raised when a Syft scan times out"""
 
     pass
+
+
+class PurlItem(TypedDict):
+    purl: str
+    requirement: Optional[str]
+
+
+class ContainerScanResultFileItem(TypedDict):
+    file: str
+    purls: List[PurlItem]
+
+
+class ContainerScanResult(TypedDict):
+    files: List[ContainerScanResultFileItem]
 
 
 class ContainerScanner:
@@ -161,7 +193,7 @@ class ContainerScanner:
                 f'About to execute {self.syft_command} scan {self.what_to_scan} -q {self.what_to_scan} -o json'
             )
             result = subprocess.run(
-                [self.syft_command, 'scan', self.what_to_scan, '-o', 'json'],
+                [self.syft_command, 'scan', self.what_to_scan, '-q', '-o', 'json'],
                 cwd=os.getcwd(),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -180,7 +212,7 @@ class ContainerScanner:
 
             try:
                 json_data = json.loads(result.stdout)
-                self.scan_results = json_data
+                self.scan_results = SyftScanResult.from_dict(json_data)
             except json.JSONDecodeError as e:
                 error_msg = f'Failed to parse JSON output from syft: {e}\n{result.stdout}'
                 self.base.print_stderr(f'ERROR: {error_msg}')
@@ -220,14 +252,36 @@ class ContainerScannerPresenter(AbstractPresenter):
         Returns:
             str: The formatted JSON string
         """
-        return json.dumps(self.scanner.scan_results, indent=2)
+        return json.dumps(self._normalize_syft_output(), indent=2)
+
+    def _normalize_syft_output(self) -> ContainerScanResult:
+        """
+        Normalize the Syft output data into the same format we use in dependency scanning
+
+        Returns:
+            ContainerScanResult: The normalized output
+        """
+        normalized_output = ContainerScanResult()
+
+        # This is a workaround because we don't have file paths as in dependency scanning, we use the container name
+        file_name = self.scanner.what_to_scan
+        artifacts = self.scanner.scan_results['artifacts']
+
+        normalized_output['files'] = [
+            {
+                'file': file_name,
+                'purls': [PurlItem(purl=artifact['purl']) for artifact in artifacts],
+            }
+        ]
+
+        return normalized_output
 
     def _format_plain_output(self) -> str:
         """
         Format the scan output data into a plain text string
         """
         return (
-            json.dumps(self.scanner.scan_results, indent=2)
-            if isinstance(self.scanner.scan_results, dict)
+            json.dumps(self._normalize_syft_output(), indent=2)
+            if isinstance(self.scanner.scan_results, SyftScanResult)
             else str(self.scanner.scan_results)
         )
