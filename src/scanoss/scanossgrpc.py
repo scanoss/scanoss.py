@@ -57,10 +57,7 @@ from .api.components.v2.scanoss_components_pb2 import (
 from .api.components.v2.scanoss_components_pb2_grpc import ComponentsStub
 from .api.cryptography.v2.scanoss_cryptography_pb2 import AlgorithmResponse
 from .api.cryptography.v2.scanoss_cryptography_pb2_grpc import CryptographyStub
-from .api.dependencies.v2.scanoss_dependencies_pb2 import (
-    DependencyRequest,
-    DependencyResponse,
-)
+from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
 from .api.provenance.v2.scanoss_provenance_pb2 import ProvenanceResponse
 from .api.scanning.v2.scanoss_scanning_pb2 import HFHRequest
@@ -76,6 +73,7 @@ SCANOSS_GRPC_URL = os.environ.get('SCANOSS_GRPC_URL') if os.environ.get('SCANOSS
 SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_API_KEY') else ''
 
 MAX_CONCURRENT_REQUESTS = 5
+
 
 class ScanossGrpcError(Exception):
     """
@@ -138,7 +136,6 @@ class ScanossGrpc(ScanossBase):
         self.pac = pac
         self.req_headers = req_headers
         self.metadata = []
-
 
         if self.api_key:
             self.metadata.append(('x-api-key', api_key))  # Set API key if we have one
@@ -528,9 +525,6 @@ class ScanossGrpc(ScanossBase):
         :return: True if successful, False otherwise
         """
 
-        SUCCEDED_WITH_WARNINGS_STATUS_CODE = 2
-        FAILED_STATUS_CODE = 3
-
         if not status_response:
             self.print_stderr(f'Warning: No status response supplied (rqId: {request_id}). Assuming it was ok.')
             return True
@@ -601,18 +595,20 @@ class ScanossGrpc(ScanossBase):
 
     def load_generic_headers(self):
         """
-           Adds custom headers from req_headers to metadata.
+        Adds custom headers from req_headers to metadata.
 
-           If x-api-key is present and no URL is configured (directly or via
-           environment), sets URL to the premium endpoint (DEFAULT_URL2).
-           """
+        If x-api-key is present and no URL is configured (directly or via
+        environment), sets URL to the premium endpoint (DEFAULT_URL2).
+        """
         if self.req_headers:  # Load generic headers
             for key, value in self.req_headers.items():
-                if key == 'x-api-key': # Set premium URL if x-api-key header is set
+                if key == 'x-api-key':  # Set premium URL if x-api-key header is set
                     if not self.url and not os.environ.get('SCANOSS_GRPC_URL'):
                         self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
                     self.api_key = value
                 self.metadata.append((key, value))
+
+
 #
 # End of ScanossGrpc Class
 #
