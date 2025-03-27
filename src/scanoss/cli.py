@@ -1084,7 +1084,6 @@ def dependency(parser, args):
         sys.exit(1)
 
     # Container scanning
-
     if args.container:
         try:
             container_scanner_config = create_container_scanner_config_from_args(args)
