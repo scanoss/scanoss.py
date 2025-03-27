@@ -140,7 +140,7 @@ class FolderHasher:
         root_node = DirectoryNode(str(root))
 
         all_files = [
-            f for f in root.rglob('*') if f.is_file() and len(f.name.encode('utf-8')) < MINIMUM_FILE_NAME_LENGTH
+            f for f in root.rglob('*') if f.is_file() and len(f.name.encode('utf-8')) <= MINIMUM_FILE_NAME_LENGTH
         ]
         filtered_files = self.file_filters.get_filtered_files_from_files(all_files, str(root))
 
