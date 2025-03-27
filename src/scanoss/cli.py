@@ -66,11 +66,6 @@ from .spdxlite import SpdxLite
 from .threadeddependencies import SCOPE
 from .utils.file import validate_json_file
 
-DEFAULT_POST_SIZE = 32
-DEFAULT_TIMEOUT = 180
-MIN_TIMEOUT_VALUE = 5
-DEFAULT_RETRY = 5
-PYTHON3_OR_LATER = 3
 HEADER_PARTS_COUNT = 2
 
 
@@ -589,9 +584,9 @@ def setup_args() -> None:  # noqa: PLR0915
     # Global Scan/Fingerprint filter options
     for p in [p_scan, p_wfp]:
         p.add_argument('--obfuscate', action='store_true', help='Obfuscate fingerprints')
-        p.add_argument('--all-extensions', action='store_true', help='Fingerprint all file extensions')
-        p.add_argument('--all-folders', action='store_true', help='Fingerprint all folders')
-        p.add_argument('--all-hidden', action='store_true', help='Fingerprint all hidden files/folders')
+        p.add_argument('--all-extensions', action='store_true', help='Fingerprint all file extensions/types...')
+        p.add_argument('--all-folders', action='store_true', help='Fingerprint all folders...')
+        p.add_argument('--all-hidden', action='store_true', help='Fingerprint all hidden files/folders...')
         p.add_argument('--hpsm', '-H', action='store_true', help='Use High Precision Snippet Matching algorithm.')
         p.add_argument('--skip-snippets', '-S', action='store_true', help='Skip the generation of snippets')
         p.add_argument('--skip-extension', '-E', type=str, action='append', help='File Extension to skip.')
@@ -1282,7 +1277,7 @@ def get_pac_file(pac: str):
         if pac == 'auto':
             pac_file = pypac.get_pac()  # try to determine the PAC file
         elif pac.startswith('file://'):
-            pac_local = pac.strip('file://')
+            pac_local = pac[7:]  # Remove 'file://' prefix (7 characters)
             if not os.path.exists(pac_local):
                 print_stderr(f'Error: PAC file does not exist: {pac_local}.')
                 sys.exit(1)
