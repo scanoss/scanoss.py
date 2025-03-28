@@ -26,9 +26,14 @@ import json
 import os
 import subprocess
 from dataclasses import dataclass
-from typing import List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
+from scanoss.constants import DEFAULT_RETRY, DEFAULT_TIMEOUT
+from scanoss.csvoutput import CsvOutput
+from scanoss.cyclonedx import CycloneDx
 from scanoss.scanossbase import ScanossBase
+from scanoss.scanossgrpc import ScanossGrpc
+from scanoss.spdxlite import SpdxLite
 from scanoss.utils.abstract_presenter import AbstractPresenter
 
 DEFAULT_SYFT_TIMEOUT = 600
@@ -40,6 +45,17 @@ class ContainerScannerConfig:
     debug: bool = False
     trace: bool = False
     quiet: bool = False
+    retry: int = DEFAULT_RETRY
+    timeout: int = DEFAULT_TIMEOUT
+    output: Optional[str] = None
+    format: Optional[str] = None
+    apiurl: Optional[str] = None
+    ignore_cert_errors: bool = False
+    key: Optional[str] = None
+    proxy: Optional[str] = None
+    pac: Optional[str] = None
+    grpc_proxy: Optional[str] = None
+    ca_cert: Optional[str] = None
     syft_command: str = DEFAULT_SYFT_COMMAND
     syft_timeout: int = DEFAULT_SYFT_TIMEOUT
 
@@ -49,6 +65,17 @@ def create_container_scanner_config_from_args(args) -> ContainerScannerConfig:
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
+        retry=args.retry,
+        timeout=args.timeout,
+        output=args.output,
+        format=args.format,
+        apiurl=args.api2url,
+        proxy=args.proxy,
+        pac=args.pac,
+        grpc_proxy=args.grpc_proxy,
+        ca_cert=args.ca_cert,
+        ignore_cert_errors=args.ignore_cert_errors,
+        key=args.key,
         syft_command=args.syft_command,
         syft_timeout=args.syft_timeout,
     )
@@ -90,6 +117,43 @@ class SyftScanResult(TypedDict):
         return cls(artifacts=[SyftArtifactItem.from_dict(a) for a in data['artifacts']])
 
 
+class PurlItem(TypedDict):
+    purl: str
+    requirement: Optional[str]
+
+
+class ContainerScanResultFileItem(TypedDict):
+    file: str
+    purls: List[PurlItem]
+
+
+class ContainerScanResult(TypedDict):
+    files: List[ContainerScanResultFileItem]
+
+
+class DependencyLicenseItem(TypedDict):
+    value: str
+    spdxExpression: str
+    type: str
+
+
+class DependencyItem(TypedDict):
+    purl: str
+    licenses: List[DependencyLicenseItem]
+
+
+class DecoratedContainerScanResultFileItem(TypedDict):
+    file: str
+    id: str
+    status: str
+    dependencies: List[DependencyItem]
+
+
+class DecoratedContainerScanResult(TypedDict):
+    files: List[ContainerScanResultFileItem]
+    status: Dict[str, str]
+
+
 class SyftScanError(Exception):
     """Base exception for Syft scan errors"""
 
@@ -114,18 +178,16 @@ class SyftTimeoutError(SyftScanError):
     pass
 
 
-class PurlItem(TypedDict):
-    purl: str
-    requirement: Optional[str]
+class SCANOSSDependencyScanError(Exception):
+    """Base exception for SCANOSS dependency scan errors"""
+
+    pass
 
 
-class ContainerScanResultFileItem(TypedDict):
-    file: str
-    purls: List[PurlItem]
+class DecorateScanResultsError(SCANOSSDependencyScanError):
+    """Raised when there is an issue decorating scan results with dependencies"""
 
-
-class ContainerScanResult(TypedDict):
-    files: List[ContainerScanResultFileItem]
+    pass
 
 
 class ContainerScanner:
@@ -155,38 +217,74 @@ class ContainerScanner:
             debug=config.debug,
             trace=config.trace,
             quiet=config.quiet,
+            output_file=config.output,
+            output_format=config.format,
+        )
+        self.grpc_api = ScanossGrpc(
+            debug=config.debug,
+            quiet=config.quiet,
+            trace=config.trace,
+            url=config.apiurl,
+            api_key=config.key,
+            ca_cert=config.ca_cert,
+            proxy=config.proxy,
+            pac=config.pac,
+            grpc_proxy=config.grpc_proxy,
         )
         self.what_to_scan: str = what_to_scan
         self.syft_command: str = config.syft_command
         self.syft_timeout: int = config.syft_timeout
-        self.scan_results: Optional[SyftScanResult] = None
+        self.syft_output: Optional[SyftScanResult] = None
+        self.normalized_syft_output: Optional[ContainerScanResult] = None
+        self.decorated_scan_results: Optional[DecoratedContainerScanResult] = None
 
-    def scan(self) -> SyftScanResult:
+    def decorate_scan_results_with_dependencies(self) -> None:
         """
-        Scan the provided container using Syft.
-
-        Returns:
-            SyftScanResult: The Syft scan results.
-
-        Raises:
-            SyftExecutionError: If Syft returns a non-zero exit code
-            SyftJsonError: If the scan output cannot be parsed as JSON
-            SyftTimeoutError: If the scan times out
-            SyftScanError: For other scan-related errors
+        Decorate the scan results with dependencies.
         """
-        self.run_scan()
-        return self.scan_results
+        try:
+            decorated_scan_results = self.grpc_api.get_dependencies(self.normalized_syft_output)
+            self.decorated_scan_results = decorated_scan_results
+            return decorated_scan_results
+        except Exception as e:
+            error_msg = f'Issue decorating scan results with dependencies: {e}'
+            self.base.print_stderr(f'ERROR: {error_msg}')
+            raise DecorateScanResultsError(error_msg) from e
 
-    def run_scan(
+    def scan(
         self,
-    ) -> None:
+    ) -> ContainerScanResult:
         """Run a syft scan of the specified target.
 
+        Returns:
+            ContainerScanResult: The container scan results.
+
         Raises:
-            SyftExecutionError: If Syft returns a non-zero exit code
-            SyftJsonError: If the scan output cannot be parsed as JSON
-            SyftTimeoutError: If the scan times out
             SyftScanError: For other scan-related errors
+        """
+        try:
+            self.syft_output = self._execute_syft_scan()
+            self.normalized_syft_output = self._normalize_syft_output()
+            return self.normalized_syft_output
+        except Exception as e:
+            if isinstance(e, SyftScanError):
+                raise
+            error_msg = f'Issue running syft scan on {self.what_to_scan}: {e}'
+            self.base.print_stderr(f'ERROR: {error_msg}')
+            raise SyftScanError(error_msg) from e
+
+    def _execute_syft_scan(self) -> SyftScanResult:
+        """
+        Execute a Syft scan of the specified target.
+
+        Returns:
+            SyftScanResult: The result of the Syft scan.
+
+        Raises:
+            SyftScanError: If the Syft scan fails.
+            SyftJsonError: If the Syft scan output cannot be parsed as JSON.
+            SyftTimeoutError: If the Syft scan times out.
+            SyftExecutionError: If the Syft scan execution fails.
         """
         try:
             self.base.print_trace(
@@ -212,7 +310,7 @@ class ContainerScanner:
 
             try:
                 json_data = json.loads(result.stdout)
-                self.scan_results = SyftScanResult.from_dict(json_data)
+                return SyftScanResult.from_dict(json_data)
             except json.JSONDecodeError as e:
                 error_msg = f'Failed to parse JSON output from syft: {e}\n{result.stdout}'
                 self.base.print_stderr(f'ERROR: {error_msg}')
@@ -230,6 +328,55 @@ class ContainerScanner:
             self.base.print_stderr(f'ERROR: {error_msg}')
             raise SyftScanError(error_msg) from e
 
+    def _get_dependencies(self) -> None:
+        """
+        Run a dependency scan of the specified target.
+        """
+        try:
+            if not self.normalized_syft_output:
+                error_msg = 'Syft scan output is not available'
+                self.base.print_stderr(error_msg)
+                raise ValueError(error_msg)
+            if not self.grpc_api.get_dependencies(self.normalized_syft_output):
+                error_msg = 'Failed to get dependencies'
+                self.base.print_stderr(error_msg)
+                raise SCANOSSDependencyScanError(error_msg)
+        except Exception as e:
+            error_msg = f'Failed to run dependency scan: {e}'
+            self.base.print_stderr(error_msg)
+            raise SCANOSSDependencyScanError(error_msg)
+
+    def _normalize_syft_output(self) -> ContainerScanResult:
+        """
+        Normalize the Syft output data into the same format we use in dependency scanning
+
+        Returns:
+            ContainerScanResult: The normalized output
+        """
+        normalized_output = ContainerScanResult()
+
+        # This is a workaround because we don't have file paths as in dependency scanning, we use the container name
+        file_name = self.what_to_scan
+        artifacts = self.syft_output['artifacts']
+
+        unique_purls = set()
+        unique_purl_items = []
+
+        for artifact in artifacts:
+            purl = artifact['purl']
+            if purl not in unique_purls:
+                unique_purls.add(purl)
+                unique_purl_items.append(PurlItem(purl=purl))
+
+        normalized_output['files'] = [
+            {
+                'file': file_name,
+                'purls': unique_purl_items,
+            }
+        ]
+
+        return normalized_output
+
     def present(self, output_format: str = None, output_file: str = None):
         """Present the results in the selected format"""
         self.presenter.present(output_format=output_format, output_file=output_file)
@@ -244,6 +391,7 @@ class ContainerScannerPresenter(AbstractPresenter):
     def __init__(self, scanner: ContainerScanner, **kwargs):
         super().__init__(**kwargs)
         self.scanner = scanner
+        self.AVAILABLE_OUTPUT_FORMATS = ['plain', 'cyclonedx', 'spdxlite', 'csv']
 
     def _format_json_output(self) -> str:
         """
@@ -252,36 +400,49 @@ class ContainerScannerPresenter(AbstractPresenter):
         Returns:
             str: The formatted JSON string
         """
-        return json.dumps(self._normalize_syft_output(), indent=2)
-
-    def _normalize_syft_output(self) -> ContainerScanResult:
-        """
-        Normalize the Syft output data into the same format we use in dependency scanning
-
-        Returns:
-            ContainerScanResult: The normalized output
-        """
-        normalized_output = ContainerScanResult()
-
-        # This is a workaround because we don't have file paths as in dependency scanning, we use the container name
-        file_name = self.scanner.what_to_scan
-        artifacts = self.scanner.scan_results['artifacts']
-
-        normalized_output['files'] = [
-            {
-                'file': file_name,
-                'purls': [PurlItem(purl=artifact['purl']) for artifact in artifacts],
-            }
-        ]
-
-        return normalized_output
+        return json.dumps(self.scanner.decorated_scan_results, indent=2)
 
     def _format_plain_output(self) -> str:
         """
         Format the scan output data into a plain text string
         """
-        return (
-            json.dumps(self._normalize_syft_output(), indent=2)
-            if isinstance(self.scanner.scan_results, SyftScanResult)
-            else str(self.scanner.scan_results)
-        )
+        return json.dumps(self.scanner.decorated_scan_results, indent=2)
+
+    def _format_cyclonedx_output(self) -> str:
+        """
+        Format the scan output data into a CycloneDX object
+        """
+        cdx = CycloneDx(self.base.debug, self.output_file)
+        scan_results = {}
+        for f in self.scanner.decorated_scan_results['files']:
+            scan_results[f['file']] = [f]
+        if not cdx.produce_from_json(scan_results, self.output_file):
+            error_msg = 'Failed to produce CycloneDX output'
+            self.base.print_stderr(error_msg)
+            raise ValueError(error_msg)
+
+    def _format_spdxlite_output(self) -> str:
+        """
+        Format the scan output data into a SPDXLite object
+        """
+        spdxlite = SpdxLite(self.base.debug, self.output_file)
+        scan_results = {}
+        for f in self.scanner.decorated_scan_results['files']:
+            scan_results[f['file']] = [f]
+        if not spdxlite.produce_from_json(scan_results, self.output_file):
+            error_msg = 'Failed to produce SPDXLite output'
+            self.base.print_stderr(error_msg)
+            raise ValueError(error_msg)
+
+    def _format_csv_output(self) -> str:
+        """
+        Format the scan output data into a CSV object
+        """
+        csv = CsvOutput(self.base.debug, self.output_file)
+        scan_results = {}
+        for f in self.scanner.decorated_scan_results['files']:
+            scan_results[f['file']] = [f]
+        if not csv.produce_from_json(scan_results, self.output_file):
+            error_msg = 'Failed to produce CSV output'
+            self.base.print_stderr(error_msg)
+            raise ValueError(error_msg)

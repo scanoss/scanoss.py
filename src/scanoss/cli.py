@@ -114,14 +114,6 @@ def setup_args() -> None:  # noqa: PLR0915
     p_scan.add_argument('--files', '-e', type=str, nargs='*', help='List of files to scan.')
     p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file')
     p_scan.add_argument('--ignore', '-n', type=str, help='Ignore components specified in the SBOM file')
-    p_scan.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
-    p_scan.add_argument(
-        '--format',
-        '-f',
-        type=str,
-        choices=['plain', 'cyclonedx', 'spdxlite', 'csv'],
-        help='Result output format (optional - default: plain)',
-    )
     p_scan.add_argument(
         '--threads', '-T', type=int, default=5, help='Number of threads to use while scanning (optional - default 5)'
     )
@@ -187,7 +179,6 @@ def setup_args() -> None:  # noqa: PLR0915
         type=str,
         help='Fingerprint the file contents supplied via STDIN (optional)',
     )
-    p_wfp.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
 
     # Sub-command: dependency
     p_dep = subparsers.add_parser(
@@ -197,7 +188,6 @@ def setup_args() -> None:  # noqa: PLR0915
         help='Scan source code for dependencies, but do not decorate them',
     )
     p_dep.add_argument('scan_loc', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
-    p_dep.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_dep.add_argument(
         '--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).'
     )
@@ -207,27 +197,48 @@ def setup_args() -> None:  # noqa: PLR0915
         default=600,
         help='Timeout (in seconds) for scancode to complete (optional - default 600)',
     )
-    p_dep.add_argument(
-        '--container',
+    p_dep.set_defaults(func=dependency)
+
+    # Container scan sub-command
+    p_cs = subparsers.add_parser(
+        'container-scan',
+        aliases=['cs'],
+        description=f'Analyse/scan the given container image: {__version__}',
+        help='Scan container image',
+    )
+    p_cs.add_argument(
+        'scan_loc',
+        metavar='IMAGE',
         type=str,
+        nargs='?',
         help=(
             'Container image to scan. Supports yourrepo/yourimage:tag, Docker tar, '
             'OCI tar, OCI directory, SIF Container, or generic filesystem directory.'
         ),
     )
-    p_dep.add_argument(
+    p_cs.add_argument(
+        '--retry', '-R', type=int, default=5, help='Retry limit for API communication (optional - default 5)'
+    )
+    p_cs.add_argument(
+        '--timeout',
+        '-M',
+        type=int,
+        default=180,
+        help='Timeout (in seconds) for API communication (optional - default 180)',
+    )
+    p_cs.add_argument(
         '--syft-command',
         type=str,
         help='Syft command and path if required (optional - default syft).',
         default=DEFAULT_SYFT_COMMAND,
     )
-    p_dep.add_argument(
+    p_cs.add_argument(
         '--syft-timeout',
         type=int,
         default=DEFAULT_SYFT_TIMEOUT,
         help='Timeout (in seconds) for syft to complete (optional - default 600)',
     )
-    p_dep.set_defaults(func=dependency)
+    p_cs.set_defaults(func=container_scan)
 
     # Sub-command: file_count
     p_fc = subparsers.add_parser(
@@ -238,7 +249,6 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_fc.set_defaults(func=file_count)
     p_fc.add_argument('scan_dir', metavar='DIR', type=str, nargs='?', help='A folder to search')
-    p_fc.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_fc.add_argument('--all-hidden', action='store_true', help='Scan all hidden files/folders')
 
     # Sub-command: convert
@@ -250,7 +260,6 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_cnv.set_defaults(func=convert)
     p_cnv.add_argument('--input', '-i', type=str, required=True, help='Input file name')
-    p_cnv.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_cnv.add_argument(
         '--format',
         '-f',
@@ -349,7 +358,6 @@ def setup_args() -> None:  # noqa: PLR0915
 
     # Common Component sub-command options
     for p in [c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
-        p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
         p.add_argument(
             '--timeout',
             '-M',
@@ -397,7 +405,6 @@ def setup_args() -> None:  # noqa: PLR0915
     p_c_dwnld.add_argument(
         '--port', '-p', required=False, type=int, default=443, help='Server port number (default: 443).'
     )
-    p_c_dwnld.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
 
     # Utils Sub-command: utils pac-proxy
     p_p_proxy = utils_sub.add_parser(
@@ -513,7 +520,6 @@ def setup_args() -> None:  # noqa: PLR0915
         help='Scan the given directory using folder hashing',
     )
     p_folder_scan.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='The root directory to scan')
-    p_folder_scan.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_folder_scan.add_argument(
         '--timeout',
         '-M',
@@ -554,7 +560,6 @@ def setup_args() -> None:  # noqa: PLR0915
         help='Produce a folder hash for the given directory',
     )
     p_folder_hash.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
-    p_folder_hash.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
     p_folder_hash.add_argument(
         '--format',
         '-f',
@@ -564,6 +569,36 @@ def setup_args() -> None:  # noqa: PLR0915
         help='Result output format (optional - default: json)',
     )
     p_folder_hash.set_defaults(func=folder_hash)
+
+    # Output options
+    for p in [
+        p_scan,
+        p_cs,
+        p_wfp,
+        p_dep,
+        p_fc,
+        p_cnv,
+        c_crypto,
+        c_vulns,
+        c_search,
+        c_versions,
+        c_semgrep,
+        c_provenance,
+        p_c_dwnld,
+        p_folder_scan,
+        p_folder_hash,
+    ]:
+        p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
+
+    # Format options
+    for p in [p_scan, p_cs]:
+        p.add_argument(
+            '--format',
+            '-f',
+            type=str,
+            choices=['plain', 'cyclonedx', 'spdxlite', 'csv'],
+            help='Result output format (optional - default: plain)',
+        )
 
     # Scanoss settings options
     for p in [p_folder_scan, p_scan, p_wfp, p_folder_hash]:
@@ -594,7 +629,7 @@ def setup_args() -> None:  # noqa: PLR0915
         p.add_argument('-s', '--status', type=str, help='Save summary data into Markdown file')
 
     # Global Scan command options
-    for p in [p_scan]:
+    for p in [p_scan, p_cs]:
         p.add_argument(
             '--apiurl', type=str, help='SCANOSS API URL (optional - default: https://api.osskb.org/scan/direct)'
         )
@@ -622,7 +657,7 @@ def setup_args() -> None:  # noqa: PLR0915
         p.add_argument('--strip-snippet', '-N', type=str, action='append', help='Strip Snippet ID string from WFP.')
 
     # Global Scan/GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_folder_scan]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_folder_scan, p_cs]:
         p.add_argument(
             '--key', '-k', type=str, help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
         )
@@ -648,7 +683,7 @@ def setup_args() -> None:  # noqa: PLR0915
         )
 
     # Global GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_folder_scan]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_folder_scan, p_cs]:
         p.add_argument(
             '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
         )
@@ -679,6 +714,7 @@ def setup_args() -> None:  # noqa: PLR0915
         p_copyleft,
         p_folder_scan,
         p_folder_hash,
+        p_cs,
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -1062,26 +1098,11 @@ def dependency(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_loc and not args.container:
-        print_stderr('Please specify a file/folder or container')
+    if not args.scan_loc:
+        print_stderr('Please specify a file/folder')
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
 
-    # Container scanning
-    if args.container:
-        try:
-            container_scanner_config = create_container_scanner_config_from_args(args)
-            container_scanner = ContainerScanner(config=container_scanner_config, what_to_scan=args.container)
-
-            container_scanner.scan()
-            return container_scanner.present(
-                output_file=args.output, output_format='json'
-            )  # TODO: support other formats?
-        except Exception as e:
-            print_stderr(f'ERROR: {e}')
-            sys.exit(1)
-
-    # File/folder scanning
     if not os.path.exists(args.scan_loc):
         print_stderr(f'Error: File or folder specified does not exist: {args.scan_loc}.')
         sys.exit(1)
@@ -1608,6 +1629,35 @@ def folder_hash(parser, args):
 
         folder_hasher.hash_directory(args.scan_dir)
         folder_hasher.present(output_file=args.output, output_format=args.format)
+    except Exception as e:
+        print_stderr(f'ERROR: {e}')
+        sys.exit(1)
+
+
+def container_scan(parser, args):
+    """
+    Run the "container-scan" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if not args.scan_loc:
+        print_stderr(
+            'Please specify a container image, Docker tar, OCI tar, OCI directory, SIF Container, or directory to scan'
+        )
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+
+    try:
+        container_scanner_config = create_container_scanner_config_from_args(args)
+        container_scanner = ContainerScanner(config=container_scanner_config, what_to_scan=args.scan_loc)
+
+        container_scanner.scan()
+        container_scanner.decorate_scan_results_with_dependencies()
+        container_scanner.present(output_file=args.output, output_format=args.format)
     except Exception as e:
         print_stderr(f'ERROR: {e}')
         sys.exit(1)
