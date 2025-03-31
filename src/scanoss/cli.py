@@ -599,11 +599,16 @@ def setup_args() -> None:  # noqa: PLR0915
 
     # Format options
     for p in [p_scan, p_cs]:
+        choices = ['plain', 'cyclonedx', 'spdxlite', 'csv']
+        if p is p_cs:
+            choices.append('raw')
+
         p.add_argument(
             '--format',
             '-f',
             type=str,
-            choices=['plain', 'cyclonedx', 'spdxlite', 'csv'],
+            choices=choices,
+            default='plain',
             help='Result output format (optional - default: plain)',
         )
 
