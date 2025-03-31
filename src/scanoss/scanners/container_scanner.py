@@ -287,9 +287,8 @@ class ContainerScanner:
             SyftExecutionError: If the Syft scan execution fails.
         """
         try:
-            self.base.print_trace(
-                f'About to execute {self.syft_command} scan {self.what_to_scan} -q {self.what_to_scan} -o json'
-            )
+            self.base.print_trace(f'About to execute {self.syft_command} scan {self.what_to_scan} -q -o json')
+            self.base.print_msg('Scanning container...')
             result = subprocess.run(
                 [self.syft_command, 'scan', self.what_to_scan, '-q', '-o', 'json'],
                 cwd=os.getcwd(),
@@ -391,20 +390,37 @@ class ContainerScannerPresenter(AbstractPresenter):
     def __init__(self, scanner: ContainerScanner, **kwargs):
         super().__init__(**kwargs)
         self.scanner = scanner
-        self.AVAILABLE_OUTPUT_FORMATS = ['plain', 'cyclonedx', 'spdxlite', 'csv']
+        self.AVAILABLE_OUTPUT_FORMATS = ['plain', 'cyclonedx', 'spdxlite', 'csv', 'raw']
 
-    def _format_json_output(self) -> str:
+    def _convert_raw_to_scan_output(self) -> dict:
         """
-        Format the scan output data into a JSON object
+        Convert the raw output from dependency scanning API to our scan output format
 
         Returns:
-            str: The formatted JSON string
+            dict: The converted output
         """
-        return json.dumps(self.scanner.decorated_scan_results, indent=2)
+        formatted_output = {}
+        if (
+            self.scanner.decorated_scan_results
+            and 'files' in self.scanner.decorated_scan_results
+            and self.scanner.decorated_scan_results['files']
+            and isinstance(self.scanner.decorated_scan_results['files'], list)
+        ):
+            file_item = self.scanner.decorated_scan_results['files'][0]
+            if file_item and isinstance(file_item, dict) and 'file' in file_item:
+                formatted_output[file_item['file']] = [file_item]
+
+        return formatted_output
 
     def _format_plain_output(self) -> str:
         """
         Format the scan output data into a plain text string
+        """
+        return json.dumps(self._convert_raw_to_scan_output(), indent=2)
+
+    def _format_raw_output(self) -> str:
+        """
+        Format the scan output data into the raw output from dependency scanning API
         """
         return json.dumps(self.scanner.decorated_scan_results, indent=2)
 
@@ -446,3 +462,9 @@ class ContainerScannerPresenter(AbstractPresenter):
             error_msg = 'Failed to produce CSV output'
             self.base.print_stderr(error_msg)
             raise ValueError(error_msg)
+
+    def _format_json_output(self) -> str:
+        """
+        Format the scan output data into a JSON object
+        """
+        pass
