@@ -20,7 +20,7 @@ class AbstractPresenter(ABC):
         """
         Initialize the presenter with the given output file and format.
         """
-        self.AVAILABLE_OUTPUT_FORMATS = ['json', 'plain']
+        self.AVAILABLE_OUTPUT_FORMATS = ['json', 'plain', 'cyclonedx', 'spdxlite', 'csv', 'raw']
         self.base = ScanossBase(debug=debug, trace=trace, quiet=quiet)
         self.output_file = output_file
         self.output_format = output_format
@@ -47,6 +47,8 @@ class AbstractPresenter(ABC):
             content = self._format_spdxlite_output()
         elif fmt == 'csv':
             content = self._format_csv_output()
+        elif fmt == 'raw':
+            content = self._format_raw_output()
         else:
             content = self._format_plain_output()
 
@@ -90,5 +92,12 @@ class AbstractPresenter(ABC):
     def _format_plain_output(self) -> str:
         """
         Return a plain text string representation of the data.
+        """
+        pass
+
+    @abstractmethod
+    def _format_raw_output(self) -> str:
+        """
+        Return a raw string representation of the data.
         """
         pass

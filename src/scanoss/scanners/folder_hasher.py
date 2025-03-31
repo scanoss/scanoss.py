@@ -297,3 +297,6 @@ class FolderHasherPresenter(AbstractPresenter):
 
     def _format_csv_output(self) -> str:
         pass
+
+    def _format_raw_output(self) -> str:
+        pass
