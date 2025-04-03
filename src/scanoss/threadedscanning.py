@@ -23,13 +23,13 @@ SPDX-License-Identifier: MIT
 """
 
 import os
+import queue
 import sys
 import threading
-import queue
 import time
-
-from typing import Dict, List
 from dataclasses import dataclass
+from typing import Dict, List
+
 from progress.bar import Bar
 
 from .scanossapi import ScanossApi
@@ -134,7 +134,7 @@ class ThreadedScanning(ScanossBase):
         :param wfp: WFP to add to queue
         """
         if wfp is None or wfp == '':
-            self.print_stderr(f'Warning: empty WFP. Skipping from scan...')
+            self.print_stderr('Warning: empty WFP. Skipping from scan...')
         else:
             self.inputs.put(wfp)
 
