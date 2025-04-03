@@ -58,26 +58,27 @@ class ContainerScannerConfig:
     ca_cert: Optional[str] = None
     syft_command: str = DEFAULT_SYFT_COMMAND
     syft_timeout: int = DEFAULT_SYFT_TIMEOUT
+    only_interim_results: bool = False
 
 
 def create_container_scanner_config_from_args(args) -> ContainerScannerConfig:
     return ContainerScannerConfig(
-        debug=args.debug,
-        trace=args.trace,
-        quiet=args.quiet,
-        retry=args.retry,
-        timeout=args.timeout,
-        output=args.output,
-        format=args.format,
-        apiurl=args.api2url,
-        proxy=args.proxy,
-        pac=args.pac,
-        grpc_proxy=args.grpc_proxy,
-        ca_cert=args.ca_cert,
-        ignore_cert_errors=args.ignore_cert_errors,
-        key=args.key,
-        syft_command=args.syft_command,
-        syft_timeout=args.syft_timeout,
+        debug=args.debug if 'debug' in args else False,
+        trace=args.trace if 'trace' in args else False,
+        quiet=args.quiet if 'quiet' in args else False,
+        retry=args.retry if 'retry' in args else DEFAULT_RETRY,
+        timeout=args.timeout if 'timeout' in args else DEFAULT_TIMEOUT,
+        output=args.output if 'output' in args else None,
+        format=args.format if 'format' in args else None,
+        apiurl=args.api2url if 'api2url' in args else None,
+        proxy=args.proxy if 'proxy' in args else None,
+        pac=args.pac if 'pac' in args else None,
+        grpc_proxy=args.grpc_proxy if 'grpc_proxy' in args else None,
+        ca_cert=args.ca_cert if 'ca_cert' in args else None,
+        ignore_cert_errors=args.ignore_cert_errors if 'ignore_cert_errors' in args else False,
+        key=args.key if 'key' in args else None,
+        syft_command=args.syft_command if 'syft_command' in args else DEFAULT_SYFT_COMMAND,
+        syft_timeout=args.syft_timeout if 'syft_timeout' in args else DEFAULT_SYFT_TIMEOUT,
     )
 
 
@@ -234,6 +235,7 @@ class ContainerScanner:
         self.what_to_scan: str = what_to_scan
         self.syft_command: str = config.syft_command
         self.syft_timeout: int = config.syft_timeout
+        self.only_interim_results: bool = config.only_interim_results
         self.syft_output: Optional[SyftScanResult] = None
         self.normalized_syft_output: Optional[ContainerScanResult] = None
         self.decorated_scan_results: Optional[DecoratedContainerScanResult] = None
@@ -422,6 +424,8 @@ class ContainerScannerPresenter(AbstractPresenter):
         """
         Format the scan output data into the raw output from dependency scanning API
         """
+        if self.scanner.only_interim_results:
+            return json.dumps(self.scanner.normalized_syft_output, indent=2)
         return json.dumps(self.scanner.decorated_scan_results, indent=2)
 
     def _format_cyclonedx_output(self) -> str:
