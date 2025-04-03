@@ -10,9 +10,9 @@ FROM base AS builder
 
 # Setup the required build tooling
 RUN apt-get update \
- && apt-get install -y --no-install-recommends build-essential gcc \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && apt-get install -y --no-install-recommends build-essential gcc \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Create and activate virtual environment
 RUN python -m venv /opt/venv
@@ -56,9 +56,12 @@ ENV GRPC_POLL_STRATEGY=poll
 
 # Install jq and curl commands
 RUN apt-get update \
- && apt-get install -y --no-install-recommends jq curl \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && apt-get install -y --no-install-recommends jq curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install syft
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
 # Setup working directory and user
 WORKDIR /scanoss
