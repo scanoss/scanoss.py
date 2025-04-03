@@ -92,6 +92,9 @@ class ResultsPresenter(AbstractPresenter):
     def _format_csv_output(self) -> str:
         pass
 
+    def _format_raw_output(self) -> str:
+        pass
+
     def _format_plain_output(self) -> str:
         """Format the output data into a plain text string
 

@@ -139,11 +139,15 @@ def setup_args() -> None:  # noqa: PLR0915
         '--timeout',
         '-M',
         type=int,
-        default=180,
+        default=DEFAULT_TIMEOUT,
         help='Timeout (in seconds) for API communication (optional - default 180)',
     )
     p_scan.add_argument(
-        '--retry', '-R', type=int, default=5, help='Retry limit for API communication (optional - default 5)'
+        '--retry',
+        '-R',
+        type=int,
+        default=DEFAULT_RETRY,
+        help='Retry limit for API communication (optional - default 5)',
     )
     p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
@@ -189,6 +193,12 @@ def setup_args() -> None:  # noqa: PLR0915
     )
     p_dep.add_argument('scan_loc', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
     p_dep.add_argument(
+        '--container',
+        type=str,
+        help='Container image to scan. Supports yourrepo/yourimage:tag, Docker tar, '
+        'OCI tar, OCI directory, SIF Container, or generic filesystem directory.',
+    )
+    p_dep.add_argument(
         '--sc-command', type=str, help='Scancode command and path if required (optional - default scancode).'
     )
     p_dep.add_argument(
@@ -217,26 +227,18 @@ def setup_args() -> None:  # noqa: PLR0915
         ),
     )
     p_cs.add_argument(
-        '--retry', '-R', type=int, default=5, help='Retry limit for API communication (optional - default 5)'
+        '--retry',
+        '-R',
+        type=int,
+        default=DEFAULT_RETRY,
+        help='Retry limit for API communication (optional - default 5)',
     )
     p_cs.add_argument(
         '--timeout',
         '-M',
         type=int,
-        default=180,
+        default=DEFAULT_TIMEOUT,
         help='Timeout (in seconds) for API communication (optional - default 180)',
-    )
-    p_cs.add_argument(
-        '--syft-command',
-        type=str,
-        help='Syft command and path if required (optional - default syft).',
-        default=DEFAULT_SYFT_COMMAND,
-    )
-    p_cs.add_argument(
-        '--syft-timeout',
-        type=int,
-        default=DEFAULT_SYFT_TIMEOUT,
-        help='Timeout (in seconds) for syft to complete (optional - default 600)',
     )
     p_cs.set_defaults(func=container_scan)
 
@@ -699,6 +701,21 @@ def setup_args() -> None:  # noqa: PLR0915
             'Can also use the environment variable "grcp_proxy=<ip>:<port>"',
         )
 
+    # Syft options
+    for p in [p_cs, p_dep]:
+        p.add_argument(
+            '--syft-command',
+            type=str,
+            help='Syft command and path if required (optional - default syft).',
+            default=DEFAULT_SYFT_COMMAND,
+        )
+        p.add_argument(
+            '--syft-timeout',
+            type=int,
+            default=DEFAULT_SYFT_TIMEOUT,
+            help='Timeout (in seconds) for syft to complete (optional - default 600)',
+        )
+
     # Help/Trace command options
     for p in [
         p_scan,
@@ -1103,10 +1120,15 @@ def dependency(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_loc:
-        print_stderr('Please specify a file/folder')
+    if not args.scan_loc and not args.container:
+        print_stderr('Please specify a file/folder or container image')
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
+
+    # Workaround to return syft scan results converted to our dependency output format
+    if args.container:
+        args.scan_loc = args.container
+        return container_scan(parser, args, only_interim_results=True)
 
     if not os.path.exists(args.scan_loc):
         print_stderr(f'Error: File or folder specified does not exist: {args.scan_loc}.')
@@ -1639,7 +1661,7 @@ def folder_hash(parser, args):
         sys.exit(1)
 
 
-def container_scan(parser, args):
+def container_scan(parser, args, only_interim_results: bool = False):
     """
     Run the "container-scan" sub-command
     Parameters
@@ -1657,12 +1679,19 @@ def container_scan(parser, args):
         sys.exit(1)
 
     try:
-        container_scanner_config = create_container_scanner_config_from_args(args)
-        container_scanner = ContainerScanner(config=container_scanner_config, what_to_scan=args.scan_loc)
+        config = create_container_scanner_config_from_args(args)
+        config.only_interim_results = only_interim_results
+        container_scanner = ContainerScanner(
+            config=config,
+            what_to_scan=args.scan_loc,
+        )
 
         container_scanner.scan()
-        container_scanner.decorate_scan_results_with_dependencies()
-        container_scanner.present(output_file=args.output, output_format=args.format)
+        if only_interim_results:
+            container_scanner.present(output_file=config.output, output_format='raw')
+        else:
+            container_scanner.decorate_scan_results_with_dependencies()
+            container_scanner.present(output_file=config.output, output_format=config.format)
     except Exception as e:
         print_stderr(f'ERROR: {e}')
         sys.exit(1)
