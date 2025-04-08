@@ -23,13 +23,13 @@ SPDX-License-Identifier: MIT
 """
 
 import os
+import queue
 import sys
 import threading
-import queue
 import time
-
-from typing import Dict, List
 from dataclasses import dataclass
+from typing import Dict, List
+
 from progress.bar import Bar
 
 from .scanossapi import ScanossApi
@@ -49,8 +49,6 @@ class ThreadedScanning(ScanossBase):
     Multiple threads pull messages off this queue, process the request and put the results into an output queue
     """
 
-    inputs: queue.Queue = queue.Queue()
-    output: queue.Queue = queue.Queue()
     bar: Bar = None
 
     def __init__(
@@ -65,6 +63,8 @@ class ThreadedScanning(ScanossBase):
         :param nb_threads: Number of thread to run (default 5)
         """
         super().__init__(debug, trace, quiet)
+        self.inputs = queue.Queue()
+        self.output = queue.Queue()
         self.scanapi = scanapi
         self.nb_threads = nb_threads
         self._isatty = sys.stderr.isatty()
@@ -134,7 +134,7 @@ class ThreadedScanning(ScanossBase):
         :param wfp: WFP to add to queue
         """
         if wfp is None or wfp == '':
-            self.print_stderr(f'Warning: empty WFP. Skipping from scan...')
+            self.print_stderr('Warning: empty WFP. Skipping from scan...')
         else:
             self.inputs.put(wfp)
 
