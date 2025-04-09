@@ -27,6 +27,11 @@ class DependenciesStub(object):
                 request_serializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyResponse.FromString,
                 )
+        self.GetTransitiveDependencies = channel.unary_unary(
+                '/scanoss.api.dependencies.v2.Dependencies/GetTransitiveDependencies',
+                request_serializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.TransitiveDependencyRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.TransitiveDependencyResponse.FromString,
+                )
 
 
 class DependenciesServicer(object):
@@ -48,6 +53,13 @@ class DependenciesServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetTransitiveDependencies(self, request, context):
+        """Get transitive dependency details
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_DependenciesServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -60,6 +72,11 @@ def add_DependenciesServicer_to_server(servicer, server):
                     servicer.GetDependencies,
                     request_deserializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyResponse.SerializeToString,
+            ),
+            'GetTransitiveDependencies': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetTransitiveDependencies,
+                    request_deserializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.TransitiveDependencyRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.TransitiveDependencyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -104,5 +121,22 @@ class Dependencies(object):
         return grpc.experimental.unary_unary(request, target, '/scanoss.api.dependencies.v2.Dependencies/GetDependencies',
             scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyRequest.SerializeToString,
             scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.DependencyResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetTransitiveDependencies(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/scanoss.api.dependencies.v2.Dependencies/GetTransitiveDependencies',
+            scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.TransitiveDependencyRequest.SerializeToString,
+            scanoss_dot_api_dot_dependencies_dot_v2_dot_scanoss__dependencies__pb2.TransitiveDependencyResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
