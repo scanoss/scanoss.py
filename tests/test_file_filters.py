@@ -197,16 +197,15 @@ class TestFileFilters(unittest.TestCase):
             os.path.join(self.test_dir, 'file1.js'),
             os.path.join(self.test_dir, 'file2.css'),  # Should be skipped
             os.path.join(self.test_dir, 'dir1/file3.py'),
-            os.path.join(self.test_dir, 'dir1/__pycache__/file4.py'),
+            os.path.join(self.test_dir, 'dir1/__pycache__/file4.py'), # Should be skipped
         ]
         self.create_files(files)
 
-        filtered_files = self.file_filters.get_filtered_files_from_files(files)
+        filtered_files = self.file_filters.get_filtered_files_from_files(files, self.test_dir)
 
         expected_files = [
-            os.path.relpath(os.path.join(self.test_dir, 'file1.js'), os.getcwd()),
-            os.path.relpath(os.path.join(self.test_dir, 'dir1', 'file3.py'), os.getcwd()),
-            os.path.relpath(os.path.join(self.test_dir, 'dir1', '__pycache__', 'file4.py'), os.getcwd()),
+            'file1.js',
+            'dir1/file3.py',
         ]
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 

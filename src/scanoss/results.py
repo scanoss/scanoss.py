@@ -25,6 +25,8 @@ SPDX-License-Identifier: MIT
 import json
 from typing import Any, Dict, List
 
+from scanoss.utils.abstract_presenter import AbstractPresenter
+
 from .scanossbase import ScanossBase
 
 MATCH_TYPES = ['file', 'snippet']
@@ -47,16 +49,77 @@ PENDING_IDENTIFICATION_FILTERS = {
     'status': ['pending'],
 }
 
-AVAILABLE_OUTPUT_FORMATS = ['json', 'plain']
+
+class ResultsPresenter(AbstractPresenter):
+    """
+    SCANOSS Results presenter class
+    Handles the presentation of the scan results
+    """
+
+    def __init__(self, results_instance, **kwargs):
+        super().__init__(**kwargs)
+        self.results = results_instance
+
+    def _format_json_output(self) -> str:
+        """
+        Format the output data into a JSON object
+        """
+
+        formatted_data = []
+        for item in self.results.data:
+            formatted_data.append(
+                {
+                    'file': item.get('filename'),
+                    'status': item.get('status', 'N/A'),
+                    'match_type': item['id'],
+                    'matched': item.get('matched', 'N/A'),
+                    'purl': (item.get('purl')[0] if item.get('purl') else 'N/A'),
+                    'license': (item.get('licenses')[0].get('name', 'N/A') if item.get('licenses') else 'N/A'),
+                }
+            )
+        try:
+            return json.dumps({'results': formatted_data, 'total': len(formatted_data)}, indent=2)
+        except Exception as e:
+            self.base.print_stderr(f'ERROR: Problem formatting JSON output: {e}')
+            return ''
+
+    def _format_plain_output(self) -> str:
+        """Format the output data into a plain text string
+
+        Returns:
+            str: The formatted output data
+        """
+        if not self.results.data:
+            msg = 'No results to present'
+            return msg
+
+        formatted = ''
+        for item in self.results.data:
+            formatted += f'{self._format_plain_output_item(item)}\n'
+        return formatted
+
+    @staticmethod
+    def _format_plain_output_item(item):
+        purls = item.get('purl', [])
+        licenses = item.get('licenses', [])
+
+        return (
+            f'File: {item.get("filename")}\n'
+            f'Match type: {item.get("id")}\n'
+            f'Status: {item.get("status", "N/A")}\n'
+            f'Matched: {item.get("matched", "N/A")}\n'
+            f'Purl: {purls[0] if purls else "N/A"}\n'
+            f'License: {licenses[0].get("name", "N/A") if licenses else "N/A"}\n'
+        )
 
 
-class Results(ScanossBase):
+class Results:
     """
     SCANOSS Results class \n
     Handles the parsing and filtering of the scan results
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         debug: bool = False,
         trace: bool = False,
@@ -80,11 +143,17 @@ class Results(ScanossBase):
             output_format (str, optional): Output format. Defaults to None.
         """
 
-        super().__init__(debug, trace, quiet)
+        self.base = ScanossBase(debug, trace, quiet)
         self.data = self._load_and_transform(filepath)
         self.filters = self._load_filters(match_type=match_type, status=status)
-        self.output_file = output_file
-        self.output_format = output_format
+        self.presenter = ResultsPresenter(
+            self,
+            debug=debug,
+            trace=trace,
+            quiet=quiet,
+            output_file=output_file,
+            output_format=output_format,
+        )
 
     def load_file(self, file: str) -> Dict[str, Any]:
         """Load the JSON file
@@ -99,7 +168,7 @@ class Results(ScanossBase):
             try:
                 return json.load(jsonfile)
             except Exception as e:
-                self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
+                self.base.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
 
     def _load_and_transform(self, file: str) -> List[Dict[str, Any]]:
         """
@@ -174,8 +243,8 @@ class Results(ScanossBase):
     def _validate_filter_values(filter_key: str, filter_value: List[str]):
         if any(value not in AVAILABLE_FILTER_VALUES.get(filter_key, []) for value in filter_value):
             valid_values = ', '.join(AVAILABLE_FILTER_VALUES.get(filter_key, []))
-            raise Exception(
-                f"ERROR: Invalid filter value '{filter_value}' for filter '{filter_key.value}'. "
+            raise ValueError(
+                f"ERROR: Invalid filter value '{filter_value}' for filter '{filter_key}'. "
                 f'Valid values are: {valid_values}'
             )
 
@@ -190,103 +259,5 @@ class Results(ScanossBase):
         return bool(self.data)
 
     def present(self, output_format: str = None, output_file: str = None):
-        """Format and present the results. If no output format is provided, the results will be printed to stdout
-
-        Args:
-            output_format (str, optional): Output format. Defaults to None.
-            output_file (str, optional): Output file. Defaults to None.
-
-        Raises:
-            Exception: Invalid output format
-
-        Returns:
-            None
-        """
-        file_path = output_file or self.output_file
-        fmt = output_format or self.output_format
-
-        if fmt and fmt not in AVAILABLE_OUTPUT_FORMATS:
-            raise Exception(
-                f"ERROR: Invalid output format '{output_format}'. Valid values are: {', '.join(AVAILABLE_OUTPUT_FORMATS)}"
-            )
-
-        if fmt == 'json':
-            return self._present_json(file_path)
-        elif fmt == 'plain':
-            return self._present_plain(file_path)
-        else:
-            return self._present_stdout()
-
-    def _present_json(self, file: str = None):
-        """Present the results in JSON format
-
-        Args:
-            file (str, optional): Output file. Defaults to None.
-        """
-        self.print_to_file_or_stdout(json.dumps(self._format_json_output(), indent=2), file)
-
-    def _format_json_output(self):
-        """
-        Format the output data into a JSON object
-        """
-
-        formatted_data = []
-        for item in self.data:
-            formatted_data.append(
-                {
-                    'file': item.get('filename'),
-                    'status': item.get('status', 'N/A'),
-                    'match_type': item['id'],
-                    'matched': item.get('matched', 'N/A'),
-                    'purl': (item.get('purl')[0] if item.get('purl') else 'N/A'),
-                    'license': (item.get('licenses')[0].get('name', 'N/A') if item.get('licenses') else 'N/A'),
-                }
-            )
-        return {'results': formatted_data, 'total': len(formatted_data)}
-
-    def _present_plain(self, file: str = None):
-        """Present the results in plain text format
-
-        Args:
-            file (str, optional): Output file. Defaults to None.
-
-        Returns:
-            None
-        """
-        if not self.data:
-            return self.print_stderr('No results to present')
-        self.print_to_file_or_stdout(self._format_plain_output(), file)
-
-    def _present_stdout(self):
-        """Present the results to stdout
-
-        Returns:
-            None
-        """
-        if not self.data:
-            return self.print_stderr('No results to present')
-        self.print_to_file_or_stdout(self._format_plain_output())
-
-    def _format_plain_output(self):
-        """
-        Format the output data into a plain text string
-        """
-
-        formatted = ''
-        for item in self.data:
-            formatted += f'{self._format_plain_output_item(item)} \n'
-        return formatted
-
-    @staticmethod
-    def _format_plain_output_item(item):
-        purls = item.get('purl', [])
-        licenses = item.get('licenses', [])
-
-        return (
-            f'File: {item.get("filename")}\n'
-            f'Match type: {item.get("id")}\n'
-            f'Status: {item.get("status", "N/A")}\n'
-            f'Matched: {item.get("matched", "N/A")}\n'
-            f'Purl: {purls[0] if purls else "N/A"}\n'
-            f'License: {licenses[0].get("name", "N/A") if licenses else "N/A"}\n'
-        )
+        """Present the results in the selected format"""
+        self.presenter.present(output_format=output_format, output_file=output_file)

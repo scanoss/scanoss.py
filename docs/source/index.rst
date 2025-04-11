@@ -228,6 +228,79 @@ Convert file format to plain, SPDX-Lite, CycloneDX or csv.
    * - --format <format>, -f <format>
      - Indicates the result output format: {plain, cyclonedx, spdxlite, csv}. (optional - default plain)
 
+--------------------------------
+Folder Scanning: folder-scan, fs
+--------------------------------
+
+Performs a comprehensive scan of a directory using folder hashing to identify components and their matches.
+
+.. code-block:: bash
+
+   scanoss-py folder-scan <directory>
+
+.. list-table:: 
+   :widths: 20 30
+   :header-rows: 1
+
+   * - Argument
+     - Description
+   * - --output <file name>, -o <file name>
+     - Output result file name (optional - default STDOUT)
+   * - --format <format>, -f <format>
+     - Output format: {json} (optional - default json)
+   * - --timeout <seconds>, -M <seconds>
+     - Timeout in seconds for API communication (optional - default 600)
+   * - --best-match, -bm
+     - Enable best match mode (optional - default: False)
+   * - --threshold <1-100>
+     - Threshold for result matching (optional - default: 100)
+   * - --settings <file>, -st <file>
+     - Settings file to use for scanning (optional - default scanoss.json)
+   * - --skip-settings-file, -stf
+     - Skip default settings file (scanoss.json) if it exists
+   * - --key <token>, -k <token>
+     - SCANOSS API Key token (optional - not required for default OSSKB URL)
+   * - --proxy <url>
+     - Proxy URL to use for connections
+   * - --pac <file/url>
+     - Proxy auto configuration. Specify a file, http url or "auto"
+   * - --ca-cert <file>
+     - Alternative certificate PEM file
+   * - --api2url <url>
+     - SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)
+   * - --grpc-proxy <url>
+     - GRPC Proxy URL to use for connections
+
+--------------------------------
+Folder Hashing: folder-hash, fh
+--------------------------------
+
+Generates cryptographic hashes for files in a given directory and its subdirectories.
+
+.. code-block:: bash
+
+   scanoss-py folder-hash <directory>
+
+.. list-table:: 
+   :widths: 20 30
+   :header-rows: 1
+
+   * - Argument
+     - Description
+   * - --output <file name>, -o <file name>
+     - Output result file name (optional - default STDOUT)
+   * - --format <format>, -f <format>
+     - Output format: {json} (optional - default json)
+   * - --settings <file>, -st <file>
+     - Settings file to use for scanning (optional - default scanoss.json)
+   * - --skip-settings-file, -stf
+     - Skip default settings file (scanoss.json) if it exists
+
+Both commands also support these general options:
+   * --debug, -d: Enable debug messages
+   * --trace, -t: Enable trace messages
+   * --quiet, -q: Enable quiet mode
+
 -----------------
 Component:
 -----------------

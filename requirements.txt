@@ -12,3 +12,4 @@ importlib_resources
 packageurl-python
 pathspec
 jsonschema
+crc

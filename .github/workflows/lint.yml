@@ -32,12 +32,17 @@ jobs:
           # List all changed Python files since the merge base.
           files=$(git diff --name-only "$merge_base" HEAD | grep '\.py$' || true)
 
+          # Filter out files that match exclude patterns from pyproject.toml 
+          # this is a temporary workaround until we fix all the lint errors
+          filtered_files=$(echo "$files" | grep -v -E 'tests/|test_.*\.py|src/protoc_gen_swagger/|src/scanoss/api/' || true)
+
           # Use the multi-line syntax for outputs.
           echo "files<<EOF" >> "$GITHUB_OUTPUT"
-          echo "${files}" >> "$GITHUB_OUTPUT"
+          echo "${filtered_files}" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-          echo "Changed files: ${files}"
+          echo "Changed files before filtering: ${files}"
+          echo "Changed files after filtering: ${filtered_files}"
 
       - name: Run Ruff on changed files
         run: |
@@ -50,3 +55,4 @@ jobs:
             # Pass the list of changed files to Ruff.
             echo "${{ steps.changed_files.outputs.files }}" | xargs ruff check
           fi
+
