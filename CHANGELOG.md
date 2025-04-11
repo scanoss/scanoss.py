@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.20.7] - 2025-04-11
+### Fixed
+- Fixed issue with wfp command where settings file was being loaded from the cwd instead of the scan root directory
+
 ## [1.20.6] - 2025-03-19
 ### Added
 - Added HTTP/gRPC generic headers feature using --header flag
@@ -491,3 +495,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.20.4]: https://github.com/scanoss/scanoss.py/compare/v1.20.3...v1.20.4
 [1.20.5]: https://github.com/scanoss/scanoss.py/compare/v1.20.4...v1.20.5
 [1.20.6]: https://github.com/scanoss/scanoss.py/compare/v1.20.5...v1.20.6
+[1.20.7]: https://github.com/scanoss/scanoss.py/compare/v1.20.6...v1.20.7

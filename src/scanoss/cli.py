@@ -26,9 +26,9 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import List
 
 import pypac
-from typing import List
 
 from . import __version__
 from .components import Components
@@ -691,7 +691,7 @@ def wfp(parser, args):
     if not args.skip_settings_file:
         scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
         try:
-            scan_settings.load_json_file(args.settings)
+            scan_settings.load_json_file(args.settings, args.scan_dir)
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
             sys.exit(1)
@@ -1204,7 +1204,7 @@ def get_pac_file(pac: str):
         if pac == 'auto':
             pac_file = pypac.get_pac()  # try to determine the PAC file
         elif pac.startswith('file://'):
-            pac_local = pac.strip('file://')
+            pac_local = pac[7:]  # Remove 'file://' prefix
             if not os.path.exists(pac_local):
                 print_stderr(f'Error: PAC file does not exist: {pac_local}.')
                 sys.exit(1)
