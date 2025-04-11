@@ -24,13 +24,17 @@ SPDX-License-Identifier: MIT
 
 import json
 from pathlib import Path
-from typing import List, TypedDict
+from typing import List, Optional, TypedDict
 
 import importlib_resources
 from jsonschema import validate
 
 from .scanossbase import ScanossBase
-from .utils.file import JSON_ERROR_FILE_NOT_FOUND, JSON_ERROR_FILE_EMPTY, validate_json_file
+from .utils.file import (
+    JSON_ERROR_FILE_EMPTY,
+    JSON_ERROR_FILE_NOT_FOUND,
+    validate_json_file,
+)
 
 DEFAULT_SCANOSS_JSON_FILE = Path('scanoss.json')
 
@@ -96,12 +100,13 @@ class ScanossSettings(ScanossBase):
         if filepath:
             self.load_json_file(filepath)
 
-    def load_json_file(self, filepath: 'str | None' = None, scan_root: 'str | None' = None) -> 'ScanossSettings':
+    def load_json_file(self, filepath: Optional[str] = None, scan_root: Optional[str] = None) -> 'ScanossSettings':
         """
         Load the scan settings file. If no filepath is provided, scanoss.json will be used as default.
 
         Args:
             filepath (str): Path to the SCANOSS settings file
+            scan_root (str): Path to the scan root directory
         """
 
         if not filepath:
@@ -118,7 +123,7 @@ class ScanossSettings(ScanossBase):
 
         result = validate_json_file(json_file)
         if not result.is_valid:
-            if result.error_code == JSON_ERROR_FILE_NOT_FOUND or result.error_code == JSON_ERROR_FILE_EMPTY:
+            if result.error_code in (JSON_ERROR_FILE_NOT_FOUND, JSON_ERROR_FILE_EMPTY):
                 self.print_msg(
                     f'WARNING: The supplied settings file "{filepath}" was not found or is empty. Skipping...'
                 )
@@ -235,7 +240,7 @@ class ScanossSettings(ScanossBase):
             include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
             replace_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_replace()))
             self.print_debug(
-                f"Scan type set to 'identify'. Adding {len(include_bom_entries) + len(replace_bom_entries)} components as context to the scan. \n"
+                f"Scan type set to 'identify'. Adding {len(include_bom_entries) + len(replace_bom_entries)} components as context to the scan. \n"  # noqa: E501
                 f'From Include list: {[entry["purl"] for entry in include_bom_entries]} \n'
                 f'From Replace list: {[entry["purl"] for entry in replace_bom_entries]} \n'
             )
