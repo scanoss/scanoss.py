@@ -163,6 +163,11 @@ The dependency files of a project can be fingerprinted/parsed using the `dep` co
 scanoss-py dep -o src-deps.json src
 ```
 
+You can also analyze dependencies from a container image using the `--container` flag:
+```bash
+scanoss-py dep --container ubuntu:latest -o container-deps.json
+```
+
 This parsed dependency file can then be sent to the SCANOSS for decoration using the scanning command:
 ```bash
 scanoss-py scan --dep src-deps.json --dependencies-only -o scan-results.json
@@ -429,4 +434,13 @@ The new `folder-scan` subcommand performs a comprehensive scan on an entire dire
 **Usage:**
 ```shell
 scanoss-py folder-scan /path/to/folder -o folder-scan-results.json 
+```
+
+### Container-Scan a Docker Image
+
+The `container-scan` subcommand allows you to scan Docker container images for dependencies. This command extracts and analyzes dependencies from container images, helping you identify open source components within containerized applications.
+
+**Usage:**
+```shell
+scanoss-py container-scan image_name:tag -o container-scan-results.json
 ```

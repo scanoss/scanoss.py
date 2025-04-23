@@ -158,3 +158,15 @@ class ScannerHFHPresenter(AbstractPresenter):
             if isinstance(self.scanner.scan_results, dict)
             else str(self.scanner.scan_results)
         )
+
+    def _format_cyclonedx_output(self) -> str:
+        raise NotImplementedError('CycloneDX output is not implemented')
+
+    def _format_spdxlite_output(self) -> str:
+        raise NotImplementedError('SPDXlite output is not implemented')
+
+    def _format_csv_output(self) -> str:
+        raise NotImplementedError('CSV output is not implemented')
+
+    def _format_raw_output(self) -> str:
+        raise NotImplementedError('Raw output is not implemented')
