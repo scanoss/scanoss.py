@@ -667,7 +667,17 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument('--strip-snippet', '-N', type=str, action='append', help='Strip Snippet ID string from WFP.')
 
     # Global Scan/GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_folder_scan, p_cs]:
+    for p in [
+        p_scan,
+        c_crypto,
+        c_vulns,
+        c_search,
+        c_versions,
+        c_semgrep,
+        c_provenance,
+        p_folder_scan,
+        p_cs,
+    ]:
         p.add_argument(
             '--key', '-k', type=str, help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
         )
@@ -693,7 +703,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         )
 
     # Global GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, p_folder_scan, p_cs]:
+    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance, p_folder_scan, p_cs]:
         p.add_argument(
             '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
         )
