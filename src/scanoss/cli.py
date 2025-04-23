@@ -844,7 +844,7 @@ def wfp(parser, args):
     if not args.skip_settings_file:
         scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
         try:
-            scan_settings.load_json_file(args.settings)
+            scan_settings.load_json_file(args.settings, args.scan_dir)
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
             sys.exit(1)
