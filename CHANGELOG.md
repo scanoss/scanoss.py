@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `--container` flag to `dependency` subcommand to scan dependencies in container images.
 ### Modified
 - Refactor CLI argument handling for output and format options.
+### Fixed
+- Fixed issue with wfp command where settings file was being loaded from the cwd instead of the scan root directory
 
 ## [1.21.0] - 2025-03-27
 ### Added
