@@ -84,6 +84,9 @@ class ScanossBase:
         """
         Print message to file if provided or stdout
         """
+        if not content:
+            return
+
         if file:
             with open(file, 'w') as f:
                 f.write(content)
@@ -94,6 +97,9 @@ class ScanossBase:
         """
         Print message to file if provided or stderr
         """
+        if not msg:
+            return
+
         if file:
             with open(file, 'w') as f:
                 f.write(msg)

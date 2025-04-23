@@ -83,6 +83,15 @@ class ResultsPresenter(AbstractPresenter):
             self.base.print_stderr(f'ERROR: Problem formatting JSON output: {e}')
             return ''
 
+    def _format_cyclonedx_output(self) -> str:
+        pass
+
+    def _format_spdxlite_output(self) -> str:
+        pass
+
+    def _format_csv_output(self) -> str:
+        pass
+
     def _format_plain_output(self) -> str:
         """Format the output data into a plain text string
 
