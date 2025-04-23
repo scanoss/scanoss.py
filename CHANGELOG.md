@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.22.0] - 2025-04-23
+### Added
+- Add `container-scan` subcommand to scan container images.
+- Add `--container` flag to `dependency` subcommand to scan dependencies in container images.
+### Modified
+- Refactor CLI argument handling for output and format options.
+
 ## [1.21.0] - 2025-03-27
 ### Added
 - Add folder-scan subcommand
@@ -499,3 +506,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.20.5]: https://github.com/scanoss/scanoss.py/compare/v1.20.4...v1.20.5
 [1.20.6]: https://github.com/scanoss/scanoss.py/compare/v1.20.5...v1.20.6
 [1.21.0]: https://github.com/scanoss/scanoss.py/compare/v1.20.6...v1.21.0
+[1.22.0]: https://github.com/scanoss/scanoss.py/compare/v1.21.0...v1.22.0

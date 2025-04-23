@@ -290,13 +290,13 @@ class FolderHasherPresenter(AbstractPresenter):
         )
 
     def _format_cyclonedx_output(self) -> str:
-        pass
+        raise NotImplementedError('CycloneDX output is not implemented')
 
     def _format_spdxlite_output(self) -> str:
-        pass
+        raise NotImplementedError('SPDXlite output is not implemented')
 
     def _format_csv_output(self) -> str:
-        pass
+        raise NotImplementedError('CSV output is not implemented')
 
     def _format_raw_output(self) -> str:
-        pass
+        raise NotImplementedError('Raw output is not implemented')
