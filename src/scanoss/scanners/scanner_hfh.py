@@ -158,3 +158,12 @@ class ScannerHFHPresenter(AbstractPresenter):
             if isinstance(self.scanner.scan_results, dict)
             else str(self.scanner.scan_results)
         )
+
+    def _format_cyclonedx_output(self) -> str:
+        pass
+
+    def _format_spdxlite_output(self) -> str:
+        pass
+
+    def _format_csv_output(self) -> str:
+        pass
