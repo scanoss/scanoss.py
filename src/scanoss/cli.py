@@ -82,7 +82,7 @@ def print_stderr(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def setup_args() -> None:  # noqa: PLR0915
+def setup_args() -> None:  # noqa: PLR0912, PLR0915
     """
     Setup all the command line arguments for processing
     """
