@@ -174,6 +174,8 @@ Scan source code for dependencies, but do not decorate them.
      - Description
    * - --output <file name>, -o <file name>
      - Output result file name (optional - default STDOUT)
+   * - --container <image_name:tag>
+     - Analyze dependencies from a Docker container image instead of a directory
    * - --sc-command SC_COMMAND
      - Scancode command and path if required (optional - default scancode)
    * - --sc-timeout SC_TIMEOUT
@@ -300,6 +302,39 @@ Both commands also support these general options:
    * --debug, -d: Enable debug messages
    * --trace, -t: Enable trace messages
    * --quiet, -q: Enable quiet mode
+
+------------------------------------
+Container Scanning: container-scan, cs
+------------------------------------
+
+Scans Docker container images for dependencies, extracting and analyzing components within containerized applications.
+
+.. code-block:: bash
+
+   scanoss-py container-scan -i <image_name:tag>
+
+.. list-table:: 
+   :widths: 20 30
+   :header-rows: 1
+
+   * - Argument
+     - Description
+   * - --image <image_name:tag>, -i <image_name:tag>
+     - Docker image name and tag to scan (required)
+   * - --output <file name>, -o <file name>
+     - Output result file name (optional - default STDOUT)
+   * - --include-base-image
+     - Include base image dependencies in the scan results
+   * - --format <format>, -f <format>
+     - Output format: {json} (optional - default json)
+   * - --timeout <seconds>, -M <seconds>
+     - Timeout in seconds for API communication (optional - default 600)
+   * - --key <token>, -k <token>
+     - SCANOSS API Key token (optional - not required for default OSSKB URL)
+   * - --proxy <url>
+     - Proxy URL to use for connections
+   * - --ca-cert <file>
+     - Alternative certificate PEM file
 
 -----------------
 Component:

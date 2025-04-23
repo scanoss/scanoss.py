@@ -288,3 +288,15 @@ class FolderHasherPresenter(AbstractPresenter):
             if isinstance(self.folder_hasher.tree, dict)
             else str(self.folder_hasher.tree)
         )
+
+    def _format_cyclonedx_output(self) -> str:
+        raise NotImplementedError('CycloneDX output is not implemented')
+
+    def _format_spdxlite_output(self) -> str:
+        raise NotImplementedError('SPDXlite output is not implemented')
+
+    def _format_csv_output(self) -> str:
+        raise NotImplementedError('CSV output is not implemented')
+
+    def _format_raw_output(self) -> str:
+        raise NotImplementedError('Raw output is not implemented')

@@ -83,6 +83,18 @@ class ResultsPresenter(AbstractPresenter):
             self.base.print_stderr(f'ERROR: Problem formatting JSON output: {e}')
             return ''
 
+    def _format_cyclonedx_output(self) -> str:
+        raise NotImplementedError('CycloneDX output is not implemented')
+
+    def _format_spdxlite_output(self) -> str:
+        raise NotImplementedError('SPDXlite output is not implemented')
+
+    def _format_csv_output(self) -> str:
+        raise NotImplementedError('CSV output is not implemented')
+
+    def _format_raw_output(self) -> str:
+        raise NotImplementedError('Raw output is not implemented')
+
     def _format_plain_output(self) -> str:
         """Format the output data into a plain text string
 
