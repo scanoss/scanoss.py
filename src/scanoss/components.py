@@ -39,7 +39,7 @@ class Components(ScanossBase):
     Class for Component functionality
     """
 
-    def __init__( # noqa: PLR0913, PLR0915
+    def __init__(  # noqa: PLR0913, PLR0915
         self,
         debug: bool = False,
         trace: bool = False,
@@ -244,7 +244,7 @@ class Components(ScanossBase):
         self._close_file(output_file, file)
         return success
 
-    def search_components( # noqa: PLR0913, PLR0915
+    def search_components(  # noqa: PLR0913, PLR0915
         self,
         output_file: str = None,
         json_file: str = None,
@@ -330,14 +330,20 @@ class Components(ScanossBase):
         self._close_file(output_file, file)
         return success
 
-    def get_provenance_details(self, json_file: str = None, purls: [] = None, output_file: str = None) -> bool:
+    def get_provenance_details(
+        self, json_file: str = None, purls: [] = None, output_file: str = None, origin: bool = False
+    ) -> bool:
         """
-        Retrieve the semgrep details for the supplied PURLs
+        Retrieve the provenance details for the supplied PURLs
 
-        :param json_file: PURL JSON request file (optional)
-        :param purls: PURL request array (optional)
-        :param output_file: output filename (optional). Default: STDOUT
-        :return: True on success, False otherwise
+        Args:
+            json_file (str, optional): Input JSON file. Defaults to None.
+            purls (None, optional): PURLs to retrieve provenance details for. Defaults to None.
+            output_file (str, optional): Output file. Defaults to None.
+            origin (bool, optional): Retrieve origin details. Defaults to False.
+
+        Returns:
+            bool: True on success, False otherwise
         """
         success = False
         purls_request = self.load_purls(json_file, purls)
@@ -346,8 +352,12 @@ class Components(ScanossBase):
         file = self._open_file_or_sdtout(output_file)
         if file is None:
             return False
-        self.print_msg('Sending PURLs to Provenance API for decoration...')
-        response = self.grpc_api.get_provenance_json(purls_request)
+        if origin:
+            self.print_msg('Sending PURLs to Geo Provenance API for decoration...')
+            response = self.grpc_api.get_provenance_origin(purls_request)
+        else:
+            self.print_msg('Sending PURLs to Provenance API for decoration...')
+            response = self.grpc_api.get_provenance_json(purls_request)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True
