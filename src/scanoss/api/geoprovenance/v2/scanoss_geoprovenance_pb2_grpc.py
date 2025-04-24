@@ -18,17 +18,17 @@ class GeoProvenanceStub(object):
             channel: A grpc.Channel.
         """
         self.Echo = channel.unary_unary(
-                '/scanoss.api.provenance.v2.GeoProvenance/Echo',
+                '/scanoss.api.geoprovenance.v2.GeoProvenance/Echo',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.FromString,
                 )
         self.GetComponentContributors = channel.unary_unary(
-                '/scanoss.api.provenance.v2.GeoProvenance/GetComponentContributors',
+                '/scanoss.api.geoprovenance.v2.GeoProvenance/GetComponentContributors',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ContributorResponse.FromString,
                 )
         self.GetComponentOrigin = channel.unary_unary(
-                '/scanoss.api.provenance.v2.GeoProvenance/GetComponentOrigin',
+                '/scanoss.api.geoprovenance.v2.GeoProvenance/GetComponentOrigin',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.OriginResponse.FromString,
                 )
@@ -80,7 +80,7 @@ def add_GeoProvenanceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'scanoss.api.provenance.v2.GeoProvenance', rpc_method_handlers)
+            'scanoss.api.geoprovenance.v2.GeoProvenance', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -101,7 +101,7 @@ class GeoProvenance(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/scanoss.api.provenance.v2.GeoProvenance/Echo',
+        return grpc.experimental.unary_unary(request, target, '/scanoss.api.geoprovenance.v2.GeoProvenance/Echo',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.SerializeToString,
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.FromString,
             options, channel_credentials,
@@ -118,7 +118,7 @@ class GeoProvenance(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/scanoss.api.provenance.v2.GeoProvenance/GetComponentContributors',
+        return grpc.experimental.unary_unary(request, target, '/scanoss.api.geoprovenance.v2.GeoProvenance/GetComponentContributors',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
             scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ContributorResponse.FromString,
             options, channel_credentials,
@@ -135,7 +135,7 @@ class GeoProvenance(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/scanoss.api.provenance.v2.GeoProvenance/GetComponentOrigin',
+        return grpc.experimental.unary_unary(request, target, '/scanoss.api.geoprovenance.v2.GeoProvenance/GetComponentOrigin',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
             scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.OriginResponse.FromString,
             options, channel_credentials,

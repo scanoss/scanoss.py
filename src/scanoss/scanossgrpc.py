@@ -580,7 +580,7 @@ class ScanossGrpc(ScanossBase):
             metadata = self.metadata[:]
             metadata.append(('x-request-id', request_id))  # Set a Request ID
             self.print_debug(f'Sending data for provenance decoration (rqId: {request_id})...')
-            resp = self.provenance_stub.GetComponentProvenance(request, metadata=metadata, timeout=self.timeout)
+            resp = self.provenance_stub.GetComponentContributors(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
             self.print_stderr(
                 f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
