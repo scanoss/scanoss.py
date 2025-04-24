@@ -326,6 +326,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         description=f'Show Provenance findings: {__version__}',
         help='Retrieve provenance for the given components',
     )
+    c_provenance.add_argument('--origin', action='store_true', help='Retrieve provenance using contributors origin')
     c_provenance.set_defaults(func=comp_provenance)
 
     # Component Sub-command: component search
@@ -1608,7 +1609,7 @@ def comp_provenance(parser, args):
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
     )
-    if not comps.get_provenance_details(args.input, args.purl, args.output):
+    if not comps.get_provenance_details(args.input, args.purl, args.output, args.origin):
         sys.exit(1)
 
 

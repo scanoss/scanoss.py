@@ -36,7 +36,6 @@ from google.protobuf.json_format import MessageToDict, ParseDict
 from pypac.parser import PACFile
 from pypac.resolver import ProxyResolver
 
-from scanoss.api.provenance.v2.scanoss_provenance_pb2_grpc import ProvenanceStub
 from scanoss.api.scanning.v2.scanoss_scanning_pb2_grpc import ScanningStub
 from scanoss.constants import DEFAULT_TIMEOUT
 
@@ -59,7 +58,8 @@ from .api.cryptography.v2.scanoss_cryptography_pb2 import AlgorithmResponse
 from .api.cryptography.v2.scanoss_cryptography_pb2_grpc import CryptographyStub
 from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
-from .api.provenance.v2.scanoss_provenance_pb2 import ProvenanceResponse
+from .api.geoprovenance.v2.scanoss_geoprovenance_pb2 import ContributorResponse
+from .api.geoprovenance.v2.scanoss_geoprovenance_pb2_grpc import GeoProvenanceStub
 from .api.scanning.v2.scanoss_scanning_pb2 import HFHRequest
 from .api.semgrep.v2.scanoss_semgrep_pb2 import SemgrepResponse
 from .api.semgrep.v2.scanoss_semgrep_pb2_grpc import SemgrepStub
@@ -169,7 +169,7 @@ class ScanossGrpc(ScanossBase):
             self.dependencies_stub = DependenciesStub(grpc.insecure_channel(self.url))
             self.semgrep_stub = SemgrepStub(grpc.insecure_channel(self.url))
             self.vuln_stub = VulnerabilitiesStub(grpc.insecure_channel(self.url))
-            self.provenance_stub = ProvenanceStub(grpc.insecure_channel(self.url))
+            self.provenance_stub = GeoProvenanceStub(grpc.insecure_channel(self.url))
             self.scanning_stub = ScanningStub(grpc.insecure_channel(self.url))
         else:
             if ca_cert is not None:
@@ -181,7 +181,7 @@ class ScanossGrpc(ScanossBase):
             self.dependencies_stub = DependenciesStub(grpc.secure_channel(self.url, credentials))
             self.semgrep_stub = SemgrepStub(grpc.secure_channel(self.url, credentials))
             self.vuln_stub = VulnerabilitiesStub(grpc.secure_channel(self.url, credentials))
-            self.provenance_stub = ProvenanceStub(grpc.secure_channel(self.url, credentials))
+            self.provenance_stub = GeoProvenanceStub(grpc.secure_channel(self.url, credentials))
             self.scanning_stub = ScanningStub(grpc.secure_channel(self.url, credentials))
 
     @classmethod
@@ -574,7 +574,7 @@ class ScanossGrpc(ScanossBase):
             self.print_stderr('ERROR: No message supplied to send to gRPC service.')
             return None
         request_id = str(uuid.uuid4())
-        resp: ProvenanceResponse
+        resp: ContributorResponse
         try:
             request = ParseDict(purls, PurlRequest())  # Parse the JSON/Dict into the purl request object
             metadata = self.metadata[:]
@@ -592,6 +592,23 @@ class ScanossGrpc(ScanossBase):
                 resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
                 return resp_dict
         return None
+
+    def get_provenance_origin(self, request: Dict) -> Dict:
+        """
+        Client function to call the rpc for GetComponentOrigin
+
+        Args:
+            request (Dict): GetComponentOrigin Request
+
+        Returns:
+            Dict: OriginResponse
+        """
+        return self._call_rpc(
+            self.provenance_stub.GetComponentOrigin,
+            request,
+            PurlRequest,
+            'Sending data for provenance origin decoration (rqId: {rqId})...',
+        )
 
     def load_generic_headers(self):
         """
