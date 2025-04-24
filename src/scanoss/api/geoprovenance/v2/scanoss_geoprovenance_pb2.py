@@ -16,7 +16,7 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from protoc_gen_swagger.options import annotations_pb2 as protoc__gen__swagger_dot_options_dot_annotations__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n8scanoss/api/geoprovenance/v2/scanoss-geoprovenance.proto\x12\x19scanoss.api.provenance.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a,protoc-gen-swagger/options/annotations.proto\"\xc8\x03\n\x13\x43ontributorResponse\x12\x43\n\x05purls\x18\x01 \x03(\x0b\x32\x34.scanoss.api.provenance.v2.ContributorResponse.Purls\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x32\n\x10\x44\x65\x63laredLocation\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x10\n\x08location\x18\x02 \x01(\t\x1a\x31\n\x0f\x43uratedLocation\x12\x0f\n\x07\x63ountry\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\x05\x1a\xcd\x01\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12[\n\x12\x64\x65\x63lared_locations\x18\x02 \x03(\x0b\x32?.scanoss.api.provenance.v2.ContributorResponse.DeclaredLocation\x12Y\n\x11\x63urated_locations\x18\x03 \x03(\x0b\x32>.scanoss.api.provenance.v2.ContributorResponse.CuratedLocation\"\x93\x02\n\x0eOriginResponse\x12>\n\x05purls\x18\x01 \x03(\x0b\x32/.scanoss.api.provenance.v2.OriginResponse.Purls\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a,\n\x08Location\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x12\n\npercentage\x18\x02 \x01(\x02\x1a\\\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x45\n\tlocations\x18\x02 \x03(\x0b\x32\x32.scanoss.api.provenance.v2.OriginResponse.Location2\xb3\x03\n\rGeoProvenance\x12v\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\"%\x82\xd3\xe4\x93\x02\x1f\"\x1a/api/v2/geoprovenance/echo:\x01*\x12\x9a\x01\n\x18GetComponentContributors\x12\".scanoss.api.common.v2.PurlRequest\x1a..scanoss.api.provenance.v2.ContributorResponse\"*\x82\xd3\xe4\x93\x02$\"\x1f/api/v2/geoprovenance/countries:\x01*\x12\x8c\x01\n\x12GetComponentOrigin\x12\".scanoss.api.common.v2.PurlRequest\x1a).scanoss.api.provenance.v2.OriginResponse\"\'\x82\xd3\xe4\x93\x02!\"\x1c/api/v2/geoprovenance/origin:\x01*B\xa4\x02Z;github.com/scanoss/papi/api/geoprovenancev2;geoprovenancev2\x92\x41\xe3\x01\x12}\n\x1eSCANOSS GEO Provenance Service\"V\n\x15scanoss-geoprovenance\x12(https://github.com/scanoss/geoprovenance\x1a\x13support@scanoss.com2\x03\x32.0*\x01\x01\x32\x10\x61pplication/json:\x10\x61pplication/jsonR;\n\x03\x34\x30\x34\x12\x34\n*Returned when the resource does not exist.\x12\x06\n\x04\x9a\x02\x01\x07\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n8scanoss/api/geoprovenance/v2/scanoss-geoprovenance.proto\x12\x1cscanoss.api.geoprovenance.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a,protoc-gen-swagger/options/annotations.proto\"\xd1\x03\n\x13\x43ontributorResponse\x12\x46\n\x05purls\x18\x01 \x03(\x0b\x32\x37.scanoss.api.geoprovenance.v2.ContributorResponse.Purls\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x32\n\x10\x44\x65\x63laredLocation\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x10\n\x08location\x18\x02 \x01(\t\x1a\x31\n\x0f\x43uratedLocation\x12\x0f\n\x07\x63ountry\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\x05\x1a\xd3\x01\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12^\n\x12\x64\x65\x63lared_locations\x18\x02 \x03(\x0b\x32\x42.scanoss.api.geoprovenance.v2.ContributorResponse.DeclaredLocation\x12\\\n\x11\x63urated_locations\x18\x03 \x03(\x0b\x32\x41.scanoss.api.geoprovenance.v2.ContributorResponse.CuratedLocation\"\x99\x02\n\x0eOriginResponse\x12\x41\n\x05purls\x18\x01 \x03(\x0b\x32\x32.scanoss.api.geoprovenance.v2.OriginResponse.Purls\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a,\n\x08Location\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x12\n\npercentage\x18\x02 \x01(\x02\x1a_\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12H\n\tlocations\x18\x02 \x03(\x0b\x32\x35.scanoss.api.geoprovenance.v2.OriginResponse.Location2\xb9\x03\n\rGeoProvenance\x12v\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\"%\x82\xd3\xe4\x93\x02\x1f\"\x1a/api/v2/geoprovenance/echo:\x01*\x12\x9d\x01\n\x18GetComponentContributors\x12\".scanoss.api.common.v2.PurlRequest\x1a\x31.scanoss.api.geoprovenance.v2.ContributorResponse\"*\x82\xd3\xe4\x93\x02$\"\x1f/api/v2/geoprovenance/countries:\x01*\x12\x8f\x01\n\x12GetComponentOrigin\x12\".scanoss.api.common.v2.PurlRequest\x1a,.scanoss.api.geoprovenance.v2.OriginResponse\"\'\x82\xd3\xe4\x93\x02!\"\x1c/api/v2/geoprovenance/origin:\x01*B\xa4\x02Z;github.com/scanoss/papi/api/geoprovenancev2;geoprovenancev2\x92\x41\xe3\x01\x12}\n\x1eSCANOSS GEO Provenance Service\"V\n\x15scanoss-geoprovenance\x12(https://github.com/scanoss/geoprovenance\x1a\x13support@scanoss.com2\x03\x32.0*\x01\x01\x32\x10\x61pplication/json:\x10\x61pplication/jsonR;\n\x03\x34\x30\x34\x12\x34\n*Returned when the resource does not exist.\x12\x06\n\x04\x9a\x02\x01\x07\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'scanoss.api.geoprovenance.v2.scanoss_geoprovenance_pb2', globals())
@@ -30,20 +30,20 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _GEOPROVENANCE.methods_by_name['GetComponentContributors']._serialized_options = b'\202\323\344\223\002$\"\037/api/v2/geoprovenance/countries:\001*'
   _GEOPROVENANCE.methods_by_name['GetComponentOrigin']._options = None
   _GEOPROVENANCE.methods_by_name['GetComponentOrigin']._serialized_options = b'\202\323\344\223\002!\"\034/api/v2/geoprovenance/origin:\001*'
-  _CONTRIBUTORRESPONSE._serialized_start=208
-  _CONTRIBUTORRESPONSE._serialized_end=664
-  _CONTRIBUTORRESPONSE_DECLAREDLOCATION._serialized_start=355
-  _CONTRIBUTORRESPONSE_DECLAREDLOCATION._serialized_end=405
-  _CONTRIBUTORRESPONSE_CURATEDLOCATION._serialized_start=407
-  _CONTRIBUTORRESPONSE_CURATEDLOCATION._serialized_end=456
-  _CONTRIBUTORRESPONSE_PURLS._serialized_start=459
-  _CONTRIBUTORRESPONSE_PURLS._serialized_end=664
-  _ORIGINRESPONSE._serialized_start=667
-  _ORIGINRESPONSE._serialized_end=942
-  _ORIGINRESPONSE_LOCATION._serialized_start=804
-  _ORIGINRESPONSE_LOCATION._serialized_end=848
-  _ORIGINRESPONSE_PURLS._serialized_start=850
-  _ORIGINRESPONSE_PURLS._serialized_end=942
-  _GEOPROVENANCE._serialized_start=945
-  _GEOPROVENANCE._serialized_end=1380
+  _CONTRIBUTORRESPONSE._serialized_start=211
+  _CONTRIBUTORRESPONSE._serialized_end=676
+  _CONTRIBUTORRESPONSE_DECLAREDLOCATION._serialized_start=361
+  _CONTRIBUTORRESPONSE_DECLAREDLOCATION._serialized_end=411
+  _CONTRIBUTORRESPONSE_CURATEDLOCATION._serialized_start=413
+  _CONTRIBUTORRESPONSE_CURATEDLOCATION._serialized_end=462
+  _CONTRIBUTORRESPONSE_PURLS._serialized_start=465
+  _CONTRIBUTORRESPONSE_PURLS._serialized_end=676
+  _ORIGINRESPONSE._serialized_start=679
+  _ORIGINRESPONSE._serialized_end=960
+  _ORIGINRESPONSE_LOCATION._serialized_start=819
+  _ORIGINRESPONSE_LOCATION._serialized_end=863
+  _ORIGINRESPONSE_PURLS._serialized_start=865
+  _ORIGINRESPONSE_PURLS._serialized_end=960
+  _GEOPROVENANCE._serialized_start=963
+  _GEOPROVENANCE._serialized_end=1404
 # @@protoc_insertion_point(module_scope)
