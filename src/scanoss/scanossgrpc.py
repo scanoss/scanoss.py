@@ -492,7 +492,6 @@ class ScanossGrpc(ScanossBase):
         Returns:
             dict: The parsed gRPC response as a dictionary, or None if an error occurred.
         """
-
         request_id = str(uuid.uuid4())
 
         if isinstance(request_input, dict):
@@ -503,7 +502,6 @@ class ScanossGrpc(ScanossBase):
         metadata = self.metadata[:] + [('x-request-id', request_id)]
 
         self.print_debug(debug_msg.format(rqId=request_id))
-
         try:
             resp = rpc_method(request_obj, metadata=metadata, timeout=self.timeout)
         except grpc.RpcError as e:

@@ -323,10 +323,10 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     c_provenance = comp_sub.add_parser(
         'provenance',
         aliases=['prov', 'prv'],
-        description=f'Show Provenance findings: {__version__}',
-        help='Retrieve provenance for the given components',
+        description=f'Show GEO Provenance findings: {__version__}',
+        help='Retrieve geoprovenance for the given components',
     )
-    c_provenance.add_argument('--origin', action='store_true', help='Retrieve provenance using contributors origin')
+    c_provenance.add_argument('--origin', action='store_true', help='Retrieve geoprovenance using contributors origin (default: declared origin)')
     c_provenance.set_defaults(func=comp_provenance)
 
     # Component Sub-command: component search
@@ -1580,7 +1580,7 @@ def comp_versions(parser, args):
 
 def comp_provenance(parser, args):
     """
-    Run the "component semgrep" sub-command
+    Run the "component provenance" sub-command
     Parameters
     ----------
         parser: ArgumentParser

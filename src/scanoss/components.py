@@ -353,10 +353,10 @@ class Components(ScanossBase):
         if file is None:
             return False
         if origin:
-            self.print_msg('Sending PURLs to Geo Provenance API for decoration...')
+            self.print_msg('Sending PURLs to Geo Provenance Origin API for decoration...')
             response = self.grpc_api.get_provenance_origin(purls_request)
         else:
-            self.print_msg('Sending PURLs to Provenance API for decoration...')
+            self.print_msg('Sending PURLs to Geo Provenance Declared API for decoration...')
             response = self.grpc_api.get_provenance_json(purls_request)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
