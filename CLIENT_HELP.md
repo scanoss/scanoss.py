@@ -329,6 +329,13 @@ scanoss-py comp prov -p "pkg:github/unoconv/unoconv"
 It is possible to supply multiple PURLs by repeating the `-p pkg` option, or providing a purl input file `-i purl-input.json` ([for example](tests/data/purl-input.json)):
 ```bash
 scanoss-py comp prov -i purl-input.json -o provenance.json
+```
+
+#### Component Provenance Using Contributors Origin
+The following command provides the capability to search the SCANOSS KB for component Provenance using contributors origin:
+```bash
+scanoss-py comp prov -p "pkg:github/unoconv/unoconv" --origin
+```
 
 
 ### Results Commands
