@@ -117,7 +117,8 @@ class ScannerHFH:
 
         try:
             response = self.client.folder_hash_scan(hfh_request)
-            self.scan_results = response
+            if response:
+                self.scan_results = response
         finally:
             stop_spinner = True
             spinner_thread.join()

@@ -326,7 +326,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         description=f'Show GEO Provenance findings: {__version__}',
         help='Retrieve geoprovenance for the given components',
     )
-    c_provenance.add_argument('--origin', action='store_true', help='Retrieve geoprovenance using contributors origin (default: declared origin)')
+    c_provenance.add_argument(
+        '--origin',
+        action='store_true',
+        help='Retrieve geoprovenance using contributors origin (default: declared origin)',
+    )
     c_provenance.set_defaults(func=comp_provenance)
 
     # Component Sub-command: component search
@@ -1712,8 +1716,8 @@ def folder_hashing_scan(parser, args):
         scanner.best_match = args.best_match
         scanner.threshold = args.threshold
 
-        scanner.scan()
-        scanner.present(output_file=args.output, output_format=args.format)
+        if scanner.scan():
+            scanner.present(output_file=args.output, output_format=args.format)
     except ScanossGrpcError as e:
         print_stderr(f'ERROR: {e}')
         sys.exit(1)
