@@ -462,7 +462,7 @@ class ScanossGrpc(ScanossBase):
                 return resp_dict
         return None
 
-    def folder_hash_scan(self, request: Dict) -> Dict:
+    def folder_hash_scan(self, request: Dict) -> Optional[Dict]:
         """
         Client function to call the rpc for Folder Hashing Scan
 
@@ -470,7 +470,7 @@ class ScanossGrpc(ScanossBase):
             request (Dict): Folder Hash Request
 
         Returns:
-            Dict: Folder Hash Response
+            Optional[Dict]: Folder Hash Response, or None if the request was not succesfull
         """
         return self._call_rpc(
             self.scanning_stub.FolderHashScan,
@@ -479,7 +479,7 @@ class ScanossGrpc(ScanossBase):
             'Sending folder hash scan data (rqId: {rqId})...',
         )
 
-    def _call_rpc(self, rpc_method, request_input, request_type, debug_msg: Optional[str] = None) -> dict:
+    def _call_rpc(self, rpc_method, request_input, request_type, debug_msg: Optional[str] = None) -> Optional[Dict]:
         """
         Call a gRPC method and return the response as a dictionary
 
@@ -490,7 +490,7 @@ class ScanossGrpc(ScanossBase):
             debug_msg (str, optional): Debug message template that can include {rqId} placeholder.
 
         Returns:
-            dict: The parsed gRPC response as a dictionary, or None if an error occurred.
+            dict: The parsed gRPC response as a dictionary, or None if something went wrong
         """
         request_id = str(uuid.uuid4())
 
@@ -510,7 +510,7 @@ class ScanossGrpc(ScanossBase):
             )
 
         if resp and not self._check_status_response(resp.status, request_id):
-            raise ScanossGrpcError(f'Unsuccessful status response (rqId: {request_id}).')
+            return None
 
         resp_dict = MessageToDict(resp, preserving_proto_field_name=True)
         return resp_dict
@@ -590,7 +590,7 @@ class ScanossGrpc(ScanossBase):
                 return resp_dict
         return None
 
-    def get_provenance_origin(self, request: Dict) -> Dict:
+    def get_provenance_origin(self, request: Dict) -> Optional[Dict]:
         """
         Client function to call the rpc for GetComponentOrigin
 
@@ -598,7 +598,7 @@ class ScanossGrpc(ScanossBase):
             request (Dict): GetComponentOrigin Request
 
         Returns:
-            Dict: OriginResponse
+            Optional[Dict]: OriginResponse, or None if the request was not successfull
         """
         return self._call_rpc(
             self.provenance_stub.GetComponentOrigin,
