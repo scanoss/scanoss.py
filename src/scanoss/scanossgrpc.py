@@ -515,7 +515,6 @@ class ScanossGrpc(ScanossBase):
             raise ScanossGrpcError(f'Unsuccessful status response (rqId: {request_id}).')
 
         resp_dict = MessageToDict(resp, preserving_proto_field_name=True)
-        resp_dict.pop('status', None)
         return resp_dict
 
     def _check_status_response(self, status_response: StatusResponse, request_id: str = None) -> bool:
