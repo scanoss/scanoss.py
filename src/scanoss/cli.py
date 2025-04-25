@@ -323,8 +323,13 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     c_provenance = comp_sub.add_parser(
         'provenance',
         aliases=['prov', 'prv'],
-        description=f'Show Provenance findings: {__version__}',
-        help='Retrieve provenance for the given components',
+        description=f'Show GEO Provenance findings: {__version__}',
+        help='Retrieve geoprovenance for the given components',
+    )
+    c_provenance.add_argument(
+        '--origin',
+        action='store_true',
+        help='Retrieve geoprovenance using contributors origin (default: declared origin)',
     )
     c_provenance.set_defaults(func=comp_provenance)
 
@@ -1579,7 +1584,7 @@ def comp_versions(parser, args):
 
 def comp_provenance(parser, args):
     """
-    Run the "component semgrep" sub-command
+    Run the "component provenance" sub-command
     Parameters
     ----------
         parser: ArgumentParser
@@ -1608,7 +1613,7 @@ def comp_provenance(parser, args):
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
     )
-    if not comps.get_provenance_details(args.input, args.purl, args.output):
+    if not comps.get_provenance_details(args.input, args.purl, args.output, args.origin):
         sys.exit(1)
 
 
@@ -1711,8 +1716,8 @@ def folder_hashing_scan(parser, args):
         scanner.best_match = args.best_match
         scanner.threshold = args.threshold
 
-        scanner.scan()
-        scanner.present(output_file=args.output, output_format=args.format)
+        if scanner.scan():
+            scanner.present(output_file=args.output, output_format=args.format)
     except ScanossGrpcError as e:
         print_stderr(f'ERROR: {e}')
         sys.exit(1)

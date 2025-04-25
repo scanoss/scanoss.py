@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.23.0] - 2025-04-24
+### Added
+- Add `--origin` flag to `component provenance` subcommand to retrieve provenance using contributors origin
+### Modified
+- Update provenance GRPC stubs
+
 ## [1.22.0] - 2025-04-23
 ### Added
 - Add `container-scan` subcommand to scan container images.
@@ -509,3 +515,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.20.6]: https://github.com/scanoss/scanoss.py/compare/v1.20.5...v1.20.6
 [1.21.0]: https://github.com/scanoss/scanoss.py/compare/v1.20.6...v1.21.0
 [1.22.0]: https://github.com/scanoss/scanoss.py/compare/v1.21.0...v1.22.0
+[1.23.0]: https://github.com/scanoss/scanoss.py/compare/v1.22.0...v1.23.0
