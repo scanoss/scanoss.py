@@ -31,3 +31,4 @@ docs/build
 !docs/source/_static/*.json
 !scanoss-settings-schema.json
 .DS_Store
+!scanoss.json
