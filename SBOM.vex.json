@@ -1,0 +1,226 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-7e0e0d633cee7668a23f0aa2467675259f961d39e45d59ebdb216ec3bd709883",
+  "author": "Unknown Author",
+  "timestamp": "2024-10-11T16:14:31.594491+02:00",
+  "last_updated": "2024-10-11T16:14:32.031491+02:00",
+  "version": 18,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2013-4314"
+      },
+      "timestamp": "2024-10-11T16:14:31.594491+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/pyopenssl"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2014-1829"
+      },
+      "timestamp": "2024-10-11T16:14:31.623067+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/requests"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2014-1830"
+      },
+      "timestamp": "2024-10-11T16:14:31.649543+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/requests"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2015-2296"
+      },
+      "timestamp": "2024-10-11T16:14:31.674334+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/requests"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2015-5237"
+      },
+      "timestamp": "2024-10-11T16:14:31.700216+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/protobuf"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2017-8359"
+      },
+      "timestamp": "2024-10-11T16:14:31.724522+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/grpcio"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2018-1000807"
+      },
+      "timestamp": "2024-10-11T16:14:31.75128+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/pyopenssl"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2018-1000808"
+      },
+      "timestamp": "2024-10-11T16:14:31.776145+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/pyopenssl"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2018-18074"
+      },
+      "timestamp": "2024-10-11T16:14:31.801751+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/requests"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2021-22570"
+      },
+      "timestamp": "2024-10-11T16:14:31.827036+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/protobuf"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2022-1941"
+      },
+      "timestamp": "2024-10-11T16:14:31.851853+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/protobuf"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-1428"
+      },
+      "timestamp": "2024-10-11T16:14:31.877475+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/grpcio"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-32681"
+      },
+      "timestamp": "2024-10-11T16:14:31.902923+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/requests"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-32731"
+      },
+      "timestamp": "2024-10-11T16:14:31.927535+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/grpcio"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-32732"
+      },
+      "timestamp": "2024-10-11T16:14:31.952438+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/grpcio"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-33953"
+      },
+      "timestamp": "2024-10-11T16:14:31.979369+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/grpcio"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2023-4785"
+      },
+      "timestamp": "2024-10-11T16:14:32.005389+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/grpcio"
+        }
+      ],
+      "status": "under_investigation"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2024-35195"
+      },
+      "timestamp": "2024-10-11T16:14:32.031492+02:00",
+      "products": [
+        {
+          "@id": "pkg:pypi/requests"
+        }
+      ],
+      "status": "under_investigation"
+    }
+  ]
+}
