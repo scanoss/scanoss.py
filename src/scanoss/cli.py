@@ -377,20 +377,49 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Retrieve cryptographic algorithms for the given components',
     )
     p_crypto_algorithms.add_argument(
-        '--range',
-        '-r',
-        type=str,
+        '--with-range',
+        action='store_true',
         help='Returns the list of versions in the specified range that contains cryptographic algorithms',
     )
     p_crypto_algorithms.set_defaults(func=crypto_algorithms)
 
+    # GetEncryptionHints and GetHintsInRange gRPC APIs
+    p_crypto_hints = crypto_sub.add_parser(
+        'hints',
+        description=f'Show Encryption hints: {__version__}',
+        help='Retrieve encryption hints for the given components',
+    )
+    p_crypto_hints.add_argument(
+        '--with-range',
+        action='store_true',
+        help='Returns the list of versions in the specified range that contains encryption hints',
+    )
+    p_crypto_hints.set_defaults(func=crypto_hints)
+
+    p_crypto_versions_in_range = crypto_sub.add_parser(
+        'versions-in-range',
+        aliases=['vr'],
+        description=f'Show versions in range: {__version__}',
+        help="Given a list of PURLS and version ranges, get a list of versions that do/don't contain crypto algorithms",
+    )
+    p_crypto_versions_in_range.set_defaults(func=crypto_versions_in_range)
+
     # Common purl Component sub-command options
-    for p in [c_vulns, c_semgrep, c_provenance, p_crypto_algorithms]:
+    for p in [c_vulns, c_semgrep, c_provenance, p_crypto_algorithms, p_crypto_hints, p_crypto_versions_in_range]:
         p.add_argument('--purl', '-p', type=str, nargs='*', help='Package URL - PURL to process.')
         p.add_argument('--input', '-i', type=str, help='Input file name')
 
     # Common Component sub-command options
-    for p in [c_vulns, c_search, c_versions, c_semgrep, c_provenance, p_crypto_algorithms]:
+    for p in [
+        c_vulns,
+        c_search,
+        c_versions,
+        c_semgrep,
+        c_provenance,
+        p_crypto_algorithms,
+        p_crypto_hints,
+        p_crypto_versions_in_range,
+    ]:
         p.add_argument(
             '--timeout',
             '-M',
@@ -620,6 +649,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_folder_scan,
         p_folder_hash,
         p_crypto_algorithms,
+        p_crypto_hints,
+        p_crypto_versions_in_range,
     ]:
         p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
 
@@ -705,6 +736,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_folder_scan,
         p_cs,
         p_crypto_algorithms,
+        p_crypto_hints,
+        p_crypto_versions_in_range,
     ]:
         p.add_argument(
             '--key', '-k', type=str, help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
@@ -731,7 +764,19 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         )
 
     # Global GRPC options
-    for p in [p_scan, c_vulns, c_search, c_versions, c_semgrep, c_provenance, p_folder_scan, p_cs, p_crypto_algorithms]:
+    for p in [
+        p_scan,
+        c_vulns,
+        c_search,
+        c_versions,
+        c_semgrep,
+        c_provenance,
+        p_folder_scan,
+        p_cs,
+        p_crypto_algorithms,
+        p_crypto_hints,
+        p_crypto_versions_in_range,
+    ]:
         p.add_argument(
             '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
         )
@@ -786,6 +831,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_folder_hash,
         p_cs,
         p_crypto_algorithms,
+        p_crypto_hints,
+        p_crypto_versions_in_range,
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -1444,6 +1491,88 @@ def crypto_algorithms(parser, args):
 
         cryptography = Cryptography(config=config, client=client)
         cryptography.get_algorithms()
+        cryptography.present(output_file=args.output)
+    except ScanossGrpcError as e:
+        print_stderr(f'API ERROR: {e}')
+        sys.exit(1)
+    except Exception as e:
+        if args.debug:
+            import traceback
+
+            traceback.print_exc()
+        print_stderr(f'ERROR: {e}')
+        sys.exit(1)
+
+
+def crypto_hints(parser, args):
+    """
+    Run the "crypto hints" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if (not args.purl and not args.input) or (args.purl and args.input):
+        print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        sys.exit(1)
+    if args.ca_cert and not os.path.exists(args.ca_cert):
+        print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
+        sys.exit(1)
+
+    try:
+        config = create_cryptography_config_from_args(args)
+        grpc_config = create_grpc_config_from_args(args)
+        client = ScanossGrpc(**asdict(grpc_config))
+
+        # TODO: Add PAC file support
+        # pac_file = get_pac_file(config.pac)
+
+        cryptography = Cryptography(config=config, client=client)
+        cryptography.get_encryption_hints()
+        cryptography.present(output_file=args.output)
+    except ScanossGrpcError as e:
+        print_stderr(f'API ERROR: {e}')
+        sys.exit(1)
+    except Exception as e:
+        if args.debug:
+            import traceback
+
+            traceback.print_exc()
+        print_stderr(f'ERROR: {e}')
+        sys.exit(1)
+
+
+def crypto_versions_in_range(parser, args):
+    """
+    Run the "crypto versions-in-range" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if (not args.purl and not args.input) or (args.purl and args.input):
+        print_stderr('Please specify an input file or purl to decorate (--purl or --input)')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        sys.exit(1)
+    if args.ca_cert and not os.path.exists(args.ca_cert):
+        print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
+        sys.exit(1)
+
+    try:
+        config = create_cryptography_config_from_args(args)
+        grpc_config = create_grpc_config_from_args(args)
+        client = ScanossGrpc(**asdict(grpc_config))
+
+        # TODO: Add PAC file support
+        # pac_file = get_pac_file(config.pac)
+
+        cryptography = Cryptography(config=config, client=client)
+        cryptography.get_versions_in_range()
         cryptography.present(output_file=args.output)
     except ScanossGrpcError as e:
         print_stderr(f'API ERROR: {e}')
