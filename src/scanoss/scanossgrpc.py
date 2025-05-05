@@ -610,6 +610,57 @@ class ScanossGrpc(ScanossBase):
             'Sending data for cryptographic algorithms in range decoration (rqId: {rqId})...',
         )
 
+    def get_encryption_hints_for_purl(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetEncryptionHints for a list of purls
+
+        Args:
+            request (Dict): PurlRequest
+
+        Returns:
+            Optional[Dict]: HintsResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.crypto_stub.GetEncryptionHints,
+            request,
+            PurlRequest,
+            'Sending data for encryption hints decoration (rqId: {rqId})...',
+        )
+
+    def get_encryption_hints_in_range_for_purl(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetHintsInRange for a list of purls
+
+        Args:
+            request (Dict): PurlRequest
+
+        Returns:
+            Optional[Dict]: HintsInRangeResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.crypto_stub.GetHintsInRange,
+            request,
+            PurlRequest,
+            'Sending data for encryption hints in range decoration (rqId: {rqId})...',
+        )
+
+    def get_versions_in_range_for_purl(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetVersionsInRange for a list of purls
+
+        Args:
+            request (Dict): PurlRequest
+
+        Returns:
+            Optional[Dict]: VersionsInRangeResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.crypto_stub.GetVersionsInRange,
+            request,
+            PurlRequest,
+            'Sending data for cryptographic versions in range decoration (rqId: {rqId})...',
+        )
+
     def load_generic_headers(self):
         """
         Adds custom headers from req_headers to metadata.

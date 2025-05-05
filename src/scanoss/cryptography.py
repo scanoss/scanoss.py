@@ -17,7 +17,7 @@ class CryptographyConfig:
     debug: bool = False
     trace: bool = False
     quiet: bool = False
-    get_range: bool = False
+    with_range: bool = False
     purl: List[str] = None
     input_file: str = None
     output_file: str = None
@@ -29,7 +29,7 @@ def create_cryptography_config_from_args(args) -> CryptographyConfig:
         debug=getattr(args, 'debug', None),
         trace=getattr(args, 'trace', None),
         quiet=getattr(args, 'quiet', None),
-        get_range=getattr(args, 'range', None),
+        with_range=getattr(args, 'with_range', None),
         purl=getattr(args, 'purl', None),
         input_file=getattr(args, 'input', None),
         output_file=getattr(args, 'output', None),
@@ -86,10 +86,55 @@ class Cryptography:
         self.base.print_stderr(
             f'Getting cryptographic algorithms for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
         )
-        if self.config.get_range:
+        if self.config.with_range:
             response = self.client.get_crypto_algorithms_in_range_for_purl(self.purls_request)
         else:
             response = self.client.get_crypto_algorithms_for_purl(self.purls_request)
+        if response:
+            self.results = response
+
+        return self.results
+
+    def get_encryption_hints(self) -> Optional[Dict]:
+        """
+        Get the encryption hints for the provided purl or input file.
+
+        Returns:
+            Optional[Dict]: The encryption hints response from the gRPC client, or None if an error occurs.
+        """
+
+        if not self.purls_request:
+            raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
+        self.base.print_stderr(
+            f'Getting encryption hints '
+            f'{"in range" if self.config.with_range else ""} '
+            f'for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
+        )
+        if self.config.with_range:
+            response = self.client.get_encryption_hints_in_range_for_purl(self.purls_request)
+        else:
+            response = self.client.get_encryption_hints_for_purl(self.purls_request)
+        if response:
+            self.results = response
+
+        return self.results
+
+    def get_versions_in_range(self) -> Optional[Dict]:
+        """
+        Given a list of PURLS and version ranges, get a list of versions that do/do not contain cryptographic algorithms
+
+        Returns:
+            Optional[Dict]: The versions in range response from the gRPC client, or None if an error occurs.
+        """
+
+        if not self.purls_request:
+            raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
+
+        self.base.print_stderr(
+            f'Getting versions in range for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
+        )
+
+        response = self.client.get_versions_in_range_for_purl(self.purls_request)
         if response:
             self.results = response
 
