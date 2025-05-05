@@ -31,6 +31,7 @@ from typing import List
 
 import pypac
 
+from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
 from scanoss.scanners.container_scanner import (
     DEFAULT_SYFT_COMMAND,
     DEFAULT_SYFT_TIMEOUT,
@@ -1432,22 +1433,20 @@ def crypto_algorithms(parser, args):
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
         sys.exit(1)
-    pac_file = get_pac_file(args.pac)
 
-    comps = Components(
-        debug=args.debug,
-        trace=args.trace,
-        quiet=args.quiet,
-        grpc_url=args.api2url,
-        api_key=args.key,
-        ca_cert=args.ca_cert,
-        proxy=args.proxy,
-        grpc_proxy=args.grpc_proxy,
-        pac=pac_file,
-        timeout=args.timeout,
-        req_headers=process_req_headers(args.header),
-    )
-    if not comps.get_crypto_details(args.input, args.purl, args.output):
+    try:
+        config = create_cryptography_config_from_args(args)
+        grpc_config = create_grpc_config_from_args(args)
+        client = ScanossGrpc(**asdict(grpc_config))
+
+        # TODO: Add PAC file support
+        # pac_file = get_pac_file(config.pac)
+
+        cryptography = Cryptography(config=config, client=client)
+        cryptography.get_algorithms()
+        cryptography.present(output_file=args.output)
+    except Exception as e:
+        print_stderr(f'ERROR: {e}')
         sys.exit(1)
 
 
