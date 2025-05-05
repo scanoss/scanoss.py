@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from scanoss.scanossbase import ScanossBase
 from scanoss.scanossgrpc import ScanossGrpc
@@ -18,7 +18,7 @@ class CryptographyConfig:
     trace: bool = False
     quiet: bool = False
     get_range: bool = False
-    purl: str = None
+    purl: List[str] = None
     input_file: str = None
     output_file: str = None
     header: str = None
@@ -81,18 +81,17 @@ class Cryptography:
             Optional[Dict]: The folder hash response from the gRPC client, or None if an error occurs.
         """
 
-        try:
-            self.base.print_stderr(
-                f'Getting cryptographic algorithms for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
-            )
-            if self.config.get_range:
-                response = self.client.get_crypto_algorithms_in_range_for_purl(self.purls_request)
-            else:
-                response = self.client.get_crypto_algorithms_for_purl(self.purls_request)
-            if response:
-                self.results = response
-        except Exception as e:
-            raise ScanossCryptographyError(f'Problem with purl input file. {e}')
+        if not self.purls_request:
+            raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
+        self.base.print_stderr(
+            f'Getting cryptographic algorithms for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
+        )
+        if self.config.get_range:
+            response = self.client.get_crypto_algorithms_in_range_for_purl(self.purls_request)
+        else:
+            response = self.client.get_crypto_algorithms_for_purl(self.purls_request)
+        if response:
+            self.results = response
 
         return self.results
 
@@ -112,10 +111,8 @@ class Cryptography:
         if self.config.input_file:
             input_file_validation = validate_json_file(self.config.input_file)
             if not input_file_validation.is_valid:
-                self.base.print_stderr(
-                    f'ERROR: The supplied input file "{self.config.input_file}" was not found or is empty.'
-                )
-                raise Exception(f'Problem with purl input file. {input_file_validation.error}')
+                raise Exception(f'There was a problem with the purl input file. {input_file_validation.error}')
+
             # Validate the input file is in PurlRequest format
             if (
                 not isinstance(input_file_validation.data, dict)
