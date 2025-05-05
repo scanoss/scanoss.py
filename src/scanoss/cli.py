@@ -50,6 +50,7 @@ from scanoss.scanossgrpc import (
 from . import __version__
 from .components import Components
 from .constants import (
+    DEFAULT_API_TIMEOUT,
     DEFAULT_POST_SIZE,
     DEFAULT_RETRY,
     DEFAULT_TIMEOUT,
@@ -292,15 +293,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='component sub-commands',
     )
 
-    # Component Sub-command: component crypto
-    c_crypto = comp_sub.add_parser(
-        'crypto',
-        aliases=['cr'],
-        description=f'Show Cryptographic algorithms: {__version__}',
-        help='Retrieve cryptographic algorithms for the given components',
-    )
-    c_crypto.set_defaults(func=comp_crypto)
-
     # Component Sub-command: component vulns
     c_vulns = comp_sub.add_parser(
         'vulns',
@@ -361,18 +353,48 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     c_versions.add_argument('--limit', '-l', type=int, help='Generic component search')
     c_versions.set_defaults(func=comp_versions)
 
+    # Sub-command: crypto
+    p_crypto = subparsers.add_parser(
+        'crypto',
+        aliases=['cr'],
+        description=f'SCANOSS Crypto commands: {__version__}',
+        help='Crypto support commands',
+    )
+    crypto_sub = p_crypto.add_subparsers(
+        title='Crypto Commands',
+        dest='subparsercmd',
+        description='crypto sub-commands',
+        help='crypto sub-commands',
+        required=True,
+    )
+
+    # GetAlgorithms and GetAlgorithmsInRange gRPC APIs
+    p_crypto_algorithms = crypto_sub.add_parser(
+        'algorithms',
+        aliases=['alg'],
+        description=f'Show Cryptographic algorithms: {__version__}',
+        help='Retrieve cryptographic algorithms for the given components',
+    )
+    p_crypto_algorithms.add_argument(
+        '--range',
+        '-r',
+        type=str,
+        help='Returns the list of versions in the specified range that contains cryptographic algorithms',
+    )
+    p_crypto_algorithms.set_defaults(func=crypto_algorithms)
+
     # Common purl Component sub-command options
-    for p in [c_crypto, c_vulns, c_semgrep, c_provenance]:
+    for p in [c_vulns, c_semgrep, c_provenance, p_crypto_algorithms]:
         p.add_argument('--purl', '-p', type=str, nargs='*', help='Package URL - PURL to process.')
         p.add_argument('--input', '-i', type=str, help='Input file name')
 
     # Common Component sub-command options
-    for p in [c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance]:
+    for p in [c_vulns, c_search, c_versions, c_semgrep, c_provenance, p_crypto_algorithms]:
         p.add_argument(
             '--timeout',
             '-M',
             type=int,
-            default=600,
+            default=DEFAULT_API_TIMEOUT,
             help='Timeout (in seconds) for API communication (optional - default 600)',
         )
 
@@ -588,7 +610,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_dep,
         p_fc,
         p_cnv,
-        c_crypto,
         c_vulns,
         c_search,
         c_versions,
@@ -597,6 +618,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_c_dwnld,
         p_folder_scan,
         p_folder_hash,
+        p_crypto_algorithms,
     ]:
         p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
 
@@ -674,7 +696,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     # Global Scan/GRPC options
     for p in [
         p_scan,
-        c_crypto,
         c_vulns,
         c_search,
         c_versions,
@@ -682,6 +703,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         c_provenance,
         p_folder_scan,
         p_cs,
+        p_crypto_algorithms,
     ]:
         p.add_argument(
             '--key', '-k', type=str, help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
@@ -708,7 +730,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         )
 
     # Global GRPC options
-    for p in [p_scan, c_crypto, c_vulns, c_search, c_versions, c_semgrep, c_provenance, p_folder_scan, p_cs]:
+    for p in [p_scan, c_vulns, c_search, c_versions, c_semgrep, c_provenance, p_folder_scan, p_cs, p_crypto_algorithms]:
         p.add_argument(
             '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
         )
@@ -751,7 +773,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_c_loc,
         p_c_dwnld,
         p_p_proxy,
-        c_crypto,
         c_vulns,
         c_search,
         c_versions,
@@ -763,6 +784,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_folder_scan,
         p_folder_hash,
         p_cs,
+        p_crypto_algorithms,
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -1393,9 +1415,9 @@ def get_pac_file(pac: str):
     return pac_file
 
 
-def comp_crypto(parser, args):
+def crypto_algorithms(parser, args):
     """
-    Run the "component crypto" sub-command
+    Run the "crypto algorithms" sub-command
     Parameters
     ----------
         parser: ArgumentParser
