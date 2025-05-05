@@ -1445,7 +1445,14 @@ def crypto_algorithms(parser, args):
         cryptography = Cryptography(config=config, client=client)
         cryptography.get_algorithms()
         cryptography.present(output_file=args.output)
+    except ScanossGrpcError as e:
+        print_stderr(f'API ERROR: {e}')
+        sys.exit(1)
     except Exception as e:
+        if args.debug:
+            import traceback
+
+            traceback.print_exc()
         print_stderr(f'ERROR: {e}')
         sys.exit(1)
 
