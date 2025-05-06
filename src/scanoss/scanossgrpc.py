@@ -691,10 +691,11 @@ class GrpcConfig:
     quiet: Optional[bool] = False
     ver_details: Optional[str] = None
     ca_cert: Optional[str] = None
-    pac: Optional[PACFile] = None
     timeout: Optional[int] = DEFAULT_TIMEOUT
     proxy: Optional[str] = None
     grpc_proxy: Optional[str] = None
+    pac: Optional[PACFile] = None
+    req_headers: Optional[dict] = None
 
 
 def create_grpc_config_from_args(args) -> GrpcConfig:
@@ -706,7 +707,6 @@ def create_grpc_config_from_args(args) -> GrpcConfig:
         quiet=getattr(args, 'quiet', False),
         ver_details=getattr(args, 'ver_details', None),
         ca_cert=getattr(args, 'ca_cert', None),
-        pac=getattr(args, 'pac', None),
         timeout=getattr(args, 'timeout', DEFAULT_TIMEOUT),
         proxy=getattr(args, 'proxy', None),
         grpc_proxy=getattr(args, 'grpc_proxy', None),
