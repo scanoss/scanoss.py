@@ -366,7 +366,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         dest='subparsercmd',
         description='crypto sub-commands',
         help='crypto sub-commands',
-        required=True,
     )
 
     # GetAlgorithms and GetAlgorithmsInRange gRPC APIs
@@ -845,7 +844,9 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     if not args.subparser:
         parser.print_help()  # No sub command subcommand, print general help
         sys.exit(1)
-    elif (args.subparser in ('utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins')) and not args.subparsercmd:
+    elif (
+        args.subparser in ('utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins', 'crypto', 'cr')
+    ) and not args.subparsercmd:
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command

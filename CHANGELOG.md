@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.24.0] - 2025-05-06
+### Added
+- Add `crypto` subcommand to retrieve cryptographic algorithms for the given components
+- Add `crypto hints` subcommand to retrieve cryptographic hints for the given components
+- Add `crypto versions-in-range` subcommand to retrieve cryptographic versions in range for the given components
+
 ## [1.23.0] - 2025-04-24
 ### Added
 - Add `--origin` flag to `component provenance` subcommand to retrieve provenance using contributors origin
@@ -516,3 +522,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.21.0]: https://github.com/scanoss/scanoss.py/compare/v1.20.6...v1.21.0
 [1.22.0]: https://github.com/scanoss/scanoss.py/compare/v1.21.0...v1.22.0
 [1.23.0]: https://github.com/scanoss/scanoss.py/compare/v1.22.0...v1.23.0
+[1.24.0]: https://github.com/scanoss/scanoss.py/compare/v1.23.0...v1.24.0
