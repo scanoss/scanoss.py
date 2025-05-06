@@ -1485,10 +1485,11 @@ def crypto_algorithms(parser, args):
     try:
         config = create_cryptography_config_from_args(args)
         grpc_config = create_grpc_config_from_args(args)
+        if args.pac:
+            grpc_config.pac = get_pac_file(args.pac)
+        if args.header:
+            grpc_config.req_headers = process_req_headers(args.header)
         client = ScanossGrpc(**asdict(grpc_config))
-
-        # TODO: Add PAC file support
-        # pac_file = get_pac_file(config.pac)
 
         cryptography = Cryptography(config=config, client=client)
         cryptography.get_algorithms()
@@ -1526,10 +1527,11 @@ def crypto_hints(parser, args):
     try:
         config = create_cryptography_config_from_args(args)
         grpc_config = create_grpc_config_from_args(args)
+        if args.pac:
+            grpc_config.pac = get_pac_file(args.pac)
+        if args.header:
+            grpc_config.req_headers = process_req_headers(args.header)
         client = ScanossGrpc(**asdict(grpc_config))
-
-        # TODO: Add PAC file support
-        # pac_file = get_pac_file(config.pac)
 
         cryptography = Cryptography(config=config, client=client)
         cryptography.get_encryption_hints()
@@ -1567,10 +1569,11 @@ def crypto_versions_in_range(parser, args):
     try:
         config = create_cryptography_config_from_args(args)
         grpc_config = create_grpc_config_from_args(args)
+        if args.pac:
+            grpc_config.pac = get_pac_file(args.pac)
+        if args.header:
+            grpc_config.req_headers = process_req_headers(args.header)
         client = ScanossGrpc(**asdict(grpc_config))
-
-        # TODO: Add PAC file support
-        # pac_file = get_pac_file(config.pac)
 
         cryptography = Cryptography(config=config, client=client)
         cryptography.get_versions_in_range()
