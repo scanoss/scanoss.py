@@ -12,6 +12,9 @@ class ScanossCryptographyError(Exception):
     pass
 
 
+MIN_SPLIT_PARTS = 2
+
+
 @dataclass
 class CryptographyConfig:
     purl: List[str]
@@ -29,7 +32,7 @@ class CryptographyConfig:
             if self.purl:
                 for purl in self.purl:
                     parts = purl.split('@')
-                    if not (len(parts) >= 2 and parts[1]):
+                    if not (len(parts) >= MIN_SPLIT_PARTS and parts[1]):
                         raise ValueError(
                             f'Invalid PURL format: "{purl}".'
                             f'It must include a version (e.g., pkg:type/name@version)'
