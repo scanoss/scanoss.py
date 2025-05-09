@@ -14,23 +14,62 @@ class ScanossCryptographyError(Exception):
 
 @dataclass
 class CryptographyConfig:
+    purl: List[str]
+    input_file: Optional[str] = None
+    output_file: Optional[str] = None
+    header: Optional[str] = None
     debug: bool = False
     trace: bool = False
     quiet: bool = False
     with_range: bool = False
-    purl: List[str] = None
-    input_file: str = None
-    output_file: str = None
-    header: str = None
+
+    def __post_init__(self):
+        # If with_range is True, purls must contain "@<version>"
+        if self.with_range:
+            if self.purl:
+                for purl in self.purl:
+                    parts = purl.split('@')
+                    if not (len(parts) >= 2 and parts[1]):
+                        raise ValueError(
+                            f'Invalid PURL format: "{purl}".'
+                            f'It must include a version (e.g., pkg:type/name@version)'
+                        )
+        if self.input_file:
+            input_file_validation = validate_json_file(self.input_file)
+            if not input_file_validation.is_valid:
+                raise Exception(
+                    f'There was a problem with the purl input file. {input_file_validation.error}'
+                )
+
+            # Validate the input file is in PurlRequest format
+            if (
+                not isinstance(input_file_validation.data, dict)
+                or 'purls' not in input_file_validation.data
+                or not isinstance(input_file_validation.data['purls'], list)
+                or not all(
+                    isinstance(p, dict) and 'purl' in p
+                    for p in input_file_validation.data['purls']
+                )
+            ):
+                raise ValueError(
+                    'The supplied input file is not in the correct PurlRequest format.'
+                )
+            if self.with_range:
+                purls = input_file_validation.data['purls']
+                if any('requirement' not in p for p in purls):
+                    raise ValueError(
+                        'One or more PURLs are missing the "requirement" field.'
+                    )
+            return input_file_validation.data
 
 
 def create_cryptography_config_from_args(args) -> CryptographyConfig:
     return CryptographyConfig(
-        debug=getattr(args, 'debug', None),
-        trace=getattr(args, 'trace', None),
-        quiet=getattr(args, 'quiet', None),
-        with_range=getattr(args, 'with_range', None),
-        purl=getattr(args, 'purl', None),
+        debug=getattr(args, 'debug', False),
+        trace=getattr(args, 'trace', False),
+        quiet=getattr(args, 'quiet', False),
+        with_range=getattr(args, 'with_range', False),
+        purl=getattr(args, 'purl', []),
         input_file=getattr(args, 'input', None),
         output_file=getattr(args, 'output', None),
         header=getattr(args, 'header', None),
@@ -82,14 +121,20 @@ class Cryptography:
         """
 
         if not self.purls_request:
-            raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
+            raise ScanossCryptographyError(
+                'No PURLs supplied. Provide --purl or --input.'
+            )
         self.base.print_stderr(
             f'Getting cryptographic algorithms for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
         )
         if self.config.with_range:
-            response = self.client.get_crypto_algorithms_in_range_for_purl(self.purls_request)
+            response = self.client.get_crypto_algorithms_in_range_for_purl(
+                self.purls_request
+            )
         else:
-            response = self.client.get_crypto_algorithms_for_purl(self.purls_request)
+            response = self.client.get_crypto_algorithms_for_purl(
+                self.purls_request
+            )
         if response:
             self.results = response
 
@@ -104,16 +149,22 @@ class Cryptography:
         """
 
         if not self.purls_request:
-            raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
+            raise ScanossCryptographyError(
+                'No PURLs supplied. Provide --purl or --input.'
+            )
         self.base.print_stderr(
             f'Getting encryption hints '
             f'{"in range" if self.config.with_range else ""} '
             f'for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
         )
         if self.config.with_range:
-            response = self.client.get_encryption_hints_in_range_for_purl(self.purls_request)
+            response = self.client.get_encryption_hints_in_range_for_purl(
+                self.purls_request
+            )
         else:
-            response = self.client.get_encryption_hints_for_purl(self.purls_request)
+            response = self.client.get_encryption_hints_for_purl(
+                self.purls_request
+            )
         if response:
             self.results = response
 
@@ -128,13 +179,17 @@ class Cryptography:
         """
 
         if not self.purls_request:
-            raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
+            raise ScanossCryptographyError(
+                'No PURLs supplied. Provide --purl or --input.'
+            )
 
         self.base.print_stderr(
             f'Getting versions in range for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
         )
 
-        response = self.client.get_versions_in_range_for_purl(self.purls_request)
+        response = self.client.get_versions_in_range_for_purl(
+            self.purls_request
+        )
         if response:
             self.results = response
 
@@ -156,24 +211,50 @@ class Cryptography:
         if self.config.input_file:
             input_file_validation = validate_json_file(self.config.input_file)
             if not input_file_validation.is_valid:
-                raise Exception(f'There was a problem with the purl input file. {input_file_validation.error}')
+                raise Exception(
+                    f'There was a problem with the purl input file. {input_file_validation.error}'
+                )
 
-            # Validate the input file is in PurlRequest format
-            if (
-                not isinstance(input_file_validation.data, dict)
-                or 'purls' not in input_file_validation.data
-                or not isinstance(input_file_validation.data['purls'], list)
-                or not all(isinstance(p, dict) and 'purl' in p for p in input_file_validation.data['purls'])
-            ):
-                raise Exception('The supplied input file is not in the correct PurlRequest format.')
             return input_file_validation.data
         if self.config.purl:
-            return {'purls': [{'purl': p} for p in self.config.purl]}
+            return {
+                'purls': [
+                    {
+                        'purl': p,
+                        'requirement': self._extract_version_from_purl(p),
+                    }
+                    for p in self.config.purl
+                ]
+            }
         return None
 
-    def present(self, output_format: str = None, output_file: str = None):
+    def _extract_version_from_purl(self, purl: str) -> str:
+        """
+        Extract version from purl
+
+        Args:
+            purl (str): The purl string to extract the version from
+
+        Returns:
+            str: The extracted version
+
+        Raises:
+            ValueError: If the purl is not in the correct format
+        """
+        try:
+            return purl.split('@')[-1]
+        except IndexError:
+            raise ValueError(f'Invalid purl format: {purl}')
+
+    def present(
+        self,
+        output_format: Optional[str] = None,
+        output_file: Optional[str] = None,
+    ):
         """Present the results in the selected format"""
-        self.presenter.present(output_format=output_format, output_file=output_file)
+        self.presenter.present(
+            output_format=output_format, output_file=output_file
+        )
 
 
 class CryptographyPresenter(AbstractPresenter):
