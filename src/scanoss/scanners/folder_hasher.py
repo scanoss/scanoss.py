@@ -35,7 +35,7 @@ class DirectoryFile:
     Represents a file in the directory tree for folder hashing.
     """
 
-    def __init__(self, path: str, key: bytes, key_str: str):
+    def __init__(self, path: str, key: List[bytes], key_str: str):
         self.path = path
         self.key = key
         self.key_str = key_str
@@ -77,7 +77,7 @@ class FolderHasher:
     def __init__(
         self,
         scan_dir: str,
-        config: Optional[FolderHasherConfig] = None,
+        config: FolderHasherConfig,
         scanoss_settings: Optional[ScanossSettings] = None,
     ):
         self.base = ScanossBase(
@@ -199,6 +199,7 @@ class FolderHasher:
             'path_id': node.path,
             'sim_hash_names': f'{hash_data["name_hash"]:02x}' if hash_data['name_hash'] is not None else None,
             'sim_hash_content': f'{hash_data["content_hash"]:02x}' if hash_data['content_hash'] is not None else None,
+            'sim_hash_dir': f'{hash_data["dir_hash"]:02x}' if hash_data['dir_hash'] is not None else None,
             'children': [self._hash_calc_from_node(child) for child in node.children.values()],
         }
 
@@ -218,6 +219,8 @@ class FolderHasher:
             dict: A dictionary with 'name_hash' and 'content_hash' keys.
         """
         processed_hashes = set()
+        unique_file_names = set()
+        unique_directories = set()
         file_hashes = []
         selected_names = []
 
@@ -225,37 +228,48 @@ class FolderHasher:
             key_str = file.key_str
             if key_str in processed_hashes:
                 continue
+
+            file_name = os.path.basename(file.path)
+            file_name_without_extension, _ = os.path.splitext(file_name)
+            current_directory = os.path.dirname(file.path)
+
+            last_directory = os.path.basename(current_directory)
+
+            if last_directory == '':
+                last_directory = os.path.basename(os.getcwd())
+
             processed_hashes.add(key_str)
-
-            selected_names.append(os.path.basename(file.path))
-
-            file_key = bytes(file.key)
-            file_hashes.append(file_key)
+            unique_file_names.add(file_name_without_extension)
+            unique_directories.add(last_directory)
+            selected_names.append(file_name)
+            file_hashes.append(file.key)
 
         if len(selected_names) < MINIMUM_FILE_COUNT:
-            return {
-                'name_hash': None,
-                'content_hash': None,
-            }
+            return {'name_hash': None, 'content_hash': None, 'dir_hash': None}
 
         selected_names.sort()
         concatenated_names = ''.join(selected_names)
 
         if len(concatenated_names.encode('utf-8')) < MINIMUM_CONCATENATED_NAME_LENGTH:
-            return {
-                'name_hash': None,
-                'content_hash': None,
-            }
+            return {'name_hash': None, 'content_hash': None, 'dir_hash': None}
+
+        # Concatenate the unique file names without the extensions, adding a space and sorting them alphabetically
+        unique_file_names_list = list(unique_file_names)
+        unique_file_names_list.sort()
+        concatenated_names = ' '.join(unique_file_names_list)
+
+        # We do the same for the directory names, adding a space and sorting them alphabetically
+        unique_directories_list = list(unique_directories)
+        unique_directories_list.sort()
+        concatenated_directories = ' '.join(unique_directories_list)
 
         names_simhash = simhash(WordFeatureSet(concatenated_names.encode('utf-8')))
+        dir_simhash = simhash(WordFeatureSet(concatenated_directories.encode('utf-8')))
         content_simhash = fingerprint(vectorize_bytes(file_hashes))
 
-        return {
-            'name_hash': names_simhash,
-            'content_hash': content_simhash,
-        }
+        return {'name_hash': names_simhash, 'content_hash': content_simhash, 'dir_hash': dir_simhash}
 
-    def present(self, output_format: str = None, output_file: str = None):
+    def present(self, output_format: Optional[str] = None, output_file: Optional[str] = None):
         """Present the hashed tree in the selected format"""
         self.presenter.present(output_format=output_format, output_file=output_file)
 
