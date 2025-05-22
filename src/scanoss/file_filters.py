@@ -25,7 +25,7 @@ SPDX-License-Identifier: MIT
 import os
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from pathspec import GitIgnoreSpec
 
@@ -511,7 +511,7 @@ class FileFilters(ScanossBase):
         # Now filter the files and return the reduced list
         return self.get_filtered_files_from_files(all_files, str(root_path))
 
-    def get_filtered_files_from_files(self, files: List[str], scan_root: str = None) -> List[str]:
+    def get_filtered_files_from_files(self, files: List[str], scan_root: Optional[str] = None) -> List[str]:
         """
         Retrieve a list of files to scan or fingerprint from a given list of files based on filter settings.
 
@@ -615,8 +615,13 @@ class FileFilters(ScanossBase):
         # Default patterns for skipping directories
         if not self.all_folders:
             DEFAULT_SKIPPED_DIR_LIST = DEFAULT_SKIPPED_DIRS_HFH if self.is_folder_hashing_scan else DEFAULT_SKIPPED_DIRS
+            DEFAULT_SKIPPED_DIR_EXT_LIST = (
+                DEFAULT_SKIPPED_DIR_EXT_HFH if self.is_folder_hashing_scan else DEFAULT_SKIPPED_DIR_EXT
+            )
             for dir_name in DEFAULT_SKIPPED_DIR_LIST:
                 patterns.append(f'{dir_name}/')
+            for dir_extension in DEFAULT_SKIPPED_DIR_EXT_LIST:
+                patterns.append(f'*{dir_extension}/')
 
         # Custom patterns added in SCANOSS settings file
         if self.scanoss_settings:
