@@ -199,7 +199,7 @@ class FolderHasher:
             'path_id': node.path,
             'sim_hash_names': f'{hash_data["name_hash"]:02x}' if hash_data['name_hash'] is not None else None,
             'sim_hash_content': f'{hash_data["content_hash"]:02x}' if hash_data['content_hash'] is not None else None,
-            'sim_hash_dir': f'{hash_data["dir_hash"]:02x}' if hash_data['dir_hash'] is not None else None,
+            'sim_hash_dir_names': f'{hash_data["dir_hash"]:02x}' if hash_data['dir_hash'] is not None else None,
             'children': [self._hash_calc_from_node(child) for child in node.children.values()],
         }
 
