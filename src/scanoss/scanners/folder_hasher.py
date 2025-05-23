@@ -234,10 +234,7 @@ class FolderHasher:
             file_name_without_extension, _ = os.path.splitext(file_name)
             current_directory = os.path.dirname(file.path)
 
-            last_directory = os.path.basename(current_directory)
-
-            if last_directory == '':
-                last_directory = os.path.basename(os.getcwd())
+            last_directory = Path(current_directory).name or Path(self.scan_dir).name
 
             processed_hashes.add(key_str)
             unique_file_names.add(file_name_without_extension)
