@@ -194,9 +194,10 @@ class FolderHasher:
             dict: The computed hash data for the node.
         """
         hash_data = self._hash_calc(node)
+        rel_path = Path(node.path).relative_to(self.scan_dir)
 
         return {
-            'path_id': node.path,
+            'path_id': str(rel_path),
             'sim_hash_names': f'{hash_data["name_hash"]:02x}' if hash_data['name_hash'] is not None else None,
             'sim_hash_content': f'{hash_data["content_hash"]:02x}' if hash_data['content_hash'] is not None else None,
             'sim_hash_dir_names': f'{hash_data["dir_hash"]:02x}' if hash_data['dir_hash'] is not None else None,
