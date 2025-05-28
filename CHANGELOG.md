@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.24.0] - 2025-05-06
+## [1.24.0] - 2025-05-28
 ### Added
 - Add `crypto` subcommand to retrieve cryptographic algorithms for the given components
 - Add `crypto hints` subcommand to retrieve cryptographic hints for the given components
