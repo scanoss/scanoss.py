@@ -10,3 +10,5 @@ DEFAULT_NB_THREADS = 5
 
 DEFAULT_URL = 'https://api.osskb.org'  # default free service URL
 DEFAULT_URL2 = 'https://api.scanoss.com'  # default premium service URL
+
+DEFAULT_API_TIMEOUT = 600

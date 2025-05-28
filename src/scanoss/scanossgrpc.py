@@ -54,7 +54,6 @@ from .api.components.v2.scanoss_components_pb2 import (
     CompVersionResponse,
 )
 from .api.components.v2.scanoss_components_pb2_grpc import ComponentsStub
-from .api.cryptography.v2.scanoss_cryptography_pb2 import AlgorithmResponse
 from .api.cryptography.v2.scanoss_cryptography_pb2_grpc import CryptographyStub
 from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
@@ -311,36 +310,6 @@ class ScanossGrpc(ScanossBase):
                 if 'status' in response and response['status']['status'] != SUCCESS_STATUS:
                     merged_response['status'] = response['status']
         return merged_response
-
-    def get_crypto_json(self, purls: dict) -> dict:
-        """
-        Client function to call the rpc for Cryptography GetAlgorithms
-        :param purls: Message to send to the service
-        :return: Server response or None
-        """
-        if not purls:
-            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
-            return None
-        request_id = str(uuid.uuid4())
-        resp: AlgorithmResponse
-        try:
-            request = ParseDict(purls, PurlRequest())  # Parse the JSON/Dict into the purl request object
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            self.print_debug(f'Sending crypto data for decoration (rqId: {request_id})...')
-            resp = self.crypto_stub.GetAlgorithms(request, metadata=metadata, timeout=self.timeout)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                if not self._check_status_response(resp.status, request_id):
-                    return None
-                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
-                del resp_dict['status']
-                return resp_dict
-        return None
 
     def get_vulnerabilities_json(self, purls: dict) -> dict:
         """
@@ -607,6 +576,91 @@ class ScanossGrpc(ScanossBase):
             'Sending data for provenance origin decoration (rqId: {rqId})...',
         )
 
+    def get_crypto_algorithms_for_purl(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetAlgorithms for a list of purls
+
+        Args:
+            request (Dict): PurlRequest
+
+        Returns:
+            Optional[Dict]: AlgorithmResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.crypto_stub.GetAlgorithms,
+            request,
+            PurlRequest,
+            'Sending data for cryptographic algorithms decoration (rqId: {rqId})...',
+        )
+
+    def get_crypto_algorithms_in_range_for_purl(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetAlgorithmsInRange for a list of purls
+
+        Args:
+            request (Dict): PurlRequest
+
+        Returns:
+            Optional[Dict]: AlgorithmsInRangeResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.crypto_stub.GetAlgorithmsInRange,
+            request,
+            PurlRequest,
+            'Sending data for cryptographic algorithms in range decoration (rqId: {rqId})...',
+        )
+
+    def get_encryption_hints_for_purl(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetEncryptionHints for a list of purls
+
+        Args:
+            request (Dict): PurlRequest
+
+        Returns:
+            Optional[Dict]: HintsResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.crypto_stub.GetEncryptionHints,
+            request,
+            PurlRequest,
+            'Sending data for encryption hints decoration (rqId: {rqId})...',
+        )
+
+    def get_encryption_hints_in_range_for_purl(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetHintsInRange for a list of purls
+
+        Args:
+            request (Dict): PurlRequest
+
+        Returns:
+            Optional[Dict]: HintsInRangeResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.crypto_stub.GetHintsInRange,
+            request,
+            PurlRequest,
+            'Sending data for encryption hints in range decoration (rqId: {rqId})...',
+        )
+
+    def get_versions_in_range_for_purl(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetVersionsInRange for a list of purls
+
+        Args:
+            request (Dict): PurlRequest
+
+        Returns:
+            Optional[Dict]: VersionsInRangeResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.crypto_stub.GetVersionsInRange,
+            request,
+            PurlRequest,
+            'Sending data for cryptographic versions in range decoration (rqId: {rqId})...',
+        )
+
     def load_generic_headers(self):
         """
         Adds custom headers from req_headers to metadata.
@@ -637,10 +691,11 @@ class GrpcConfig:
     quiet: Optional[bool] = False
     ver_details: Optional[str] = None
     ca_cert: Optional[str] = None
-    pac: Optional[PACFile] = None
     timeout: Optional[int] = DEFAULT_TIMEOUT
     proxy: Optional[str] = None
     grpc_proxy: Optional[str] = None
+    pac: Optional[PACFile] = None
+    req_headers: Optional[dict] = None
 
 
 def create_grpc_config_from_args(args) -> GrpcConfig:
@@ -652,7 +707,6 @@ def create_grpc_config_from_args(args) -> GrpcConfig:
         quiet=getattr(args, 'quiet', False),
         ver_details=getattr(args, 'ver_details', None),
         ca_cert=getattr(args, 'ca_cert', None),
-        pac=getattr(args, 'pac', None),
         timeout=getattr(args, 'timeout', DEFAULT_TIMEOUT),
         proxy=getattr(args, 'proxy', None),
         grpc_proxy=getattr(args, 'grpc_proxy', None),

@@ -337,6 +337,91 @@ Scans Docker container images for dependencies, extracting and analyzing compone
      - Alternative certificate PEM file
 
 -----------------
+Crypto: crypto, cr
+-----------------
+
+Provides subcommands to retrieve cryptographic information for components.
+
+.. code-block:: bash
+
+   scanoss-py crypto <subcommand>
+
+Subcommands:
+~~~~~~~~~~~~
+
+**algorithms (alg)**
+  Retrieve cryptographic algorithms for the given components.
+
+  .. code-block:: bash
+
+     scanoss-py crypto algorithms --purl <purl_string>
+
+  .. list-table::
+     :widths: 20 30
+     :header-rows: 1
+
+     * - Argument
+       - Description
+     * - --with-range
+       - Returns the list of versions in the specified range that contains cryptographic algorithms. (Replaces the previous --range option)
+
+**hints**
+  Retrieve encryption hints for the given components.
+
+  .. code-block:: bash
+
+     scanoss-py crypto hints --purl <purl_string>
+
+  .. list-table::
+     :widths: 20 30
+     :header-rows: 1
+
+     * - Argument
+       - Description
+     * - --with-range
+       - Returns the list of versions in the specified range that contains encryption hints.
+
+**versions-in-range (vr)**
+  Given a list of PURLs and version ranges, get a list of versions that do/don't contain crypto algorithms.
+
+  .. code-block:: bash
+
+     scanoss-py crypto versions-in-range --purl <purl_string_with_range>
+
+Common Crypto Arguments:
+~~~~~~~~~~~~~~~~~~~~~~~~
+The following arguments are common to the ``algorithms``, ``hints``, and ``versions-in-range`` subcommands:
+
+.. list-table::
+   :widths: 20 30
+   :header-rows: 1
+
+   * - Argument
+     - Description
+   * - --purl <PURL>, -p <PURL>
+     - Package URL (PURL) to process. Can be specified multiple times.
+   * - --input <file>, -i <file>
+     - Input file name containing PURLs.
+   * - --output <file name>, -o <file name>
+     - Output result file name (optional - default STDOUT).
+   * - --timeout <seconds>, -M <seconds>
+     - Timeout (in seconds) for API communication (optional - default 600).
+   * - --key <KEY>, -k <KEY>
+     - SCANOSS API Key token (optional - not required for default OSSKB URL).
+   * - --api2url <API2URL>
+     - SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org).
+   * - --grpc-proxy <GRPC_PROXY>
+     - GRPC Proxy URL to use for connections.
+   * - --ca-cert <CA_CERT>
+     - Alternative certificate PEM file.
+   * - --debug, -d
+     - Enable debug messages.
+   * - --trace, -t
+     - Enable trace messages, including API posts.
+   * - --quiet, -q
+     - Enable quiet mode.
+
+-----------------
 Component:
 -----------------
 

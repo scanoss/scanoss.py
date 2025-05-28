@@ -49,8 +49,8 @@ def validate_json_file(json_file_path: str) -> JsonValidation:
         json_file_path (str): The JSON file to validate
 
     Returns:
-        Tuple[bool, str]: A tuple containing a boolean indicating if the file is valid and a message
-    """
+        JsonValidation: A JsonValidation object containing a boolean indicating if the file is valid, the data, error, and error code
+    """  # noqa: E501
     if not json_file_path:
         return JsonValidation(is_valid=False, error='No JSON file specified')
     if not os.path.isfile(json_file_path):
