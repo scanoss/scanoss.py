@@ -33,8 +33,8 @@ import pathlib
 import platform
 import re
 
-from crc32c import crc32c
 from binaryornot.check import is_binary
+from crc32c import crc32c
 
 from .scanossbase import ScanossBase
 
@@ -157,7 +157,7 @@ class Winnowing(ScanossBase):
     a list of WFP fingerprints with their corresponding line numbers.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         size_limit: bool = False,
         debug: bool = False,
@@ -197,6 +197,7 @@ class Winnowing(ScanossBase):
         self.strip_hpsm_ids = strip_hpsm_ids
         self.strip_snippet_ids = strip_snippet_ids
         self.hpsm = hpsm
+        self.is_windows = platform.system() == 'Windows'
         if hpsm:
             self.crc8_maxim_dow_table = []
             self.crc8_generate_table()
@@ -218,11 +219,11 @@ class Winnowing(ScanossBase):
             return byte
         if byte >= ASCII_a:
             return byte
-        if (byte >= 65) and (byte <= 90):
+        if (byte >= ASCII_A) and (byte <= ASCII_Z):
             return byte + 32
         return 0
 
-    def __skip_snippets(self, file: str, src: str) -> bool:
+    def __skip_snippets(self, file: str, src: str) -> bool:  # noqa: PLR0911
         """
         Determine files that are not of interest based on their content or file extension
         Parameters
@@ -351,7 +352,71 @@ class Winnowing(ScanossBase):
             self.print_debug(f'Stripped snippet ids from {file}')
         return wfp
 
-    def wfp_for_contents(self, file: str, bin_file: bool, contents: bytes) -> str:
+    def __detect_line_endings(self, contents: bytes) -> tuple[bool, bool, bool, bool]:
+        """Detect the types of line endings present in file contents.
+        
+        Args:
+            contents: File contents as bytes.
+            
+        Returns:
+            Tuple of (has_crlf, has_lf_only, has_cr_only, has_mixed) indicating which line ending types are present.
+        """
+        has_crlf = b'\r\n' in contents
+        # For LF detection, we need to find LF that's not part of CRLF
+        content_without_crlf = contents.replace(b'\r\n', b'')
+        has_standalone_lf = b'\n' in content_without_crlf
+        # For CR detection, we need to find CR that's not part of CRLF
+        has_standalone_cr = b'\r' in content_without_crlf
+        
+        # Check if we have mixed line endings
+        line_ending_count = sum([has_crlf, has_standalone_lf, has_standalone_cr])
+        has_mixed = line_ending_count > 1
+        
+        return has_crlf, has_standalone_lf, has_standalone_cr, has_mixed
+
+    def __calculate_opposite_line_ending_hash(self, contents: bytes) -> str:
+        """Calculate hash for contents with opposite line endings.
+        
+        If the file is primarily Unix (LF), calculates Windows (CRLF) hash.
+        If the file is primarily Windows (CRLF), calculates Unix (LF) hash.
+
+        Args:
+            contents: File contents as bytes.
+
+        Returns:
+            Hash with opposite line endings as hex string.
+        """
+        has_crlf, has_standalone_lf, has_standalone_cr, has_mixed = self.__detect_line_endings(contents)
+        
+        # Normalize all line endings to LF first
+        normalized = contents.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
+        
+        # Determine the dominant line ending type
+        if has_crlf and not has_standalone_lf and not has_standalone_cr:
+            # File is Windows (CRLF) - produce Unix (LF) hash
+            opposite_contents = normalized
+        else:
+            # File is Unix (LF/CR) or mixed - produce Windows (CRLF) hash  
+            opposite_contents = normalized.replace(b'\n', b'\r\n')
+            
+        return hashlib.md5(opposite_contents).hexdigest()
+
+    def __should_generate_opposite_hash(self, contents: bytes) -> bool:
+        """Determine if an opposite line ending hash (fh2) should be generated.
+        
+        Args:
+            contents: File contents as bytes.
+            
+        Returns:
+            True if fh2 hash should be generated, False otherwise.
+        """
+        has_crlf, has_standalone_lf, has_standalone_cr, has_mixed = self.__detect_line_endings(contents)
+        
+        # Generate fh2 hash when file has any line endings (CRLF, LF, or CR)
+        # This allows us to always produce the opposite hash
+        return has_crlf or has_standalone_lf or has_standalone_cr
+
+    def wfp_for_contents(self, file: str, bin_file: bool, contents: bytes) -> str:  # noqa: PLR0912, PLR0915
         """
         Generate a Winnowing fingerprint (WFP) for the given file contents
         Parameters
@@ -371,7 +436,7 @@ class Winnowing(ScanossBase):
         content_length = len(contents)
         original_filename = file
 
-        if platform.system() == 'Windows':
+        if self.is_windows:
             original_filename = file.replace('\\', '/')
         wfp_filename = repr(original_filename).strip("'")  # return a utf-8 compatible version of the filename
         if self.obfuscate:  # hide the real size of the file and its name, but keep the suffix
@@ -380,6 +445,12 @@ class Winnowing(ScanossBase):
             self.file_map[wfp_filename] = original_filename  # Save the file name map for later (reverse lookup)
 
         wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, wfp_filename)
+
+        # Add opposite line ending hash based on line ending analysis
+        if self.__should_generate_opposite_hash(contents):
+            opposite_hash = self.__calculate_opposite_line_ending_hash(contents)
+            wfp += f'fh2={opposite_hash}\n'
+
         # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
         if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
@@ -467,7 +538,7 @@ class Winnowing(ScanossBase):
         for i, byte in enumerate(content):
             c = byte
             if c == ASCII_LF:  # When there is a new line
-                if len(list_normalized):
+                if list_normalized:
                     crc_lines.append(self.crc8_buffer(list_normalized))
                     list_normalized = []
                 elif last_line + 1 == i:
