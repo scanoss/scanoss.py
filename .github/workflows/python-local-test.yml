@@ -15,14 +15,18 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.10.x"]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10.x"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
         run: |
@@ -39,18 +43,34 @@ jobs:
           retry_wait_seconds: 10
           max_attempts: 3
           retry_on: error
+          shell: bash
           command: |
             pip install -r requirements.txt
-            pip install dist/scanoss-*-py3-none-any.whl
-            which scanoss-py
+            # Install wheel with proper wildcard expansion
+            pip install dist/scanoss-*.whl
+            # Verify installation with platform-appropriate command
+            if command -v which &> /dev/null; then
+              which scanoss-py
+            else
+              where scanoss-py
+            fi
 
       - name: Run Tests
+        shell: bash
         run: |
-          which scanoss-py
+          if command -v which &> /dev/null; then
+            which scanoss-py
+          else
+            where scanoss-py
+          fi
           scanoss-py version
           scanoss-py utils fast
           scanoss-py scan tests > results.json
-          id_count=$(cat results.json | grep '"id":' | wc -l)
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            id_count=$(findstr /C:"\"id\":" results.json | find /C ":" | tr -d ' ')
+          else
+            id_count=$(cat results.json | grep '"id":' | wc -l)
+          fi
           echo "ID Count: $id_count"
           if [[ $id_count -lt 1 ]]; then
             echo "Error: Scan test did not produce any results. Failing"
@@ -58,13 +78,22 @@ jobs:
           fi
 
       - name: Run Tests (fast winnowing)
+        shell: bash
         run: |
           pip install scanoss_winnowing
-          which scanoss-py
+          if command -v which &> /dev/null; then
+            which scanoss-py
+          else
+            where scanoss-py
+          fi
           scanoss-py version
           scanoss-py utils fast
           scanoss-py scan tests > results.json
-          id_count=$(cat results.json | grep '"id":' | wc -l)
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            id_count=$(findstr /C:"\"id\":" results.json | find /C ":" | tr -d ' ')
+          else
+            id_count=$(cat results.json | grep '"id":' | wc -l)
+          fi
           echo "ID Count: $id_count"
           if [[ $id_count -lt 1 ]]; then
             echo "Error: Scan test did not produce any results. Failing"
@@ -72,13 +101,22 @@ jobs:
           fi
 
       - name: Run Tests HPSM (fast winnowing)
+        shell: bash
         run: |
           pip install scanoss_winnowing
-          which scanoss-py
+          if command -v which &> /dev/null; then
+            which scanoss-py
+          else
+            where scanoss-py
+          fi
           scanoss-py version
           scanoss-py utils fast
           scanoss-py wfp -H tests > fingers.wfp
-          wfp_count=$(cat fingers.wfp | grep 'file=' | wc -l)
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            wfp_count=$(findstr /C:"file=" fingers.wfp | find /C "file=" | tr -d ' ')
+          else
+            wfp_count=$(cat fingers.wfp | grep 'file=' | wc -l)
+          fi
           echo "WFP Count: $wfp_count"
           if [[ $wfp_count -lt 1 ]]; then
             echo "Error: WFP test did not produce any results. Failing"
@@ -89,3 +127,30 @@ jobs:
         run: |
           python -m unittest
 
+      - name: Test Windows-specific functionality
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "Testing Windows-specific fh2 hash generation..."
+          scanoss-py wfp tests > windows_fingerprints.wfp
+          if grep -q "fh2=" windows_fingerprints.wfp; then
+            echo "✓ Windows fh2 hash found in WFP output"
+            fh2_count=$(grep -c "fh2=" windows_fingerprints.wfp)
+            echo "Found $fh2_count fh2 hashes"
+          else
+            echo "✗ Error: No fh2 hashes found in Windows WFP output"
+            exit 1
+          fi
+
+      - name: Verify cross-platform consistency
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          echo "Testing Unix-specific behavior (no fh2)..."
+          scanoss-py wfp tests > unix_fingerprints.wfp
+          if grep -q "fh2=" unix_fingerprints.wfp; then
+            echo "✗ Error: Unexpected fh2 hash found in Unix WFP output"
+            exit 1
+          else
+            echo "✓ No fh2 hashes found (expected for Unix systems)"
+          fi
