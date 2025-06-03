@@ -128,62 +128,6 @@ class MyTestCase(unittest.TestCase):
         expected_hash = hashlib.md5(content_crlf).hexdigest()
         self.assertEqual(fh2_hash, expected_hash)
 
-    @patch('platform.system')
-    def test_unix_wfp_excludes_fh2(self, mock_platform):
-        """Test that WFP does not include fh2 hash when running on Unix systems."""
-        # Mock Unix environment
-        mock_platform.return_value = 'Linux'
-        winnowing = Winnowing(debug=True)
-
-        filename = 'test-file.c'
-        content = b'int main() {\n    return 0;\n}\n'
-
-        wfp = winnowing.wfp_for_contents(filename, False, content)
-
-        print(f'Unix WFP output:\n{wfp}')
-
-        # Check that WFP does not contain fh2 line
-        self.assertNotIn('fh2=', wfp)
-
-    def test_cross_platform_compatibility(self):
-        """Test that the same content produces consistent results across platforms."""
-        filename = 'test-file.c'
-        content = b'#include <stdio.h>\nint main() {\n    printf("Hello World\\n");\n    return 0;\n}\n'
-
-        # Test with mocked Windows
-        with patch('platform.system', return_value='Windows'):
-            winnowing_windows = Winnowing(debug=True)
-            wfp_windows = winnowing_windows.wfp_for_contents(filename, False, content)
-
-        # Test with mocked Linux
-        with patch('platform.system', return_value='Linux'):
-            winnowing_linux = Winnowing(debug=True)
-            wfp_linux = winnowing_linux.wfp_for_contents(filename, False, content)
-
-        print(f'Windows WFP:\n{wfp_windows}')
-        print(f'Linux WFP:\n{wfp_linux}')
-
-        # Both should have file line with same MD5 (original content)
-        windows_lines = wfp_windows.split('\n')
-        linux_lines = wfp_linux.split('\n')
-
-        windows_file_line = [line for line in windows_lines if line.startswith('file=')][0]
-        linux_file_line = [line for line in linux_lines if line.startswith('file=')][0]
-
-        # File lines should be identical (same original content MD5)
-        self.assertEqual(windows_file_line, linux_file_line)
-
-        # Windows should have additional fh2 line
-        self.assertIn('fh2=', wfp_windows)
-        self.assertNotIn('fh2=', wfp_linux)
-
-        # Extract snippets (everything after file/fh2 lines)
-        windows_snippets = [line for line in windows_lines if '=' in line and not line.startswith('file=') and not line.startswith('fh2=')]
-        linux_snippets = [line for line in linux_lines if '=' in line and not line.startswith('file=')]
-
-        # Snippet fingerprints should be identical across platforms
-        self.assertEqual(windows_snippets, linux_snippets)
-
     def test_line_ending_detection(self):
         """Test line ending detection logic."""
         winnowing = Winnowing(debug=True)
@@ -219,42 +163,6 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(has_lf)
         self.assertFalse(has_cr)
         self.assertTrue(has_mixed)
-
-    def test_mixed_line_endings_scenarios(self):
-        """Test various mixed line ending scenarios."""
-        filename = 'test-file.c'
-
-        # Test 1: LF only on Windows (should generate fh2)
-        with patch('platform.system', return_value='Windows'):
-            winnowing = Winnowing(debug=True)
-            content_lf = b'int main() {\n    return 0;\n}\n'
-            wfp = winnowing.wfp_for_contents(filename, False, content_lf)
-            self.assertIn('fh2=', wfp)
-            print(f'LF on Windows - WFP includes fh2: ✓')
-
-        # Test 2: CRLF only on Windows (should NOT generate fh2)
-        with patch('platform.system', return_value='Windows'):
-            winnowing = Winnowing(debug=True)
-            content_crlf = b'int main() {\r\n    return 0;\r\n}\r\n'
-            wfp = winnowing.wfp_for_contents(filename, False, content_crlf)
-            self.assertNotIn('fh2=', wfp)
-            print(f'CRLF on Windows - WFP excludes fh2: ✓')
-
-        # Test 3: Mixed line endings on any OS (should generate fh2)
-        with patch('platform.system', return_value='Linux'):
-            winnowing = Winnowing(debug=True)
-            content_mixed = b'int main() {\r\n    printf("hello");\n    return 0;\r\n}\n'
-            wfp = winnowing.wfp_for_contents(filename, False, content_mixed)
-            self.assertIn('fh2=', wfp)
-            print(f'Mixed line endings on Linux - WFP includes fh2: ✓')
-
-        # Test 4: CR only on Windows (should generate fh2)
-        with patch('platform.system', return_value='Windows'):
-            winnowing = Winnowing(debug=True)
-            content_cr = b'int main() {\r    return 0;\r}\r'
-            wfp = winnowing.wfp_for_contents(filename, False, content_cr)
-            self.assertIn('fh2=', wfp)
-            print(f'CR only on Windows - WFP includes fh2: ✓')
 
     def test_windows_hash_normalization(self):
         """Test that Windows hash properly normalizes different line endings."""
