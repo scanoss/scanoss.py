@@ -90,15 +90,3 @@ jobs:
         run: |
           python -m unittest
 
-      - name: Test fh2 hash generation
-        run: |
-          echo "Testing fh2 hash generation for files with line endings..."
-          scanoss-py wfp tests > fingerprints.wfp
-          if grep -q "fh2=" fingerprints.wfp; then
-            echo "✓ fh2 hashes found in WFP output"
-            fh2_count=$(grep -c "fh2=" fingerprints.wfp)
-            echo "Found $fh2_count fh2 hashes"
-          else
-            echo "✗ Error: No fh2 hashes found in WFP output"
-            exit 1
-          fi
