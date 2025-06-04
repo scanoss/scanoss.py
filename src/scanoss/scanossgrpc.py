@@ -103,6 +103,7 @@ class ScanossGrpc(ScanossBase):
         trace: bool = False,
         quiet: bool = False,
         ca_cert: str = None,
+        grpc_ssl_target: str = None,
         api_key: str = None,
         ver_details: str = None,
         timeout: int = 600,
@@ -132,6 +133,7 @@ class ScanossGrpc(ScanossBase):
         self.timeout = timeout
         self.proxy = proxy
         self.grpc_proxy = grpc_proxy
+        self.grpc_ssl_target = grpc_ssl_target
         self.pac = pac
         self.req_headers = req_headers
         self.metadata = []
@@ -171,17 +173,26 @@ class ScanossGrpc(ScanossBase):
             self.provenance_stub = GeoProvenanceStub(grpc.insecure_channel(self.url))
             self.scanning_stub = ScanningStub(grpc.insecure_channel(self.url))
         else:
+            channel_options = []
+            if self.grpc_ssl_target:
+                channel_options.append(('grpc.ssl_target_name_override', self.grpc_ssl_target))
+
             if ca_cert is not None:
                 credentials = grpc.ssl_channel_credentials(cert_data)  # secure with specified certificate
             else:
                 credentials = grpc.ssl_channel_credentials()  # secure connection with default certificate
-            self.comp_search_stub = ComponentsStub(grpc.secure_channel(self.url, credentials))
-            self.crypto_stub = CryptographyStub(grpc.secure_channel(self.url, credentials))
-            self.dependencies_stub = DependenciesStub(grpc.secure_channel(self.url, credentials))
-            self.semgrep_stub = SemgrepStub(grpc.secure_channel(self.url, credentials))
-            self.vuln_stub = VulnerabilitiesStub(grpc.secure_channel(self.url, credentials))
-            self.provenance_stub = GeoProvenanceStub(grpc.secure_channel(self.url, credentials))
-            self.scanning_stub = ScanningStub(grpc.secure_channel(self.url, credentials))
+
+            self.comp_search_stub = ComponentsStub(grpc.secure_channel(self.url, credentials, options=channel_options))
+            self.crypto_stub = CryptographyStub(grpc.secure_channel(self.url, credentials, options=channel_options))
+            self.dependencies_stub = DependenciesStub(
+                grpc.secure_channel(self.url, credentials, options=channel_options)
+            )
+            self.semgrep_stub = SemgrepStub(grpc.secure_channel(self.url, credentials, options=channel_options))
+            self.vuln_stub = VulnerabilitiesStub(grpc.secure_channel(self.url, credentials, options=channel_options))
+            self.provenance_stub = GeoProvenanceStub(
+                grpc.secure_channel(self.url, credentials, options=channel_options)
+            )
+            self.scanning_stub = ScanningStub(grpc.secure_channel(self.url, credentials, options=channel_options))
 
     @classmethod
     def _load_cert(cls, cert_file: str) -> bytes:
@@ -694,6 +705,7 @@ class GrpcConfig:
     timeout: Optional[int] = DEFAULT_TIMEOUT
     proxy: Optional[str] = None
     grpc_proxy: Optional[str] = None
+    grpc_ssl_target: Optional[str] = None
     pac: Optional[PACFile] = None
     req_headers: Optional[dict] = None
 
@@ -710,4 +722,5 @@ def create_grpc_config_from_args(args) -> GrpcConfig:
         timeout=getattr(args, 'timeout', DEFAULT_TIMEOUT),
         proxy=getattr(args, 'proxy', None),
         grpc_proxy=getattr(args, 'grpc_proxy', None),
+        grpc_ssl_target=getattr(args, 'grpc_ssl_target', None),
     )

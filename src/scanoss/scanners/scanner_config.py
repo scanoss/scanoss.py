@@ -51,6 +51,7 @@ class ScannerConfig:
     grpc_proxy: Optional[str] = None
 
     ca_cert: Optional[str] = None
+    grpc_ssl_target: Optional[str] = None
     pac: Optional[PACFile] = None
 
 
@@ -69,5 +70,6 @@ def create_scanner_config_from_args(args) -> ScannerConfig:
         proxy=getattr(args, 'proxy', None),
         grpc_proxy=getattr(args, 'grpc_proxy', None),
         ca_cert=getattr(args, 'ca_cert', None),
+        grpc_ssl_target=getattr(args, 'grpc_ssl_target', None),
         pac=getattr(args, 'pac', None),
     )

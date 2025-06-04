@@ -761,6 +761,12 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             '"REQUESTS_CA_BUNDLE=/path/to/cacert.pem" and '
             '"GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/cacert.pem" for gRPC',
         )
+        p.add_argument(
+            '--grpc-ssl-target',
+            type=str,
+            help='Override SSL target name for gRPC connections (optional). '
+            'Useful when connecting to localhost with a certificate issued for a different domain.',
+        )
 
     # Global GRPC options
     for p in [
@@ -1138,6 +1144,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         ignore_cert_errors=args.ignore_cert_errors,
         proxy=args.proxy,
         grpc_proxy=args.grpc_proxy,
+        grpc_ssl_target=args.grpc_ssl_target,
         pac=pac_file,
         ca_cert=args.ca_cert,
         retry=args.retry,
@@ -1617,6 +1624,7 @@ def comp_vulns(parser, args):
         ca_cert=args.ca_cert,
         proxy=args.proxy,
         grpc_proxy=args.grpc_proxy,
+        grpc_ssl_target=args.grpc_ssl_target,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
@@ -1652,6 +1660,7 @@ def comp_semgrep(parser, args):
         ca_cert=args.ca_cert,
         proxy=args.proxy,
         grpc_proxy=args.grpc_proxy,
+        grpc_ssl_target=args.grpc_ssl_target,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
@@ -1690,6 +1699,7 @@ def comp_search(parser, args):
         ca_cert=args.ca_cert,
         proxy=args.proxy,
         grpc_proxy=args.grpc_proxy,
+        grpc_ssl_target=args.grpc_ssl_target,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
@@ -1735,6 +1745,7 @@ def comp_versions(parser, args):
         ca_cert=args.ca_cert,
         proxy=args.proxy,
         grpc_proxy=args.grpc_proxy,
+        grpc_ssl_target=args.grpc_ssl_target,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
@@ -1770,6 +1781,7 @@ def comp_provenance(parser, args):
         ca_cert=args.ca_cert,
         proxy=args.proxy,
         grpc_proxy=args.grpc_proxy,
+        grpc_ssl_target=args.grpc_ssl_target,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
