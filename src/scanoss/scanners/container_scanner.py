@@ -228,6 +228,7 @@ class ContainerScanner:
             url=config.apiurl,
             api_key=config.key,
             ca_cert=config.ca_cert,
+            grpc_ssl_target=config.grpc_ssl_target,
             proxy=config.proxy,
             pac=config.pac,
             grpc_proxy=config.grpc_proxy,

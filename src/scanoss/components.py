@@ -50,6 +50,7 @@ class Components(ScanossBase):
         proxy: str = None,
         grpc_proxy: str = None,
         ca_cert: str = None,
+        grpc_ssl_target: str = None,
         pac: PACFile = None,
         req_headers: dict = None,
     ):
@@ -77,6 +78,7 @@ class Components(ScanossBase):
             api_key=api_key,
             ver_details=ver_details,
             ca_cert=ca_cert,
+            grpc_ssl_target=grpc_ssl_target,
             proxy=proxy,
             pac=pac,
             grpc_proxy=grpc_proxy,
