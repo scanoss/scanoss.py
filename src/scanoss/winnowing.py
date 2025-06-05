@@ -32,6 +32,7 @@ import hashlib
 import pathlib
 import platform
 import re
+from typing import Tuple
 
 from binaryornot.check import is_binary
 from crc32c import crc32c
@@ -352,7 +353,7 @@ class Winnowing(ScanossBase):
             self.print_debug(f'Stripped snippet ids from {file}')
         return wfp
 
-    def __detect_line_endings(self, contents: bytes) -> tuple[bool, bool, bool, bool]:
+    def __detect_line_endings(self, contents: bytes) -> Tuple[bool, bool, bool, bool]:
         """Detect the types of line endings present in file contents.
         
         Args:
