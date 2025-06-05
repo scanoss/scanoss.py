@@ -24,13 +24,12 @@ SPDX-License-Identifier: MIT
 
 import json
 import os.path
-
 from abc import abstractmethod
 from enum import Enum
-from typing import Callable, List, Dict, Any
+from typing import Any, Callable, Dict, List
 
-from .utils.license_utils import LicenseUtil
 from ..scanossbase import ScanossBase
+from .utils.license_utils import LicenseUtil
 
 
 class PolicyStatus(Enum):
@@ -199,7 +198,7 @@ class PolicyCheck(ScanossBase):
         }
 
         if not new_component.get('licenses'):
-            self.print_stderr(f'WARNING: Results missing licenses. Skipping.')
+            self.print_debug('WARNING: Results missing licenses. Skipping.', new_component)
             return components
         # Process licenses for this component
         for license_item in new_component['licenses']:
@@ -210,6 +209,79 @@ class PolicyCheck(ScanossBase):
                     'copyleft': self.license_util.is_copyleft(spdxid),
                     'url': self.license_util.get_spdx_url(spdxid),
                 }
+        return components
+
+    def _get_components_data(self, results: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract and process file and snippet components from results.
+
+        :param results: A dictionary containing the raw results of a component scan
+        :param components: Existing components dictionary to update
+        :return: Updated components dictionary with file and snippet data
+        """
+        for component in results.values():
+            for c in component:
+                component_id = c.get('id')
+                if not component_id:
+                    self.print_debug('WARNING: Result missing id. Skipping.', c)
+                    continue
+                
+                status = c.get('status')
+                if not status:
+                    self.print_debug('WARNING: Result missing status. Skipping.', c)
+                    continue
+                
+                if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
+                    if not c.get('purl'):
+                        self.print_debug('WARNING: Result missing purl. Skipping.', c)
+                        continue
+                    if len(c.get('purl')) <= 0:
+                        self.print_debug('WARNING: Result missing purls. Skipping.', c)
+                        continue
+                    if not c.get('version'):
+                        self.print_debug('WARNING: Result missing version. Skipping.', c)
+                        continue
+                    
+                    component_key = f'{c["purl"][0]}@{c["version"]}'
+                    if component_key not in components:
+                        components = self._append_component(components, c, component_id, status)
+        
+        return components
+
+    def _get_dependencies_data(self, results: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract and process dependency components from results.
+
+        :param results: A dictionary containing the raw results of a component scan
+        :param components: Existing components dictionary to update
+        :return: Updated components dictionary with dependency data
+        """
+        for component in results.values():
+            for c in component:
+                component_id = c.get('id')
+                if not component_id:
+                    continue
+                
+                status = c.get('status')
+                if not status:
+                    continue
+                
+                if component_id == ComponentID.DEPENDENCY.value:
+                    if c.get('dependencies') is None:
+                        continue
+                    
+                    for dependency in c['dependencies']:
+                        if not dependency.get('purl'):
+                            self.print_debug('WARNING: Dependency result missing purl. Skipping.', dependency)
+                            continue
+                        if not dependency.get('version'):
+                            self.print_debug('WARNING: Dependency result missing version. Skipping.', dependency)
+                            continue
+                        
+                        component_key = f'{dependency["purl"]}@{dependency["version"]}'
+                        if component_key not in components:
+                            components = self._append_component(components, dependency, component_id, status)
+        
         return components
 
     def _get_components_from_results(self, results: Dict[str, Any]) -> list or None:
@@ -226,54 +298,21 @@ class PolicyCheck(ScanossBase):
         if results is None:
             self.print_stderr('ERROR: Results cannot be empty')
             return None
+        
         components = {}
-        for component in results.values():
-            for c in component:
-                component_id = c.get('id')
-                if not component_id:
-                    self.print_debug('WARNING: Result missing id. Skipping.', c)
-                    continue
-                status = c.get('status')
-                if not component_id:
-                    self.print_debug('WARNING: Result missing status. Skipping.', c)
-                    continue
-                if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
-                    if not c.get('purl'):
-                        self.print_debug('WARNING: Result missing purl. Skipping.', c)
-                        continue
-                    if len(c.get('purl')) <= 0:
-                        self.print_debug('WARNING: Result missing purls. Skipping.', c)
-                        continue
-                    if not c.get('version'):
-                        self.print_debug('WARNING: Result missing version. Skipping.', c)
-                        continue
-                    component_key = f'{c["purl"][0]}@{c["version"]}'
-                    # Initialize or update the component entry
-                    if component_key not in components:
-                        components = self._append_component(components, c, component_id, status)
-
-                if c['id'] == ComponentID.DEPENDENCY.value:
-                    if c.get('dependencies') is None:
-                        continue
-                    for d in c['dependencies']:
-                        if not d.get('purl'):
-                            self.print_debug('WARNING: Dependency result missing purl. Skipping.', d)
-                            continue
-                        if not d.get('version'):
-                            self.print_debug('WARNING: Dependency result missing version. Skipping.', d)
-                            continue
-                        component_key = f'{d["purl"]}@{d["version"]}'
-                        if component_key not in components:
-                            components = self._append_component(components, d, component_id, status)
-                    # End of dependencies loop
-                # End if
-            # End of component loop
-        # End of results loop
-        results = list(components.values())
-        for component in results:
+        
+        # Extract file and snippet components
+        components = self._get_components_data(results, components)
+        
+        # Extract dependency components
+        components = self._get_dependencies_data(results, components)
+        
+        # Convert to list and process licenses
+        results_list = list(components.values())
+        for component in results_list:
             component['licenses'] = list(component['licenses'].values())
 
-        return results
+        return results_list
 
     def generate_table(self, headers, rows, centered_columns=None):
         """
