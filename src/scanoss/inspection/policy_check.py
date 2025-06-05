@@ -229,21 +229,21 @@ class PolicyCheck(ScanossBase):
             for c in component:
                 component_id = c.get('id')
                 if not component_id:
-                    self.print_stderr(f'WARNING: Result missing id. Skipping.')
+                    self.print_debug(f'WARNING: Result missing id. Skipping.', c)
                     continue
                 status = c.get('status')
                 if not component_id:
-                    self.print_stderr(f'WARNING: Result missing status. Skipping.')
+                    self.print_debug(f'WARNING: Result missing status. Skipping.', c)
                     continue
                 if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
                     if not c.get('purl'):
-                        self.print_stderr(f'WARNING: Result missing purl. Skipping.')
+                        self.print_debug(f'WARNING: Result missing purl. Skipping.', c)
                         continue
                     if len(c.get('purl')) <= 0:
-                        self.print_stderr(f'WARNING: Result missing purls. Skipping.')
+                        self.print_debug(f'WARNING: Result missing purls. Skipping.', c)
                         continue
                     if not c.get('version'):
-                        self.print_stderr(f'WARNING: Result missing version. Skipping.')
+                        self.print_debug(f'WARNING: Result missing version. Skipping.', c)
                         continue
                     component_key = f'{c["purl"][0]}@{c["version"]}'
                     # Initialize or update the component entry
@@ -255,13 +255,10 @@ class PolicyCheck(ScanossBase):
                         continue
                     for d in c['dependencies']:
                         if not d.get('purl'):
-                            self.print_stderr(f'WARNING: Result missing purl. Skipping.')
-                            continue
-                        if len(d.get('purl')) <= 0:
-                            self.print_stderr(f'WARNING: Result missing purls. Skipping.')
+                            self.print_debug(f'WARNING: Dependency result missing purl. Skipping.', d)
                             continue
                         if not d.get('version'):
-                            self.print_stderr(f'WARNING: Result missing version. Skipping.')
+                            self.print_debug(f'WARNING: Dependency result missing version. Skipping.', d)
                             continue
                         component_key = f'{d["purl"]}@{d["version"]}'
                         if component_key not in components:
