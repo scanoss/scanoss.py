@@ -24,9 +24,11 @@ SPDX-License-Identifier: MIT
 
 import json
 import os.path
+
 from abc import abstractmethod
 from enum import Enum
 from typing import Callable, List, Dict, Any
+
 from .utils.license_utils import LicenseUtil
 from ..scanossbase import ScanossBase
 
@@ -87,7 +89,7 @@ class PolicyCheck(ScanossBase):
 
     VALID_FORMATS = {'md', 'json', 'jira_md'}
 
-    def __init__(
+    def __init__( # noqa: PLR0913
         self,
         debug: bool = False,
         trace: bool = True,
@@ -200,9 +202,9 @@ class PolicyCheck(ScanossBase):
             self.print_stderr(f'WARNING: Results missing licenses. Skipping.')
             return components
         # Process licenses for this component
-        for l in new_component['licenses']:
-            if l.get('name'):
-                spdxid = l['name']
+        for license_item in new_component['licenses']:
+            if license_item.get('name'):
+                spdxid = license_item['name']
                 components[component_key]['licenses'][spdxid] = {
                     'spdxid': spdxid,
                     'copyleft': self.license_util.is_copyleft(spdxid),
@@ -222,28 +224,28 @@ class PolicyCheck(ScanossBase):
         :return: A list of dictionaries, each representing a unique component with its details
         """
         if results is None:
-            self.print_stderr(f'ERROR: Results cannot be empty')
+            self.print_stderr('ERROR: Results cannot be empty')
             return None
         components = {}
         for component in results.values():
             for c in component:
                 component_id = c.get('id')
                 if not component_id:
-                    self.print_debug(f'WARNING: Result missing id. Skipping.', c)
+                    self.print_debug('WARNING: Result missing id. Skipping.', c)
                     continue
                 status = c.get('status')
                 if not component_id:
-                    self.print_debug(f'WARNING: Result missing status. Skipping.', c)
+                    self.print_debug('WARNING: Result missing status. Skipping.', c)
                     continue
                 if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
                     if not c.get('purl'):
-                        self.print_debug(f'WARNING: Result missing purl. Skipping.', c)
+                        self.print_debug('WARNING: Result missing purl. Skipping.', c)
                         continue
                     if len(c.get('purl')) <= 0:
-                        self.print_debug(f'WARNING: Result missing purls. Skipping.', c)
+                        self.print_debug('WARNING: Result missing purls. Skipping.', c)
                         continue
                     if not c.get('version'):
-                        self.print_debug(f'WARNING: Result missing version. Skipping.', c)
+                        self.print_debug('WARNING: Result missing version. Skipping.', c)
                         continue
                     component_key = f'{c["purl"][0]}@{c["version"]}'
                     # Initialize or update the component entry
@@ -255,10 +257,10 @@ class PolicyCheck(ScanossBase):
                         continue
                     for d in c['dependencies']:
                         if not d.get('purl'):
-                            self.print_debug(f'WARNING: Dependency result missing purl. Skipping.', d)
+                            self.print_debug('WARNING: Dependency result missing purl. Skipping.', d)
                             continue
                         if not d.get('version'):
-                            self.print_debug(f'WARNING: Dependency result missing version. Skipping.', d)
+                            self.print_debug('WARNING: Dependency result missing version. Skipping.', d)
                             continue
                         component_key = f'{d["purl"]}@{d["version"]}'
                         if component_key not in components:

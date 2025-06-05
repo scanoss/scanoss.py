@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Show warning messages on inspect command when `--debug` flag is enabled
 - Enhance debug logging for the `inspect` sub-command
+### Fixed
+- Fixed linter on `policy_check.py` file
 
 
 ## [1.24.0] - 2025-05-28
