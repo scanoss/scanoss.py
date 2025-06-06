@@ -182,10 +182,9 @@ class PolicyCheck(ScanossBase):
         :param status: The new component status
         :return: The updated components dictionary
         """
-
         # Determine the component key and purl based on component type
         if id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
-            purl = new_component['purl'][0]  # Take first purl for these component types
+            purl = new_component['purl'][0]  # Take the first purl for these component types
         else:
             purl = new_component['purl']
 
@@ -196,9 +195,8 @@ class PolicyCheck(ScanossBase):
             'licenses': {},
             'status': status,
         }
-
         if not new_component.get('licenses'):
-            self.print_debug('WARNING: Results missing licenses. Skipping.', new_component)
+            self.print_debug(f'WARNING: Results missing licenses. Skipping: {new_component}')
             return components
         # Process licenses for this component
         for license_item in new_component['licenses']:
@@ -223,29 +221,27 @@ class PolicyCheck(ScanossBase):
             for c in component:
                 component_id = c.get('id')
                 if not component_id:
-                    self.print_debug('WARNING: Result missing id. Skipping.', c)
+                    self.print_debug(f'WARNING: Result missing id. Skipping: {c}')
                     continue
-                
                 status = c.get('status')
                 if not status:
-                    self.print_debug('WARNING: Result missing status. Skipping.', c)
+                    self.print_debug(f'WARNING: Result missing status. Skipping: {c}')
                     continue
-                
                 if component_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
                     if not c.get('purl'):
-                        self.print_debug('WARNING: Result missing purl. Skipping.', c)
+                        self.print_debug(f'WARNING: Result missing purl. Skipping: {c}')
                         continue
                     if len(c.get('purl')) <= 0:
-                        self.print_debug('WARNING: Result missing purls. Skipping.', c)
+                        self.print_debug(f'WARNING: Result missing purls. Skipping: {c}')
                         continue
                     if not c.get('version'):
-                        self.print_debug('WARNING: Result missing version. Skipping.', c)
+                        self.print_msg(f'WARNING: Result missing version. Skipping: {c}')
                         continue
-                    
                     component_key = f'{c["purl"][0]}@{c["version"]}'
                     if component_key not in components:
                         components = self._append_component(components, c, component_id, status)
-        
+            # End component loop
+        # End components loop
         return components
 
     def _get_dependencies_data(self, results: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
@@ -260,30 +256,28 @@ class PolicyCheck(ScanossBase):
             for c in component:
                 component_id = c.get('id')
                 if not component_id:
-                    self.print_debug('WARNING: Result missing id. Skipping.', c)
+                    self.print_debug(f'WARNING: Result missing id. Skipping: {c}')
                     continue
-                
                 status = c.get('status')
                 if not status:
-                    self.print_debug('WARNING: Result missing status. Skipping.', c)
+                    self.print_debug(f'WARNING: Result missing status. Skipping: {c}')
                     continue
-                
                 if component_id == ComponentID.DEPENDENCY.value:
                     if c.get('dependencies') is None:
                         continue
-                    
                     for dependency in c['dependencies']:
                         if not dependency.get('purl'):
-                            self.print_debug('WARNING: Dependency result missing purl. Skipping.', dependency)
+                            self.print_debug(f'WARNING: Dependency result missing purl. Skipping: {dependency}')
                             continue
                         if not dependency.get('version'):
-                            self.print_debug('WARNING: Dependency result missing version. Skipping.', dependency)
+                            self.print_msg(f'WARNING: Dependency result missing version. Skipping: {dependency}')
                             continue
-                        
                         component_key = f'{dependency["purl"]}@{dependency["version"]}'
                         if component_key not in components:
                             components = self._append_component(components, dependency, component_id, status)
-        
+                    # End dependency loop
+            # End component loop
+        # End of result loop
         return components
 
     def _get_components_from_results(self, results: Dict[str, Any]) -> list or None:
@@ -302,13 +296,10 @@ class PolicyCheck(ScanossBase):
             return None
         
         components = {}
-        
         # Extract file and snippet components
         components = self._get_components_data(results, components)
-        
         # Extract dependency components
         components = self._get_dependencies_data(results, components)
-        
         # Convert to list and process licenses
         results_list = list(components.values())
         for component in results_list:
@@ -442,7 +433,6 @@ class PolicyCheck(ScanossBase):
             return None
         components = self._get_components_from_results(self.results)
         return components
-
 
 #
 # End of PolicyCheck Class
