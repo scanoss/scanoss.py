@@ -260,10 +260,12 @@ class PolicyCheck(ScanossBase):
             for c in component:
                 component_id = c.get('id')
                 if not component_id:
+                    self.print_debug('WARNING: Result missing id. Skipping.', c)
                     continue
                 
                 status = c.get('status')
                 if not status:
+                    self.print_debug('WARNING: Result missing status. Skipping.', c)
                     continue
                 
                 if component_id == ComponentID.DEPENDENCY.value:
