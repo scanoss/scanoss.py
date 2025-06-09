@@ -22,8 +22,8 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-import unittest
 import platform
+import unittest
 from unittest.mock import patch
 
 from scanoss.winnowing import Winnowing
@@ -134,35 +134,31 @@ class MyTestCase(unittest.TestCase):
 
         # Test LF only
         content_lf = b'line1\nline2\nline3\n'
-        has_crlf, has_lf, has_cr, has_mixed = winnowing._Winnowing__detect_line_endings(content_lf)
+        has_crlf, has_lf, has_cr = winnowing._Winnowing__detect_line_endings(content_lf)
         self.assertFalse(has_crlf)
         self.assertTrue(has_lf)
         self.assertFalse(has_cr)
-        self.assertFalse(has_mixed)
 
         # Test CRLF only
         content_crlf = b'line1\r\nline2\r\nline3\r\n'
-        has_crlf, has_lf, has_cr, has_mixed = winnowing._Winnowing__detect_line_endings(content_crlf)
+        has_crlf, has_lf, has_cr = winnowing._Winnowing__detect_line_endings(content_crlf)
         self.assertTrue(has_crlf)
         self.assertFalse(has_lf)
         self.assertFalse(has_cr)
-        self.assertFalse(has_mixed)
 
         # Test CR only (old Mac style)
         content_cr = b'line1\rline2\rline3\r'
-        has_crlf, has_lf, has_cr, has_mixed = winnowing._Winnowing__detect_line_endings(content_cr)
+        has_crlf, has_lf, has_cr = winnowing._Winnowing__detect_line_endings(content_cr)
         self.assertFalse(has_crlf)
         self.assertFalse(has_lf)
         self.assertTrue(has_cr)
-        self.assertFalse(has_mixed)
 
         # Test mixed CRLF and LF
         content_mixed = b'line1\r\nline2\nline3\r\n'
-        has_crlf, has_lf, has_cr, has_mixed = winnowing._Winnowing__detect_line_endings(content_mixed)
+        has_crlf, has_lf, has_cr = winnowing._Winnowing__detect_line_endings(content_mixed)
         self.assertTrue(has_crlf)
         self.assertTrue(has_lf)
         self.assertFalse(has_cr)
-        self.assertTrue(has_mixed)
 
     def test_opposite_hash_logic(self):
         """Test the logic of opposite hash calculation."""
