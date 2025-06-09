@@ -275,8 +275,8 @@ class MyTestCase(unittest.TestCase):
 
         print(f'Binary file WFP:\n{wfp}')
 
-        # Binary files should still generate fh2 if they have line endings (platform independent)
-        self.assertIn('fh2=', wfp)
+        # Binary files should not generate fh2
+        self.assertNotIn('fh2=', wfp)
 
     def test_cr_only_line_endings(self):
         """Test classic Mac CR-only line endings."""
