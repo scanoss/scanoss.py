@@ -353,7 +353,7 @@ class Winnowing(ScanossBase):
             self.print_debug(f'Stripped snippet ids from {file}')
         return wfp
 
-    def __detect_line_endings(self, contents: bytes) -> Tuple[bool, bool, bool, bool]:
+    def __detect_line_endings(self, contents: bytes) -> Tuple[bool, bool, bool]:
         """Detect the types of line endings present in file contents.
 
         Args:
@@ -369,11 +369,7 @@ class Winnowing(ScanossBase):
         # For CR detection, we need to find CR that's not part of CRLF
         has_standalone_cr = b'\r' in content_without_crlf
 
-        # Check if we have mixed line endings
-        line_ending_count = sum([has_crlf, has_standalone_lf, has_standalone_cr])
-        has_mixed = line_ending_count > 1
-
-        return has_crlf, has_standalone_lf, has_standalone_cr, has_mixed
+        return has_crlf, has_standalone_lf, has_standalone_cr
 
     def __calculate_opposite_line_ending_hash(self, contents: bytes):
         """Calculate hash for contents with opposite line endings.
@@ -387,7 +383,7 @@ class Winnowing(ScanossBase):
         Returns:
             Hash with opposite line endings as hex string, or None if no line endings detected.
         """
-        has_crlf, has_standalone_lf, has_standalone_cr, has_mixed = self.__detect_line_endings(contents)
+        has_crlf, has_standalone_lf, has_standalone_cr = self.__detect_line_endings(contents)
 
         if not has_crlf and not has_standalone_lf and not has_standalone_cr:
             return None
@@ -404,21 +400,6 @@ class Winnowing(ScanossBase):
             opposite_contents = normalized.replace(b'\n', b'\r\n')
 
         return hashlib.md5(opposite_contents).hexdigest()
-
-    def __should_generate_opposite_hash(self, contents: bytes) -> bool:
-        """Determine if an opposite line ending hash (fh2) should be generated.
-
-        Args:
-            contents: File contents as bytes.
-
-        Returns:
-            True if fh2 hash should be generated, False otherwise.
-        """
-        has_crlf, has_standalone_lf, has_standalone_cr = self.__detect_line_endings(contents)
-
-        # Generate fh2 hash when file has any line endings (CRLF, LF, or CR)
-        # This allows us to always produce the opposite hash
-        return has_crlf or has_standalone_lf or has_standalone_cr
 
     def wfp_for_contents(self, file: str, bin_file: bool, contents: bytes) -> str:  # noqa: PLR0912, PLR0915
         """
@@ -451,7 +432,7 @@ class Winnowing(ScanossBase):
         wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, wfp_filename)
 
         # Add opposite line ending hash based on line ending analysis
-        if not bin_file and self.__should_generate_opposite_hash(contents):
+        if not bin_file:
             opposite_hash = self.__calculate_opposite_line_ending_hash(contents)
             if opposite_hash is not None:
                 wfp += f'fh2={opposite_hash}\n'
