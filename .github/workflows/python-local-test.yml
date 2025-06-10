@@ -39,9 +39,10 @@ jobs:
           retry_wait_seconds: 10
           max_attempts: 3
           retry_on: error
+          shell: bash
           command: |
             pip install -r requirements.txt
-            pip install dist/scanoss-*-py3-none-any.whl
+            pip install dist/scanoss-*.whl
             which scanoss-py
 
       - name: Run Tests
