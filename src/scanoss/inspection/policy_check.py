@@ -176,14 +176,16 @@ class PolicyCheck(ScanossBase):
         2. Extracts and processes components from the loaded results.
 
         :return: A list of processed components, or None if an error occurred during any step.
-                 Possible reasons for returning None include:
-                 - Results not loaded (self.results is None)
-                 - Failure to extract components from the results
+
+        Possible reasons for returning None include:
+        - Results not loaded (self.results is None)
+        - Failure to extract components from the results
 
         Note:
         - This method assumes that the results have been previously loaded and stored in self.results.
-        - If results is None, the method returns None without performing any further operations.
-        - The actual processing of components is delegated to the _get_components_from_results method.
+        - Implementations must extract components (e.g. via `_get_components_data`,
+          `_get_dependencies_data`, or other helpers).
+        - If `self.results` is `None`, simply return `None`.
         """
     pass
 
