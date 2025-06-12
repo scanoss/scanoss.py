@@ -166,6 +166,30 @@ class PolicyCheck(ScanossBase):
         """
         pass
 
+    @abstractmethod
+    def _get_components(self):
+        """
+        Retrieve and process components from the preloaded results.
+
+        This method performs the following steps:
+        1. Checks if the results have been previously loaded (self.results).
+        2. Extracts and processes components from the loaded results.
+
+        :return: A list of processed components, or None if an error occurred during any step.
+
+        Possible reasons for returning None include:
+        - Results not loaded (self.results is None)
+        - Failure to extract components from the results
+
+        Note:
+        - This method assumes that the results have been previously loaded and stored in self.results.
+        - Implementations must extract components (e.g. via `_get_components_data`,
+          `_get_dependencies_data`, or other helpers).
+        - If `self.results` is `None`, simply return `None`.
+        """
+    pass
+
+
     def _append_component(
         self, components: Dict[str, Any], new_component: Dict[str, Any], id: str, status: str
     ) -> Dict[str, Any]:
@@ -223,6 +247,9 @@ class PolicyCheck(ScanossBase):
                 if not component_id:
                     self.print_debug(f'WARNING: Result missing id. Skipping: {c}')
                     continue
+                ## Skip dependency
+                if component_id == ComponentID.DEPENDENCY.value:
+                    continue
                 status = c.get('status')
                 if not status:
                     self.print_debug(f'WARNING: Result missing status. Skipping: {c}')
@@ -279,33 +306,6 @@ class PolicyCheck(ScanossBase):
             # End component loop
         # End of result loop
         return components
-
-    def _get_components_from_results(self, results: Dict[str, Any]) -> list or None:
-        """
-        Process the results dictionary to extract and format component information.
-
-        This function iterates through the results dictionary, identifying components from
-        different sources (files, snippets, and dependencies). It consolidates this information
-        into a list of unique components, each with its associated licenses and other details.
-
-        :param results: A dictionary containing the raw results of a component scan
-        :return: A list of dictionaries, each representing a unique component with its details
-        """
-        if results is None:
-            self.print_stderr('ERROR: Results cannot be empty')
-            return None
-        
-        components = {}
-        # Extract file and snippet components
-        components = self._get_components_data(results, components)
-        # Extract dependency components
-        components = self._get_dependencies_data(results, components)
-        # Convert to list and process licenses
-        results_list = list(components.values())
-        for component in results_list:
-            component['licenses'] = list(component['licenses'].values())
-
-        return results_list
 
     def generate_table(self, headers, rows, centered_columns=None):
         """
@@ -410,29 +410,6 @@ class PolicyCheck(ScanossBase):
             except Exception as e:
                 self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
         return None
-
-    def _get_components(self):
-        """
-        Retrieve and process components from the preloaded results.
-
-        This method performs the following steps:
-        1. Checks if the results have been previously loaded (self.results).
-        2. Extracts and processes components from the loaded results.
-
-        :return: A list of processed components, or None if an error occurred during any step.
-                 Possible reasons for returning None include:
-                 - Results not loaded (self.results is None)
-                 - Failure to extract components from the results
-
-        Note:
-        - This method assumes that the results have been previously loaded and stored in self.results.
-        - If results is None, the method returns None without performing any further operations.
-        - The actual processing of components is delegated to the _get_components_from_results method.
-        """
-        if self.results is None:
-            return None
-        components = self._get_components_from_results(self.results)
-        return components
 
 #
 # End of PolicyCheck Class

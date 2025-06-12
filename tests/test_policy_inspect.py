@@ -179,7 +179,7 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
-        expected_summary_output = """5 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
         Add the following snippet into your `sbom.json` file 
         ```json 
         {
@@ -189,17 +189,11 @@ class MyTestCase(unittest.TestCase):
                   },
                   {
                     "purl": "pkg:github/scanoss/wfp"
-                  },
-                  {
-                    "purl": "pkg:npm/%40electron/rebuild"
-                  },
-                  {
-                    "purl": "pkg:npm/%40emotion/react"
                   }
             ]
         }```
         """
-        self.assertEqual(len(details['components']), 5)
+        self.assertEqual(len(details['components']), 3)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
         )
@@ -222,11 +216,9 @@ class MyTestCase(unittest.TestCase):
              | - | - | - | 
              | pkg:github/scanoss/scanner.c | 1.3.3 | BSD-2-Clause - GPL-2.0-only | 
              | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
-             | pkg:github/scanoss/wfp | 6afc1f6 | Zlib - GPL-2.0-only | 
-             | pkg:npm/%40electron/rebuild | 3.7.0 | MIT | 
-             | pkg:npm/%40emotion/react | 11.13.3 | MIT | """
+             | pkg:github/scanoss/wfp | 6afc1f6 | Zlib - GPL-2.0-only |  """
 
-        expected_summary_output = """5 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
            Add the following snippet into your `sbom.json` file 
            ```json 
                {
@@ -236,13 +228,7 @@ class MyTestCase(unittest.TestCase):
                   },
                   {
                     "purl": "pkg:github/scanoss/wfp"
-                  },
-                  {
-                    "purl": "pkg:npm/%40electron/rebuild"
-                  },
-                  {
-                    "purl": "pkg:npm/%40emotion/react"
-                  }           
+                  }         
                 ]             
                }```
            """
@@ -273,11 +259,9 @@ class MyTestCase(unittest.TestCase):
                | - | - | - | 
                | pkg:github/scanoss/scanner.c | 1.3.3 | BSD-2-Clause - GPL-2.0-only | 
                | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
-               | pkg:github/scanoss/wfp | 6afc1f6 | Zlib - GPL-2.0-only | 
-               | pkg:npm/%40electron/rebuild | 3.7.0 | MIT | 
-               | pkg:npm/%40emotion/react | 11.13.3 | MIT | """
+               | pkg:github/scanoss/wfp | 6afc1f6 | Zlib - GPL-2.0-only | """
 
-        expected_summary_output = """5 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
             Add the following snippet into your `scanoss.json` file
             
             ```json
@@ -289,12 +273,6 @@ class MyTestCase(unittest.TestCase):
                   },
                   {
                     "purl": "pkg:github/scanoss/wfp"
-                  },
-                  {
-                    "purl": "pkg:npm/%40electron/rebuild"
-                  },
-                  {
-                    "purl": "pkg:npm/%40emotion/react"
                   }
                 ]
               }
@@ -322,7 +300,7 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
-        expected_summary_output = """5 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
                 Add the following snippet into your `scanoss.json` file
 
                 ```json
@@ -334,19 +312,13 @@ class MyTestCase(unittest.TestCase):
                       },
                       {
                         "purl": "pkg:github/scanoss/wfp"
-                      },
-                      {
-                        "purl": "pkg:npm/%40electron/rebuild"
-                      },
-                      {
-                        "purl": "pkg:npm/%40emotion/react"
                       }
                     ]
                   }
                 }
                 ```"""
         self.assertEqual(status, 0)
-        self.assertEqual(len(details['components']), 5)
+        self.assertEqual(len(details['components']), 3)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
         )
@@ -363,10 +335,8 @@ class MyTestCase(unittest.TestCase):
 |pkg:github/scanoss/scanner.c|1.3.3|BSD-2-Clause - GPL-2.0-only|
 |pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|
 |pkg:github/scanoss/wfp|6afc1f6|Zlib - GPL-2.0-only|
-|pkg:npm/%40electron/rebuild|3.7.0|MIT|
-|pkg:npm/%40emotion/react|11.13.3|MIT|
 """
-        expected_summary_output = """5 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
 Add the following snippet into your `scanoss.json` file
 {code:json}
 {
@@ -377,12 +347,6 @@ Add the following snippet into your `scanoss.json` file
       },
       {
         "purl": "pkg:github/scanoss/wfp"
-      },
-      {
-        "purl": "pkg:npm/%40electron/rebuild"
-      },
-      {
-        "purl": "pkg:npm/%40emotion/react"
       }
     ]
   }

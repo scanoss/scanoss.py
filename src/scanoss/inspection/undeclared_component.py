@@ -23,7 +23,8 @@ SPDX-License-Identifier: MIT
 """
 
 import json
-from typing import Dict, Any
+from typing import Any, Dict
+
 from .policy_check import PolicyCheck, PolicyStatus
 
 
@@ -33,7 +34,7 @@ class UndeclaredComponent(PolicyCheck):
     Inspects for undeclared components
     """
 
-    def __init__(
+    def __init__( # noqa: PLR0913
         self,
         debug: bool = False,
         trace: bool = True,
@@ -73,7 +74,7 @@ class UndeclaredComponent(PolicyCheck):
         :return: List of undeclared components
         """
         if components is None:
-            self.print_debug(f'WARNING: No components provided!')
+            self.print_debug('WARNING: No components provided!')
             return None
         undeclared_components = []
         for component in components:
@@ -90,22 +91,32 @@ class UndeclaredComponent(PolicyCheck):
         :param components: List of all components
         :return: Component summary markdown
         """
-        if len(components) > 0:
-            if self.sbom_format == 'settings':
-                json_str = (
-                    json.dumps(self._generate_scanoss_file(components), indent=2)
-                    .replace('\n', '\\n')
-                    .replace('"', '\\"')
-                )
-                return f'{len(components)} undeclared component(s) were found.\nAdd the following snippet into your `scanoss.json` file\n{{code:json}}\n{json.dumps(self._generate_scanoss_file(components), indent=2)}\n{{code}}\n'
-            else:
-                json_str = (
-                    json.dumps(self._generate_scanoss_file(components), indent=2)
-                    .replace('\n', '\\n')
-                    .replace('"', '\\"')
-                )
-                return f'{len(components)} undeclared component(s) were found.\nAdd the following snippet into your `sbom.json` file\n{{code:json}}\n{json.dumps(self._generate_scanoss_file(components), indent=2)}\n{{code}}\n'
 
+        """
+        Get a summary of the undeclared components.
+
+        :param components: List of all components
+        :return: Component summary markdown
+        """
+        if len(components) > 0:
+            json_content = json.dumps(self._generate_scanoss_file(components), indent=2)
+
+            if self.sbom_format == 'settings':
+                return (
+                    f'{len(components)} undeclared component(s) were found.\n'
+                    f'Add the following snippet into your `scanoss.json` file\n'
+                    f'{{code:json}}\n'
+                    f'{json_content}\n'
+                    f'{{code}}\n'
+                )
+            else:
+                return (
+                    f'{len(components)} undeclared component(s) were found.\n'
+                    f'Add the following snippet into your `sbom.json` file\n'
+                    f'{{code:json}}\n'
+                    f'{json_content}\n'
+                    f'{{code}}\n'
+                )
         return f'{len(components)} undeclared component(s) were found.\\n'
 
     def _get_summary(self, components: list) -> str:
@@ -190,7 +201,7 @@ class UndeclaredComponent(PolicyCheck):
         """
         unique_components = {}
         if components is None:
-            self.print_stderr(f'WARNING: No components provided!')
+            self.print_stderr('WARNING: No components provided!')
             return []
 
         for component in components:
@@ -224,6 +235,29 @@ class UndeclaredComponent(PolicyCheck):
         }
 
         return sbom
+
+    def _get_components(self):
+        """
+        Extract and process components from file results only.
+
+        This method performs the following steps:
+        1. Validates if `self.results` is loaded. Returns `None` if not loaded.
+        2. Extracts file and snippet components into a dictionary.
+        3. Converts the components dictionary into a list of components.
+        4. Processes the licenses for each component by converting them into a list.
+
+        :return: A list of processed components with their licenses, or `None` if `self.results` is not set.
+        """
+        if self.results is None:
+            return None
+        components: dict = {}
+        # Extract file and snippet components
+        components = self._get_components_data(self.results, components)
+        # Convert to list and process licenses
+        results_list = list(components.values())
+        for component in results_list:
+            component['licenses'] = list(component['licenses'].values())
+        return results_list
 
     def run(self):
         """
