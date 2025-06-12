@@ -23,7 +23,8 @@ SPDX-License-Identifier: MIT
 """
 
 import json
-from typing import Dict, Any
+from typing import Any, Dict
+
 from .policy_check import PolicyCheck, PolicyStatus
 
 
@@ -33,7 +34,7 @@ class Copyleft(PolicyCheck):
     Inspects components for copyleft licenses
     """
 
-    def __init__(
+    def __init__( # noqa: PLR0913
         self,
         debug: bool = False,
         trace: bool = True,
@@ -157,6 +158,30 @@ class Copyleft(PolicyCheck):
         # End component loop
         self.print_debug(f'Copyleft components: {filtered_components}')
         return filtered_components
+
+    def _get_components(self):
+        """
+        Extract and process components from results and their dependencies.
+
+        This method performs the following steps:
+        1. Validates that `self.results` is loaded. Returns `None` if not.
+        2. Extracts file, snippet, and dependency components into a dictionary.
+        3. Converts components to a list and processes their licenses.
+
+        :return: A list of processed components with license data, or `None` if `self.results` is not set.
+        """
+        if self.results is None:
+            return None
+
+        components: dict = {}
+        # Extract component and license data from file and dependency results. Both helpers mutate `components`
+        self._get_components_data(self.results, components)
+        self._get_dependencies_data(self.results, components)
+        # Convert to list and process licenses
+        results_list = list(components.values())
+        for component in results_list:
+            component['licenses'] = list(component['licenses'].values())
+        return results_list
 
     def run(self):
         """
