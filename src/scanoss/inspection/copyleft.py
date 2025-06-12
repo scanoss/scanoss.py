@@ -158,6 +158,31 @@ class Copyleft(PolicyCheck):
         self.print_debug(f'Copyleft components: {filtered_components}')
         return filtered_components
 
+    def _get_components(self):
+        """
+            Extract and process components from results and their dependencies.
+
+            This method performs the following steps:
+            1. Validates that `self.results` is loaded. Returns `None` if not.
+            2. Extracts file, snippet, and dependency components into a dictionary.
+            3. Converts components to a list and processes their licenses.
+
+            :return: A list of processed components with license data, or `None` if `self.results` is not set.
+        """
+        if self.results is None:
+            return None
+
+        components = {}
+        # Extract file and snippet components
+        components = self._get_components_data(self.results, components)
+        # Extract dependency components
+        components = self._get_dependencies_data(self.results, components)
+        # Convert to list and process licenses
+        results_list = list(components.values())
+        for component in results_list:
+            component['licenses'] = list(component['licenses'].values())
+        return results_list
+
     def run(self):
         """
         Run the copyleft license inspection process.
