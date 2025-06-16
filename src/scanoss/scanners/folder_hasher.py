@@ -209,7 +209,7 @@ class FolderHasher:
             'sim_hash_names': f'{hash_data["name_hash"]:02x}' if hash_data['name_hash'] is not None else None,
             'sim_hash_content': f'{hash_data["content_hash"]:02x}' if hash_data['content_hash'] is not None else None,
             'sim_hash_dir_names': f'{hash_data["dir_hash"]:02x}' if hash_data['dir_hash'] is not None else None,
-            'language_extensions': hash_data['language_extensions'],
+            'lang_extensions': hash_data['lang_extensions'],
             'children': [self._hash_calc_from_node(child) for child in node.children.values()],
         }
 
@@ -226,7 +226,7 @@ class FolderHasher:
             node (DirectoryNode): The directory node containing file items.
 
         Returns:
-            dict: A dictionary with 'name_hash', 'content_hash', 'dir_hash', and 'language_extensions' keys.
+            dict: A dictionary with 'name_hash', 'content_hash', 'dir_hash', and 'lang_extensions' keys.
         """
         processed_hashes = set()
         unique_file_names = set()
@@ -249,24 +249,22 @@ class FolderHasher:
                 ext_without_dot = extension[1:]
                 extension_map[ext_without_dot] = extension_map.get(ext_without_dot, 0) + 1
 
-            if current_directory and current_directory != '.':
-                last_directory = os.path.basename(current_directory)
-                if last_directory != current_directory and last_directory not in ['.', '..']:
-                    unique_directories.add(last_directory)
+            last_directory = Path(current_directory).name or Path(self.scan_dir).name
 
             processed_hashes.add(key_str)
             unique_file_names.add(file_name_without_extension)
+            unique_directories.add(last_directory)
             selected_names.append(file_name)
             file_hashes.append(file.key)
 
         if len(selected_names) < MINIMUM_FILE_COUNT:
-            return {'name_hash': None, 'content_hash': None, 'dir_hash': None, 'language_extensions': None}
+            return {'name_hash': None, 'content_hash': None, 'dir_hash': None, 'lang_extensions': None}
 
         selected_names.sort()
         concatenated_names = ''.join(selected_names)
 
         if len(concatenated_names.encode('utf-8')) < MINIMUM_CONCATENATED_NAME_LENGTH:
-            return {'name_hash': None, 'content_hash': None, 'dir_hash': None, 'language_extensions': None}
+            return {'name_hash': None, 'content_hash': None, 'dir_hash': None, 'lang_extensions': None}
 
         # Concatenate the unique file names without the extensions, adding a space and sorting them alphabetically
         unique_file_names_list = list(unique_file_names)
@@ -274,7 +272,7 @@ class FolderHasher:
         concatenated_names = ' '.join(unique_file_names_list)
 
         # We do the same for the directory names, adding a space and sorting them alphabetically
-        unique_directories_list = [d for d in unique_directories if d not in ['.', '..']]
+        unique_directories_list = list(unique_directories)
         unique_directories_list.sort()
         concatenated_directories = ' '.join(unique_directories_list)
 
@@ -291,7 +289,7 @@ class FolderHasher:
             'name_hash': names_simhash,
             'content_hash': content_simhash,
             'dir_hash': dir_simhash,
-            'language_extensions': extension_map,
+            'lang_extensions': extension_map,
         }
 
     def present(self, output_format: Optional[str] = None, output_file: Optional[str] = None):
