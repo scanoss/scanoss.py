@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.25.2] - 2025-06-18
 ### Fixed
-- Avoids errors when no versions are declared on scanner results in `inspect` subcommand
+- Fixed errors when no versions are declared in scanner results for `inspect` subcommand
+### Changed
+- Prioritized licenses by source priority in `inspect copyleft` subcommand
 
 ## [1.25.1] - 2025-06-12
 ### Fixed

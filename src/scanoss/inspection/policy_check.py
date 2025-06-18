@@ -226,8 +226,11 @@ class PolicyCheck(ScanossBase):
         if not new_component.get('licenses'):
             self.print_debug(f'WARNING: Results missing licenses. Skipping: {new_component}')
             return components
+
+
+        licenses_order_by_source_priority = self._get_licenses_order_by_source_priority(new_component['licenses'])
         # Process licenses for this component
-        for license_item in new_component['licenses']:
+        for license_item in licenses_order_by_source_priority:
             if license_item.get('name'):
                 spdxid = license_item['name']
                 source = license_item.get('source')
@@ -436,6 +439,48 @@ class PolicyCheck(ScanossBase):
                 self.print_debug(f'WARNING: Licenses missing for: {component}')
                 component['licenses'] = []
         return results_list
+
+    def _get_licenses_order_by_source_priority(self,licenses_data):
+        """
+        Select licenses based on source priority:
+        1. component_declared (highest priority)
+        2. license_file
+        3. file_header
+        4. scancode (lowest priority)
+
+        If any high-priority source is found, return only licenses from that source.
+        If none found, return all licenses.
+
+        Returns: list with ordered licenses by source.
+        """
+        # Define priority order (highest to lowest)
+        priority_sources = ['component_declared', 'license_file', 'file_header', 'scancode']
+
+        # Group licenses by source
+        licenses_by_source = {}
+        for license_item in licenses_data:
+
+            source = license_item.get('source', 'unknown')
+            if source not in licenses_by_source:
+                licenses_by_source[source] = {}
+
+            license_name = license_item.get('name')
+            if license_name:
+                # Use license name as key, store full license object as value
+                # If duplicate license names exist in same source, the last one wins
+                licenses_by_source[source][license_name] = license_item
+
+        # Find the highest priority source that has licenses
+        for priority_source in priority_sources:
+            if priority_source in licenses_by_source:
+                self.print_trace(f'Choosing {priority_source} as source')
+                return list(licenses_by_source[priority_source].values())
+
+        # If no priority sources found, combine all licenses into a single list
+        self.print_debug("No priority sources found, returning all licenses as list")
+        return licenses_data
+
+
 #
 # End of PolicyCheck Class
 #
