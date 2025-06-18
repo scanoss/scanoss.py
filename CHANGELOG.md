@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.25.2] - 2025-06-18
+### Fixed
+- Avoids errors when no versions are declared on scanner results in `inspect` subcommand
+
 ## [1.25.1] - 2025-06-12
 ### Fixed
 - Removed dependency components from the undeclared component list in the `inspect` subcommand.
@@ -535,3 +539,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.24.0]: https://github.com/scanoss/scanoss.py/compare/v1.23.0...v1.24.0
 [1.25.0]: https://github.com/scanoss/scanoss.py/compare/v1.24.0...v1.25.0
 [1.25.1]: https://github.com/scanoss/scanoss.py/compare/v1.25.0...v1.25.1
+[1.25.2]: https://github.com/scanoss/scanoss.py/compare/v1.25.1...v1.25.2
