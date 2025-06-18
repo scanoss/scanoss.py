@@ -254,10 +254,7 @@ class UndeclaredComponent(PolicyCheck):
         # Extract file and snippet components
         components = self._get_components_data(self.results, components)
         # Convert to list and process licenses
-        results_list = list(components.values())
-        for component in results_list:
-            component['licenses'] = list(component['licenses'].values())
-        return results_list
+        return self._convert_components_to_list(components)
 
     def run(self):
         """

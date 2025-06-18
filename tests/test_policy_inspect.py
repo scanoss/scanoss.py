@@ -114,7 +114,7 @@ class MyTestCase(unittest.TestCase):
         copyleft = Copyleft(filepath=input_file_name, format_type='json', explicit='MIT')
         status, results = copyleft.run()
         details = json.loads(results['details'])
-        self.assertEqual(len(details['components']), 3)
+        self.assertEqual(len(details['components']), 2)
         self.assertEqual(status, 0)
 
     """
@@ -144,11 +144,10 @@ class MyTestCase(unittest.TestCase):
         expected_detail_output = (
             '### Copyleft licenses \n  | Component | Version | License | URL | Copyleft |\n'
             ' | - | :-: | - | - | :-: |\n'
-            '| pkg:github/scanoss/engine | 4.0.4 | MIT | https://spdx.org/licenses/MIT.html | YES | \n'
             ' | pkg:npm/%40electron/rebuild | 3.7.0 | MIT | https://spdx.org/licenses/MIT.html | YES |\n'
             '| pkg:npm/%40emotion/react | 11.13.3 | MIT | https://spdx.org/licenses/MIT.html | YES | \n'
         )
-        expected_summary_output = '3 component(s) with copyleft licenses were found.\n'
+        expected_summary_output = '2 component(s) with copyleft licenses were found.\n'
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', results['details']),
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_detail_output),
@@ -214,9 +213,9 @@ class MyTestCase(unittest.TestCase):
         expected_details_output = """ ### Undeclared components
              | Component | Version | License | 
              | - | - | - | 
-             | pkg:github/scanoss/scanner.c | 1.3.3 | BSD-2-Clause - GPL-2.0-only | 
+             | pkg:github/scanoss/scanner.c | 1.3.3 | GPL-2.0-only | 
              | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
-             | pkg:github/scanoss/wfp | 6afc1f6 | Zlib - GPL-2.0-only |  """
+             | pkg:github/scanoss/wfp | 6afc1f6 | GPL-2.0-only |  """
 
         expected_summary_output = """3 undeclared component(s) were found.
            Add the following snippet into your `sbom.json` file 
@@ -257,9 +256,9 @@ class MyTestCase(unittest.TestCase):
         expected_details_output = """ ### Undeclared components
                | Component | Version | License | 
                | - | - | - | 
-               | pkg:github/scanoss/scanner.c | 1.3.3 | BSD-2-Clause - GPL-2.0-only | 
+               | pkg:github/scanoss/scanner.c | 1.3.3 | GPL-2.0-only | 
                | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
-               | pkg:github/scanoss/wfp | 6afc1f6 | Zlib - GPL-2.0-only | """
+               | pkg:github/scanoss/wfp | 6afc1f6 | GPL-2.0-only | """
 
         expected_summary_output = """3 undeclared component(s) were found.
             Add the following snippet into your `scanoss.json` file
@@ -332,9 +331,9 @@ class MyTestCase(unittest.TestCase):
         details = results['details']
         summary = results['summary']
         expected_details_output = """|*Component*|*Version*|*License*|
-|pkg:github/scanoss/scanner.c|1.3.3|BSD-2-Clause - GPL-2.0-only|
+|pkg:github/scanoss/scanner.c|1.3.3|GPL-2.0-only|
 |pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|
-|pkg:github/scanoss/wfp|6afc1f6|Zlib - GPL-2.0-only|
+|pkg:github/scanoss/wfp|6afc1f6|GPL-2.0-only|
 """
         expected_summary_output = """3 undeclared component(s) were found.
 Add the following snippet into your `scanoss.json` file
