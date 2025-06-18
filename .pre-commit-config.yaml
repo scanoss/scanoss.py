@@ -4,3 +4,8 @@ repos:
     hooks:
       - id: ruff
       - id: ruff-format
+  - repo: https://github.com/scanoss/pre-commit-hooks
+    rev: v0.2.0
+    hooks:
+      - id: scanoss-check-undeclared-code
+
