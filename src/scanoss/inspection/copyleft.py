@@ -177,11 +177,7 @@ class Copyleft(PolicyCheck):
         # Extract component and license data from file and dependency results. Both helpers mutate `components`
         self._get_components_data(self.results, components)
         self._get_dependencies_data(self.results, components)
-        # Convert to list and process licenses
-        results_list = list(components.values())
-        for component in results_list:
-            component['licenses'] = list(component['licenses'].values())
-        return results_list
+        return self._convert_components_to_list(components)
 
     def run(self):
         """
