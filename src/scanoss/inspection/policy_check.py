@@ -212,6 +212,10 @@ class PolicyCheck(ScanossBase):
         else:
             purl = new_component['purl']
 
+        if not purl:
+            self.print_debug(f'WARNING: _append_component: No purl found for new component: {new_component}')
+            return components
+
         component_key = f'{purl}@{new_component["version"]}'
         components[component_key] = {
             'purl': purl,
@@ -226,10 +230,14 @@ class PolicyCheck(ScanossBase):
         for license_item in new_component['licenses']:
             if license_item.get('name'):
                 spdxid = license_item['name']
+                source = license_item.get('source')
+                if not source:
+                    source = 'unknown'
                 components[component_key]['licenses'][spdxid] = {
                     'spdxid': spdxid,
                     'copyleft': self.license_util.is_copyleft(spdxid),
                     'url': self.license_util.get_spdx_url(spdxid),
+                    'source': source,
                 }
         return components
 
@@ -261,10 +269,12 @@ class PolicyCheck(ScanossBase):
                     if len(c.get('purl')) <= 0:
                         self.print_debug(f'WARNING: Result missing purls. Skipping: {c}')
                         continue
-                    if not c.get('version'):
-                        self.print_msg(f'WARNING: Result missing version. Skipping: {c}')
-                        continue
-                    component_key = f'{c["purl"][0]}@{c["version"]}'
+                    version = c.get('version')
+                    if not version:
+                        self.print_debug(f'WARNING: Result missing version. Setting it to unknown: {c}')
+                        version = 'unknown'
+                        c['version'] = version #If no version exists. Set 'unknown' version to current component
+                    component_key = f'{c["purl"][0]}@{version}'
                     if component_key not in components:
                         components = self._append_component(components, c, component_id, status)
             # End component loop
@@ -296,10 +306,12 @@ class PolicyCheck(ScanossBase):
                         if not dependency.get('purl'):
                             self.print_debug(f'WARNING: Dependency result missing purl. Skipping: {dependency}')
                             continue
-                        if not dependency.get('version'):
-                            self.print_msg(f'WARNING: Dependency result missing version. Skipping: {dependency}')
-                            continue
-                        component_key = f'{dependency["purl"]}@{dependency["version"]}'
+                        version = c.get('version')
+                        if not version:
+                            self.print_debug(f'WARNING: Result missing version. Setting it to unknown: {c}')
+                            version = 'unknown'
+                            c['version'] = version  # If no version exists. Set 'unknown' version to current component
+                        component_key = f'{dependency["purl"]}@{version}'
                         if component_key not in components:
                             components = self._append_component(components, dependency, component_id, status)
                     # End dependency loop
@@ -411,6 +423,19 @@ class PolicyCheck(ScanossBase):
                 self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
         return None
 
+    def _convert_components_to_list(self, components: dict):
+        if components is None:
+            self.print_debug(f'WARNING: Components is empty {self.results}')
+            return None
+        results_list = list(components.values())
+        for component in results_list:
+            licenses = component.get('licenses')
+            if licenses is not None:
+                component['licenses'] = list(licenses.values())
+            else:
+                self.print_debug(f'WARNING: Licenses missing for: {component}')
+                component['licenses'] = []
+        return results_list
 #
 # End of PolicyCheck Class
 #
