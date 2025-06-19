@@ -23,7 +23,6 @@ SPDX-License-Identifier: MIT
 """
 
 import json
-from typing import Any, Dict
 
 from .inspect_base import InspectBase
 

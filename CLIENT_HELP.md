@@ -369,6 +369,8 @@ Details, such as license compliance or component declarations, can be examined.
 For example:
 * Copyleft (`copylefet`)
 * Undeclared Components (`undeclared`)
+* License Summary (`license-summary`)
+* Component Summary (`component-summary`)
 
 For the latest list of sub-commands, please run:
 ```bash
@@ -434,6 +436,46 @@ The following command can be used to inspect for undeclared components and save 
 scanoss-py insp copyleft -i scan-results.json --output copyleft-summary.jiramd --status copyleft-status.jiramd --format jira_md
 ```
 
+#### Inspect for license summary from scan results
+The following command can be used to get a license summary from scan results.
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.json
+```
+
+Example with an output file:
+
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.txt
+```
+
+#### Inspect for license summary from scan results with custom copyleft licenses
+The following command can be used to get a license summary from scan results. 
+
+Example including a license to the default list
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.json --include Zlib,MIT
+```
+
+Example excluding a license from the default list
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.txt --exclude GPL-2.0-only
+```
+
+Example getting only explicit declared licenses
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.json --explicit Zlib
+```
+
+#### Inspect for component summary from scan results
+The following command can be used to get a component summary from scan results and save the output.
+```bash
+scanoss-py insp component-summary -i scan-results.json
+```
+Example with an output file:
+```bash
+scanoss-py insp component-summary -i scan-results.json --output component-summary.json
+```
+
 ### Folder-Scan a Project Folder
 
 The new `folder-scan` subcommand performs a comprehensive scan on an entire directory by recursively processing files to generate folder-level fingerprints. It computes CRC64 hashes and simhash values to detect directory-level similarities, which is especially useful for comparing large code bases or detecting duplicate folder structures.
@@ -451,3 +493,5 @@ The `container-scan` subcommand allows you to scan Docker container images for d
 ```shell
 scanoss-py container-scan image_name:tag -o container-scan-results.json
 ```
+
+You can specify an output file:

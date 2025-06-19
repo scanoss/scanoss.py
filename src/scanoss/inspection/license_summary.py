@@ -104,7 +104,7 @@ class LicenseSummary(InspectBase):
 
     def _get_licenses_summary_from_components(self, components: list)-> dict:
         """
-        Get license summary from detected components.
+        Get a license summary from detected components.
 
         :param components: List of all components
         :return: Dict with license summary information
