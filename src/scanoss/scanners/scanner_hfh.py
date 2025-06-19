@@ -88,8 +88,6 @@ class ScannerHFH:
         self.scan_dir = scan_dir
         self.client = client
         self.scan_results = None
-        self.best_match = False
-        self.threshold = 100
 
     def scan(self) -> Optional[Dict]:
         """
@@ -100,8 +98,6 @@ class ScannerHFH:
         """
         hfh_request = {
             'root': self.folder_hasher.hash_directory(self.scan_dir),
-            'threshold': self.threshold,
-            'best_match': self.best_match,
         }
 
         spinner = Spinner('Scanning folder...')
