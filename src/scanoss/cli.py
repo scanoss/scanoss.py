@@ -627,21 +627,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         default='json',
         help='Result output format (optional - default: json)',
     )
-    p_folder_scan.add_argument(
-        '--best-match',
-        '-bm',
-        action='store_true',
-        default=False,
-        help='Enable best match mode (optional - default: False)',
-    )
-    p_folder_scan.add_argument(
-        '--threshold',
-        type=int,
-        choices=range(1, 101),
-        metavar='1-100',
-        default=100,
-        help='Threshold for result matching (optional - default: 100)',
-    )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
     # Sub-command: folder-hash
@@ -1966,9 +1951,6 @@ def folder_hashing_scan(parser, args):
             client=client,
             scanoss_settings=scanoss_settings,
         )
-
-        scanner.best_match = args.best_match
-        scanner.threshold = args.threshold
 
         if scanner.scan():
             scanner.present(output_file=args.output, output_format=args.format)
