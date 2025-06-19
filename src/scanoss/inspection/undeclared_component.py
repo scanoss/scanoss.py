@@ -79,7 +79,11 @@ class UndeclaredComponent(PolicyCheck):
         undeclared_components = []
         for component in components:
             if component['status'] == 'pending':
+                # Remove unused keys
                 del component['status']
+                del component['count']
+                del component['declared']
+                del component['undeclared']
                 undeclared_components.append(component)
         # end component loop
         return undeclared_components

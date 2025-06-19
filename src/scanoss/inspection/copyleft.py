@@ -151,6 +151,10 @@ class Copyleft(PolicyCheck):
         for component in components:
             copyleft_licenses = [lic for lic in component['licenses'] if lic['copyleft']]
             if copyleft_licenses:
+                # Remove unused keys
+                del component['count']
+                del component['declared']
+                del component['undeclared']
                 filtered_component = component
                 filtered_component['licenses'] = copyleft_licenses
                 del filtered_component['status']

@@ -158,3 +158,6 @@ class LicenseSummary(InspectBase):
         license_summary = self._get_licenses_summary_from_components(components)
         self.print_to_file_or_stdout(json.dumps(license_summary, indent=2), self.output)
         return license_summary
+#
+# End of LicenseSummary Class
+#

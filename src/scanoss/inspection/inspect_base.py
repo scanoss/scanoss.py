@@ -132,6 +132,9 @@ class InspectBase(ScanossBase):
             'version': new_component['version'],
             'licenses': {},
             'status': status,
+            'count': 1,
+            'declared': 1 if status == 'identified' else 0,
+            'undeclared': 1 if status == 'pending' else 0
         }
         if not new_component.get('licenses'):
             self.print_debug(f'WARNING: Results missing licenses. Skipping: {new_component}')
@@ -190,6 +193,11 @@ class InspectBase(ScanossBase):
                     component_key = f'{c["purl"][0]}@{version}'
                     if component_key not in components:
                         components = self._append_component(components, c, component_id, status)
+                    else:
+                        components[component_key]['count'] += 1
+                        components[component_key]['declared'] += 1 if status == 'identified' else 0
+                        components[component_key]['undeclared'] += 1 if status == 'pending' else 0
+
             # End component loop
         # End components loop
         return components

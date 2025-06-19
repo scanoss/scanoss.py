@@ -33,6 +33,7 @@ import pypac
 
 from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
 from scanoss.inspection.license_summary import LicenseSummary
+from scanoss.inspection.component_summary import ComponentSummary
 from scanoss.scanners.container_scanner import (
     DEFAULT_SYFT_COMMAND,
     DEFAULT_SYFT_TIMEOUT,
@@ -554,23 +555,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         'license-summary', aliases=['lic-summary', 'licsum'], description='Get license summary',
         help='Get detected license summary from scan results'
     )
-    p_license_summary.add_argument('-i', '--input', nargs='?', help='Path to results file')
-    p_license_summary.add_argument('-o', '--output', type=str, help='Save details into a file')
 
-    # Add common commands for inspect copyleft and license summary
-    for p in [p_copyleft, p_license_summary]:
-        p.add_argument(
-            '--include',
-            help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.',
-        )
-        p.add_argument(
-            '--exclude',
-            help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.',
-        )
-        p.add_argument(
-            '--explicit',
-            help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s',
-        )
+    p_component_summary = p_inspect_sub.add_parser(
+        'component-summary', aliases=['comp-summary', 'compsum'], description='Get component summary',
+        help='Get detected component summary from scan results'
+    )
 
     ####### INSPECT: Undeclared components ######
     # Inspect Sub-command: inspect undeclared
@@ -588,13 +577,30 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Sbom format for status output',
     )
 
+    # Add common commands for inspect copyleft and license summary
+    for p in [p_copyleft, p_license_summary]:
+        p.add_argument(
+            '--include',
+            help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.',
+        )
+        p.add_argument(
+            '--exclude',
+            help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.',
+        )
+        p.add_argument(
+            '--explicit',
+            help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s',
+        )
 
-
-
+        # Add common commands for inspect copyleft and license summary
+    for p in [p_license_summary, p_component_summary]:
+        p.add_argument('-i', '--input', nargs='?', help='Path to results file')
+        p.add_argument('-o', '--output', type=str, help='Save summary into a file')
 
     p_undeclared.set_defaults(func=inspect_undeclared)
     p_copyleft.set_defaults(func=inspect_copyleft)
     p_license_summary.set_defaults(func=inspect_license_summary)
+    p_component_summary.set_defaults(func=inspect_component_summary)
 
     ########################################### END INSPECT SUBCOMMAND ###########################################
 
@@ -851,6 +857,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_undeclared,
         p_copyleft,
         p_license_summary,
+        p_component_summary,
         c_provenance,
         p_folder_scan,
         p_folder_hash,
@@ -1305,7 +1312,7 @@ def convert(parser, args):
     if not success:
         sys.exit(1)
 
-
+################################ INSPECT handlers ################################
 def inspect_copyleft(parser, args):
     """
     Run the "inspect" sub-command
@@ -1413,6 +1420,35 @@ def inspect_license_summary(parser, args):
     )
     i_license_summary.run()
 
+def inspect_component_summary(parser, args):
+    """
+       Run the "inspect" sub-command
+       Parameters
+       ----------
+           parser: ArgumentParser
+               command line parser object
+           args: Namespace
+               Parsed arguments
+       """
+    if args.input is None:
+        print_stderr('Please specify an input file to inspect')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        sys.exit(1)
+    output: str = None
+    if args.output:
+        output = args.output
+        open(output, 'w').close()
+
+    i_component_summary = ComponentSummary(
+        debug=args.debug,
+        trace=args.trace,
+        quiet=args.quiet,
+        filepath=args.input,
+        output=output,
+    )
+    i_component_summary.run()
+
+################################ End inspect handlers ################################
 
 def utils_certloc(*_):
     """

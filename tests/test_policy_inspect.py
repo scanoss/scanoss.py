@@ -31,6 +31,8 @@ from scanoss.inspection.copyleft import Copyleft
 from scanoss.inspection.license_summary import LicenseSummary
 from scanoss.inspection.undeclared_component import UndeclaredComponent
 
+from src.scanoss.inspection.component_summary import ComponentSummary
+
 
 class MyTestCase(unittest.TestCase):
     """
@@ -384,7 +386,7 @@ Add the following snippet into your `scanoss.json` file
         self.assertEqual(license_summary['copyleft'], 5)
         self.assertEqual(len(license_summary['licenses']), 2)
 
-    def test_inspect_license_summary_with_empty_results(self):
+    def test_inspect_license_summary_with_empty_result(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = 'empty-result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
@@ -393,6 +395,28 @@ Add the following snippet into your `scanoss.json` file
         self.assertEqual(license_summary['total'], 0)
         self.assertEqual(license_summary['copyleft'], 0)
         self.assertEqual(len(license_summary['licenses']), 0)
+
+    def test_inspect_component_summary(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        i_component_summary = ComponentSummary(filepath=input_file_name)
+        component_summary = i_component_summary.run()
+        print(component_summary)
+        self.assertEqual(component_summary['total'], 7)
+        self.assertEqual(component_summary['undeclared'], 5)
+        self.assertEqual(component_summary['declared'], 2)
+
+    def test_inspect_component_summary_empty_result(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'empty-result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        i_component_summary = ComponentSummary(filepath=input_file_name)
+        component_summary = i_component_summary.run()
+        self.assertEqual(component_summary['total'], 0)
+        self.assertEqual(component_summary['undeclared'], 0)
+        self.assertEqual(component_summary['declared'], 0)
+        self.assertEqual(len(component_summary['components']), 0)
 
 if __name__ == '__main__':
     unittest.main()
