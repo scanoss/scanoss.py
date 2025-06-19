@@ -32,8 +32,8 @@ from typing import List
 import pypac
 
 from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
-from scanoss.inspection.license_summary import LicenseSummary
 from scanoss.inspection.component_summary import ComponentSummary
+from scanoss.inspection.license_summary import LicenseSummary
 from scanoss.scanners.container_scanner import (
     DEFAULT_SYFT_COMMAND,
     DEFAULT_SYFT_TIMEOUT,
