@@ -84,6 +84,9 @@ class UndeclaredComponent(PolicyCheck):
                 del component['count']
                 del component['declared']
                 del component['undeclared']
+                for lic in component['licenses']:
+                        lic.pop('count', None)  # None is default value if key doesn't exist
+                        lic.pop('source', None) # None is default value if key doesn't exist
                 undeclared_components.append(component)
         # end component loop
         return undeclared_components

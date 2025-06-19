@@ -493,5 +493,3 @@ The `container-scan` subcommand allows you to scan Docker container images for d
 ```shell
 scanoss-py container-scan image_name:tag -o container-scan-results.json
 ```
-
-You can specify an output file:

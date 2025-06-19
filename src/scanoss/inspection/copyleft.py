@@ -156,6 +156,10 @@ class Copyleft(PolicyCheck):
                 del component['declared']
                 del component['undeclared']
                 filtered_component = component
+                # Remove 'count' from each license using pop
+                for lic in copyleft_licenses:
+                    lic.pop('count', None)  # None is default value if key doesn't exist
+
                 filtered_component['licenses'] = copyleft_licenses
                 del filtered_component['status']
                 filtered_components.append(filtered_component)

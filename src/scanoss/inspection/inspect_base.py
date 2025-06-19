@@ -100,24 +100,31 @@ class InspectBase(ScanossBase):
         """
     pass
 
-    def _append_component(
-        self, components: Dict[str, Any], new_component: Dict[str, Any], id: str, status: str
-    ) -> Dict[str, Any]:
+    def _append_component(self, components: Dict[str, Any], new_component: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Append a new component to the component's dictionary.
+          Append a new component to the components dictionary.
 
-        This function creates a new entry in the components dictionary for the given component,
-        or updates an existing entry if the component already exists. It also processes the
-        licenses associated with the component.
+          This function creates a new entry in the components dictionary for the given component,
+          initializing all required counters:
+          - count: Total occurrences of this component (used by both license and component summaries)
+          - declared: Number of times this component is marked as 'identified' (used by component summary)
+          - undeclared: Number of times this component is marked as 'pending' (used by component summary)
 
-        :param components: The existing dictionary of components
-        :param new_component: The new component to be added or updated
-        :param id: The new component ID
-        :param status: The new component status
-        :return: The updated components dictionary
-        """
+          Each component also contains a 'licenses' dictionary where each license entry tracks:
+          - count: Number of times this license appears for this component (used by license summary)
+
+          Args:
+              components: The existing dictionary of components
+              new_component: The new component to be added
+              id: Component ID (e.g., FILE, SNIPPET, DEPENDENCY)
+              status: Component status ('identified' or 'pending')
+
+          Returns:
+              The updated components dictionary
+          """
+        match_id = new_component.get('id')
         # Determine the component key and purl based on component type
-        if id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
+        if match_id in [ComponentID.FILE.value, ComponentID.SNIPPET.value]:
             purl = new_component['purl'][0]  # Take the first purl for these component types
         else:
             purl = new_component['purl']
@@ -127,6 +134,15 @@ class InspectBase(ScanossBase):
             return components
 
         component_key = f'{purl}@{new_component["version"]}'
+        status = new_component.get('status')
+
+        if component_key in components:
+            # Component already exists, update component counters and try to append a new license
+            self._update_component_counters(components[component_key], status)
+            self._append_license_to_component(components, new_component, component_key)
+            return components
+
+        # Create a new component
         components[component_key] = {
             'purl': purl,
             'version': new_component['version'],
@@ -140,7 +156,29 @@ class InspectBase(ScanossBase):
             self.print_debug(f'WARNING: Results missing licenses. Skipping: {new_component}')
             return components
 
+        ## Append license to component
+        self._append_license_to_component(components, new_component, component_key)
+        return components
 
+    def _append_license_to_component(self,
+         components: Dict[str, Any], new_component: Dict[str, Any], component_key: str) -> None:
+        """
+        Add or update licenses for an existing component.
+
+        For each license in the component:
+        - If the license already exists, increments its count
+        - If it's a new license, adds it with an initial count of 1
+
+        The license count is used by license_summary to track how many times each license appears
+        across all components. This count contributes to:
+        - Total number of licenses in the project
+        - Number of copyleft licenses when the license is marked as copyleft
+
+        Args:
+            components: Dictionary containing all components
+            new_component: Component whose licenses need to be processed
+            component_key: purl + version of the component to be updated
+        """
         licenses_order_by_source_priority = self._get_licenses_order_by_source_priority(new_component['licenses'])
         # Process licenses for this component
         for license_item in licenses_order_by_source_priority:
@@ -149,22 +187,49 @@ class InspectBase(ScanossBase):
                 source = license_item.get('source')
                 if not source:
                     source = 'unknown'
-                components[component_key]['licenses'][spdxid] = {
-                    'spdxid': spdxid,
-                    'copyleft': self.license_util.is_copyleft(spdxid),
-                    'url': self.license_util.get_spdx_url(spdxid),
-                    'source': source,
-                }
-        return components
+
+                if spdxid in components[component_key]['licenses']:
+                    # If license exists, increment counter
+                    components[component_key]['licenses'][spdxid]['count'] += 1 # Increment counter for license
+                else:
+                    # If a license doesn't exist, create new entry
+                    components[component_key]['licenses'][spdxid] = {
+                        'spdxid': spdxid,
+                        'copyleft': self.license_util.is_copyleft(spdxid),
+                        'url': self.license_util.get_spdx_url(spdxid),
+                        'source': source,
+                        'count': 1, # Set counter to 1 on new license
+                    }
+
+    def _update_component_counters(self, component, status):
+        """Update component counters based on status."""
+        component['count'] += 1
+        if status == 'identified':
+            component['declared'] += 1
+        else:
+            component['undeclared'] += 1
 
     def _get_components_data(self, results: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Extract and process file and snippet components from results.
+           Extract and process file and snippet components from results.
 
-        :param results: A dictionary containing the raw results of a component scan
-        :param components: Existing components dictionary to update
-        :return: Updated components dictionary with file and snippet data
-        """
+           This method processes scan results to build or update component entries. For each component:
+
+           Component Counters (used by ComponentSummary):
+           - count: Incremented for each occurrence of the component
+           - declared: Incremented when component status is 'identified'
+           - undeclared: Incremented when component status is 'pending'
+
+           License Tracking:
+           - For new components, initializes license dictionary through _append_component
+           - For existing components, updates license counters through _append_license_to_component
+             which tracks the number of occurrences of each license
+
+           Args:
+               results: A dictionary containing the raw results of a component scan
+           Returns:
+               Updated components dictionary with file and snippet data
+           """
         for component in results.values():
             for c in component:
                 component_id = c.get('id')
@@ -190,13 +255,8 @@ class InspectBase(ScanossBase):
                         self.print_debug(f'WARNING: Result missing version. Setting it to unknown: {c}')
                         version = 'unknown'
                         c['version'] = version #If no version exists. Set 'unknown' version to current component
-                    component_key = f'{c["purl"][0]}@{version}'
-                    if component_key not in components:
-                        components = self._append_component(components, c, component_id, status)
-                    else:
-                        components[component_key]['count'] += 1
-                        components[component_key]['declared'] += 1 if status == 'identified' else 0
-                        components[component_key]['undeclared'] += 1 if status == 'pending' else 0
+                    # Append component
+                    components = self._append_component(components, c)
 
             # End component loop
         # End components loop
@@ -227,14 +287,15 @@ class InspectBase(ScanossBase):
                         if not dependency.get('purl'):
                             self.print_debug(f'WARNING: Dependency result missing purl. Skipping: {dependency}')
                             continue
-                        version = c.get('version')
+                        version = dependency.get('version')
                         if not version:
                             self.print_debug(f'WARNING: Result missing version. Setting it to unknown: {c}')
                             version = 'unknown'
-                            c['version'] = version  # If no version exists. Set 'unknown' version to current component
-                        component_key = f'{dependency["purl"]}@{version}'
-                        if component_key not in components:
-                            components = self._append_component(components, dependency, component_id, status)
+                            c['version'] = version  # Set an 'unknown' version to the current component
+
+                        # Append component
+                        components = self._append_component(components, dependency)
+
                     # End dependency loop
             # End component loop
         # End of result loop

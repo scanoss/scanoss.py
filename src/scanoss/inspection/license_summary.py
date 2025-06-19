@@ -97,10 +97,10 @@ class LicenseSummary(InspectBase):
                 'spdxid': spdxid,
                 'url': url,
                 'copyleft':copyleft,
-                'count': 1
+                'count': new_license.get("count"),
             }
         else:
-            licenses[spdxid]['count'] += 1
+            licenses[spdxid]['count'] += new_license.get("count")
 
     def _get_licenses_summary_from_components(self, components: list)-> dict:
         """
@@ -119,9 +119,9 @@ class LicenseSummary(InspectBase):
                     continue
                 copyleft = lic.get("copyleft")
                 ## Increment counters
-                total_licenses += 1
+                total_licenses += lic.get("count")
                 if copyleft:
-                    licenses_with_copyleft += 1
+                    licenses_with_copyleft += lic.get("count")
                 ## Add license
                 self._append_license(licenses, lic)
             ## End for loop licenses

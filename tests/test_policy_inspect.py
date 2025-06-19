@@ -382,8 +382,8 @@ Add the following snippet into your `scanoss.json` file
         input_file_name = os.path.join(script_dir, 'data', file_name)
         i_license_summary = LicenseSummary(filepath=input_file_name)
         license_summary = i_license_summary.run()
-        self.assertEqual(license_summary['total'], 7)
-        self.assertEqual(license_summary['copyleft'], 5)
+        self.assertEqual(license_summary['total'], 9)
+        self.assertEqual(license_summary['copyleft'], 7)
         self.assertEqual(len(license_summary['licenses']), 2)
 
     def test_inspect_license_summary_with_empty_result(self):
