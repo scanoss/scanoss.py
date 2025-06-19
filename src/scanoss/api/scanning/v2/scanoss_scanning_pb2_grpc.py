@@ -6,7 +6,7 @@ import warnings
 from scanoss.api.common.v2 import scanoss_common_pb2 as scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2
 from scanoss.api.scanning.v2 import scanoss_scanning_pb2 as scanoss_dot_api_dot_scanning_dot_v2_dot_scanoss__scanning__pb2
 
-GRPC_GENERATED_VERSION = '1.73.0'
+GRPC_GENERATED_VERSION = '1.67.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
