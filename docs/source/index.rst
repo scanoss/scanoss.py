@@ -252,10 +252,6 @@ Performs a comprehensive scan of a directory using folder hashing to identify co
      - Output format: {json} (optional - default json)
    * - --timeout <seconds>, -M <seconds>
      - Timeout in seconds for API communication (optional - default 600)
-   * - --best-match, -bm
-     - Enable best match mode (optional - default: False)
-   * - --threshold <1-100>
-     - Threshold for result matching (optional - default: 100)
    * - --settings <file>, -st <file>
      - Settings file to use for scanning (optional - default scanoss.json)
    * - --skip-settings-file, -stf
