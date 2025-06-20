@@ -32,6 +32,8 @@ from typing import List
 import pypac
 
 from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
+from scanoss.inspection.component_summary import ComponentSummary
+from scanoss.inspection.license_summary import LicenseSummary
 from scanoss.scanners.container_scanner import (
     DEFAULT_SYFT_COMMAND,
     DEFAULT_SYFT_TIMEOUT,
@@ -531,6 +533,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
     p_results.set_defaults(func=results)
 
+    ########################################### INSPECT SUBCOMMAND ###########################################
     # Sub-command: inspect
     p_inspect = subparsers.add_parser(
         'inspect', aliases=['insp', 'ins'], description=f'Inspect results: {__version__}', help='Inspect results'
@@ -539,24 +542,26 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_inspect_sub = p_inspect.add_subparsers(
         title='Inspect Commands', dest='subparsercmd', description='Inspect sub-commands', help='Inspect sub-commands'
     )
+
+    ####### INSPECT: Copyleft ######
     # Inspect Sub-command: inspect copyleft
     p_copyleft = p_inspect_sub.add_parser(
         'copyleft', aliases=['cp'], description='Inspect for copyleft licenses', help='Inspect for copyleft licenses'
     )
-    p_copyleft.add_argument(
-        '--include',
-        help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.',
-    )
-    p_copyleft.add_argument(
-        '--exclude',
-        help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.',
-    )
-    p_copyleft.add_argument(
-        '--explicit',
-        help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s',
-    )
-    p_copyleft.set_defaults(func=inspect_copyleft)
 
+    ####### INSPECT: License Summary ######
+    # Inspect Sub-command: inspect license summary
+    p_license_summary = p_inspect_sub.add_parser(
+        'license-summary', aliases=['lic-summary', 'licsum'], description='Get license summary',
+        help='Get detected license summary from scan results'
+    )
+
+    p_component_summary = p_inspect_sub.add_parser(
+        'component-summary', aliases=['comp-summary', 'compsum'], description='Get component summary',
+        help='Get detected component summary from scan results'
+    )
+
+    ####### INSPECT: Undeclared components ######
     # Inspect Sub-command: inspect undeclared
     p_undeclared = p_inspect_sub.add_parser(
         'undeclared',
@@ -571,7 +576,33 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         default='settings',
         help='Sbom format for status output',
     )
+
+    # Add common commands for inspect copyleft and license summary
+    for p in [p_copyleft, p_license_summary]:
+        p.add_argument(
+            '--include',
+            help='List of Copyleft licenses to append to the default list. Provide licenses as a comma-separated list.',
+        )
+        p.add_argument(
+            '--exclude',
+            help='List of Copyleft licenses to remove from default list. Provide licenses as a comma-separated list.',
+        )
+        p.add_argument(
+            '--explicit',
+            help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s',
+        )
+
+        # Add common commands for inspect copyleft and license summary
+    for p in [p_license_summary, p_component_summary]:
+        p.add_argument('-i', '--input', nargs='?', help='Path to results file')
+        p.add_argument('-o', '--output', type=str, help='Save summary into a file')
+
     p_undeclared.set_defaults(func=inspect_undeclared)
+    p_copyleft.set_defaults(func=inspect_copyleft)
+    p_license_summary.set_defaults(func=inspect_license_summary)
+    p_component_summary.set_defaults(func=inspect_component_summary)
+
+    ########################################### END INSPECT SUBCOMMAND ###########################################
 
     # Sub-command: folder-scan
     p_folder_scan = subparsers.add_parser(
@@ -825,6 +856,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_results,
         p_undeclared,
         p_copyleft,
+        p_license_summary,
+        p_component_summary,
         c_provenance,
         p_folder_scan,
         p_folder_hash,
@@ -1279,7 +1312,7 @@ def convert(parser, args):
     if not success:
         sys.exit(1)
 
-
+################################ INSPECT handlers ################################
 def inspect_copyleft(parser, args):
     """
     Run the "inspect" sub-command
@@ -1356,13 +1389,73 @@ def inspect_undeclared(parser, args):
     status, _ = i_undeclared.run()
     sys.exit(status)
 
+def inspect_license_summary(parser, args):
+    """
+       Run the "inspect" sub-command
+       Parameters
+       ----------
+           parser: ArgumentParser
+               command line parser object
+           args: Namespace
+               Parsed arguments
+       """
+    if args.input is None:
+        print_stderr('Please specify an input file to inspect')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        sys.exit(1)
+    output: str = None
+    if args.output:
+        output = args.output
+        open(output, 'w').close()
+
+    i_license_summary = LicenseSummary(
+        debug=args.debug,
+        trace=args.trace,
+        quiet=args.quiet,
+        filepath=args.input,
+        output=output,
+        include=args.include,
+        exclude=args.exclude,
+        explicit=args.explicit,
+    )
+    i_license_summary.run()
+
+def inspect_component_summary(parser, args):
+    """
+       Run the "inspect" sub-command
+       Parameters
+       ----------
+           parser: ArgumentParser
+               command line parser object
+           args: Namespace
+               Parsed arguments
+       """
+    if args.input is None:
+        print_stderr('Please specify an input file to inspect')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        sys.exit(1)
+    output: str = None
+    if args.output:
+        output = args.output
+        open(output, 'w').close()
+
+    i_component_summary = ComponentSummary(
+        debug=args.debug,
+        trace=args.trace,
+        quiet=args.quiet,
+        filepath=args.input,
+        output=output,
+    )
+    i_component_summary.run()
+
+################################ End inspect handlers ################################
 
 def utils_certloc(*_):
     """
     Run the "utils certloc" sub-command
     :param _: ignored/unused
     """
-    import certifi
+    import certifi # noqa: PLC0415,I001
 
     print(f'CA Cert File: {certifi.where()}')
 
@@ -1373,11 +1466,11 @@ def utils_cert_download(_, args):  # pylint: disable=PLR0912 # noqa: PLR0912
     :param _: ignore/unused
     :param args: Parsed arguments
     """
-    import socket
-    import traceback
-    from urllib.parse import urlparse
+    import socket # noqa: PLC0415,I001
+    import traceback # noqa: PLC0415,I001
+    from urllib.parse import urlparse # noqa: PLC0415,I001
 
-    from OpenSSL import SSL, crypto
+    from OpenSSL import SSL, crypto # noqa: PLC0415,I001
 
     file = sys.stdout
     if args.output:
@@ -1425,7 +1518,7 @@ def utils_pac_proxy(_, args):
     :param _: ignore/unused
     :param args: Parsed arguments
     """
-    from pypac.resolver import ProxyResolver
+    from pypac.resolver import ProxyResolver # noqa: PLC0415,I001
 
     if not args.pac:
         print_stderr('Error: No pac file option specified.')
@@ -1499,7 +1592,7 @@ def crypto_algorithms(parser, args):
         sys.exit(1)
     except Exception as e:
         if args.debug:
-            import traceback
+            import traceback # noqa: PLC0415,I001
 
             traceback.print_exc()
         print_stderr(f'ERROR: {e}')
@@ -1541,7 +1634,7 @@ def crypto_hints(parser, args):
         sys.exit(1)
     except Exception as e:
         if args.debug:
-            import traceback
+            import traceback # noqa: PLC0415,I001
 
             traceback.print_exc()
         print_stderr(f'ERROR: {e}')
@@ -1583,7 +1676,7 @@ def crypto_versions_in_range(parser, args):
         sys.exit(1)
     except Exception as e:
         if args.debug:
-            import traceback
+            import traceback # noqa: PLC0415,I001
 
             traceback.print_exc()
         print_stderr(f'ERROR: {e}')

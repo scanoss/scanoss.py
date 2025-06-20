@@ -28,7 +28,10 @@ import re
 import unittest
 
 from scanoss.inspection.copyleft import Copyleft
+from scanoss.inspection.license_summary import LicenseSummary
 from scanoss.inspection.undeclared_component import UndeclaredComponent
+
+from src.scanoss.inspection.component_summary import ComponentSummary
 
 
 class MyTestCase(unittest.TestCase):
@@ -178,7 +181,7 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
         Add the following snippet into your `sbom.json` file 
         ```json 
         {
@@ -211,13 +214,12 @@ class MyTestCase(unittest.TestCase):
         details = results['details']
         summary = results['summary']
         expected_details_output = """ ### Undeclared components
-             | Component | Version | License | 
-             | - | - | - | 
-             | pkg:github/scanoss/scanner.c | 1.3.3 | GPL-2.0-only | 
-             | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
-             | pkg:github/scanoss/wfp | 6afc1f6 | GPL-2.0-only |  """
+             | Component | License | 
+             | - | - | 
+             | pkg:github/scanoss/scanner.c | GPL-2.0-only | 
+             | pkg:github/scanoss/wfp | GPL-2.0-only |  """
 
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
            Add the following snippet into your `sbom.json` file 
            ```json 
                {
@@ -231,8 +233,6 @@ class MyTestCase(unittest.TestCase):
                 ]             
                }```
            """
-
-        print(summary)
         self.assertEqual(status, 0)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
@@ -254,13 +254,12 @@ class MyTestCase(unittest.TestCase):
         details = results['details']
         summary = results['summary']
         expected_details_output = """ ### Undeclared components
-               | Component | Version | License | 
-               | - | - | - | 
-               | pkg:github/scanoss/scanner.c | 1.3.3 | GPL-2.0-only | 
-               | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
-               | pkg:github/scanoss/wfp | 6afc1f6 | GPL-2.0-only | """
+               | Component | License | 
+               | - | - | 
+               | pkg:github/scanoss/scanner.c | GPL-2.0-only | 
+               | pkg:github/scanoss/wfp | GPL-2.0-only | """
 
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
             Add the following snippet into your `scanoss.json` file
             
             ```json
@@ -277,8 +276,6 @@ class MyTestCase(unittest.TestCase):
               }
             }
             ```"""
-
-        print(summary)
         self.assertEqual(status, 0)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
@@ -299,7 +296,7 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
                 Add the following snippet into your `scanoss.json` file
 
                 ```json
@@ -330,12 +327,11 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = results['details']
         summary = results['summary']
-        expected_details_output = """|*Component*|*Version*|*License*|
-|pkg:github/scanoss/scanner.c|1.3.3|GPL-2.0-only|
-|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|
-|pkg:github/scanoss/wfp|6afc1f6|GPL-2.0-only|
+        expected_details_output = """|*Component*|*License*|
+|pkg:github/scanoss/scanner.c|GPL-2.0-only|
+|pkg:github/scanoss/wfp|GPL-2.0-only|
 """
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
 Add the following snippet into your `scanoss.json` file
 {code:json}
 {
@@ -373,6 +369,47 @@ Add the following snippet into your `scanoss.json` file
         self.assertEqual(status, 0)
         self.assertEqual(expected_details_output, details)
 
+    def test_inspect_license_summary(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        i_license_summary = LicenseSummary(filepath=input_file_name)
+        license_summary = i_license_summary.run()
+        self.assertEqual(license_summary['total'], 9)
+        self.assertEqual(license_summary['copyleft'], 7)
+        self.assertEqual(len(license_summary['licenses']), 2)
+
+    def test_inspect_license_summary_with_empty_result(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'empty-result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        i_license_summary = LicenseSummary(filepath=input_file_name)
+        license_summary = i_license_summary.run()
+        self.assertEqual(license_summary['total'], 0)
+        self.assertEqual(license_summary['copyleft'], 0)
+        self.assertEqual(len(license_summary['licenses']), 0)
+
+    def test_inspect_component_summary(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        i_component_summary = ComponentSummary(filepath=input_file_name)
+        component_summary = i_component_summary.run()
+        print(component_summary)
+        self.assertEqual(component_summary['total'], 7)
+        self.assertEqual(component_summary['undeclared'], 5)
+        self.assertEqual(component_summary['declared'], 2)
+
+    def test_inspect_component_summary_empty_result(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'empty-result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        i_component_summary = ComponentSummary(filepath=input_file_name)
+        component_summary = i_component_summary.run()
+        self.assertEqual(component_summary['total'], 0)
+        self.assertEqual(component_summary['undeclared'], 0)
+        self.assertEqual(component_summary['declared'], 0)
+        self.assertEqual(len(component_summary['components']), 0)
 
 if __name__ == '__main__':
     unittest.main()

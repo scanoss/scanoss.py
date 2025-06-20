@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.26.0] - 2025-06-20
+### Added
+- New `inspect license-summary` subcommand to generate license summaries from scan results
+- New `inspect component-summary` subcommand to generate component summaries from scan results
+- Added examples for inspect summary commands in CLIENT_HELP.md
+### Fixed
+- Fixed `inspect undeclared` bug where pending status now takes precedence over identified status for the same component
+### Changed
+- Modified `inspect undeclared` view for `md` format to remove version information
+
 ## [1.25.2] - 2025-06-18
 ### Fixed
 - Fixed errors when no versions are declared in scanner results for `inspect` subcommand
@@ -542,3 +552,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.25.0]: https://github.com/scanoss/scanoss.py/compare/v1.24.0...v1.25.0
 [1.25.1]: https://github.com/scanoss/scanoss.py/compare/v1.25.0...v1.25.1
 [1.25.2]: https://github.com/scanoss/scanoss.py/compare/v1.25.1...v1.25.2
+[1.26.0]: https://github.com/scanoss/scanoss.py/compare/v1.25.2...v1.26.0
