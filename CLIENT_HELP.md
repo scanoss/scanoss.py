@@ -369,6 +369,8 @@ Details, such as license compliance or component declarations, can be examined.
 For example:
 * Copyleft (`copylefet`)
 * Undeclared Components (`undeclared`)
+* License Summary (`license-summary`)
+* Component Summary (`component-summary`)
 
 For the latest list of sub-commands, please run:
 ```bash
@@ -432,6 +434,46 @@ scanoss-py insp undeclared -i scan-results.json --output undeclared-summary.jira
 The following command can be used to inspect for undeclared components and save the results in Jira Markdown format.
 ```bash
 scanoss-py insp copyleft -i scan-results.json --output copyleft-summary.jiramd --status copyleft-status.jiramd --format jira_md
+```
+
+#### Inspect for license summary from scan results
+The following command can be used to get a license summary from scan results.
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.json
+```
+
+Example with an output file:
+
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.txt
+```
+
+#### Inspect for license summary from scan results with custom copyleft licenses
+The following command can be used to get a license summary from scan results. 
+
+Example including a license to the default list
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.json --include Zlib,MIT
+```
+
+Example excluding a license from the default list
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.txt --exclude GPL-2.0-only
+```
+
+Example getting only explicit declared licenses
+```bash
+scanoss-py insp license-summary -i scan-results.json --output license-summary.json --explicit Zlib
+```
+
+#### Inspect for component summary from scan results
+The following command can be used to get a component summary from scan results and save the output.
+```bash
+scanoss-py insp component-summary -i scan-results.json
+```
+Example with an output file:
+```bash
+scanoss-py insp component-summary -i scan-results.json --output component-summary.json
 ```
 
 ### Folder-Scan a Project Folder

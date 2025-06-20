@@ -1,7 +1,7 @@
 """
 SPDX-License-Identifier: MIT
 
-  Copyright (c) 2024, SCANOSS
+  Copyright (c) 2025, SCANOSS
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -151,7 +151,15 @@ class Copyleft(PolicyCheck):
         for component in components:
             copyleft_licenses = [lic for lic in component['licenses'] if lic['copyleft']]
             if copyleft_licenses:
+                # Remove unused keys
+                del component['count']
+                del component['declared']
+                del component['undeclared']
                 filtered_component = component
+                # Remove 'count' from each license using pop
+                for lic in copyleft_licenses:
+                    lic.pop('count', None)  # None is default value if key doesn't exist
+
                 filtered_component['licenses'] = copyleft_licenses
                 del filtered_component['status']
                 filtered_components.append(filtered_component)
