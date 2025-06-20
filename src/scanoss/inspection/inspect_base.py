@@ -102,9 +102,9 @@ class InspectBase(ScanossBase):
 
     def _append_component(self, components: Dict[str, Any], new_component: Dict[str, Any]) -> Dict[str, Any]:
         """
-          Append a new component to the components dictionary.
+          Append a new component to the component dictionary.
 
-          This function creates a new entry in the components dictionary for the given component,
+          This function creates a new entry in the component dictionary for the given component,
           initializing all required counters:
           - count: Total occurrences of this component (used by both license and component summaries)
           - declared: Number of times this component is marked as 'identified' (used by component summary)
@@ -116,9 +116,6 @@ class InspectBase(ScanossBase):
           Args:
               components: The existing dictionary of components
               new_component: The new component to be added
-              id: Component ID (e.g., FILE, SNIPPET, DEPENDENCY)
-              status: Component status ('identified' or 'pending')
-
           Returns:
               The updated components dictionary
           """
@@ -140,6 +137,9 @@ class InspectBase(ScanossBase):
             # Component already exists, update component counters and try to append a new license
             self._update_component_counters(components[component_key], status)
             self._append_license_to_component(components, new_component, component_key)
+            # Maintain 'pending' status - takes precedence over 'identified'
+            if status == 'pending':
+                components[component_key]['status'] = "pending"
             return components
 
         # Create a new component
