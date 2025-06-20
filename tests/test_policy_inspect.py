@@ -181,7 +181,7 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
         Add the following snippet into your `sbom.json` file 
         ```json 
         {
@@ -214,13 +214,12 @@ class MyTestCase(unittest.TestCase):
         details = results['details']
         summary = results['summary']
         expected_details_output = """ ### Undeclared components
-             | Component | Version | License | 
-             | - | - | - | 
-             | pkg:github/scanoss/scanner.c | 1.3.3 | GPL-2.0-only | 
-             | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
-             | pkg:github/scanoss/wfp | 6afc1f6 | GPL-2.0-only |  """
+             | Component | License | 
+             | - | - | 
+             | pkg:github/scanoss/scanner.c | GPL-2.0-only | 
+             | pkg:github/scanoss/wfp | GPL-2.0-only |  """
 
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
            Add the following snippet into your `sbom.json` file 
            ```json 
                {
@@ -234,8 +233,6 @@ class MyTestCase(unittest.TestCase):
                 ]             
                }```
            """
-
-        print(summary)
         self.assertEqual(status, 0)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
@@ -257,13 +254,12 @@ class MyTestCase(unittest.TestCase):
         details = results['details']
         summary = results['summary']
         expected_details_output = """ ### Undeclared components
-               | Component | Version | License | 
-               | - | - | - | 
-               | pkg:github/scanoss/scanner.c | 1.3.3 | GPL-2.0-only | 
-               | pkg:github/scanoss/scanner.c | 1.1.4 | GPL-2.0-only | 
-               | pkg:github/scanoss/wfp | 6afc1f6 | GPL-2.0-only | """
+               | Component | License | 
+               | - | - | 
+               | pkg:github/scanoss/scanner.c | GPL-2.0-only | 
+               | pkg:github/scanoss/wfp | GPL-2.0-only | """
 
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
             Add the following snippet into your `scanoss.json` file
             
             ```json
@@ -280,8 +276,6 @@ class MyTestCase(unittest.TestCase):
               }
             }
             ```"""
-
-        print(summary)
         self.assertEqual(status, 0)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
@@ -302,7 +296,7 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
                 Add the following snippet into your `scanoss.json` file
 
                 ```json
@@ -333,12 +327,11 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = results['details']
         summary = results['summary']
-        expected_details_output = """|*Component*|*Version*|*License*|
-|pkg:github/scanoss/scanner.c|1.3.3|GPL-2.0-only|
-|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|
-|pkg:github/scanoss/wfp|6afc1f6|GPL-2.0-only|
+        expected_details_output = """|*Component*|*License*|
+|pkg:github/scanoss/scanner.c|GPL-2.0-only|
+|pkg:github/scanoss/wfp|GPL-2.0-only|
 """
-        expected_summary_output = """3 undeclared component(s) were found.
+        expected_summary_output = """2 undeclared component(s) were found.
 Add the following snippet into your `scanoss.json` file
 {code:json}
 {
