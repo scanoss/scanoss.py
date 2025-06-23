@@ -80,7 +80,6 @@ class UndeclaredComponent(PolicyCheck):
         for component in components:
             if component['status'] == 'pending':
                 # Remove unused keys
-                del component['status']
                 del component['count']
                 del component['declared']
                 del component['undeclared']
@@ -177,7 +176,7 @@ class UndeclaredComponent(PolicyCheck):
         # TODO look at using SpdxLite license name lookup method
         component_licenses = self._group_components_by_license(components)
         for component in component_licenses:
-            rows.append([component.get('purl'), component.get('license')])
+            rows.append([component.get('purl'), component.get('spdxid')])
         return {
             'details': f'### Undeclared components\n{self.generate_table(headers, rows)}\n',
             'summary': self._get_summary(component_licenses),
@@ -195,7 +194,7 @@ class UndeclaredComponent(PolicyCheck):
         # TODO look at using SpdxLite license name lookup method
         component_licenses = self._group_components_by_license(components)
         for component in component_licenses:
-            rows.append([component.get('purl'), component.get('license')])
+            rows.append([component.get('purl'), component.get('spdxid')])
         return {
             'details': f'{self.generate_jira_table(headers, rows)}',
             'summary': self._get_jira_summary(component_licenses),
@@ -264,36 +263,6 @@ class UndeclaredComponent(PolicyCheck):
         components = self._get_components_data(self.results, components)
         # Convert to list and process licenses
         return self._convert_components_to_list(components)
-
-    def _group_components_by_license(self,components):
-        """
-        Groups components by their unique component-license pairs.
-
-        This method processes a list of components and creates unique entries for each
-        component-license combination. If a component has multiple licenses, it will create
-        separate entries for each license.
-
-        Args:
-            components: A list of component dictionaries. Each component should have:
-                - purl: Package URL identifying the component
-                - licenses: List of license dictionaries, each containing:
-                    - spdxid: SPDX identifier for the license (optional)
-
-        Returns:
-            list: A list of dictionaries, each containing:
-                - purl: The component's package URL
-                - license: The SPDX identifier of the license (or 'Unknown' if not provided)
-        """
-        component_licenses: dict = {}
-        for component in components:
-            for lic in component['licenses']:
-                spdxid = lic.get('spdxid', 'Unknown')
-                key = f'{component["purl"]}-{spdxid}'
-                component_licenses[key] = {
-                    'purl': component['purl'],
-                    'license': spdxid,
-                }
-        return list(component_licenses.values())
 
     def run(self):
         """

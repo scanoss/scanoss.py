@@ -35,12 +35,18 @@ class ComponentSummary(InspectBase):
         :param components: List of all components
         :return: Dict with license summary information
         """
+        # A component is considered unique by its combination of PURL (Package URL) and license
+        component_licenses = self._group_components_by_license(scan_components)
+        total_components = len(component_licenses)
+        # Get undeclared components
+        undeclared_components = len([c for c in component_licenses if c['status'] == 'pending'])
+
         components: list = []
-        undeclared_components = 0
-        total_components = 0
+        total_undeclared_files = 0
+        total_files_detected = 0
         for component in scan_components:
-            total_components += component['count']
-            undeclared_components += component['undeclared']
+            total_files_detected += component['count']
+            total_undeclared_files += component['undeclared']
             components.append({
                 'purl': component['purl'],
                 'version': component['version'],
@@ -50,10 +56,13 @@ class ComponentSummary(InspectBase):
             })
         ## End for loop components
         return {
-            'components': components,
-            'total': total_components,
-            'undeclared': undeclared_components,
-            'declared': total_components - undeclared_components,
+            "components": component_licenses,
+            'totalComponents': total_components,
+            'undeclaredComponents': undeclared_components,
+            'declaredComponents': total_components - undeclared_components,
+            'totalFilesDetected': total_files_detected,
+            'totalFilesUndeclared': total_undeclared_files,
+            'totalFilesDeclared': total_files_detected - total_undeclared_files,
         }
 
     def _get_components(self):
