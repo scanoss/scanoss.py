@@ -78,12 +78,14 @@ class Copyleft(PolicyCheck):
         :param components: List of components with copyleft licenses
         :return: Dictionary with formatted JSON details and summary
         """
+        # A component is considered unique by its combination of PURL (Package URL) and license
+        component_licenses = self._group_components_by_license(components)
         details = {}
         if len(components) > 0:
             details = {'components': components}
         return {
             'details': f'{json.dumps(details, indent=2)}\n',
-            'summary': f'{len(components)} component(s) with copyleft licenses were found.\n',
+            'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
     def _markdown(self, components: list) -> Dict[str, Any]:
@@ -93,24 +95,24 @@ class Copyleft(PolicyCheck):
         :param components: List of components with copyleft licenses
         :return: Dictionary with formatted Markdown details and summary
         """
-        headers = ['Component', 'Version', 'License', 'URL', 'Copyleft']
+        # A component is considered unique by its combination of PURL (Package URL) and license
+        component_licenses = self._group_components_by_license(components)
+        headers = ['Component', 'License', 'URL', 'Copyleft']
         centered_columns = [1, 4]
         rows: [[]] = []
-        for component in components:
-            for lic in component['licenses']:
+        for comp_lic_item in component_licenses:
                 row = [
-                    component['purl'],
-                    component['version'],
-                    lic['spdxid'],
-                    lic['url'],
-                    'YES' if lic['copyleft'] else 'NO',
+                    comp_lic_item['purl'],
+                    comp_lic_item['spdxid'],
+                    comp_lic_item['url'],
+                    'YES' if comp_lic_item['copyleft'] else 'NO',
                 ]
                 rows.append(row)
             # End license loop
         # End component loop
         return {
             'details': f'### Copyleft licenses\n{self.generate_table(headers, rows, centered_columns)}\n',
-            'summary': f'{len(components)} component(s) with copyleft licenses were found.\n',
+            'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
     def _jira_markdown(self, components: list) -> Dict[str, Any]:
@@ -120,24 +122,24 @@ class Copyleft(PolicyCheck):
         :param components: List of components with copyleft licenses
         :return: Dictionary with formatted Markdown details and summary
         """
-        headers = ['Component', 'Version', 'License', 'URL', 'Copyleft']
+        # A component is considered unique by its combination of PURL (Package URL) and license
+        component_licenses = self._group_components_by_license(components)
+        headers = ['Component', 'License', 'URL', 'Copyleft']
         centered_columns = [1, 4]
         rows: [[]] = []
-        for component in components:
-            for lic in component['licenses']:
+        for comp_lic_item in component_licenses:
                 row = [
-                    component['purl'],
-                    component['version'],
-                    lic['spdxid'],
-                    lic['url'],
-                    'YES' if lic['copyleft'] else 'NO',
+                    comp_lic_item['purl'],
+                    comp_lic_item['spdxid'],
+                    comp_lic_item['url'],
+                    'YES' if comp_lic_item['copyleft'] else 'NO',
                 ]
                 rows.append(row)
             # End license loop
         # End component loop
         return {
             'details': f'{self.generate_jira_table(headers, rows, centered_columns)}',
-            'summary': f'{len(components)} component(s) with copyleft licenses were found.\n',
+            'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
     def _filter_components_with_copyleft_licenses(self, components: list) -> list:
@@ -161,7 +163,6 @@ class Copyleft(PolicyCheck):
                     lic.pop('count', None)  # None is default value if key doesn't exist
 
                 filtered_component['licenses'] = copyleft_licenses
-                del filtered_component['status']
                 filtered_components.append(filtered_component)
         # End component loop
         self.print_debug(f'Copyleft components: {filtered_components}')

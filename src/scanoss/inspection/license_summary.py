@@ -23,7 +23,6 @@ SPDX-License-Identifier: MIT
 """
 
 import json
-from typing import Any, Dict
 
 from .inspect_base import InspectBase
 
@@ -73,35 +72,6 @@ class LicenseSummary(InspectBase):
         self.exclude = exclude
         self.explicit = explicit
 
-    def _validate_license(self, license_data: Dict[str, Any]) -> bool:
-        """
-        Validate that a license has all required fields.
-
-        :param license_data: Dictionary containing license information
-        :return: True if license is valid, False otherwise
-        """
-        for field in self.REQUIRED_LICENSE_FIELDS:
-            value = license_data.get(field)
-            if value is None:
-                self.print_debug(f'WARNING: {field} is empty in license: {license_data}')
-                return False
-        return True
-
-    def _append_license(self, licenses: dict, new_license) -> None:
-        """Add or update a license in the licenses' dictionary."""
-        spdxid = new_license.get("spdxid")
-        url = new_license.get("url")
-        copyleft = new_license.get("copyleft")
-        if spdxid not in licenses:
-            licenses[spdxid] = {
-                'spdxid': spdxid,
-                'url': url,
-                'copyleft':copyleft,
-                'count': new_license.get("count"),
-            }
-        else:
-            licenses[spdxid]['count'] += new_license.get("count")
-
     def _get_licenses_summary_from_components(self, components: list)-> dict:
         """
         Get a license summary from detected components.
@@ -109,27 +79,35 @@ class LicenseSummary(InspectBase):
         :param components: List of all components
         :return: Dict with license summary information
         """
+        # A component is considered unique by its combination of PURL (Package URL) and license
+        component_licenses = self._group_components_by_license(components)
+        license_component_count = {}
+        # Count license per component
+        for lic in component_licenses:
+            if lic['spdxid'] not in license_component_count:
+                license_component_count[lic['spdxid']] = 1
+            else:
+                license_component_count[lic['spdxid']] += 1
         licenses:dict = {}
-        licenses_with_copyleft = 0
-        total_licenses = 0
-        for component in components:
-            component_licenses =  component.get("licenses", [])
-            for lic in component_licenses:
-                if not self._validate_license(lic):
-                    continue
-                copyleft = lic.get("copyleft")
-                ## Increment counters
-                total_licenses += lic.get("count")
-                if copyleft:
-                    licenses_with_copyleft += lic.get("count")
-                ## Add license
-                self._append_license(licenses, lic)
+        for comp_lic in component_licenses:
+            spdxid = comp_lic.get("spdxid")
+            url = comp_lic.get("url")
+            copyleft = comp_lic.get("copyleft")
+            if spdxid not in licenses:
+                licenses[spdxid] = {
+                    'spdxid': spdxid,
+                    'url': url,
+                    'copyleft': copyleft,
+                    'componentCount': license_component_count.get(spdxid, 0), # Append component count to license
+                }
             ## End for loop licenses
         ## End for loop components
+        detected_licenses = list(licenses.values())
+        licenses_with_copyleft = [lic for lic in detected_licenses if lic['copyleft']]
         return {
-                 'licenses': list(licenses.values()),
-                 'total': total_licenses,
-                 'copyleft': licenses_with_copyleft
+                 'licenses': detected_licenses,
+                 'detectedLicenses': len(detected_licenses), # Count unique licenses. SPDXID is considered unique
+                 'detectedLicensesWithCopyleft': len(licenses_with_copyleft),
                }
 
 
