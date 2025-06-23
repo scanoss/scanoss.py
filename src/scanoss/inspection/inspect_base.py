@@ -372,6 +372,40 @@ class InspectBase(ScanossBase):
         self.print_debug("No priority sources found, returning all licenses as list")
         return licenses_data
 
+    def _group_components_by_license(self,components):
+        """
+        Groups components by their unique component-license pairs.
+
+        This method processes a list of components and creates unique entries for each
+        component-license combination. If a component has multiple licenses, it will create
+        separate entries for each license.
+
+        Args:
+            components: A list of component dictionaries. Each component should have:
+                - purl: Package URL identifying the component
+                - licenses: List of license dictionaries, each containing:
+                    - spdxid: SPDX identifier for the license (optional)
+
+        Returns:
+            list: A list of dictionaries, each containing:
+                - purl: The component's package URL
+                - license: The SPDX identifier of the license (or 'Unknown' if not provided)
+        """
+        component_licenses: dict = {}
+        for component in components:
+            for lic in component['licenses']:
+                spdxid = lic.get('spdxid', 'Unknown')
+                if spdxid not in component_licenses:
+                    key = f'{component["purl"]}-{spdxid}'
+                    component_licenses[key] = {
+                        'purl': component['purl'],
+                        'spdxid': spdxid,
+                        'status': component['status'],
+                        'copyleft': lic['copyleft'],
+                        'url': lic['url'],
+                    }
+        return list(component_licenses.values())
+
 
 #
 # End of PolicyCheck Class

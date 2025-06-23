@@ -145,10 +145,10 @@ class MyTestCase(unittest.TestCase):
         copyleft = Copyleft(filepath=input_file_name, format_type='md', explicit='MIT')
         status, results = copyleft.run()
         expected_detail_output = (
-            '### Copyleft licenses \n  | Component | Version | License | URL | Copyleft |\n'
-            ' | - | :-: | - | - | :-: |\n'
-            ' | pkg:npm/%40electron/rebuild | 3.7.0 | MIT | https://spdx.org/licenses/MIT.html | YES |\n'
-            '| pkg:npm/%40emotion/react | 11.13.3 | MIT | https://spdx.org/licenses/MIT.html | YES | \n'
+            '### Copyleft licenses \n  | Component | License | URL | Copyleft |\n'
+            ' | - | :-: | - | - |\n'
+            ' | pkg:npm/%40electron/rebuild | MIT | https://spdx.org/licenses/MIT.html | YES |\n'
+            '| pkg:npm/%40emotion/react | MIT | https://spdx.org/licenses/MIT.html | YES | \n'
         )
         expected_summary_output = '2 component(s) with copyleft licenses were found.\n'
         self.assertEqual(
@@ -359,12 +359,10 @@ Add the following snippet into your `scanoss.json` file
         copyleft = Copyleft(filepath=input_file_name, format_type='jira_md')
         status, results = copyleft.run()
         details = results['details']
-        expected_details_output = """|*Component*|*Version*|*License*|*URL*|*Copyleft*|
-|pkg:github/scanoss/scanner.c|1.3.3|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
-|pkg:github/scanoss/scanner.c|1.1.4|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
-|pkg:github/scanoss/engine|5.4.0|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
-|pkg:github/scanoss/wfp|6afc1f6|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
-|pkg:github/scanoss/engine|4.0.4|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
+        expected_details_output = """|*Component*|*License*|*URL*|*Copyleft*|
+|pkg:github/scanoss/scanner.c|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
+|pkg:github/scanoss/engine|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
+|pkg:github/scanoss/wfp|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
 """
         self.assertEqual(status, 0)
         self.assertEqual(expected_details_output, details)
@@ -375,9 +373,8 @@ Add the following snippet into your `scanoss.json` file
         input_file_name = os.path.join(script_dir, 'data', file_name)
         i_license_summary = LicenseSummary(filepath=input_file_name)
         license_summary = i_license_summary.run()
-        self.assertEqual(license_summary['total'], 9)
-        self.assertEqual(license_summary['copyleft'], 7)
-        self.assertEqual(len(license_summary['licenses']), 2)
+        self.assertEqual(license_summary['detectedLicenses'], 2)
+        self.assertEqual(license_summary['detectedLicensesWithCopyleft'], 1)
 
     def test_inspect_license_summary_with_empty_result(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -385,8 +382,8 @@ Add the following snippet into your `scanoss.json` file
         input_file_name = os.path.join(script_dir, 'data', file_name)
         i_license_summary = LicenseSummary(filepath=input_file_name)
         license_summary = i_license_summary.run()
-        self.assertEqual(license_summary['total'], 0)
-        self.assertEqual(license_summary['copyleft'], 0)
+        self.assertEqual(license_summary['detectedLicenses'], 0)
+        self.assertEqual(license_summary['detectedLicensesWithCopyleft'], 0)
         self.assertEqual(len(license_summary['licenses']), 0)
 
     def test_inspect_component_summary(self):
@@ -396,9 +393,12 @@ Add the following snippet into your `scanoss.json` file
         i_component_summary = ComponentSummary(filepath=input_file_name)
         component_summary = i_component_summary.run()
         print(component_summary)
-        self.assertEqual(component_summary['total'], 7)
-        self.assertEqual(component_summary['undeclared'], 5)
-        self.assertEqual(component_summary['declared'], 2)
+        self.assertEqual(component_summary['totalComponents'], 3)
+        self.assertEqual(component_summary['undeclaredComponents'], 2)
+        self.assertEqual(component_summary['declaredComponents'], 1)
+        self.assertEqual(component_summary['totalFilesDetected'], 7)
+        self.assertEqual(component_summary['totalFilesUndeclared'], 5)
+        self.assertEqual(component_summary['totalFilesDeclared'], 2)
 
     def test_inspect_component_summary_empty_result(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -406,10 +406,13 @@ Add the following snippet into your `scanoss.json` file
         input_file_name = os.path.join(script_dir, 'data', file_name)
         i_component_summary = ComponentSummary(filepath=input_file_name)
         component_summary = i_component_summary.run()
-        self.assertEqual(component_summary['total'], 0)
-        self.assertEqual(component_summary['undeclared'], 0)
-        self.assertEqual(component_summary['declared'], 0)
+        self.assertEqual(component_summary['totalComponents'], 0)
+        self.assertEqual(component_summary['undeclaredComponents'], 0)
+        self.assertEqual(component_summary['declaredComponents'], 0)
         self.assertEqual(len(component_summary['components']), 0)
+        self.assertEqual(component_summary['totalFilesDetected'], 0)
+        self.assertEqual(component_summary['totalFilesUndeclared'], 0)
+        self.assertEqual(component_summary['totalFilesDeclared'], 0)
 
 if __name__ == '__main__':
     unittest.main()
