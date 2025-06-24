@@ -393,14 +393,31 @@ class InspectBase(ScanossBase):
         """
         component_licenses: dict = {}
         for component in components:
-            for lic in component['licenses']:
-                spdxid = lic.get('spdxid', 'Unknown')
+            purl = component.get('purl', '')
+            status = component.get('status', '')
+            licenses = component.get('licenses', [])
+
+            # Component without license
+            if not licenses:
+                key = f'{purl}-unknown'
+                component_licenses[key] = {
+                    'purl': purl,
+                    'spdxid': 'unknown',
+                    'status': status,
+                    'copyleft': False,
+                    'url': '-',
+                }
+                continue
+
+            # Iterate over licenses component licenses
+            for lic in licenses:
+                spdxid = lic.get('spdxid', 'unknown')
                 if spdxid not in component_licenses:
-                    key = f'{component["purl"]}-{spdxid}'
+                    key = f'{purl}-{spdxid}'
                     component_licenses[key] = {
-                        'purl': component['purl'],
+                        'purl': purl,
                         'spdxid': spdxid,
-                        'status': component['status'],
+                        'status': status,
                         'copyleft': lic['copyleft'],
                         'url': lic['url'],
                     }

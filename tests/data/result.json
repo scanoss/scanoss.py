@@ -11,6 +11,38 @@
       }
     }
   ],
+  "inc/log.c": [
+    {
+      "component": "scanner.c",
+      "file": "scanner.c-1.3.3/external/inc/json.h",
+      "file_hash": "e91a03b850651dd56dd979ba92668a19",
+      "file_url": "https://api.osskb.org/file_contents/e91a03b850651dd56dd979ba92668a19",
+      "id": "file",
+      "latest": "1.3.4",
+      "licenses": [],
+      "lines": "all",
+      "matched": "100%",
+      "oss_lines": "all",
+      "purl": [
+        "pkg:github/scanoss/jenkins-pipeline-example"
+      ],
+      "release_date": "2021-05-26",
+      "server": {
+        "kb_version": {
+          "daily": "24.08.16",
+          "monthly": "24.07"
+        },
+        "version": "5.4.8"
+      },
+      "source_hash": "e91a03b850651dd56dd979ba92668a19",
+      "status": "pending",
+      "url": "https://github.com/scanoss/scanner.c",
+      "url_hash": "2d1700ba496453d779d4987255feb5f2",
+      "url_stats": {},
+      "vendor": "scanoss",
+      "version": "1.3.3"
+    }
+  ],
   "inc/json.h": [
     {
       "component": "scanner.c",
