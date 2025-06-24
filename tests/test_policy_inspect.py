@@ -181,11 +181,14 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
-        expected_summary_output = """2 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
         Add the following snippet into your `sbom.json` file 
         ```json 
         {
             "components":[
+                  {
+                    "purl": "pkg:github/scanoss/jenkins-pipeline-example"
+                  },
                   {
                     "purl": "pkg:github/scanoss/scanner.c"
                   },
@@ -195,7 +198,7 @@ class MyTestCase(unittest.TestCase):
             ]
         }```
         """
-        self.assertEqual(len(details['components']), 3)
+        self.assertEqual(len(details['components']), 4)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
         )
@@ -216,14 +219,18 @@ class MyTestCase(unittest.TestCase):
         expected_details_output = """ ### Undeclared components
              | Component | License | 
              | - | - | 
+             | pkg:github/scanoss/jenkins-pipeline-example | unknown | 
              | pkg:github/scanoss/scanner.c | GPL-2.0-only | 
              | pkg:github/scanoss/wfp | GPL-2.0-only |  """
 
-        expected_summary_output = """2 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
            Add the following snippet into your `sbom.json` file 
            ```json 
                {
                 "components":[
+                 {
+                    "purl": "pkg:github/scanoss/jenkins-pipeline-example"
+                 },
                  {
                     "purl": "pkg:github/scanoss/scanner.c"
                   },
@@ -256,16 +263,20 @@ class MyTestCase(unittest.TestCase):
         expected_details_output = """ ### Undeclared components
                | Component | License | 
                | - | - | 
+               | pkg:github/scanoss/jenkins-pipeline-example | unknown |
                | pkg:github/scanoss/scanner.c | GPL-2.0-only | 
                | pkg:github/scanoss/wfp | GPL-2.0-only | """
 
-        expected_summary_output = """2 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
             Add the following snippet into your `scanoss.json` file
             
             ```json
             {
               "bom": {
                 "include": [
+                  {
+                    "purl": "pkg:github/scanoss/jenkins-pipeline-example"
+                  },
                   {
                     "purl": "pkg:github/scanoss/scanner.c"
                   },
@@ -296,13 +307,16 @@ class MyTestCase(unittest.TestCase):
         status, results = undeclared.run()
         details = json.loads(results['details'])
         summary = results['summary']
-        expected_summary_output = """2 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
                 Add the following snippet into your `scanoss.json` file
 
                 ```json
                 {
                   "bom": {
                     "include": [
+                      {
+                        "purl": "pkg:github/scanoss/jenkins-pipeline-example"
+                      },
                       {
                         "purl": "pkg:github/scanoss/scanner.c"
                       },
@@ -314,7 +328,7 @@ class MyTestCase(unittest.TestCase):
                 }
                 ```"""
         self.assertEqual(status, 0)
-        self.assertEqual(len(details['components']), 3)
+        self.assertEqual(len(details['components']), 4)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
         )
@@ -328,15 +342,19 @@ class MyTestCase(unittest.TestCase):
         details = results['details']
         summary = results['summary']
         expected_details_output = """|*Component*|*License*|
+|pkg:github/scanoss/jenkins-pipeline-example|unknown|
 |pkg:github/scanoss/scanner.c|GPL-2.0-only|
 |pkg:github/scanoss/wfp|GPL-2.0-only|
 """
-        expected_summary_output = """2 undeclared component(s) were found.
+        expected_summary_output = """3 undeclared component(s) were found.
 Add the following snippet into your `scanoss.json` file
 {code:json}
 {
   "bom": {
     "include": [
+      {
+        "purl": "pkg:github/scanoss/jenkins-pipeline-example"
+      },
       {
         "purl": "pkg:github/scanoss/scanner.c"
       },
@@ -373,7 +391,7 @@ Add the following snippet into your `scanoss.json` file
         input_file_name = os.path.join(script_dir, 'data', file_name)
         i_license_summary = LicenseSummary(filepath=input_file_name)
         license_summary = i_license_summary.run()
-        self.assertEqual(license_summary['detectedLicenses'], 2)
+        self.assertEqual(license_summary['detectedLicenses'], 3)
         self.assertEqual(license_summary['detectedLicensesWithCopyleft'], 1)
 
     def test_inspect_license_summary_with_empty_result(self):
@@ -393,11 +411,11 @@ Add the following snippet into your `scanoss.json` file
         i_component_summary = ComponentSummary(filepath=input_file_name)
         component_summary = i_component_summary.run()
         print(component_summary)
-        self.assertEqual(component_summary['totalComponents'], 3)
-        self.assertEqual(component_summary['undeclaredComponents'], 2)
+        self.assertEqual(component_summary['totalComponents'], 4)
+        self.assertEqual(component_summary['undeclaredComponents'], 3)
         self.assertEqual(component_summary['declaredComponents'], 1)
-        self.assertEqual(component_summary['totalFilesDetected'], 7)
-        self.assertEqual(component_summary['totalFilesUndeclared'], 5)
+        self.assertEqual(component_summary['totalFilesDetected'], 8)
+        self.assertEqual(component_summary['totalFilesUndeclared'], 6)
         self.assertEqual(component_summary['totalFilesDeclared'], 2)
 
     def test_inspect_component_summary_empty_result(self):
