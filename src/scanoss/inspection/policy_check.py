@@ -64,7 +64,7 @@ class PolicyCheck(InspectBase):
     def __init__(  # noqa: PLR0913
             self,
             debug: bool = False,
-            trace: bool = True,
+            trace: bool = False,
             quiet: bool = False,
             filepath: str = None,
             format_type: str = None,

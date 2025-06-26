@@ -66,7 +66,7 @@ class InspectBase(ScanossBase):
     def __init__( # noqa: PLR0913
         self,
         debug: bool = False,
-        trace: bool = True,
+        trace: bool = False,
         quiet: bool = False,
         filepath: str = None,
         output: str = None,
@@ -152,9 +152,6 @@ class InspectBase(ScanossBase):
             'declared': 1 if status == 'identified' else 0,
             'undeclared': 1 if status == 'pending' else 0
         }
-        if not new_component.get('licenses'):
-            self.print_debug(f'WARNING: Results missing licenses. Skipping: {new_component}')
-            return components
 
         ## Append license to component
         self._append_license_to_component(components, new_component, component_key)
@@ -179,6 +176,11 @@ class InspectBase(ScanossBase):
             new_component: Component whose licenses need to be processed
             component_key: purl + version of the component to be updated
         """
+        # If not licenses are present
+        if not new_component.get('licenses'):
+            self.print_debug(f'WARNING: Results missing licenses. Skipping: {new_component}')
+            return
+
         licenses_order_by_source_priority = self._get_licenses_order_by_source_priority(new_component['licenses'])
         # Process licenses for this component
         for license_item in licenses_order_by_source_priority:
