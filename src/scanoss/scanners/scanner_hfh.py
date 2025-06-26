@@ -52,7 +52,7 @@ class ScannerHFH:
         config: ScannerConfig,
         client: Optional[ScanossGrpc] = None,
         scanoss_settings: Optional[ScanossSettings] = None,
-        rank_threshold: int = 9,
+        rank_threshold: int = 5,
     ):
         """
         Initialize the ScannerHFH.
@@ -62,7 +62,7 @@ class ScannerHFH:
             config (ScannerConfig): Configuration parameters for the scanner.
             client (ScanossGrpc): gRPC client for communicating with the scanning service.
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
-            rank_threshold (int): Get results with rank below this threshold (default: 9).
+            rank_threshold (int): Get results with rank below this threshold (default: 5).
         """
         self.base = ScanossBase(
             debug=config.debug,

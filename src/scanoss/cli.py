@@ -548,8 +548,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_folder_scan.add_argument(
         '--rank-threshold',
         type=int,
-        default=9,
-        help='Get results with rank below this threshold (e.g i only want to see results from rank 9 and below). '
+        default=5,
+        help='Get results with rank below this threshold (e.g i only want to see results from rank 5 and below). '
         'Lower rank means better quality.',
     )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
