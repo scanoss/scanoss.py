@@ -414,8 +414,8 @@ Add the following snippet into your `scanoss.json` file
         self.assertEqual(component_summary['totalComponents'], 4)
         self.assertEqual(component_summary['undeclaredComponents'], 3)
         self.assertEqual(component_summary['declaredComponents'], 1)
-        self.assertEqual(component_summary['totalFilesDetected'], 8)
-        self.assertEqual(component_summary['totalFilesUndeclared'], 6)
+        self.assertEqual(component_summary['totalFilesDetected'], 10)
+        self.assertEqual(component_summary['totalFilesUndeclared'], 8)
         self.assertEqual(component_summary['totalFilesDeclared'], 2)
 
     def test_inspect_component_summary_empty_result(self):
