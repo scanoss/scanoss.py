@@ -545,6 +545,13 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         default='json',
         help='Result output format (optional - default: json)',
     )
+    p_folder_scan.add_argument(
+        '--rank-threshold',
+        type=int,
+        default=9,
+        help='Get results with rank below this threshold (e.g i only want to see results from rank 9 and below). '
+        'Lower rank means better quality.',
+    )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
     # Sub-command: folder-hash
@@ -1696,6 +1703,7 @@ def folder_hashing_scan(parser, args):
             config=scanner_config,
             client=client,
             scanoss_settings=scanoss_settings,
+            rank_threshold=args.rank_threshold,
         )
 
         if scanner.scan():
