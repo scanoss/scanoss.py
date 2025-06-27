@@ -52,6 +52,7 @@ class ScannerHFH:
         config: ScannerConfig,
         client: Optional[ScanossGrpc] = None,
         scanoss_settings: Optional[ScanossSettings] = None,
+        rank_threshold: int = 5,
     ):
         """
         Initialize the ScannerHFH.
@@ -61,6 +62,7 @@ class ScannerHFH:
             config (ScannerConfig): Configuration parameters for the scanner.
             client (ScanossGrpc): gRPC client for communicating with the scanning service.
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
+            rank_threshold (int): Get results with rank below this threshold (default: 5).
         """
         self.base = ScanossBase(
             debug=config.debug,
@@ -88,8 +90,7 @@ class ScannerHFH:
         self.scan_dir = scan_dir
         self.client = client
         self.scan_results = None
-        self.best_match = False
-        self.threshold = 100
+        self.rank_threshold = rank_threshold
 
     def scan(self) -> Optional[Dict]:
         """
@@ -100,8 +101,7 @@ class ScannerHFH:
         """
         hfh_request = {
             'root': self.folder_hasher.hash_directory(self.scan_dir),
-            'threshold': self.threshold,
-            'best_match': self.best_match,
+            'rank_threshold': self.rank_threshold,
         }
 
         spinner = Spinner('Scanning folder...')

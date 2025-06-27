@@ -628,19 +628,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Result output format (optional - default: json)',
     )
     p_folder_scan.add_argument(
-        '--best-match',
-        '-bm',
-        action='store_true',
-        default=False,
-        help='Enable best match mode (optional - default: False)',
-    )
-    p_folder_scan.add_argument(
-        '--threshold',
+        '--rank-threshold',
         type=int,
-        choices=range(1, 101),
-        metavar='1-100',
-        default=100,
-        help='Threshold for result matching (optional - default: 100)',
+        default=5,
+        help='Get results with rank below this threshold (e.g i only want to see results from rank 5 and below). '
+        'Lower rank means better quality.',
     )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
@@ -1965,10 +1957,8 @@ def folder_hashing_scan(parser, args):
             config=scanner_config,
             client=client,
             scanoss_settings=scanoss_settings,
+            rank_threshold=args.rank_threshold,
         )
-
-        scanner.best_match = args.best_match
-        scanner.threshold = args.threshold
 
         if scanner.scan():
             scanner.present(output_file=args.output, output_format=args.format)
