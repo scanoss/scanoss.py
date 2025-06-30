@@ -164,11 +164,24 @@ class ScannerHFHPresenter(AbstractPresenter):
 
     def _format_cyclonedx_output(self) -> str:
         if not self.scanner.scan_results:
-            return None
-
+            return ''
         try:
+            if 'results' not in self.scanner.scan_results or not self.scanner.scan_results['results']:
+                self.base.print_stderr('ERROR: No scan results found')
+                return ''
+
             first_result = self.scanner.scan_results['results'][0]
-            best_match_component = [c for c in first_result['components'] if c['order'] == 1][0]
+
+            best_match_components = [c for c in first_result.get('components', []) if c.get('order') == 1]
+            if not best_match_components:
+                self.base.print_stderr('ERROR: No best match component found')
+                return ''
+
+            best_match_component = best_match_components[0]
+            if not best_match_component.get('versions'):
+                self.base.print_stderr('ERROR: No versions found for best match component')
+                return ''
+
             best_match_version = best_match_component['versions'][0]
             purl = best_match_component['purl']
 
