@@ -29,6 +29,8 @@ from typing import Dict, Optional
 
 from progress.spinner import Spinner
 
+from scanoss.constants import DEFAULT_HFH_RANK_THRESHOLD
+from scanoss.cyclonedx import CycloneDx
 from scanoss.file_filters import FileFilters
 from scanoss.scanners.folder_hasher import FolderHasher
 from scanoss.scanners.scanner_config import ScannerConfig
@@ -52,7 +54,7 @@ class ScannerHFH:
         config: ScannerConfig,
         client: Optional[ScanossGrpc] = None,
         scanoss_settings: Optional[ScanossSettings] = None,
-        rank_threshold: int = 9,
+        rank_threshold: int = DEFAULT_HFH_RANK_THRESHOLD,
     ):
         """
         Initialize the ScannerHFH.
@@ -62,7 +64,7 @@ class ScannerHFH:
             config (ScannerConfig): Configuration parameters for the scanner.
             client (ScanossGrpc): gRPC client for communicating with the scanning service.
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
-            rank_threshold (int): Get results with rank below this threshold (default: 9).
+            rank_threshold (int): Get results with rank below this threshold (default: 5).
         """
         self.base = ScanossBase(
             debug=config.debug,
@@ -161,7 +163,37 @@ class ScannerHFHPresenter(AbstractPresenter):
         )
 
     def _format_cyclonedx_output(self) -> str:
-        raise NotImplementedError('CycloneDX output is not implemented')
+        if not self.scanner.scan_results:
+            return None
+
+        try:
+            first_result = self.scanner.scan_results['results'][0]
+            best_match_component = [c for c in first_result['components'] if c['order'] == 1][0]
+            best_match_version = best_match_component['versions'][0]
+            purl = best_match_component['purl']
+
+            get_dependencies_json_request = {
+                'files': [
+                    {
+                        'file': f'{best_match_component["name"]}:{best_match_version["version"]}',
+                        'purls': [{'purl': purl, 'requirement': best_match_version['version']}],
+                    }
+                ]
+            }
+
+            decorated_scan_results = self.scanner.client.get_dependencies(get_dependencies_json_request)
+
+            cdx = CycloneDx(self.base.debug, self.output_file)
+            scan_results = {}
+            for f in decorated_scan_results['files']:
+                scan_results[f['file']] = [f]
+            if not cdx.produce_from_json(scan_results, self.output_file):
+                error_msg = 'ERROR: Failed to produce CycloneDX output'
+                self.base.print_stderr(error_msg)
+                raise ValueError(error_msg)
+        except Exception as e:
+            self.base.print_stderr(f'ERROR: Failed to get license information: {e}')
+            return None
 
     def _format_spdxlite_output(self) -> str:
         raise NotImplementedError('SPDXlite output is not implemented')
