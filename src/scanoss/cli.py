@@ -632,8 +632,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--rank-threshold',
         type=int,
         default=DEFAULT_HFH_RANK_THRESHOLD,
-        help='Get results with rank below this threshold (e.g i only want to see results from rank 5 and below). '
-        'Lower rank means better quality.',
+        help='Filter results to only show those with rank value at or below this threshold (e.g., --rank-threshold 3 returns results with rank 1, 2, or 3). '
+        'Lower rank values indicate higher quality matches.',
     )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 

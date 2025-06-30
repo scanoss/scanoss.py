@@ -485,6 +485,15 @@ The new `folder-scan` subcommand performs a comprehensive scan on an entire dire
 scanoss-py folder-scan /path/to/folder -o folder-scan-results.json 
 ```
 
+**Options:**
+- `--rank-threshold`: Filter results to only show those with rank value at or below this threshold (e.g., `--rank-threshold 3` returns results with rank 1, 2, or 3). Lower rank values indicate higher quality matches.
+- `--format`: Result output format (json or cyclonedx, default: json)
+
+**Example with rank threshold:**
+```shell
+scanoss-py folder-scan /path/to/folder --rank-threshold 3 -o folder-scan-results.json
+```
+
 ### Container-Scan a Docker Image
 
 The `container-scan` subcommand allows you to scan Docker container images for dependencies. This command extracts and analyzes dependencies from container images, helping you identify open source components within containerized applications.
