@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.27.0] - 2025-06-30
+### Added
+- Add directory hash calculation to folder hasher
+- Add rank-threshold option to folder scan command
+
 ## [1.26.3] - 2025-06-26
 ### Fixed
 - Fixed crash in inspect subcommand when processing components that lack license information
@@ -571,3 +576,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.26.1]: https://github.com/scanoss/scanoss.py/compare/v1.26.0...v1.26.1
 [1.26.2]: https://github.com/scanoss/scanoss.py/compare/v1.26.1...v1.26.2
 [1.26.3]: https://github.com/scanoss/scanoss.py/compare/v1.26.2...v1.26.3
+[1.27.0]: https://github.com/scanoss/scanoss.py/compare/v1.26.3...v1.27.0
