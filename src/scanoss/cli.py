@@ -54,6 +54,7 @@ from . import __version__
 from .components import Components
 from .constants import (
     DEFAULT_API_TIMEOUT,
+    DEFAULT_HFH_RANK_THRESHOLD,
     DEFAULT_POST_SIZE,
     DEFAULT_RETRY,
     DEFAULT_TIMEOUT,
@@ -623,15 +624,15 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--format',
         '-f',
         type=str,
-        choices=['json'],
+        choices=['json', 'cyclonedx'],
         default='json',
         help='Result output format (optional - default: json)',
     )
     p_folder_scan.add_argument(
         '--rank-threshold',
         type=int,
-        default=9,
-        help='Get results with rank below this threshold (e.g i only want to see results from rank 9 and below). '
+        default=DEFAULT_HFH_RANK_THRESHOLD,
+        help='Get results with rank below this threshold (e.g i only want to see results from rank 5 and below). '
         'Lower rank means better quality.',
     )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
