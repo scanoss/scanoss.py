@@ -44,7 +44,6 @@ DEFAULT_SKIPPED_FILES = {
     'license.txt',
     'license.md',
     'copying.lib',
-    'makefile',
 }
 
 DEFAULT_SKIPPED_FILES_HFH = {

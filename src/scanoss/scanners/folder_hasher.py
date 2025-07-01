@@ -249,7 +249,7 @@ class FolderHasher:
                 ext_without_dot = extension[1:]
                 extension_map[ext_without_dot] = extension_map.get(ext_without_dot, 0) + 1
 
-            current_directory.removeprefix(self.scan_dir)
+            current_directory.replace(self.scan_dir, '', 1).lstrip(os.path.sep)
             parts = current_directory.split(os.path.sep)
             for d in parts:
                 if d in {'', '.', '..'}:
