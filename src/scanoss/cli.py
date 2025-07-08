@@ -54,6 +54,7 @@ from . import __version__
 from .components import Components
 from .constants import (
     DEFAULT_API_TIMEOUT,
+    DEFAULT_HFH_RANK_THRESHOLD,
     DEFAULT_POST_SIZE,
     DEFAULT_RETRY,
     DEFAULT_TIMEOUT,
@@ -623,24 +624,16 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--format',
         '-f',
         type=str,
-        choices=['json'],
+        choices=['json', 'cyclonedx'],
         default='json',
         help='Result output format (optional - default: json)',
     )
     p_folder_scan.add_argument(
-        '--best-match',
-        '-bm',
-        action='store_true',
-        default=False,
-        help='Enable best match mode (optional - default: False)',
-    )
-    p_folder_scan.add_argument(
-        '--threshold',
+        '--rank-threshold',
         type=int,
-        choices=range(1, 101),
-        metavar='1-100',
-        default=100,
-        help='Threshold for result matching (optional - default: 100)',
+        default=DEFAULT_HFH_RANK_THRESHOLD,
+        help='Filter results to only show those with rank value at or below this threshold (e.g., --rank-threshold 3 '
+        'returns results with rank 1, 2, or 3). Lower rank values indicate higher quality matches.',
     )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
@@ -1455,7 +1448,7 @@ def utils_certloc(*_):
     Run the "utils certloc" sub-command
     :param _: ignored/unused
     """
-    import certifi # noqa: PLC0415,I001
+    import certifi  # noqa: PLC0415,I001
 
     print(f'CA Cert File: {certifi.where()}')
 
@@ -1466,11 +1459,11 @@ def utils_cert_download(_, args):  # pylint: disable=PLR0912 # noqa: PLR0912
     :param _: ignore/unused
     :param args: Parsed arguments
     """
-    import socket # noqa: PLC0415,I001
-    import traceback # noqa: PLC0415,I001
-    from urllib.parse import urlparse # noqa: PLC0415,I001
+    import socket  # noqa: PLC0415,I001
+    import traceback  # noqa: PLC0415,I001
+    from urllib.parse import urlparse  # noqa: PLC0415,I001
 
-    from OpenSSL import SSL, crypto # noqa: PLC0415,I001
+    from OpenSSL import SSL, crypto  # noqa: PLC0415,I001
 
     file = sys.stdout
     if args.output:
@@ -1518,7 +1511,7 @@ def utils_pac_proxy(_, args):
     :param _: ignore/unused
     :param args: Parsed arguments
     """
-    from pypac.resolver import ProxyResolver # noqa: PLC0415,I001
+    from pypac.resolver import ProxyResolver  # noqa: PLC0415,I001
 
     if not args.pac:
         print_stderr('Error: No pac file option specified.')
@@ -1592,7 +1585,7 @@ def crypto_algorithms(parser, args):
         sys.exit(1)
     except Exception as e:
         if args.debug:
-            import traceback # noqa: PLC0415,I001
+            import traceback  # noqa: PLC0415,I001
 
             traceback.print_exc()
         print_stderr(f'ERROR: {e}')
@@ -1634,7 +1627,7 @@ def crypto_hints(parser, args):
         sys.exit(1)
     except Exception as e:
         if args.debug:
-            import traceback # noqa: PLC0415,I001
+            import traceback  # noqa: PLC0415,I001
 
             traceback.print_exc()
         print_stderr(f'ERROR: {e}')
@@ -1676,7 +1669,7 @@ def crypto_versions_in_range(parser, args):
         sys.exit(1)
     except Exception as e:
         if args.debug:
-            import traceback # noqa: PLC0415,I001
+            import traceback  # noqa: PLC0415,I001
 
             traceback.print_exc()
         print_stderr(f'ERROR: {e}')
@@ -1965,10 +1958,8 @@ def folder_hashing_scan(parser, args):
             config=scanner_config,
             client=client,
             scanoss_settings=scanoss_settings,
+            rank_threshold=args.rank_threshold,
         )
-
-        scanner.best_match = args.best_match
-        scanner.threshold = args.threshold
 
         if scanner.scan():
             scanner.present(output_file=args.output, output_format=args.format)
