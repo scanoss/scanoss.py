@@ -15,7 +15,7 @@ from scanoss.utils.simhash import WordFeatureSet, fingerprint, simhash, vectoriz
 
 MINIMUM_FILE_COUNT = 8
 MINIMUM_CONCATENATED_NAME_LENGTH = 32
-MINIMUM_FILE_NAME_LENGTH = 32
+MAXIMUM_FILE_NAME_LENGTH = 32
 
 
 class DirectoryNode:
@@ -35,7 +35,7 @@ class DirectoryFile:
     Represents a file in the directory tree for folder hashing.
     """
 
-    def __init__(self, path: str, key: bytes, key_str: str):
+    def __init__(self, path: str, key: List[bytes], key_str: str):
         self.path = path
         self.key = key
         self.key_str = key_str
@@ -77,7 +77,7 @@ class FolderHasher:
     def __init__(
         self,
         scan_dir: str,
-        config: Optional[FolderHasherConfig] = None,
+        config: FolderHasherConfig,
         scanoss_settings: Optional[ScanossSettings] = None,
     ):
         self.base = ScanossBase(
@@ -140,7 +140,7 @@ class FolderHasher:
         root_node = DirectoryNode(str(root))
 
         all_files = [
-            f for f in root.rglob('*') if f.is_file() and len(f.name.encode('utf-8')) <= MINIMUM_FILE_NAME_LENGTH
+            f for f in root.rglob('*') if f.is_file() and len(f.name.encode('utf-8')) <= MAXIMUM_FILE_NAME_LENGTH
         ]
         filtered_files = self.file_filters.get_filtered_files_from_files(all_files, str(root))
 
@@ -185,7 +185,7 @@ class FolderHasher:
         Recursively compute folder hash data for a directory node.
 
         The hash data includes the path identifier, simhash for file names,
-        simhash for file content, and children node hash information.
+        simhash for file content, directory hash, language extensions, and children node hash information.
 
         Args:
             node (DirectoryNode): The directory node to compute the hash for.
@@ -194,11 +194,22 @@ class FolderHasher:
             dict: The computed hash data for the node.
         """
         hash_data = self._hash_calc(node)
+        
+        # Safely calculate relative path
+        try:
+            node_path = Path(node.path).resolve()
+            scan_dir_path = Path(self.scan_dir).resolve()
+            rel_path = node_path.relative_to(scan_dir_path)
+        except ValueError:
+            # If relative_to fails, use the node path as is or a fallback
+            rel_path = Path(node.path).name if node.path else Path('.')
 
         return {
-            'path_id': node.path,
+            'path_id': str(rel_path),
             'sim_hash_names': f'{hash_data["name_hash"]:02x}' if hash_data['name_hash'] is not None else None,
             'sim_hash_content': f'{hash_data["content_hash"]:02x}' if hash_data['content_hash'] is not None else None,
+            'sim_hash_dir_names': f'{hash_data["dir_hash"]:02x}' if hash_data['dir_hash'] is not None else None,
+            'lang_extensions': hash_data['lang_extensions'],
             'children': [self._hash_calc_from_node(child) for child in node.children.values()],
         }
 
@@ -215,9 +226,12 @@ class FolderHasher:
             node (DirectoryNode): The directory node containing file items.
 
         Returns:
-            dict: A dictionary with 'name_hash' and 'content_hash' keys.
+            dict: A dictionary with 'name_hash', 'content_hash', 'dir_hash', and 'lang_extensions' keys.
         """
         processed_hashes = set()
+        unique_file_names = set()
+        unique_directories = set()
+        extension_map = {}
         file_hashes = []
         selected_names = []
 
@@ -225,37 +239,64 @@ class FolderHasher:
             key_str = file.key_str
             if key_str in processed_hashes:
                 continue
+
+            file_name = os.path.basename(file.path)
+
+            file_name_without_extension, extension = os.path.splitext(file_name)
+            current_directory = os.path.dirname(file.path)
+
+            if extension and len(extension) > 1:
+                ext_without_dot = extension[1:]
+                extension_map[ext_without_dot] = extension_map.get(ext_without_dot, 0) + 1
+
+            current_directory.replace(self.scan_dir, '', 1).lstrip(os.path.sep)
+            parts = current_directory.split(os.path.sep)
+            for d in parts:
+                if d in {'', '.', '..'}:
+                    continue
+                unique_directories.add(d)
+
             processed_hashes.add(key_str)
-
-            selected_names.append(os.path.basename(file.path))
-
-            file_key = bytes(file.key)
-            file_hashes.append(file_key)
+            unique_file_names.add(file_name_without_extension)
+            selected_names.append(file_name)
+            file_hashes.append(file.key)
 
         if len(selected_names) < MINIMUM_FILE_COUNT:
-            return {
-                'name_hash': None,
-                'content_hash': None,
-            }
+            return {'name_hash': None, 'content_hash': None, 'dir_hash': None, 'lang_extensions': None}
 
         selected_names.sort()
         concatenated_names = ''.join(selected_names)
 
         if len(concatenated_names.encode('utf-8')) < MINIMUM_CONCATENATED_NAME_LENGTH:
-            return {
-                'name_hash': None,
-                'content_hash': None,
-            }
+            return {'name_hash': None, 'content_hash': None, 'dir_hash': None, 'lang_extensions': None}
+
+        # Concatenate the unique file names without the extensions, adding a space and sorting them alphabetically
+        unique_file_names_list = list(unique_file_names)
+        unique_file_names_list.sort()
+        concatenated_names = ' '.join(unique_file_names_list)
+
+        # We do the same for the directory names, adding a space and sorting them alphabetically
+        unique_directories_list = list(unique_directories)
+        unique_directories_list.sort()
+        concatenated_directories = ' '.join(unique_directories_list)
 
         names_simhash = simhash(WordFeatureSet(concatenated_names.encode('utf-8')))
+        dir_simhash = simhash(WordFeatureSet(concatenated_directories.encode('utf-8')))
         content_simhash = fingerprint(vectorize_bytes(file_hashes))
+
+        # Debug logging similar to Go implementation
+        self.base.print_debug(f'Unique file names: {unique_file_names_list}')
+        self.base.print_debug(f'Unique directories: {unique_directories_list}')
+        self.base.print_debug(f'{dir_simhash:x}/{names_simhash:x} - {content_simhash:x} - {extension_map}')
 
         return {
             'name_hash': names_simhash,
             'content_hash': content_simhash,
+            'dir_hash': dir_simhash,
+            'lang_extensions': extension_map,
         }
 
-    def present(self, output_format: str = None, output_file: str = None):
+    def present(self, output_format: Optional[str] = None, output_file: Optional[str] = None):
         """Present the hashed tree in the selected format"""
         self.presenter.present(output_format=output_format, output_file=output_file)
 

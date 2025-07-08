@@ -29,6 +29,8 @@ from typing import Dict, Optional
 
 from progress.spinner import Spinner
 
+from scanoss.constants import DEFAULT_HFH_RANK_THRESHOLD
+from scanoss.cyclonedx import CycloneDx
 from scanoss.file_filters import FileFilters
 from scanoss.scanners.folder_hasher import FolderHasher
 from scanoss.scanners.scanner_config import ScannerConfig
@@ -52,6 +54,7 @@ class ScannerHFH:
         config: ScannerConfig,
         client: Optional[ScanossGrpc] = None,
         scanoss_settings: Optional[ScanossSettings] = None,
+        rank_threshold: int = DEFAULT_HFH_RANK_THRESHOLD,
     ):
         """
         Initialize the ScannerHFH.
@@ -61,6 +64,7 @@ class ScannerHFH:
             config (ScannerConfig): Configuration parameters for the scanner.
             client (ScanossGrpc): gRPC client for communicating with the scanning service.
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
+            rank_threshold (int): Get results with rank below this threshold (default: 5).
         """
         self.base = ScanossBase(
             debug=config.debug,
@@ -88,8 +92,7 @@ class ScannerHFH:
         self.scan_dir = scan_dir
         self.client = client
         self.scan_results = None
-        self.best_match = False
-        self.threshold = 100
+        self.rank_threshold = rank_threshold
 
     def scan(self) -> Optional[Dict]:
         """
@@ -100,8 +103,7 @@ class ScannerHFH:
         """
         hfh_request = {
             'root': self.folder_hasher.hash_directory(self.scan_dir),
-            'threshold': self.threshold,
-            'best_match': self.best_match,
+            'rank_threshold': self.rank_threshold,
         }
 
         spinner = Spinner('Scanning folder...')
@@ -161,7 +163,50 @@ class ScannerHFHPresenter(AbstractPresenter):
         )
 
     def _format_cyclonedx_output(self) -> str:
-        raise NotImplementedError('CycloneDX output is not implemented')
+        if not self.scanner.scan_results:
+            return ''
+        try:
+            if 'results' not in self.scanner.scan_results or not self.scanner.scan_results['results']:
+                self.base.print_stderr('ERROR: No scan results found')
+                return ''
+
+            first_result = self.scanner.scan_results['results'][0]
+
+            best_match_components = [c for c in first_result.get('components', []) if c.get('order') == 1]
+            if not best_match_components:
+                self.base.print_stderr('ERROR: No best match component found')
+                return ''
+
+            best_match_component = best_match_components[0]
+            if not best_match_component.get('versions'):
+                self.base.print_stderr('ERROR: No versions found for best match component')
+                return ''
+
+            best_match_version = best_match_component['versions'][0]
+            purl = best_match_component['purl']
+
+            get_dependencies_json_request = {
+                'files': [
+                    {
+                        'file': f'{best_match_component["name"]}:{best_match_version["version"]}',
+                        'purls': [{'purl': purl, 'requirement': best_match_version['version']}],
+                    }
+                ]
+            }
+
+            decorated_scan_results = self.scanner.client.get_dependencies(get_dependencies_json_request)
+
+            cdx = CycloneDx(self.base.debug, self.output_file)
+            scan_results = {}
+            for f in decorated_scan_results['files']:
+                scan_results[f['file']] = [f]
+            if not cdx.produce_from_json(scan_results, self.output_file):
+                error_msg = 'ERROR: Failed to produce CycloneDX output'
+                self.base.print_stderr(error_msg)
+                raise ValueError(error_msg)
+        except Exception as e:
+            self.base.print_stderr(f'ERROR: Failed to get license information: {e}')
+            return None
 
     def _format_spdxlite_output(self) -> str:
         raise NotImplementedError('SPDXlite output is not implemented')
