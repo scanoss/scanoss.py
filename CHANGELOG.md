@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.27.1] - 2025-07-09
+### Fixed
+- Fixed when running `folder-scan` with `--format cyclonedx` the output was not writing to file
+- Fixed when running `container-scan` with `--format cyclonedx` the output was not writing to file
+
 ## [1.27.0] - 2025-06-30
 ### Added
 - Add directory hash calculation to folder hasher
@@ -577,3 +582,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.26.2]: https://github.com/scanoss/scanoss.py/compare/v1.26.1...v1.26.2
 [1.26.3]: https://github.com/scanoss/scanoss.py/compare/v1.26.2...v1.26.3
 [1.27.0]: https://github.com/scanoss/scanoss.py/compare/v1.26.3...v1.27.0
+[1.27.1]: https://github.com/scanoss/scanoss.py/compare/v1.27.0...v1.27.1

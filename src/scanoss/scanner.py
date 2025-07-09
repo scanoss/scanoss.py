@@ -22,40 +22,40 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import datetime
 import json
 import os
-from pathlib import Path
 import sys
-import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional
-import importlib_resources
 
+import importlib_resources
 from progress.bar import Bar
 from progress.spinner import Spinner
 from pypac.parser import PACFile
 
 from scanoss.file_filters import FileFilters
 
-from .scanossapi import ScanossApi
-from .cyclonedx import CycloneDx
-from .spdxlite import SpdxLite
-from .csvoutput import CsvOutput
-from .threadedscanning import ThreadedScanning
-from .scancodedeps import ScancodeDeps
-from .threadeddependencies import ThreadedDependencies, SCOPE
-from .scanossgrpc import ScanossGrpc
-from .scantype import ScanType
-from .scanossbase import ScanossBase
-from .scanoss_settings import ScanossSettings
-from .scanpostprocessor import ScanPostProcessor
 from . import __version__
+from .csvoutput import CsvOutput
+from .cyclonedx import CycloneDx
+from .scancodedeps import ScancodeDeps
+from .scanoss_settings import ScanossSettings
+from .scanossapi import ScanossApi
+from .scanossbase import ScanossBase
+from .scanossgrpc import ScanossGrpc
+from .scanpostprocessor import ScanPostProcessor
+from .scantype import ScanType
+from .spdxlite import SpdxLite
+from .threadeddependencies import SCOPE, ThreadedDependencies
+from .threadedscanning import ThreadedScanning
 
 FAST_WINNOWING = False
 try:
     from scanoss_winnowing.winnowing import Winnowing
 
     FAST_WINNOWING = True
-except ModuleNotFoundError or ImportError:
+except (ModuleNotFoundError, ImportError):
     FAST_WINNOWING = False
     from .winnowing import Winnowing
 
@@ -284,7 +284,7 @@ class Scanner(ScanossBase):
             return True
         return False
 
-    def scan_folder_with_options(
+    def scan_folder_with_options(  # noqa: PLR0913
         self,
         scan_dir: str,
         deps_file: str = None,
@@ -332,7 +332,7 @@ class Scanner(ScanossBase):
                 success = False
         return success
 
-    def scan_folder(self, scan_dir: str) -> bool:
+    def scan_folder(self, scan_dir: str) -> bool:  # noqa: PLR0912, PLR0915
         """
         Scan the specified folder producing fingerprints, send to the SCANOSS API and return results
 
@@ -400,7 +400,7 @@ class Scanner(ScanossBase):
                 scan_block += wfp
                 scan_size = len(scan_block.encode('utf-8'))
                 wfp_file_count += 1
-                # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue
+                # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue  # noqa: E501
                 if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
                     self.threaded_scan.queue_add(scan_block)
                     queue_size += 1
@@ -484,7 +484,7 @@ class Scanner(ScanossBase):
             self.__log_result(json.dumps(results, indent=2, sort_keys=True))
         elif self.output_format == 'cyclonedx':
             cdx = CycloneDx(self.debug, self.scan_output)
-            success = cdx.produce_from_json(results)
+            success, _ = cdx.produce_from_json(results)
         elif self.output_format == 'spdxlite':
             spdxlite = SpdxLite(self.debug, self.scan_output)
             success = spdxlite.produce_from_json(results)
@@ -509,7 +509,7 @@ class Scanner(ScanossBase):
             for response in scan_responses:
                 if response is not None:
                     if file_map:
-                        response = self._deobfuscate_filenames(response, file_map)
+                        response = self._deobfuscate_filenames(response, file_map)  # noqa: PLW2901
                     results.update(response)
 
         dep_files = dep_responses.get('files', None) if dep_responses else None
@@ -532,7 +532,7 @@ class Scanner(ScanossBase):
                 deobfuscated[key] = value
         return deobfuscated
 
-    def scan_file_with_options(
+    def scan_file_with_options(  # noqa: PLR0913
         self,
         file: str,
         deps_file: str = None,
@@ -603,7 +603,7 @@ class Scanner(ScanossBase):
             success = False
         return success
 
-    def scan_files(self, files: []) -> bool:
+    def scan_files(self, files: []) -> bool:  # noqa: PLR0912, PLR0915
         """
         Scan the specified list of files, producing fingerprints, send to the SCANOSS API and return results
         Please note that by providing an explicit list you bypass any exclusions that may be defined on the scanner
@@ -657,7 +657,7 @@ class Scanner(ScanossBase):
             file_count += 1
             if self.threaded_scan:
                 wfp_size = len(wfp.encode('utf-8'))
-                # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue
+                # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue  # noqa: E501
                 if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
                     self.threaded_scan.queue_add(scan_block)
                     queue_size += 1
@@ -666,7 +666,7 @@ class Scanner(ScanossBase):
                 scan_block += wfp
                 scan_size = len(scan_block.encode('utf-8'))
                 wfp_file_count += 1
-                # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue
+                # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue  # noqa: E501
                 if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
                     self.threaded_scan.queue_add(scan_block)
                     queue_size += 1
@@ -755,7 +755,7 @@ class Scanner(ScanossBase):
                 success = False
         return success
 
-    def scan_wfp_file(self, file: str = None) -> bool:
+    def scan_wfp_file(self, file: str = None) -> bool:  # noqa: PLR0912, PLR0915
         """
         Scan the contents of the specified WFP file (in the current process)
         :param file: Scan the contents of the specified WFP file (in the current process)
