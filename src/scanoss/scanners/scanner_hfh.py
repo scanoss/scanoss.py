@@ -162,7 +162,7 @@ class ScannerHFHPresenter(AbstractPresenter):
             else str(self.scanner.scan_results)
         )
 
-    def _format_cyclonedx_output(self) -> str:
+    def _format_cyclonedx_output(self) -> str:  # noqa: PLR0911
         if not self.scanner.scan_results:
             return ''
         try:

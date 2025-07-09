@@ -48,7 +48,7 @@ class CycloneDx(ScanossBase):
         self.debug = debug
         self._spdx = SpdxLite(debug=debug)
 
-    def parse(self, data: json):
+    def parse(self, data: json):  # noqa: PLR0912, PLR0915
         """
         Parse the given input (raw/plain) JSON string and return CycloneDX summary
         :param data: json - JSON object
@@ -57,7 +57,7 @@ class CycloneDx(ScanossBase):
         if not data:
             self.print_stderr('ERROR: No JSON data provided to parse.')
             return None, None
-        self.print_debug(f'Processing raw results into CycloneDX format...')
+        self.print_debug('Processing raw results into CycloneDX format...')
         cdx = {}
         vdx = {}
         for f in data:
