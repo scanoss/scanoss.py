@@ -22,14 +22,13 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import datetime
 import json
 import os.path
 import sys
 import uuid
-import datetime
 
 from . import __version__
-
 from .scanossbase import ScanossBase
 from .spdxlite import SpdxLite
 
@@ -49,7 +48,7 @@ class CycloneDx(ScanossBase):
         self.debug = debug
         self._spdx = SpdxLite(debug=debug)
 
-    def parse(self, data: json):
+    def parse(self, data: json):  # noqa: PLR0912, PLR0915
         """
         Parse the given input (raw/plain) JSON string and return CycloneDX summary
         :param data: json - JSON object
@@ -58,7 +57,7 @@ class CycloneDx(ScanossBase):
         if not data:
             self.print_stderr('ERROR: No JSON data provided to parse.')
             return None, None
-        self.print_debug(f'Processing raw results into CycloneDX format...')
+        self.print_debug('Processing raw results into CycloneDX format...')
         cdx = {}
         vdx = {}
         for f in data:
@@ -171,17 +170,22 @@ class CycloneDx(ScanossBase):
             success = self.produce_from_str(f.read(), output_file)
         return success
 
-    def produce_from_json(self, data: json, output_file: str = None) -> bool:
+    def produce_from_json(self, data: json, output_file: str = None) -> tuple[bool, json]:  # noqa: PLR0912
         """
-        Produce the CycloneDX output from the input data
-        :param data: JSON object
-        :param output_file: Output file (optional)
-        :return: True if successful, False otherwise
+        Produce the CycloneDX output from the raw scan results input data
+
+        Args:
+            data (json): JSON object
+            output_file (str, optional): Output file (optional). Defaults to None.
+
+        Returns:
+            bool: True if successful, False otherwise
+            json: The CycloneDX output
         """
         cdx, vdx = self.parse(data)
         if not cdx:
             self.print_stderr('ERROR: No CycloneDX data returned for the JSON string provided.')
-            return False
+            return False, None
         self._spdx.load_license_data()  # Load SPDX license name data for later reference
         #
         # Using CDX version 1.4: https://cyclonedx.org/docs/1.4/json/
@@ -264,7 +268,7 @@ class CycloneDx(ScanossBase):
         if output_file:
             file.close()
 
-        return True
+        return True, data
 
     def produce_from_str(self, json_str: str, output_file: str = None) -> bool:
         """
