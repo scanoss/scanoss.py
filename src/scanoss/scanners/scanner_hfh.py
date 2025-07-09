@@ -196,14 +196,16 @@ class ScannerHFHPresenter(AbstractPresenter):
 
             decorated_scan_results = self.scanner.client.get_dependencies(get_dependencies_json_request)
 
-            cdx = CycloneDx(self.base.debug, self.output_file)
+            cdx = CycloneDx(self.base.debug)
             scan_results = {}
             for f in decorated_scan_results['files']:
                 scan_results[f['file']] = [f]
-            if not cdx.produce_from_json(scan_results, self.output_file):
+            success, cdx_output = cdx.produce_from_json(scan_results)
+            if not success:
                 error_msg = 'ERROR: Failed to produce CycloneDX output'
                 self.base.print_stderr(error_msg)
-                raise ValueError(error_msg)
+                return None
+            return json.dumps(cdx_output, indent=2)
         except Exception as e:
             self.base.print_stderr(f'ERROR: Failed to get license information: {e}')
             return None

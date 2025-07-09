@@ -436,10 +436,12 @@ class ContainerScannerPresenter(AbstractPresenter):
         scan_results = {}
         for f in self.scanner.decorated_scan_results['files']:
             scan_results[f['file']] = [f]
-        if not cdx.produce_from_json(scan_results, self.output_file):
+        success, cdx_output = cdx.produce_from_json(scan_results)
+        if not success:
             error_msg = 'Failed to produce CycloneDX output'
             self.base.print_stderr(error_msg)
-            raise ValueError(error_msg)
+            return None
+        return json.dumps(cdx_output, indent=2)
 
     def _format_spdxlite_output(self) -> str:
         """
