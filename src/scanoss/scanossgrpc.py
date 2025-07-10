@@ -326,7 +326,7 @@ class ScanossGrpc(ScanossBase):
             request = ParseDict(purls, PurlRequest())  # Parse the JSON/Dict into the purl request object
             metadata = self.metadata[:]
             metadata.append(('x-request-id', request_id))  # Set a Request ID
-            self.print_debug(f'Sending crypto data for decoration (rqId: {request_id})...')
+            self.print_debug(f'Sending vulnerability data for decoration (rqId: {request_id})...')
             resp = self.vuln_stub.GetVulnerabilities(request, metadata=metadata, timeout=self.timeout)
         except Exception as e:
             self.print_stderr(

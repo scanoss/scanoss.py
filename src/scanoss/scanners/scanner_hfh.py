@@ -193,8 +193,13 @@ class ScannerHFHPresenter(AbstractPresenter):
                     }
                 ]
             }
+            
+            get_vulnerabilities_json_request = {
+                'purls': [{'purl': purl, 'requirement': best_match_version['version']}],
+            }
 
             decorated_scan_results = self.scanner.client.get_dependencies(get_dependencies_json_request)
+            vulnerabilities = self.scanner.client.get_vulnerabilities_json(get_vulnerabilities_json_request)
 
             cdx = CycloneDx(self.base.debug)
             scan_results = {}
@@ -205,6 +210,10 @@ class ScannerHFHPresenter(AbstractPresenter):
                 error_msg = 'ERROR: Failed to produce CycloneDX output'
                 self.base.print_stderr(error_msg)
                 return None
+            
+            if vulnerabilities:
+                cdx_output = cdx.append_vulnerabilities(cdx_output, vulnerabilities, purl)
+                
             return json.dumps(cdx_output, indent=2)
         except Exception as e:
             self.base.print_stderr(f'ERROR: Failed to get license information: {e}')
