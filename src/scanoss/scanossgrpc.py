@@ -36,11 +36,13 @@ from google.protobuf.json_format import MessageToDict, ParseDict
 from pypac.parser import PACFile
 from pypac.resolver import ProxyResolver
 
+from scanoss.api.licenses.v2.scanoss_licenses_pb2_grpc import LicenseStub
 from scanoss.api.scanning.v2.scanoss_scanning_pb2_grpc import ScanningStub
 from scanoss.constants import DEFAULT_TIMEOUT
 
 from . import __version__
 from .api.common.v2.scanoss_common_pb2 import (
+    ComponentBatchRequest,
     EchoRequest,
     EchoResponse,
     PurlRequest,
@@ -170,6 +172,7 @@ class ScanossGrpc(ScanossBase):
             self.vuln_stub = VulnerabilitiesStub(grpc.insecure_channel(self.url))
             self.provenance_stub = GeoProvenanceStub(grpc.insecure_channel(self.url))
             self.scanning_stub = ScanningStub(grpc.insecure_channel(self.url))
+            self.license_stub = LicenseStub(grpc.insecure_channel(self.url))
         else:
             if ca_cert is not None:
                 credentials = grpc.ssl_channel_credentials(cert_data)  # secure with specified certificate
@@ -182,6 +185,7 @@ class ScanossGrpc(ScanossBase):
             self.vuln_stub = VulnerabilitiesStub(grpc.secure_channel(self.url, credentials))
             self.provenance_stub = GeoProvenanceStub(grpc.secure_channel(self.url, credentials))
             self.scanning_stub = ScanningStub(grpc.secure_channel(self.url, credentials))
+            self.license_stub = LicenseStub(grpc.secure_channel(self.url, credentials))
 
     @classmethod
     def _load_cert(cls, cert_file: str) -> bytes:
@@ -659,6 +663,23 @@ class ScanossGrpc(ScanossBase):
             request,
             PurlRequest,
             'Sending data for cryptographic versions in range decoration (rqId: {rqId})...',
+        )
+
+    def get_licenses(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetLicenses
+
+        Args:
+            request (Dict): ComponentBatchRequest
+
+        Returns:
+            Optional[Dict]: BasicResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.license_stub.GetLicenses,
+            request,
+            ComponentBatchRequest,
+            'Sending data for license decoration (rqId: {rqId})...',
         )
 
     def load_generic_headers(self):
