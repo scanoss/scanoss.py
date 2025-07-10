@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.28.0] - 2025-07-10
+### Added
+- Add `licenses` sub-command to `component` command
+- Add support for ingesting CDX to all decoration commands
+- Add CDX input validation
+
 ## [1.31.2] - 2025-08-12
 ### Fixed
 - Removed an unnecessary print statement from the policy checker

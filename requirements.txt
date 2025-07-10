@@ -13,5 +13,4 @@ packageurl-python
 pathspec
 jsonschema
 crc
-
 cyclonedx-python-lib[validation]
