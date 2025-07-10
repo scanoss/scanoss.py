@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+from scanoss.cyclonedx import CycloneDx
 from scanoss.scanossbase import ScanossBase
 from scanoss.scanossgrpc import ScanossGrpc
 from scanoss.utils.abstract_presenter import AbstractPresenter
@@ -39,19 +40,26 @@ class CryptographyConfig:
                             f'Invalid PURL format: "{purl}".' f'It must include a version (e.g., pkg:type/name@version)'
                         )
         if self.input_file:
-            input_file_validation = validate_json_file(self.input_file)
-            if not input_file_validation.is_valid:
+            result = validate_json_file(self.input_file)
+            if not result.is_valid:
                 raise ScanossCryptographyError(
-                    f'There was a problem with the purl input file. {input_file_validation.error}'
+                    f'There was a problem with the purl input file. {result.error}'
                 )
+                
+            cdx = CycloneDx(debug=self.debug)
+            if cdx.is_cyclonedx_json(json.dumps(result.data)):
+                purl_request = cdx.get_purls_request_from_cdx(result.data)
+            else:
+                purl_request = result.data
+            
             if (
-                not isinstance(input_file_validation.data, dict)
-                or 'purls' not in input_file_validation.data
-                or not isinstance(input_file_validation.data['purls'], list)
-                or not all(isinstance(p, dict) and 'purl' in p for p in input_file_validation.data['purls'])
+                not isinstance(purl_request, dict)
+                or 'purls' not in purl_request
+                or not isinstance(purl_request['purls'], list)
+                or not all(isinstance(p, dict) and 'purl' in p for p in purl_request['purls'])
             ):
                 raise ScanossCryptographyError('The supplied input file is not in the correct PurlRequest format.')
-            purls = input_file_validation.data['purls']
+            purls = purl_request['purls']
             purls_with_requirement = []
             if self.with_range and any('requirement' not in p for p in purls):
                 raise ScanossCryptographyError(
@@ -182,15 +190,9 @@ class Cryptography:
 
         return self.results
 
-    def _build_purls_request(
-        self,
-    ) -> Optional[dict]:
+    def _build_purls_request(self) -> Optional[dict]:
         """
         Load the specified purls from a JSON file or a list of PURLs and return a dictionary
-
-        Args:
-            json_file (Optional[str], optional): The JSON file containing the PURLs. Defaults to None.
-            purls (Optional[List[str]], optional): The list of PURLs. Defaults to None.
 
         Returns:
             Optional[dict]: The dictionary containing the PURLs
