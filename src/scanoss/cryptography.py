@@ -27,6 +27,38 @@ class CryptographyConfig:
     quiet: bool = False
     with_range: bool = False
 
+    def _process_input_file(self) -> dict:
+        """
+        Process and validate the input file, returning the validated purl_request.
+        
+        Returns:
+            dict: The validated purl_request dictionary
+            
+        Raises:
+            ScanossCryptographyError: If the input file is invalid
+        """
+        result = validate_json_file(self.input_file)
+        if not result.is_valid:
+            raise ScanossCryptographyError(
+                f'There was a problem with the purl input file. {result.error}'
+            )
+            
+        cdx = CycloneDx(debug=self.debug)
+        if cdx.is_cyclonedx_json(json.dumps(result.data)):
+            purl_request = cdx.get_purls_request_from_cdx(result.data)
+        else:
+            purl_request = result.data
+        
+        if (
+            not isinstance(purl_request, dict)
+            or 'purls' not in purl_request
+            or not isinstance(purl_request['purls'], list)
+            or not all(isinstance(p, dict) and 'purl' in p for p in purl_request['purls'])
+        ):
+            raise ScanossCryptographyError('The supplied input file is not in the correct PurlRequest format.')
+            
+        return purl_request
+
     def __post_init__(self):
         """
         Validate that the configuration is valid.
@@ -40,25 +72,7 @@ class CryptographyConfig:
                             f'Invalid PURL format: "{purl}".' f'It must include a version (e.g., pkg:type/name@version)'
                         )
         if self.input_file:
-            result = validate_json_file(self.input_file)
-            if not result.is_valid:
-                raise ScanossCryptographyError(
-                    f'There was a problem with the purl input file. {result.error}'
-                )
-                
-            cdx = CycloneDx(debug=self.debug)
-            if cdx.is_cyclonedx_json(json.dumps(result.data)):
-                purl_request = cdx.get_purls_request_from_cdx(result.data)
-            else:
-                purl_request = result.data
-            
-            if (
-                not isinstance(purl_request, dict)
-                or 'purls' not in purl_request
-                or not isinstance(purl_request['purls'], list)
-                or not all(isinstance(p, dict) and 'purl' in p for p in purl_request['purls'])
-            ):
-                raise ScanossCryptographyError('The supplied input file is not in the correct PurlRequest format.')
+            purl_request = self._process_input_file()
             purls = purl_request['purls']
             purls_with_requirement = []
             if self.with_range and any('requirement' not in p for p in purls):
