@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.28.0] - 2025-07-10
+### Added
+- Add vulnerabilities response to `folder-scan` CycloneDX output
+
 ## [1.27.1] - 2025-07-09
 ### Fixed
 - Fixed when running `folder-scan` with `--format cyclonedx` the output was not writing to file
