@@ -394,6 +394,7 @@ class CycloneDx(ScanossBase):
     def is_cyclonedx_json(self, json_string: str) -> bool:
         """
         Validate if the given JSON string is a valid CycloneDX JSON string
+
         Args:
             json_string (str): JSON string to validate
         Returns:
@@ -410,7 +411,25 @@ class CycloneDx(ScanossBase):
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
             return False
 
+    def get_purls_request_from_cdx(self, cdx_dict: dict) -> dict:
+        """
+        Get the list of PURL requests (purl + requirement) from the given CDX dictionary
 
+        Args:
+            cdx_dict (dict): CDX dictionary to parse
+        Returns:
+            list[dict]: List of PURL requests (purl + requirement)
+        """
+        components = cdx_dict.get('components', [])
+        parsed_purls = []
+        for component in components:
+            version = component.get('version')
+            if version:
+                parsed_purls.append({'purl': component.get('purl'), 'requirement': version})
+            else:
+                parsed_purls.append({'purl': component.get('purl')})
+        purl_request = {'purls': parsed_purls}
+        return purl_request
 #
 # End of CycloneDX Class
 #

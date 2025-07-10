@@ -310,6 +310,15 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     c_vulns.set_defaults(func=comp_vulns)
     c_vulns.add_argument('--grpc', action='store_true', help='Enable gRPC support')
 
+    # Component Sub-command: component licenses
+    c_licenses = comp_sub.add_parser(
+        'licenses',
+        aliases=['lics'],
+        description=f'Show License details: {__version__}',
+        help='Retrieve licenses for the given components',
+    )
+    c_licenses.set_defaults(func=comp_licenses)
+
     # Component Sub-command: component semgrep
     c_semgrep = comp_sub.add_parser(
         'semgrep',
@@ -411,7 +420,15 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_crypto_versions_in_range.set_defaults(func=crypto_versions_in_range)
 
     # Common purl Component sub-command options
-    for p in [c_vulns, c_semgrep, c_provenance, p_crypto_algorithms, p_crypto_hints, p_crypto_versions_in_range]:
+    for p in [
+        c_vulns,
+        c_semgrep,
+        c_provenance,
+        p_crypto_algorithms,
+        p_crypto_hints,
+        p_crypto_versions_in_range,
+        c_licenses,
+    ]:
         p.add_argument('--purl', '-p', type=str, nargs='*', help='Package URL - PURL to process.')
         p.add_argument('--input', '-i', type=str, help='Input file name')
 
@@ -425,6 +442,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_algorithms,
         p_crypto_hints,
         p_crypto_versions_in_range,
+        c_licenses,
     ]:
         p.add_argument(
             '--timeout',
@@ -927,6 +945,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_algorithms,
         p_crypto_hints,
         p_crypto_versions_in_range,
+        c_licenses,
     ]:
         p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
 
@@ -1001,6 +1020,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_algorithms,
         p_crypto_hints,
         p_crypto_versions_in_range,
+        c_licenses,
     ]:
         p.add_argument(
             '--key', '-k', type=str, help='SCANOSS API Key token (optional - not required for default OSSKB URL)'
@@ -1039,6 +1059,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_algorithms,
         p_crypto_hints,
         p_crypto_versions_in_range,
+        c_licenses,
     ]:
         p.add_argument(
             '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
@@ -1104,6 +1125,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_algorithms,
         p_crypto_hints,
         p_crypto_versions_in_range,
+        c_licenses,
         e_dt,
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
@@ -2306,6 +2328,39 @@ def comp_provenance(parser, args):
     if not comps.get_provenance_details(args.input, args.purl, args.output, args.origin):
         sys.exit(1)
 
+def comp_licenses(parser, args):
+    """
+    Run the "component licenses" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    if (not args.purl and not args.input) or (args.purl and args.input):
+        print_stderr('ERROR: Please specify an input file or purl to decorate (--purl or --input)')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        sys.exit(1)
+    if args.ca_cert and not os.path.exists(args.ca_cert):
+        print_stderr(f'ERROR: Certificate file does not exist: {args.ca_cert}.')
+        sys.exit(1)
+    pac_file = get_pac_file(args.pac)
+    comps = Components(
+        debug=args.debug,
+        trace=args.trace,
+        quiet=args.quiet,
+        grpc_url=args.api2url,
+        api_key=args.key,
+        ca_cert=args.ca_cert,
+        proxy=args.proxy,
+        grpc_proxy=args.grpc_proxy,
+        pac=pac_file,
+        timeout=args.timeout,
+        req_headers=process_req_headers(args.header),
+    )
+    if not comps.get_licenses(args.input, args.purl, args.output):
+        sys.exit(1)
 
 def results(parser, args):
     """
