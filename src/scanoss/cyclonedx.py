@@ -287,6 +287,75 @@ class CycloneDx(ScanossBase):
             return False
         return self.produce_from_json(data, output_file)
 
+    def append_vulnerabilities(self, cdx_dict: dict, vulnerabilities_data: dict, purl: str) -> dict:
+        """
+        Append vulnerabilities to an existing CycloneDX dictionary
+        
+        Args:
+            cdx_dict (dict): The existing CycloneDX dictionary
+            vulnerabilities_data (dict): The vulnerabilities data from get_vulnerabilities_json
+            purl (str): The PURL of the component these vulnerabilities affect
+            
+        Returns:
+            dict: The updated CycloneDX dictionary with vulnerabilities appended
+        """
+        if not cdx_dict or not vulnerabilities_data:
+            return cdx_dict
+            
+        if 'vulnerabilities' not in cdx_dict:
+            cdx_dict['vulnerabilities'] = []
+            
+        # Extract vulnerabilities from the response
+        vulns_list = vulnerabilities_data.get('purls', [])
+        if vulns_list and len(vulns_list) > 0:
+            vuln_items = vulns_list[0].get('vulnerabilities', [])
+            
+            for vuln in vuln_items:
+                vuln_id = vuln.get('ID', '')
+                if vuln_id == '':
+                    vuln_id = vuln.get('id', '')
+                if not vuln_id or vuln_id == '':  # Skip empty ids
+                    continue
+                    
+                vuln_cve = vuln.get('CVE', '')
+                if vuln_cve == '':
+                    vuln_cve = vuln.get('cve', '')
+                    
+                # Skip CPE entries, use CVE if available
+                if vuln_id.upper().startswith('CPE:') and vuln_cve != '':
+                    vuln_id = vuln_cve
+                elif vuln_id.upper().startswith('CPE:'):
+                    continue
+                    
+                # Check if vulnerability already exists
+                existing_vuln = None
+                for existing in cdx_dict['vulnerabilities']:
+                    if existing.get('id') == vuln_id:
+                        existing_vuln = existing
+                        break
+                        
+                if existing_vuln:
+                    # Add this PURL to the affects list if not already present
+                    if not any(ref.get('ref') == purl for ref in existing_vuln.get('affects', [])):
+                        existing_vuln['affects'].append({'ref': purl})
+                else:
+                    # Create new vulnerability entry
+                    vuln_source = vuln.get('source', '').lower()
+                    vd = {
+                        'id': vuln_id,
+                        'source': {
+                            'name': 'NVD' if vuln_source == 'nvd' else 'GitHub Advisories',
+                            'url': f'https://nvd.nist.gov/vuln/detail/{vuln_cve}'
+                                  if vuln_source == 'nvd'
+                                  else f'https://github.com/advisories/{vuln_id}'
+                        },
+                        'ratings': [{'severity': self._sev_lookup(vuln.get('severity', 'unknown').lower())}],
+                        'affects': [{'ref': purl}]
+                    }
+                    cdx_dict['vulnerabilities'].append(vd)
+                    
+        return cdx_dict
+
     @staticmethod
     def _sev_lookup(value: str):
         """
