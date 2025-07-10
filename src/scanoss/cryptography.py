@@ -62,7 +62,7 @@ class CryptographyConfig:
                     for purl in purls:
                         purls_with_requirement.append(f'{purl["purl"]}@{purl["requirement"]}')
             else:
-                purls_with_requirement = purls
+                purls_with_requirement = [purl["purl"] for purl in purls]
             self.purl = purls_with_requirement
 
 
