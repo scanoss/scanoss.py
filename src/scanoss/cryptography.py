@@ -53,16 +53,16 @@ class CryptographyConfig:
                 raise ScanossCryptographyError('The supplied input file is not in the correct PurlRequest format.')
             purls = input_file_validation.data['purls']
             purls_with_requirement = []
-            if self.with_range:
-                if any('requirement' not in p for p in purls):
-                    raise ScanossCryptographyError(
-                        f'One or more PURLs in "{self.input_file}" are missing the "requirement" field.'
-                    )
+            if self.with_range and any('requirement' not in p for p in purls):
+                raise ScanossCryptographyError(
+                    f'One or more PURLs in "{self.input_file}" are missing the "requirement" field.'
+                )
+
+            for purl in purls:
+                if 'requirement' in purl:
+                    purls_with_requirement.append(f'{purl["purl"]}@{purl["requirement"]}')
                 else:
-                    for purl in purls:
-                        purls_with_requirement.append(f'{purl["purl"]}@{purl["requirement"]}')
-            else:
-                purls_with_requirement = [purl["purl"] for purl in purls]
+                    purls_with_requirement.append(purl['purl'])
             self.purl = purls_with_requirement
 
 
@@ -198,12 +198,26 @@ class Cryptography:
         return {
             'purls': [
                 {
-                    'purl': p,
-                    'requirement': self._extract_version_from_purl(p),
+                    'purl': self._remove_version_from_purl(purl),
+                    'requirement': self._extract_version_from_purl(purl),
                 }
-                for p in self.config.purl
+                for purl in self.config.purl
             ]
         }
+
+    def _remove_version_from_purl(self, purl: str) -> str:
+        """
+        Remove version from purl
+
+        Args:
+            purl (str): The purl string to remove the version from
+
+        Returns:
+            str: The purl string without the version
+        """
+        if '@' not in purl:
+            return purl
+        return purl.split('@')[0]
 
     def _extract_version_from_purl(self, purl: str) -> str:
         """
