@@ -4,7 +4,7 @@ import grpc
 import warnings
 
 from scanoss.api.common.v2 import scanoss_common_pb2 as scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2
-from scanoss.api.components.v2 import scanoss_components_pb2 as scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2
+from scanoss.api.licenses.v2 import scanoss_licenses_pb2 as scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2
 
 GRPC_GENERATED_VERSION = '1.73.1'
 GRPC_VERSION = grpc.__version__
@@ -19,16 +19,16 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in scanoss/api/components/v2/scanoss_components_pb2_grpc.py depends on'
+        + f' but the generated code in scanoss/api/licenses/v2/scanoss_licenses_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
 
 
-class ComponentsStub(object):
+class LicenseStub(object):
     """
-    Expose all of the SCANOSS Component RPCs here
+    Expose all of the SCANOSS License RPCs here
     """
 
     def __init__(self, channel):
@@ -38,30 +38,30 @@ class ComponentsStub(object):
             channel: A grpc.Channel.
         """
         self.Echo = channel.unary_unary(
-                '/scanoss.api.components.v2.Components/Echo',
+                '/scanoss.api.licenses.v2.License/Echo',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.FromString,
                 _registered_method=True)
-        self.SearchComponents = channel.unary_unary(
-                '/scanoss.api.components.v2.Components/SearchComponents',
-                request_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompSearchRequest.SerializeToString,
-                response_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompSearchResponse.FromString,
+        self.GetLicenses = channel.unary_unary(
+                '/scanoss.api.licenses.v2.License/GetLicenses',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentBatchRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.BasicResponse.FromString,
                 _registered_method=True)
-        self.GetComponentVersions = channel.unary_unary(
-                '/scanoss.api.components.v2.Components/GetComponentVersions',
-                request_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionRequest.SerializeToString,
-                response_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionResponse.FromString,
+        self.GetDetails = channel.unary_unary(
+                '/scanoss.api.licenses.v2.License/GetDetails',
+                request_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.DetailsResponse.FromString,
                 _registered_method=True)
-        self.GetComponentStatistics = channel.unary_unary(
-                '/scanoss.api.components.v2.Components/GetComponentStatistics',
-                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
-                response_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.FromString,
+        self.GetObligations = channel.unary_unary(
+                '/scanoss.api.licenses.v2.License/GetObligations',
+                request_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ObligationsResponse.FromString,
                 _registered_method=True)
 
 
-class ComponentsServicer(object):
+class LicenseServicer(object):
     """
-    Expose all of the SCANOSS Component RPCs here
+    Expose all of the SCANOSS License RPCs here
     """
 
     def Echo(self, request, context):
@@ -71,61 +71,61 @@ class ComponentsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SearchComponents(self, request, context):
-        """Search for components
+    def GetLicenses(self, request, context):
+        """Get basic license info given a component batch request
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetComponentVersions(self, request, context):
-        """Get all version information for a specific component
+    def GetDetails(self, request, context):
+        """Get detailed metadata for a specific license
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetComponentStatistics(self, request, context):
-        """Get the statistics for the specified components
+    def GetObligations(self, request, context):
+        """Get obligations and compliance data for a license
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_ComponentsServicer_to_server(servicer, server):
+def add_LicenseServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Echo': grpc.unary_unary_rpc_method_handler(
                     servicer.Echo,
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.SerializeToString,
             ),
-            'SearchComponents': grpc.unary_unary_rpc_method_handler(
-                    servicer.SearchComponents,
-                    request_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompSearchRequest.FromString,
-                    response_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompSearchResponse.SerializeToString,
+            'GetLicenses': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetLicenses,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentBatchRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.BasicResponse.SerializeToString,
             ),
-            'GetComponentVersions': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetComponentVersions,
-                    request_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionRequest.FromString,
-                    response_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionResponse.SerializeToString,
+            'GetDetails': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetDetails,
+                    request_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.DetailsResponse.SerializeToString,
             ),
-            'GetComponentStatistics': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetComponentStatistics,
-                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
-                    response_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.SerializeToString,
+            'GetObligations': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetObligations,
+                    request_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ObligationsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'scanoss.api.components.v2.Components', rpc_method_handlers)
+            'scanoss.api.licenses.v2.License', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('scanoss.api.components.v2.Components', rpc_method_handlers)
+    server.add_registered_method_handlers('scanoss.api.licenses.v2.License', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class Components(object):
+class License(object):
     """
-    Expose all of the SCANOSS Component RPCs here
+    Expose all of the SCANOSS License RPCs here
     """
 
     @staticmethod
@@ -142,7 +142,7 @@ class Components(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/scanoss.api.components.v2.Components/Echo',
+            '/scanoss.api.licenses.v2.License/Echo',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.SerializeToString,
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.FromString,
             options,
@@ -156,7 +156,7 @@ class Components(object):
             _registered_method=True)
 
     @staticmethod
-    def SearchComponents(request,
+    def GetLicenses(request,
             target,
             options=(),
             channel_credentials=None,
@@ -169,9 +169,9 @@ class Components(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/scanoss.api.components.v2.Components/SearchComponents',
-            scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompSearchRequest.SerializeToString,
-            scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompSearchResponse.FromString,
+            '/scanoss.api.licenses.v2.License/GetLicenses',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentBatchRequest.SerializeToString,
+            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.BasicResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -183,7 +183,7 @@ class Components(object):
             _registered_method=True)
 
     @staticmethod
-    def GetComponentVersions(request,
+    def GetDetails(request,
             target,
             options=(),
             channel_credentials=None,
@@ -196,9 +196,9 @@ class Components(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/scanoss.api.components.v2.Components/GetComponentVersions',
-            scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionRequest.SerializeToString,
-            scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompVersionResponse.FromString,
+            '/scanoss.api.licenses.v2.License/GetDetails',
+            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.SerializeToString,
+            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.DetailsResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -210,7 +210,7 @@ class Components(object):
             _registered_method=True)
 
     @staticmethod
-    def GetComponentStatistics(request,
+    def GetObligations(request,
             target,
             options=(),
             channel_credentials=None,
@@ -223,9 +223,9 @@ class Components(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/scanoss.api.components.v2.Components/GetComponentStatistics',
-            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
-            scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.FromString,
+            '/scanoss.api.licenses.v2.License/GetObligations',
+            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.SerializeToString,
+            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ObligationsResponse.FromString,
             options,
             channel_credentials,
             insecure,
