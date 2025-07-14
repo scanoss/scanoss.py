@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.28.3] - 2025-07-14
+### Fixed
+- Fixed scanoss.json ingestion
+### Added
+- Added support for exclude parameter from scanoss.json file during scanning
+
 ## [1.28.2] - 2025-07-14
 ### Fixed
 - Fix CycloneDX format when license id is None
