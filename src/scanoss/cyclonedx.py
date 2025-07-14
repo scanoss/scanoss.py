@@ -219,6 +219,8 @@ class CycloneDx(ScanossBase):
                 lic_set = set()
                 for lic in licenses:  # Get a unique set of licenses
                     lc_id = lic.get('id')
+                    if not lc_id:
+                        continue
                     spdx_id = self._spdx.get_spdx_license_id(lc_id)
                     lic_set.add(spdx_id if spdx_id else lc_id)
                 for lc_id in lic_set:  # Store licenses for later inclusion
