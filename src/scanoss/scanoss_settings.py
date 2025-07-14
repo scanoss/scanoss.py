@@ -172,7 +172,7 @@ class ScanossSettings(ScanossBase):
 
     def _get_bom(self):
         """
-        Get the Billing of Materials from the settings file
+        Get the Bill of Materials from the settings file
         Returns:
             dict: If using scanoss.json
             list: If using SBOM.json
@@ -195,6 +195,17 @@ class ScanossSettings(ScanossBase):
         if self.settings_file_type == 'legacy':
             return self._get_bom()
         return self._get_bom().get('include', [])
+
+
+    def get_bom_exclude(self) -> List[BomEntry]:
+        """
+        Get the list of components to exclude from the scan
+        Returns:
+            list: List of components to exclude from the scan
+        """
+        if self.settings_file_type == 'legacy':
+            return self._get_bom()
+        return self._get_bom().get('exclude', [])
 
     def get_bom_remove(self) -> List[BomEntry]:
         """
@@ -225,8 +236,8 @@ class ScanossSettings(ScanossBase):
         if not self.data:
             return None
         return {
-            'scan_type': self.scan_type,
             'assets': json.dumps(self._get_sbom_assets()),
+            'scan_type': self.scan_type,
         }
 
     def _get_sbom_assets(self):
@@ -235,7 +246,18 @@ class ScanossSettings(ScanossBase):
         Returns:
             List: List of SBOM assets
         """
-        if self.scan_type == 'identify':
+
+        if self.settings_file_type == 'new':
+            if len(self.get_bom_include()):
+                self.scan_type = 'identify'
+                include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
+                return {"components": include_bom_entries}
+            elif len(self.get_bom_exclude()):
+                self.scan_type = 'blacklist'
+                exclude_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_exclude()))
+                return {"components": exclude_bom_entries}
+
+        if self.settings_file_type == 'legacy' and self.scan_type == 'identify':            # sbom-identify.json
             include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
             replace_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_replace()))
             self.print_debug(
@@ -244,6 +266,14 @@ class ScanossSettings(ScanossBase):
                 f'From Replace list: {[entry["purl"] for entry in replace_bom_entries]} \n'
             )
             return include_bom_entries + replace_bom_entries
+
+        if self.settings_file_type == 'legacy' and self.scan_type == 'blacklist':            # sbom-identify.json
+            exclude_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_exclude()))
+            self.print_debug(
+                f"Scan type set to 'blacklist'. Adding {len(exclude_bom_entries)} components as context to the scan. \n"  # noqa: E501
+                f'From Exclude list: {[entry["purl"] for entry in exclude_bom_entries]} \n')
+            return exclude_bom_entries
+
         return self.normalize_bom_entries(self.get_bom_remove())
 
     @staticmethod

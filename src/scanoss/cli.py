@@ -1071,9 +1071,8 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
                     'blacklist'
                 )
             else:
-                scan_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new').set_scan_type(
-                    'identify'
-                )
+                scan_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new')
+
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
             sys.exit(1)
