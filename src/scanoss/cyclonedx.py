@@ -48,10 +48,10 @@ class CycloneDx(ScanossBase):
         self.debug = debug
         self._spdx = SpdxLite(debug=debug)
 
-    def parse(self, data: json):  # noqa: PLR0912, PLR0915
+    def parse(self, data: dict):  # noqa: PLR0912, PLR0915
         """
         Parse the given input (raw/plain) JSON string and return CycloneDX summary
-        :param data: json - JSON object
+        :param data: dict - JSON object
         :return: CycloneDX dictionary, and vulnerability dictionary
         """
         if not data:
@@ -170,12 +170,12 @@ class CycloneDx(ScanossBase):
             success = self.produce_from_str(f.read(), output_file)
         return success
 
-    def produce_from_json(self, data: json, output_file: str = None) -> tuple[bool, json]:  # noqa: PLR0912
+    def produce_from_json(self, data: dict, output_file: str = None) -> tuple[bool, dict]:  # noqa: PLR0912
         """
         Produce the CycloneDX output from the raw scan results input data
 
         Args:
-            data (json): JSON object
+            data (dict): JSON object
             output_file (str, optional): Output file (optional). Defaults to None.
 
         Returns:

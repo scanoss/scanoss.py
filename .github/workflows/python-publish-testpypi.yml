@@ -1,7 +1,7 @@
 name: Publish Python Package - TestPyPI
 # This workflow will upload a TestPyPI Python Package using Twine on demand (dispatch)
 
-on: [ workflow_dispatch ]
+on: [workflow_dispatch]
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10.x'
+          python-version: "3.9.x"
 
       - name: Install Dependencies
         run: |
@@ -56,7 +56,7 @@ jobs:
 
   test:
     if: success()
-    needs: [ deploy ]
+    needs: [deploy]
     runs-on: ubuntu-latest
 
     steps:
@@ -65,7 +65,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10.x'
+          python-version: "3.9.x"
 
       - name: Install Remote Package
         run: |
@@ -101,3 +101,4 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
+
