@@ -35,7 +35,7 @@ To install (from `pypi.org <https://pypi.org/project/scanoss/>`_), run: ``pip3 i
 Requirements
 ------------
 
-Python 3.7 or higher.
+Python 3.9 or higher.
 
 The dependencies can be found in the `requirements.txt <https://github.com/scanoss/scanoss.py/blob/main/requirements.txt>`_ and `requirements-dev.txt <https://github.com/scanoss/scanoss.py/blob/main/requirements-dev.txt>`_ files.
 

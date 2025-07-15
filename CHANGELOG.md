@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.29.0] - 2025-07-15
+### Changed
+- Updated minimum Python version to 3.9
+
 ## [1.28.3] - 2025-07-14
 ### Fixed
 - Fixed scanoss.json ingestion
@@ -604,3 +608,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.28.0]: https://github.com/scanoss/scanoss.py/compare/v1.27.1...v1.28.0
 [1.28.1]: https://github.com/scanoss/scanoss.py/compare/v1.28.0...v1.28.1
 [1.28.2]: https://github.com/scanoss/scanoss.py/compare/v1.28.1...v1.28.2
+[1.29.0]: https://github.com/scanoss/scanoss.py/compare/v1.28.2...v1.29.0
+
