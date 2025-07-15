@@ -138,7 +138,7 @@ if __name__ == "__main__":
 ```
 
 ## Requirements
-Python 3.7 or higher.
+Python 3.9 or higher.
 
 ## Source code
 The source for this package can be found [here](https://github.com/scanoss/scanoss.py).
