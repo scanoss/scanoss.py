@@ -39,6 +39,15 @@ To enable dependency scanning, an extra tool is required: scancode-toolkit
 pip3 install -r requirements-scancode.txt
 ```
 
+### Pre-commit Setup
+This project uses pre-commit hooks to ensure code quality and consistency. To set up pre-commit, run:
+```bash
+pip3 install pre-commit
+pre-commit install
+```
+
+This will install the pre-commit tool and set up the git hooks defined in the `.pre-commit-config.yaml` file to run automatically on each commit.
+
 ### Devcontainer Setup
 To simplify the development environment setup, a devcontainer configuration is provided. This allows you to develop inside a containerized environment with all necessary dependencies pre-installed.
 
