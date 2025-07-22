@@ -1,7 +1,7 @@
 """
 SPDX-License-Identifier: MIT
 
-  Copyright (c) 2021, SCANOSS
+  Copyright (c) 2024, SCANOSS
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -22,4 +22,6 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-__version__ = '1.30.0'
+from .dependency_track import DependencyTrackExporter
+
+__all__ = ['DependencyTrackExporter']

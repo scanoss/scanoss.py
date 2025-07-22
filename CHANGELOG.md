@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.30.0] - 2025-07-22
+### Added
+- Add `export dt` subcommand to export SBOM files to Dependency Track
+- Add CycloneDX file validation
+
 ## [1.29.0] - 2025-07-15
 ### Changed
 - Updated minimum Python version to 3.9
@@ -609,4 +614,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.28.1]: https://github.com/scanoss/scanoss.py/compare/v1.28.0...v1.28.1
 [1.28.2]: https://github.com/scanoss/scanoss.py/compare/v1.28.1...v1.28.2
 [1.29.0]: https://github.com/scanoss/scanoss.py/compare/v1.28.2...v1.29.0
+[1.30.0]: https://github.com/scanoss/scanoss.py/compare/v1.29.0...v1.30.0
+
 

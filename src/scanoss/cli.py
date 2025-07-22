@@ -25,6 +25,7 @@ SPDX-License-Identifier: MIT
 import argparse
 import os
 import sys
+import traceback
 from dataclasses import asdict
 from pathlib import Path
 from typing import List
@@ -32,6 +33,10 @@ from typing import List
 import pypac
 
 from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
+from scanoss.export.dependency_track import (
+    DependencyTrackExporter,
+    create_dependency_track_exporter_config_from_args,
+)
 from scanoss.inspection.component_summary import ComponentSummary
 from scanoss.inspection.license_summary import LicenseSummary
 from scanoss.scanners.container_scanner import (
@@ -553,13 +558,17 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     ####### INSPECT: License Summary ######
     # Inspect Sub-command: inspect license summary
     p_license_summary = p_inspect_sub.add_parser(
-        'license-summary', aliases=['lic-summary', 'licsum'], description='Get license summary',
-        help='Get detected license summary from scan results'
+        'license-summary',
+        aliases=['lic-summary', 'licsum'],
+        description='Get license summary',
+        help='Get detected license summary from scan results',
     )
 
     p_component_summary = p_inspect_sub.add_parser(
-        'component-summary', aliases=['comp-summary', 'compsum'], description='Get component summary',
-        help='Get detected component summary from scan results'
+        'component-summary',
+        aliases=['comp-summary', 'compsum'],
+        description='Get component summary',
+        help='Get detected component summary from scan results',
     )
 
     ####### INSPECT: Undeclared components ######
@@ -604,6 +613,36 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_component_summary.set_defaults(func=inspect_component_summary)
 
     ########################################### END INSPECT SUBCOMMAND ###########################################
+
+    # Sub-command: export
+    p_export = subparsers.add_parser(
+        'export',
+        aliases=['exp'],
+        description=f'Export SBOM files to external platforms: {__version__}',
+        help='Export SBOM files to external platforms',
+    )
+
+    export_sub = p_export.add_subparsers(
+        title='Export Commands',
+        dest='subparsercmd',
+        description='export sub-commands',
+        help='export sub-commands',
+    )
+
+    # Export Sub-command: export dt (Dependency Track)
+    e_dt = export_sub.add_parser(
+        'dt',
+        aliases=['dependency-track'],
+        description='Export SBOM to Dependency Track',
+        help='Upload SBOM files to Dependency Track',
+    )
+    e_dt.add_argument('-i', '--input', type=str, required=True, help='Input SBOM file (CycloneDX JSON format)')
+    e_dt.add_argument('--dt-url', type=str, required=True, help='Dependency Track base URL')
+    e_dt.add_argument('--dt-apikey', type=str, required=True, help='Dependency Track API key')
+    e_dt.add_argument('--dt-projectid', type=str, help='Dependency Track project UUID')
+    e_dt.add_argument('--dt-projectname', type=str, help='Dependency Track project name')
+    e_dt.add_argument('--dt-projectversion', type=str, help='Dependency Track project version')
+    e_dt.set_defaults(func=export_dt)
 
     # Sub-command: folder-scan
     p_folder_scan = subparsers.add_parser(
@@ -858,6 +897,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_algorithms,
         p_crypto_hints,
         p_crypto_versions_in_range,
+        e_dt,
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -871,7 +911,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         parser.print_help()  # No sub command subcommand, print general help
         sys.exit(1)
     elif (
-        args.subparser in ('utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins', 'crypto', 'cr')
+        args.subparser
+        in ('utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins', 'crypto', 'cr', 'export', 'exp')
     ) and not args.subparsercmd:
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
@@ -1304,6 +1345,7 @@ def convert(parser, args):
     if not success:
         sys.exit(1)
 
+
 ################################ INSPECT handlers ################################
 def inspect_copyleft(parser, args):
     """
@@ -1381,16 +1423,17 @@ def inspect_undeclared(parser, args):
     status, _ = i_undeclared.run()
     sys.exit(status)
 
+
 def inspect_license_summary(parser, args):
     """
-       Run the "inspect" sub-command
-       Parameters
-       ----------
-           parser: ArgumentParser
-               command line parser object
-           args: Namespace
-               Parsed arguments
-       """
+    Run the "inspect" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
     if args.input is None:
         print_stderr('Please specify an input file to inspect')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
@@ -1412,16 +1455,17 @@ def inspect_license_summary(parser, args):
     )
     i_license_summary.run()
 
+
 def inspect_component_summary(parser, args):
     """
-       Run the "inspect" sub-command
-       Parameters
-       ----------
-           parser: ArgumentParser
-               command line parser object
-           args: Namespace
-               Parsed arguments
-       """
+    Run the "inspect" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
     if args.input is None:
         print_stderr('Please specify an input file to inspect')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
@@ -1440,7 +1484,41 @@ def inspect_component_summary(parser, args):
     )
     i_component_summary.run()
 
+
 ################################ End inspect handlers ################################
+
+
+def export_dt(parser, args):
+    """
+    Run the "export dt" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+
+    try:
+        config = create_dependency_track_exporter_config_from_args(args)
+        dt_exporter = DependencyTrackExporter(
+            config=config,
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+        )
+
+        success = dt_exporter.upload_sbom(args.input)
+
+        if not success:
+            sys.exit(1)
+
+    except Exception as e:
+        print_stderr(f'ERROR: {e}')
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
+
 
 def utils_certloc(*_):
     """
