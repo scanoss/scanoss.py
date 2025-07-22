@@ -28,6 +28,9 @@ import os.path
 import sys
 import uuid
 
+from cyclonedx.schema import SchemaVersion
+from cyclonedx.validation.json import JsonValidator
+
 from . import __version__
 from .scanossbase import ScanossBase
 from .spdxlite import SpdxLite
@@ -296,13 +299,13 @@ class CycloneDx(ScanossBase):
         """
         vuln_id = vuln.get('ID', '') or vuln.get('id', '')
         vuln_cve = vuln.get('CVE', '') or vuln.get('cve', '')
-        
+
         # Skip CPE entries, use CVE if available
         if vuln_id.upper().startswith('CPE:') and vuln_cve:
             vuln_id = vuln_cve
-        
+
         return vuln_id, vuln_cve
-    
+
     def _create_vulnerability_entry(self, vuln_id: str, vuln: dict, vuln_cve: str, purl: str) -> dict:
         """
         Create a new vulnerability entry for CycloneDX format.
@@ -313,61 +316,56 @@ class CycloneDx(ScanossBase):
             'source': {
                 'name': 'NVD' if vuln_source == 'nvd' else 'GitHub Advisories',
                 'url': f'https://nvd.nist.gov/vuln/detail/{vuln_cve}'
-                      if vuln_source == 'nvd'
-                      else f'https://github.com/advisories/{vuln_id}'
+                if vuln_source == 'nvd'
+                else f'https://github.com/advisories/{vuln_id}',
             },
             'ratings': [{'severity': self._sev_lookup(vuln.get('severity', 'unknown').lower())}],
-            'affects': [{'ref': purl}]
+            'affects': [{'ref': purl}],
         }
-    
+
     def append_vulnerabilities(self, cdx_dict: dict, vulnerabilities_data: dict, purl: str) -> dict:
         """
         Append vulnerabilities to an existing CycloneDX dictionary
-        
+
         Args:
             cdx_dict (dict): The existing CycloneDX dictionary
             vulnerabilities_data (dict): The vulnerabilities data from get_vulnerabilities_json
             purl (str): The PURL of the component these vulnerabilities affect
-            
+
         Returns:
             dict: The updated CycloneDX dictionary with vulnerabilities appended
         """
         if not cdx_dict or not vulnerabilities_data:
             return cdx_dict
-            
+
         if 'vulnerabilities' not in cdx_dict:
             cdx_dict['vulnerabilities'] = []
-            
+
         # Extract vulnerabilities from the response
         vulns_list = vulnerabilities_data.get('purls', [])
         if not vulns_list:
             return cdx_dict
-            
+
         vuln_items = vulns_list[0].get('vulnerabilities', [])
-        
+
         for vuln in vuln_items:
             vuln_id, vuln_cve = self._normalize_vulnerability_id(vuln)
-            
+
             # Skip empty IDs or CPE-only entries
             if not vuln_id or vuln_id.upper().startswith('CPE:'):
                 continue
-            
+
             # Check if vulnerability already exists
-            existing_vuln = next(
-                (v for v in cdx_dict['vulnerabilities'] if v.get('id') == vuln_id),
-                None
-            )
-            
+            existing_vuln = next((v for v in cdx_dict['vulnerabilities'] if v.get('id') == vuln_id), None)
+
             if existing_vuln:
                 # Add this PURL to the affects list if not already present
                 if not any(ref.get('ref') == purl for ref in existing_vuln.get('affects', [])):
                     existing_vuln['affects'].append({'ref': purl})
             else:
                 # Create new vulnerability entry
-                cdx_dict['vulnerabilities'].append(
-                    self._create_vulnerability_entry(vuln_id, vuln, vuln_cve, purl)
-                )
-                    
+                cdx_dict['vulnerabilities'].append(self._create_vulnerability_entry(vuln_id, vuln, vuln_cve, purl))
+
         return cdx_dict
 
     @staticmethod
@@ -387,6 +385,25 @@ class CycloneDx(ScanossBase):
             'none': 'none',
             'unknown': 'unknown',
         }.get(value, 'unknown')
+
+    def is_cyclonedx_json(self, json_string: str) -> bool:
+        """
+        Validate if the given JSON string is a valid CycloneDX JSON string
+        Args:
+            json_string (str): JSON string to validate
+        Returns:
+            bool: True if the JSON string is valid, False otherwise
+        """
+        try:
+            cdx_json_validator = JsonValidator(SchemaVersion.V1_6)
+            json_validation_errors = cdx_json_validator.validate_str(json_string)
+            if json_validation_errors:
+                self.print_stderr(f'ERROR: Problem parsing input JSON: {json_validation_errors}')
+                return False
+            return True
+        except Exception as e:
+            self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
+            return False
 
 
 #
