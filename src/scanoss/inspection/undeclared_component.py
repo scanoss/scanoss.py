@@ -23,13 +23,26 @@ SPDX-License-Identifier: MIT
 """
 
 import json
-from typing import Any, Dict
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 from .inspect_base import InspectBase
 from .policy_check import PolicyStatus
 
+@dataclass
+class License:
+    spdxid: str
+    copyleft: bool
+    url: str
 
-class UndeclaredComponent(InspectBase):
+@dataclass
+class Component:
+    purl: str
+    version: str
+    licenses: List[License]
+    status: str
+
+class UndeclaredComponent(InspectBase[Component]):
     """
     SCANOSS UndeclaredComponent class
     Inspects for undeclared components
@@ -67,7 +80,7 @@ class UndeclaredComponent(InspectBase):
         self.status = status
         self.sbom_format = sbom_format
 
-    def _get_undeclared_component(self, components: list) -> list or None:
+    def _get_undeclared_components(self, components: list[Component]) -> list or None:
         """
         Filter the components list to include only undeclared components.
 
@@ -91,7 +104,7 @@ class UndeclaredComponent(InspectBase):
         # end component loop
         return undeclared_components
 
-    def _get_jira_summary(self, components: list) -> str:
+    def _get_jira_summary(self, components: list[Component]) -> str:
         """
         Get a summary of the undeclared components.
 
@@ -148,7 +161,7 @@ class UndeclaredComponent(InspectBase):
 
         return summary
 
-    def _json(self, components: list) -> Dict[str, Any]:
+    def _json(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the undeclared components as JSON.
 
@@ -165,7 +178,7 @@ class UndeclaredComponent(InspectBase):
             'summary': self._get_summary(component_licenses),
         }
 
-    def _markdown(self, components: list) -> Dict[str, Any]:
+    def _markdown(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the undeclared components as Markdown.
 
@@ -282,7 +295,7 @@ class UndeclaredComponent(InspectBase):
         if components is None:
             return PolicyStatus.ERROR.value, {}
         # Get undeclared component summary (if any)
-        undeclared_components = self._get_undeclared_component(components)
+        undeclared_components = self._get_undeclared_components(components)
         if undeclared_components is None:
             return PolicyStatus.ERROR.value, {}
         self.print_debug(f'Undeclared components: {undeclared_components}')
@@ -297,7 +310,6 @@ class UndeclaredComponent(InspectBase):
         if len(undeclared_components) <= 0:
             return PolicyStatus.FAIL.value, results
         return PolicyStatus.SUCCESS.value, results
-
 
 #
 # End of UndeclaredComponent Class

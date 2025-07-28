@@ -24,7 +24,7 @@ SPDX-License-Identifier: MIT
 
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, TypeVar, Generic
 from .utils.license_utils import LicenseUtil
 from ..scanossbase import ScanossBase
 
@@ -46,7 +46,9 @@ class PolicyStatus(Enum):
 # End of PolicyStatus Class
 #
 
-class PolicyCheck(ScanossBase):
+T = TypeVar('T')
+
+class PolicyCheck(ScanossBase, Generic[T]):
     """
     A base class for implementing various software policy checks.
 
@@ -96,13 +98,13 @@ class PolicyCheck(ScanossBase):
         pass
 
     @abstractmethod
-    def _json(self, components: list) -> Dict[str, Any]:
+    def _json(self, data: list[T]) -> Dict[str, Any]:
         """
         Format the policy checks results as JSON.
         This method should be implemented by subclasses to create a Markdown representation
         of the policy check results.
 
-        :param components: List of components to be formatted.
+        :param data: List of data to be formatted.
         :return: A dictionary containing two keys:
                  - 'details': A JSON-formatted string with the full list of components
                  - 'summary': A string summarizing the number of components found
@@ -110,27 +112,27 @@ class PolicyCheck(ScanossBase):
         pass
 
     @abstractmethod
-    def _markdown(self, components: list) -> Dict[str, Any]:
+    def _markdown(self, data: list[T]) -> Dict[str, Any]:
         """
         Generate Markdown output for the policy check results.
 
         This method should be implemented by subclasses to create a Markdown representation
         of the policy check results.
 
-        :param components: List of components to be included in the output.
+        :param data: List of data to be included in the output.
         :return: A dictionary representing the Markdown output.
         """
         pass
 
     @abstractmethod
-    def _jira_markdown(self, components: list) -> Dict[str, Any]:
+    def _jira_markdown(self, data: list[T]) -> Dict[str, Any]:
         """
         Generate Markdown output for the policy check results.
 
         This method should be implemented by subclasses to create a Markdown representation
         of the policy check results.
 
-        :param components: List of components to be included in the output.
+        :param data: List of data to be included in the output.
         :return: A dictionary representing the Markdown output.
         """
         pass

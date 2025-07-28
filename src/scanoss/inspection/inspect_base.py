@@ -26,10 +26,9 @@ import json
 import os.path
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, TypeVar
 
 from .policy_check import PolicyCheck
-from ..scanossbase import ScanossBase
 from .utils.license_utils import LicenseUtil
 
 
@@ -52,8 +51,8 @@ class ComponentID(Enum):
 # End of ComponentID Class
 #
 
-
-class InspectBase(PolicyCheck):
+T = TypeVar('T')
+class InspectBase(PolicyCheck[T]):
     """
     A base class to perform inspections over scan results.
 

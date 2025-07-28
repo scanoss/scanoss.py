@@ -23,13 +23,28 @@ SPDX-License-Identifier: MIT
 """
 
 import json
-from typing import Any, Dict
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 from .inspect_base import InspectBase
-from .policy_check import PolicyCheck, PolicyStatus
+from .policy_check import PolicyStatus
 
 
-class Copyleft(InspectBase):
+@dataclass
+class License:
+    spdxid: str
+    copyleft: bool
+    url: str
+    source: str
+
+@dataclass
+class Component:
+    purl: str
+    version: str
+    licenses: List[License]
+    status: str
+
+class Copyleft(InspectBase[Component]):
     """
     SCANOSS Copyleft class
     Inspects components for copyleft licenses
@@ -72,7 +87,7 @@ class Copyleft(InspectBase):
         self.exclude = exclude
         self.explicit = explicit
 
-    def _json(self, components: list) -> Dict[str, Any]:
+    def _json(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the components with copyleft licenses as JSON.
 
@@ -89,7 +104,7 @@ class Copyleft(InspectBase):
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
-    def _markdown(self, components: list) -> Dict[str, Any]:
+    def _markdown(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the components with copyleft licenses as Markdown.
 
@@ -116,7 +131,7 @@ class Copyleft(InspectBase):
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
-    def _jira_markdown(self, components: list) -> Dict[str, Any]:
+    def _jira_markdown(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the components with copyleft licenses as Markdown.
 
@@ -143,7 +158,7 @@ class Copyleft(InspectBase):
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
-    def _filter_components_with_copyleft_licenses(self, components: list) -> list:
+    def _get_components_with_copyleft_licenses(self, components: list) -> list[Component]:
         """
         Filter the components list to include only those with copyleft licenses.
 
@@ -207,7 +222,7 @@ class Copyleft(InspectBase):
         if components is None:
             return PolicyStatus.ERROR.value, {}
         # Get a list of copyleft components if they exist
-        copyleft_components = self._filter_components_with_copyleft_licenses(components)
+        copyleft_components = self._get_components_with_copyleft_licenses(components)
         # Get a formatter for the output results
         formatter = self._get_formatter()
         if formatter is None:

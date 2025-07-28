@@ -596,11 +596,22 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         description='Inspect Dependency track project status',
         help='Inspect Dependency track project status',
     )
-    p_dep_track.add_argument('--output', type=str, help='Dependency Track policy result file name')
     p_dep_track.add_argument('--dt-url', type=str, help='Dependency Track base URL')
     p_dep_track.add_argument('--dt-upload-token', type=str, help='Dependency Track project upload token')
     p_dep_track.add_argument('--dt-projectid', required=False, type=str,
                              help='Dependency Track project UUID.')
+    p_dep_track.add_argument('--dt-apikey', required=False, type=str,
+                             help='Dependency Track API Key')
+    p_dep_track.add_argument('--output', required=False, type=str,
+                             help='Path to output file')
+    p_dep_track.add_argument(
+        '-f',
+        '--format',
+        required=False,
+        choices=['json', 'md', 'jira_md'],
+        default='json',
+        help='Output format (default: json)',
+    )
 
     # Add common commands for inspect copyleft and license summary
     for p in [p_copyleft, p_license_summary]:
@@ -616,6 +627,21 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             '--explicit',
             help='Explicit list of Copyleft licenses to consider. Provide licenses as a comma-separated list.s',
         )
+
+
+
+    for p in [p_copyleft, p_undeclared]:
+        p.add_argument('-i', '--input', nargs='?', help='Path to results file')
+        p.add_argument(
+            '-f',
+            '--format',
+            required=False,
+            choices=['json', 'md', 'jira_md'],
+            default='json',
+            help='Output format (default: json)',
+        )
+        p.add_argument('-o', '--output', type=str, help='Save details into a file')
+        p.add_argument('-s', '--status', type=str, help='Save summary data into Markdown file')
 
         # Add common commands for inspect copyleft and license summary
     for p in [p_license_summary, p_component_summary]:
@@ -761,19 +787,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             action='store_true',
             help='Skip default settings file (scanoss.json) if it exists',
         )
-
-    for p in [p_copyleft, p_undeclared]:
-        p.add_argument('-i', '--input', nargs='?', help='Path to results file')
-        p.add_argument(
-            '-f',
-            '--format',
-            required=False,
-            choices=['json', 'md', 'jira_md'],
-            default='json',
-            help='Output format (default: json)',
-        )
-        p.add_argument('-o', '--output', type=str, help='Save details into a file')
-        p.add_argument('-s', '--status', type=str, help='Save summary data into Markdown file')
 
     # Global Scan command options
     for p in [p_scan, p_cs]:
@@ -1521,13 +1534,14 @@ def inspect_dependency_track(parser, args):
         trace=args.trace,
         quiet=args.quiet,
         output=args.output,
+        format_type=args.format,
         dependency_track_url=args.dt_url,
-        dependency_track_api_key=args.dt_key,
+        dependency_track_api_key=args.dt_apikey,
         dependency_track_project_id=args.dt_projectid,
-        dependency_track_project_name=args.dt_projectname,
-        dependency_track_project_version=args.dt_projectversion,
+        dependency_track_upload_token=args.dt_upload_token,
     )
-    i_dep_track.run()
+    status, _ = i_dep_track.run()
+    sys.exit(status)
 
 
 ################################ End inspect handlers ################################
