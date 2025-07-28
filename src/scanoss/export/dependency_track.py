@@ -30,8 +30,7 @@ from typing import Optional
 
 import requests
 
-from scanoss.cyclonedx import CycloneDx
-
+from ..cyclonedx import CycloneDx
 from ..scanossbase import ScanossBase
 from ..utils.file import validate_json_file
 
@@ -162,6 +161,30 @@ class DependencyTrackExporter(ScanossBase):
                 'bom': encoded_sbom,
             }
 
+    # Get project ID by name and version
+    def get_project_by_name_version(self, name, version):
+        try:
+            # Use the project search endpoint
+            params = {
+                'name': name,
+                'version': version
+            }
+
+            project_response = requests.get(
+                f"{self.dt_url}/api/v1/project/lookup",
+                headers={"X-API-Key": self.dt_apikey, "Content-Type": "application/json"},
+                params=params
+            )
+
+            if project_response.status_code == 200:
+                project_data = project_response.json()
+                return project_data
+
+        except Exception as e:
+            self.print_stdout(f"Error looking up project: {e}")
+            return None
+
+
     def upload_sbom(self, input_file: str) -> bool:
         """
         Upload SBOM file to Dependency Track
@@ -198,7 +221,14 @@ class DependencyTrackExporter(ScanossBase):
                 try:
                     response_data = response.json()
                     if 'token' in response_data:
-                        self.print_stderr(f'Upload token: {response_data["token"]}')
+                        has_name_version = bool(self.dt_projectname and self.dt_projectversion)
+                        project_uuid = self.dt_projectid
+                        if has_name_version:
+                          project_data =  self.get_project_by_name_version(self.dt_projectname, self.dt_projectversion)
+                          if project_data.get("uuid"):
+                             project_uuid = project_data.get("uuid")
+                        token_json = json.dumps({"token": response_data["token"], "project_uuid": project_uuid }, indent=2)
+                        self.print_stdout(token_json)
                 except json.JSONDecodeError:
                     pass
 

@@ -27,11 +27,13 @@ import os
 import re
 import unittest
 
-from scanoss.inspection.copyleft import Copyleft
-from scanoss.inspection.license_summary import LicenseSummary
-from scanoss.inspection.undeclared_component import UndeclaredComponent
+
+
 
 from src.scanoss.inspection.component_summary import ComponentSummary
+from src.scanoss.inspection.copyleft import Copyleft
+from src.scanoss.inspection.license_summary import LicenseSummary
+from src.scanoss.inspection.undeclared_component import UndeclaredComponent
 
 
 class MyTestCase(unittest.TestCase):

@@ -25,10 +25,11 @@ SPDX-License-Identifier: MIT
 import json
 from typing import Any, Dict
 
+from .inspect_base import InspectBase
 from .policy_check import PolicyCheck, PolicyStatus
 
 
-class Copyleft(PolicyCheck):
+class Copyleft(InspectBase):
     """
     SCANOSS Copyleft class
     Inspects components for copyleft licenses
@@ -61,7 +62,7 @@ class Copyleft(PolicyCheck):
         :param exclude: Licenses to exclude from the analysis
         :param explicit: Explicitly defined licenses
         """
-        super().__init__(debug, trace, quiet, filepath, format_type, status, output, name='Copyleft Policy')
+        super().__init__(debug, trace, quiet, format_type,filepath, output ,status, name='Copyleft Policy')
         self.license_util.init(include, exclude, explicit)
         self.filepath = filepath
         self.format = format

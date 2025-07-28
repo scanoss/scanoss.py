@@ -28,6 +28,7 @@ from abc import abstractmethod
 from enum import Enum
 from typing import Any, Dict
 
+from .policy_check import PolicyCheck
 from ..scanossbase import ScanossBase
 from .utils.license_utils import LicenseUtil
 
@@ -52,7 +53,7 @@ class ComponentID(Enum):
 #
 
 
-class InspectBase(ScanossBase):
+class InspectBase(PolicyCheck):
     """
     A base class to perform inspections over scan results.
 
@@ -68,10 +69,13 @@ class InspectBase(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
+        format_type: str = None,
         filepath: str = None,
         output: str = None,
+        status: str = None,
+        name: str = None,
     ):
-        super().__init__(debug, trace, quiet)
+        super().__init__(debug, trace, quiet, format_type,status, name, output)
         self.license_util = LicenseUtil()
         self.filepath = filepath
         self.output = output

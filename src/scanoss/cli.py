@@ -37,6 +37,7 @@ from scanoss.export.dependency_track import (
     DependencyTrackExporter,
     create_dependency_track_exporter_config_from_args,
 )
+from scanoss.inspection.dependency_track import DependencyTrackPolicyCheck
 from scanoss.inspection.component_summary import ComponentSummary
 from scanoss.inspection.license_summary import LicenseSummary
 from scanoss.scanners.container_scanner import (
@@ -587,6 +588,20 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Sbom format for status output',
     )
 
+    ####### INSPECT: Dependency Track project status ######
+    # Inspect Sub-command: Dependency Track status
+    p_dep_track = p_inspect_sub.add_parser(
+        'dependency-track',
+        aliases=['dt'],
+        description='Inspect Dependency track project status',
+        help='Inspect Dependency track project status',
+    )
+    p_dep_track.add_argument('--output', type=str, help='Dependency Track policy result file name')
+    p_dep_track.add_argument('--dt-url', type=str, help='Dependency Track base URL')
+    p_dep_track.add_argument('--dt-upload-token', type=str, help='Dependency Track project upload token')
+    p_dep_track.add_argument('--dt-projectid', required=False, type=str,
+                             help='Dependency Track project UUID.')
+
     # Add common commands for inspect copyleft and license summary
     for p in [p_copyleft, p_license_summary]:
         p.add_argument(
@@ -611,6 +626,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_copyleft.set_defaults(func=inspect_copyleft)
     p_license_summary.set_defaults(func=inspect_license_summary)
     p_component_summary.set_defaults(func=inspect_component_summary)
+    p_dep_track.set_defaults(func=inspect_dependency_track)
 
     ########################################### END INSPECT SUBCOMMAND ###########################################
 
@@ -890,6 +906,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_copyleft,
         p_license_summary,
         p_component_summary,
+        p_dep_track,
         c_provenance,
         p_folder_scan,
         p_folder_hash,
@@ -1483,6 +1500,34 @@ def inspect_component_summary(parser, args):
         output=output,
     )
     i_component_summary.run()
+
+def inspect_dependency_track(parser, args):
+    """
+    Run the "inspect" sub-command
+    Parameters
+    ----------
+        parser: ArgumentParser
+            command line parser object
+        args: Namespace
+            Parsed arguments
+    """
+    output: str = None
+    if args.output:
+        output = args.output
+        open(output, 'w').close()
+
+    i_dep_track = DependencyTrackPolicyCheck(
+        debug=args.debug,
+        trace=args.trace,
+        quiet=args.quiet,
+        output=args.output,
+        dependency_track_url=args.dt_url,
+        dependency_track_api_key=args.dt_key,
+        dependency_track_project_id=args.dt_projectid,
+        dependency_track_project_name=args.dt_projectname,
+        dependency_track_project_version=args.dt_projectversion,
+    )
+    i_dep_track.run()
 
 
 ################################ End inspect handlers ################################

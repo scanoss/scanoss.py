@@ -25,9 +25,8 @@ SPDX-License-Identifier: MIT
 from abc import abstractmethod
 from enum import Enum
 from typing import Any, Callable, Dict, List
-
-from .inspect_base import InspectBase
 from .utils.license_utils import LicenseUtil
+from ..scanossbase import ScanossBase
 
 
 class PolicyStatus(Enum):
@@ -47,7 +46,7 @@ class PolicyStatus(Enum):
 # End of PolicyStatus Class
 #
 
-class PolicyCheck(InspectBase):
+class PolicyCheck(ScanossBase):
     """
     A base class for implementing various software policy checks.
 
@@ -66,19 +65,17 @@ class PolicyCheck(InspectBase):
             debug: bool = False,
             trace: bool = False,
             quiet: bool = False,
-            filepath: str = None,
             format_type: str = None,
             status: str = None,
-            output: str = None,
             name: str = None,
+            output: str = None,
     ):
-        super().__init__(debug, trace, quiet, filepath, output)
+        super().__init__(debug, trace, quiet)
         self.license_util = LicenseUtil()
-        self.filepath = filepath
         self.name = name
         self.format_type = format_type
         self.status = status
-        self.results = self._load_input_file()
+        self.output = output
 
     @abstractmethod
     def run(self):
@@ -208,7 +205,6 @@ class PolicyCheck(InspectBase):
             self.print_stderr(f'Format: {self.format_type}')
             self.print_stderr(f'Status: {self.status}')
             self.print_stderr(f'Output: {self.output}')
-            self.print_stderr(f'Input: {self.filepath}')
 
     def _is_valid_format(self) -> bool:
         """

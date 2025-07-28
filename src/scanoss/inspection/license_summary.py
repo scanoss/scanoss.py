@@ -63,7 +63,7 @@ class LicenseSummary(InspectBase):
         :param exclude: Licenses to exclude from the analysis
         :param explicit: Explicitly defined licenses
         """
-        super().__init__(debug, trace, quiet, filepath, output)
+        super().__init__(debug, trace, quiet, filepath = filepath, output=output)
         self.license_util.init(include, exclude, explicit)
         self.filepath = filepath
         self.output = output
@@ -132,7 +132,9 @@ class LicenseSummary(InspectBase):
         return self._convert_components_to_list(components)
 
     def run(self):
+        print("Running LicenseSummary")
         components = self._get_components()
+        print(components)
         license_summary = self._get_licenses_summary_from_components(components)
         self.print_to_file_or_stdout(json.dumps(license_summary, indent=2), self.output)
         return license_summary

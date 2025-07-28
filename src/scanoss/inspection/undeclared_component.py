@@ -25,10 +25,11 @@ SPDX-License-Identifier: MIT
 import json
 from typing import Any, Dict
 
-from .policy_check import PolicyCheck, PolicyStatus
+from .inspect_base import InspectBase
+from .policy_check import PolicyStatus
 
 
-class UndeclaredComponent(PolicyCheck):
+class UndeclaredComponent(InspectBase):
     """
     SCANOSS UndeclaredComponent class
     Inspects for undeclared components
@@ -58,7 +59,7 @@ class UndeclaredComponent(PolicyCheck):
         :param sbom_format: Sbom format for status output (default 'settings')
         """
         super().__init__(
-            debug, trace, quiet, filepath, format_type, status, output, name='Undeclared Components Policy'
+            debug, trace, quiet,format_type, filepath, output, status, name='Undeclared Components Policy'
         )
         self.filepath = filepath
         self.format = format
