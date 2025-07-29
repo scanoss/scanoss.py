@@ -3,7 +3,9 @@ import time
 from datetime import datetime
 from typing import Dict, Any, Optional, List, TypedDict
 import requests
-from .policy_check import PolicyCheck, PolicyStatus
+
+from ..policy_check import PolicyCheck, PolicyStatus
+
 
 class ResolvedLicenseDict(TypedDict):
     uuid: str
@@ -68,7 +70,7 @@ class PolicyViolationDict(TypedDict):
     timestamp: int
     uuid: str
 
-class DependencyTrackPolicyCheck(PolicyCheck[PolicyViolationDict]):
+class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict]):
     def __init__(  # noqa: PLR0913
             self,
             debug: bool = False,
@@ -178,7 +180,8 @@ class DependencyTrackPolicyCheck(PolicyCheck[PolicyViolationDict]):
         # Format results
         results = formatter(sorted_project_violations)
         ## Save outputs if required
-        self.print_to_file_or_stdout(results, self.output)
+        self.print_to_file_or_stdout(results['details'], self.output)
+        self.print_to_file_or_stderr(results['summary'], self.status)
         # Check to see if we have policy violations
         if len(dep_track_project_violations) <= 0:
             return PolicyStatus.FAIL.value, results

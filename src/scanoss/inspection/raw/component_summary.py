@@ -24,10 +24,10 @@ SPDX-License-Identifier: MIT
 
 import json
 
-from .inspect_base import InspectBase
+from .raw_base import RawBase
 
 
-class ComponentSummary(InspectBase):
+class ComponentSummary(RawBase):
     def _get_component_summary_from_components(self, scan_components: list)-> dict:
         """
         Get a component summary from detected components.

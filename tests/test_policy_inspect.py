@@ -30,10 +30,10 @@ import unittest
 
 
 
-from src.scanoss.inspection.component_summary import ComponentSummary
-from src.scanoss.inspection.copyleft import Copyleft
-from src.scanoss.inspection.license_summary import LicenseSummary
-from src.scanoss.inspection.undeclared_component import UndeclaredComponent
+from src.scanoss.inspection.raw.component_summary import ComponentSummary
+from src.scanoss.inspection.raw.copyleft import Copyleft
+from src.scanoss.inspection.raw.license_summary import LicenseSummary
+from src.scanoss.inspection.raw.undeclared_component import UndeclaredComponent
 
 
 class MyTestCase(unittest.TestCase):

@@ -37,9 +37,9 @@ from scanoss.export.dependency_track import (
     DependencyTrackExporter,
     create_dependency_track_exporter_config_from_args,
 )
-from scanoss.inspection.dependency_track import DependencyTrackPolicyCheck
-from scanoss.inspection.component_summary import ComponentSummary
-from scanoss.inspection.license_summary import LicenseSummary
+from scanoss.inspection.dependency_track.project_violation import DependencyTrackProjectViolationPolicyCheck
+from scanoss.inspection.raw.component_summary import ComponentSummary
+from scanoss.inspection.raw.license_summary import LicenseSummary
 from scanoss.scanners.container_scanner import (
     DEFAULT_SYFT_COMMAND,
     DEFAULT_SYFT_TIMEOUT,
@@ -70,8 +70,8 @@ from .constants import (
 from .csvoutput import CsvOutput
 from .cyclonedx import CycloneDx
 from .filecount import FileCount
-from .inspection.copyleft import Copyleft
-from .inspection.undeclared_component import UndeclaredComponent
+from .inspection.raw.copyleft import Copyleft
+from .inspection.raw.undeclared_component import UndeclaredComponent
 from .results import Results
 from .scancodedeps import ScancodeDeps
 from .scanner import FAST_WINNOWING, Scanner
@@ -731,6 +731,15 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         type=str,
         help='Save inspection results to specified file'
     )
+
+    # Status options for Dependency Track inspection
+    p_inspect_dep_track_project_violation.add_argument(
+        '--status',
+        required=False,
+        type=str,
+        help='Save summary status report to specified file'
+    )
+
     p_inspect_dep_track_project_violation.add_argument(
         '-f', '--format',
         required=False,
@@ -1700,7 +1709,7 @@ def inspect_dependency_track_project_violations(parser, args):
         open(output, 'w').close()  # Create/clear output file
 
     # Create and configure Dependency Track inspector
-    i_dep_track = DependencyTrackPolicyCheck(
+    i_dep_track_project_violation = DependencyTrackProjectViolationPolicyCheck(
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
@@ -1713,7 +1722,7 @@ def inspect_dependency_track_project_violations(parser, args):
     )
     
     # Execute inspection and exit with appropriate status code
-    status, _ = i_dep_track.run()
+    status, _ = i_dep_track_project_violation.run()
     sys.exit(status)
 
 

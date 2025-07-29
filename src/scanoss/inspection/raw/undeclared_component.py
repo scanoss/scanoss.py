@@ -26,8 +26,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from .inspect_base import InspectBase
-from .policy_check import PolicyStatus
+from .raw_base import RawBase
+from ..policy_check import PolicyStatus
 
 @dataclass
 class License:
@@ -42,7 +42,7 @@ class Component:
     licenses: List[License]
     status: str
 
-class UndeclaredComponent(InspectBase[Component]):
+class UndeclaredComponent(RawBase[Component]):
     """
     SCANOSS UndeclaredComponent class
     Inspects for undeclared components

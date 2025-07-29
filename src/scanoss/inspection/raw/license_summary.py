@@ -24,10 +24,10 @@ SPDX-License-Identifier: MIT
 
 import json
 
-from .inspect_base import InspectBase
+from .raw_base import RawBase
 
 
-class LicenseSummary(InspectBase):
+class LicenseSummary(RawBase):
     """
        SCANOSS LicenseSummary class
        Inspects results and generates comprehensive license summaries from detected components.

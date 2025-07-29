@@ -26,8 +26,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from .inspect_base import InspectBase
-from .policy_check import PolicyStatus
+from .raw_base import RawBase
+from ..policy_check import PolicyStatus
 
 
 @dataclass
@@ -44,7 +44,7 @@ class Component:
     licenses: List[License]
     status: str
 
-class Copyleft(InspectBase[Component]):
+class Copyleft(RawBase[Component]):
     """
     SCANOSS Copyleft class
     Inspects components for copyleft licenses

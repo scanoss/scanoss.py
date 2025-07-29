@@ -28,8 +28,8 @@ from abc import abstractmethod
 from enum import Enum
 from typing import Any, Dict, TypeVar
 
-from .policy_check import PolicyCheck
-from .utils.license_utils import LicenseUtil
+from ..policy_check import PolicyCheck
+from ..utils.license_utils import LicenseUtil
 
 
 class ComponentID(Enum):
@@ -52,7 +52,7 @@ class ComponentID(Enum):
 #
 
 T = TypeVar('T')
-class InspectBase(PolicyCheck[T]):
+class RawBase(PolicyCheck[T]):
     """
     A base class to perform inspections over scan results.
 
