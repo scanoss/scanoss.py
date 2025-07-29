@@ -123,7 +123,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             Dictionary containing JSON formatted results and summary
         """
         return {
-            "results": json.dumps(project_violations, indent=2),
+            "details": json.dumps(project_violations, indent=2),
             "summary": f"{len(project_violations)} policy violations were found.\n",
         }
 
@@ -153,7 +153,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             # End license loop
         # End component loop
         return {
-            "results": self.generate_table(headers, rows, centered_columns),
+            "details": self.generate_table(headers, rows, centered_columns),
             "summary": f"{len(project_violations)} policy violations were found.\n",
         }
 
@@ -260,7 +260,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         # Format data
         data = formatter(sorted_project_violations)
         ## Save outputs if required
-        self.print_to_file_or_stdout(data['results'], self.output)
+        self.print_to_file_or_stdout(data['details'], self.output)
         self.print_to_file_or_stderr(data['summary'], self.status)
         # Check to see if we have policy violations
         if len(dep_track_project_violations) <= 0:

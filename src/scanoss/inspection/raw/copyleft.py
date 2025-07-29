@@ -100,7 +100,7 @@ class Copyleft(RawBase[Component]):
         if len(components) > 0:
             details = {'components': components}
         return {
-            'results': f'{json.dumps(details, indent=2)}\n',
+            'details': f'{json.dumps(details, indent=2)}\n',
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
@@ -127,7 +127,7 @@ class Copyleft(RawBase[Component]):
             # End license loop
         # End component loop
         return {
-            'results': f'### Copyleft licenses\n{self.generate_table(headers, rows, centered_columns)}\n',
+            'details': f'### Copyleft licenses\n{self.generate_table(headers, rows, centered_columns)}\n',
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
@@ -154,7 +154,7 @@ class Copyleft(RawBase[Component]):
             # End license loop
         # End component loop
         return {
-            'results': f'{self.generate_jira_table(headers, rows, centered_columns)}',
+            'details': f'{self.generate_jira_table(headers, rows, centered_columns)}',
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
@@ -230,7 +230,7 @@ class Copyleft(RawBase[Component]):
         # Format the results
         data = formatter(copyleft_components)
         ## Save outputs if required
-        self.print_to_file_or_stdout(data['results'], self.output)
+        self.print_to_file_or_stdout(data['details'], self.output)
         self.print_to_file_or_stderr(data['summary'], self.status)
         # Check to see if we have policy violations
         if len(copyleft_components) <= 0:

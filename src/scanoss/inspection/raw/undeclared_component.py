@@ -174,7 +174,7 @@ class UndeclaredComponent(RawBase[Component]):
         if len(components) > 0:
             details = {'components': components}
         return {
-            'results': f'{json.dumps(details, indent=2)}\n',
+            'details': f'{json.dumps(details, indent=2)}\n',
             'summary': self._get_summary(component_licenses),
         }
 
@@ -192,7 +192,7 @@ class UndeclaredComponent(RawBase[Component]):
         for component in component_licenses:
             rows.append([component.get('purl'), component.get('spdxid')])
         return {
-            'results': f'### Undeclared components\n{self.generate_table(headers, rows)}\n',
+            'details': f'### Undeclared components\n{self.generate_table(headers, rows)}\n',
             'summary': self._get_summary(component_licenses),
         }
 
@@ -210,7 +210,7 @@ class UndeclaredComponent(RawBase[Component]):
         for component in component_licenses:
             rows.append([component.get('purl'), component.get('spdxid')])
         return {
-            'results': f'{self.generate_jira_table(headers, rows)}',
+            'details': f'{self.generate_jira_table(headers, rows)}',
             'summary': self._get_jira_summary(component_licenses),
         }
 
@@ -304,7 +304,7 @@ class UndeclaredComponent(RawBase[Component]):
             return PolicyStatus.ERROR.value, {}
         data = formatter(undeclared_components)
         # Output the results
-        self.print_to_file_or_stdout(data['results'], self.output)
+        self.print_to_file_or_stdout(data['details'], self.output)
         self.print_to_file_or_stderr(data['summary'], self.status)
         # Determine if the filter found results or not
         if len(undeclared_components) <= 0:
