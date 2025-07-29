@@ -26,8 +26,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from .raw_base import RawBase
 from ..policy_check import PolicyStatus
+from .raw_base import RawBase
 
 
 @dataclass

@@ -24,9 +24,10 @@ SPDX-License-Identifier: MIT
 
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, List, TypeVar, Generic
-from .utils.license_utils import LicenseUtil
+from typing import Any, Callable, Dict, Generic, List, TypeVar
+
 from ..scanossbase import ScanossBase
+from .utils.license_utils import LicenseUtil
 
 
 class PolicyStatus(Enum):

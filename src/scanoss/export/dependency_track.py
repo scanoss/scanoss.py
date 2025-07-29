@@ -34,6 +34,8 @@ from ..cyclonedx import CycloneDx
 from ..scanossbase import ScanossBase
 from ..utils.file import validate_json_file
 
+HTTP_OK = 200
+
 
 @dataclass
 class DependencyTrackExporterConfig:
@@ -185,7 +187,7 @@ class DependencyTrackExporter(ScanossBase):
                 params=params
             )
 
-            if project_response.status_code == 200:
+            if project_response.status_code == HTTP_OK:
                 project_data = project_response.json()
                 return project_data
 
@@ -236,7 +238,10 @@ class DependencyTrackExporter(ScanossBase):
                           project_data =  self.get_project_by_name_version(self.dt_projectname, self.dt_projectversion)
                           if project_data.get("uuid"):
                              project_uuid = project_data.get("uuid")
-                        token_json = json.dumps({"token": response_data["token"], "project_uuid": project_uuid }, indent=2)
+                        token_json = json.dumps(
+                            {"token": response_data["token"], "project_uuid": project_uuid}, 
+                            indent=2
+                        )
                         self.print_stdout(token_json)
                 except json.JSONDecodeError:
                     pass

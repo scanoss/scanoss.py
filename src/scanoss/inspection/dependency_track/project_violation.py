@@ -1,7 +1,8 @@
 import json
 import time
 from datetime import datetime
-from typing import Dict, Any, Optional, List, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
+
 import requests
 
 from ..policy_check import PolicyCheck, PolicyStatus
@@ -207,7 +208,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         """
         status = self._get_project_status()
         max_tries = 10
-        while status['processing'] == True and max_tries>0:
+        while status['processing'] and max_tries > 0:
             max_tries = max_tries - 1
             time.sleep(1)
             status = self._get_project_status()
