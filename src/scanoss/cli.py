@@ -674,6 +674,105 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
 
 
     # -------------------------------------------------------------------------
+    # BACKWARD COMPATIBILITY - Support old inspect command format
+    # -------------------------------------------------------------------------
+    
+    # Legacy copyleft inspection - backward compatibility for 'scanoss-py inspect copyleft'
+    p_inspect_legacy_copyleft = p_inspect_sub.add_parser(
+        'copyleft', 
+        aliases=['cp'], 
+        description='Identify components with copyleft licenses that may require compliance action', 
+        help='Find copyleft license violations (legacy format)'
+    )
+
+    # Legacy undeclared components inspection - backward compatibility for 'scanoss-py inspect undeclared'
+    p_inspect_legacy_undeclared = p_inspect_sub.add_parser(
+        'undeclared',
+        aliases=['un'],
+        description='Identify components present in code but not declared in SBOM files',
+        help='Find undeclared components (legacy format)'
+    )
+    
+    # SBOM format option for legacy undeclared components inspection
+    p_inspect_legacy_undeclared.add_argument(
+        '--sbom-format',
+        required=False,
+        choices=['legacy', 'settings'],
+        default='settings',
+        help='SBOM format type for comparison: legacy or settings (default)'
+    )
+
+    # Legacy license summary inspection - backward compatibility for 'scanoss-py inspect license-summary'
+    p_inspect_legacy_license_summary = p_inspect_sub.add_parser(
+        'license-summary',
+        aliases=['lic-summary', 'licsum'],
+        description='Generate comprehensive summary of all licenses found in scan results',
+        help='Generate license summary report (legacy format)'
+    )
+
+    # Legacy component summary inspection - backward compatibility for 'scanoss-py inspect component-summary'
+    p_inspect_legacy_component_summary = p_inspect_sub.add_parser(
+        'component-summary',
+        aliases=['comp-summary', 'compsum'],
+        description='Generate comprehensive summary of all components found in scan results',
+        help='Generate component summary report (legacy format)'
+    )
+
+    # Apply same argument configurations as the raw versions
+    # License filtering options - common to legacy copyleft and license summary commands
+    for p in [p_inspect_legacy_copyleft, p_inspect_legacy_license_summary]:
+        p.add_argument(
+            '--include',
+            help='Additional licenses to include in analysis (comma-separated list)'
+        )
+        p.add_argument(
+            '--exclude',
+            help='Licenses to exclude from analysis (comma-separated list)'
+        )
+        p.add_argument(
+            '--explicit',
+            help='Use only these specific licenses for analysis (comma-separated list)'
+        )
+
+    # Common options for legacy copyleft and undeclared component inspection
+    for p in [p_inspect_legacy_copyleft, p_inspect_legacy_undeclared]:
+        p.add_argument(
+            '-i', '--input', 
+            nargs='?', 
+            help='Path to scan results file to analyze'
+        )
+        p.add_argument(
+            '-f', '--format',
+            required=False,
+            choices=['json', 'md', 'jira_md'],
+            default='json',
+            help='Output format: json (default), md (Markdown), or jira_md (JIRA Markdown)'
+        )
+        p.add_argument(
+            '-o', '--output', 
+            type=str, 
+            help='Save detailed results to specified file'
+        )
+        p.add_argument(
+            '-s', '--status', 
+            type=str, 
+            help='Save summary status report to Markdown file'
+        )
+
+    # Common options for legacy license and component summary commands
+    for p in [p_inspect_legacy_license_summary, p_inspect_legacy_component_summary]:
+        p.add_argument(
+            '-i', '--input', 
+            nargs='?', 
+            help='Path to scan results file to analyze'
+        )
+        p.add_argument(
+            '-o', '--output', 
+            type=str, 
+            help='Save summary report to specified file'
+        )
+
+    # -------------------------------------------------------------------------
     # DEPENDENCY TRACK INSPECTION - Analyze Dependency Track project data
     # -------------------------------------------------------------------------
     
@@ -753,6 +852,12 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_inspect_raw_copyleft.set_defaults(func=inspect_copyleft)
     p_inspect_raw_license_summary.set_defaults(func=inspect_license_summary)
     p_inspect_raw_component_summary.set_defaults(func=inspect_component_summary)
+
+    # Legacy backward compatibility commands
+    p_inspect_legacy_copyleft.set_defaults(func=inspect_copyleft)
+    p_inspect_legacy_undeclared.set_defaults(func=inspect_undeclared)
+    p_inspect_legacy_license_summary.set_defaults(func=inspect_license_summary)
+    p_inspect_legacy_component_summary.set_defaults(func=inspect_component_summary)
 
     # Dependency Track
     p_inspect_dep_track_project_violation.set_defaults(func=inspect_dependency_track_project_violations)
@@ -1024,6 +1129,10 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_inspect_raw_copyleft,
         p_inspect_raw_license_summary,
         p_inspect_raw_component_summary,
+        p_inspect_legacy_copyleft,
+        p_inspect_legacy_undeclared,
+        p_inspect_legacy_license_summary,
+        p_inspect_legacy_component_summary,
         p_inspect_dep_track_project_violation,
         c_provenance,
         p_folder_scan,
