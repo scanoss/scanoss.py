@@ -71,6 +71,13 @@ class PolicyViolationDict(TypedDict):
     uuid: str
 
 class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict]):
+    """
+    Policy check implementation for Dependency Track project violations.
+    
+    This class handles retrieving, processing, and formatting policy violations
+    from a Dependency Track instance for a specific project.
+    """
+    
     def __init__(  # noqa: PLR0913
             self,
             debug: bool = False,
@@ -84,6 +91,21 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             status: str = None,
             output: str = None,
     ):
+        """
+        Initialize the Dependency Track project violation policy checker.
+        
+        Args:
+            debug: Enable debug output
+            trace: Enable trace output
+            quiet: Enable quiet mode
+            dependency_track_project_id: UUID of the project in Dependency Track
+            dependency_track_api_key: API key for Dependency Track authentication
+            dependency_track_url: Base URL of the Dependency Track instance
+            dependency_track_upload_token: Token for tracking upload processing status
+            format_type: Output format type (json, markdown, etc.)
+            status: Status output destination
+            output: Results output destination
+        """
         super().__init__(debug, trace, quiet, format_type, status, 'dependency-track', output)
         self.dependency_track_url = dependency_track_url
         self.dependency_track_api_key = dependency_track_api_key
@@ -91,6 +113,15 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         self.dependency_track_upload_token = dependency_track_upload_token
 
     def _json(self, project_violations: list[PolicyViolationDict]) -> Dict[str, Any]:
+        """
+        Format project violations as JSON.
+        
+        Args:
+            project_violations: List of policy violations from Dependency Track
+            
+        Returns:
+            Dictionary containing JSON formatted results and summary
+        """
         return {
             "results": json.dumps(project_violations, indent=2),
             "summary": f"{len(project_violations)} policy violations were found.\n",
@@ -127,11 +158,31 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         }
 
     def _jira_markdown(self, data: list[PolicyViolationDict]) -> Dict[str, Any]:
+        """
+        Format project violations for Jira markdown.
+        
+        Args:
+            data: List of policy violations from Dependency Track
+            
+        Returns:
+            Dictionary containing Jira markdown formatted results and summary
+            
+        Note:
+            This method is not implemented yet.
+        """
         pass
 
 
     def _get_project_status(self):
-        """Get Dependency Track project status"""
+        """
+        Get Dependency Track project processing status.
+        
+        Queries the Dependency Track API to check if the project upload
+        processing is complete using the upload token.
+        
+        Returns:
+            dict: Project status information or None if request fails
+        """
         url = f"{self.dependency_track_url}/api/v1/event/token/{self.dependency_track_upload_token}"
         req_headers = {'X-Api-Key': self.dependency_track_api_key, 'Content-Type': 'application/json'}
         try:
@@ -145,14 +196,21 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             return None
 
     def _get_dependency_track_project_violations(self):
+        """
+        Get project violations from Dependency Track.
+        
+        Waits for project processing to complete, then retrieves all policy
+        violations for the specified project ID.
+        
+        Returns:
+            list: List of policy violations or None if request fails
+        """
         status = self._get_project_status()
         max_tries = 10
         while status['processing'] == True and max_tries>0:
             max_tries = max_tries - 1
             time.sleep(1)
             status = self._get_project_status()
-
-        """Get project violations by project ID"""
         url = f"{self.dependency_track_url}/api/v1/violation/project/{self.dependency_track_project_id}"
         req_headers = {'X-Api-Key': self.dependency_track_api_key, 'Content-Type': 'application/json'}
         try:
@@ -166,12 +224,34 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             return None
 
     def _sort_project_violations(self, violations):
+        """
+        Sort project violations by priority.
+        
+        Sorts violations with SECURITY issues first, followed by LICENSE,
+        then OTHER types.
+        
+        Args:
+            violations: List of policy violation dictionaries
+            
+        Returns:
+            list: Sorted list of policy violations
+        """
         type_priority = {'SECURITY': 3, 'LICENSE': 2, 'OTHER': 1}
         return sorted(violations, key=lambda x: (
             -type_priority.get(x.get('type', 'OTHER'), 1),  # First: type priority
         ))
 
     def run(self):
+        """
+        Execute the policy check for Dependency Track project violations.
+        
+        Retrieves project violations from Dependency Track, sorts them by priority,
+        formats the output according to the specified format, and outputs the results.
+        
+        Returns:
+            tuple: (status_code, formatted_data) where status_code indicates
+                   SUCCESS if violations found, FAIL if no violations, ERROR if failed
+        """
         dep_track_project_violations = self._get_dependency_track_project_violations()
         sorted_project_violations = self._sort_project_violations(dep_track_project_violations)
         formatter = self._get_formatter()

@@ -161,8 +161,17 @@ class DependencyTrackExporter(ScanossBase):
                 'bom': encoded_sbom,
             }
 
-    # Get project ID by name and version
     def get_project_by_name_version(self, name, version):
+        """
+        Get project information by name and version from Dependency Track
+        
+        Args:
+            name: Project name to search for
+            version: Project version to search for
+            
+        Returns:
+            dict: Project data if found, None otherwise
+        """
         try:
             # Use the project search endpoint
             params = {
