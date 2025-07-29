@@ -106,7 +106,7 @@ class PolicyCheck(ScanossBase, Generic[T]):
 
         :param data: List of data to be formatted.
         :return: A dictionary containing two keys:
-                 - 'details': A JSON-formatted string with the full list of components
+                 - 'results': A JSON-formatted string with the full list of components
                  - 'summary': A string summarizing the number of components found
         """
         pass

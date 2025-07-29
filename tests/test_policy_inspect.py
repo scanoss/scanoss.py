@@ -67,11 +67,11 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result-no-copyleft.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json')
-        status, results = copyleft.run()
-        details = json.loads(results['details'])
+        status, data = copyleft.run()
+        details = json.loads(data['results'])
         self.assertEqual(status, 1)
         self.assertEqual(details, {})
-        self.assertEqual(results['summary'], '0 component(s) with copyleft licenses were found.\n')
+        self.assertEqual(data['summary'], '0 component(s) with copyleft licenses were found.\n')
 
     """
     Inspect for copyleft licenses include
@@ -82,9 +82,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json', include='MIT')
-        status, results = copyleft.run()
+        status, data = copyleft.run()
         has_mit_license = False
-        details = json.loads(results['details'])
+        details = json.loads(data['results'])
         for component in details['components']:
             for license in component['licenses']:
                 if license['spdxid'] == 'MIT':
@@ -103,9 +103,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json', exclude='GPL-2.0-only')
-        status, results = copyleft.run()
-        details = json.loads(results['details'])
-        self.assertEqual(details, {})
+        status, data = copyleft.run()
+        results = json.loads(data['results'])
+        self.assertEqual(results, {})
         self.assertEqual(status, 1)
 
     """
@@ -117,9 +117,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json', explicit='MIT')
-        status, results = copyleft.run()
-        details = json.loads(results['details'])
-        self.assertEqual(len(details['components']), 2)
+        status, data = copyleft.run()
+        results = json.loads(data['results'])
+        self.assertEqual(len(results['components']), 2)
         self.assertEqual(status, 0)
 
     """
@@ -131,9 +131,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json', explicit='')
-        status, results = copyleft.run()
-        details = json.loads(results['details'])
-        self.assertEqual(len(details['components']), 5)
+        status, data = copyleft.run()
+        results = json.loads(data['results'])
+        self.assertEqual(len(results['components']), 5)
         self.assertEqual(status, 0)
 
     """
@@ -145,7 +145,7 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='md', explicit='MIT')
-        status, results = copyleft.run()
+        status, data = copyleft.run()
         expected_detail_output = (
             '### Copyleft licenses \n  | Component | License | URL | Copyleft |\n'
             ' | - | :-: | - | - |\n'
@@ -154,10 +154,10 @@ class MyTestCase(unittest.TestCase):
         )
         expected_summary_output = '2 component(s) with copyleft licenses were found.\n'
         self.assertEqual(
-            re.sub(r'\s|\\(?!`)|\\(?=`)', '', results['details']),
+            re.sub(r'\s|\\(?!`)|\\(?=`)', '', data['results']),
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_detail_output),
         )
-        self.assertEqual(results['summary'], expected_summary_output)
+        self.assertEqual(data['summary'], expected_summary_output)
         self.assertEqual(status, 0)
 
     ## Undeclared Components Policy Tests ##
@@ -180,9 +180,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format_type='json', sbom_format='legacy')
-        status, results = undeclared.run()
-        details = json.loads(results['details'])
-        summary = results['summary']
+        status, data = undeclared.run()
+        results = json.loads(data['results'])
+        summary = data['summary']
         expected_summary_output = """3 undeclared component(s) were found.
         Add the following snippet into your `sbom.json` file 
         ```json 
@@ -200,7 +200,7 @@ class MyTestCase(unittest.TestCase):
             ]
         }```
         """
-        self.assertEqual(len(details['components']), 4)
+        self.assertEqual(len(results['components']), 4)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
         )
@@ -215,9 +215,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md', sbom_format='legacy')
-        status, results = undeclared.run()
-        details = results['details']
-        summary = results['summary']
+        status, data = undeclared.run()
+        results = data['results']
+        summary = data['summary']
         expected_details_output = """ ### Undeclared components
              | Component | License | 
              | - | - | 
@@ -244,7 +244,7 @@ class MyTestCase(unittest.TestCase):
            """
         self.assertEqual(status, 0)
         self.assertEqual(
-            re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
+            re.sub(r'\s|\\(?!`)|\\(?=`)', '', results), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
         )
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
@@ -259,9 +259,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md')
-        status, results = undeclared.run()
-        details = results['details']
-        summary = results['summary']
+        status, data = undeclared.run()
+        results = data['results']
+        summary = data['summary']
         expected_details_output = """ ### Undeclared components
                | Component | License | 
                | - | - | 
@@ -291,7 +291,7 @@ class MyTestCase(unittest.TestCase):
             ```"""
         self.assertEqual(status, 0)
         self.assertEqual(
-            re.sub(r'\s|\\(?!`)|\\(?=`)', '', details), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
+            re.sub(r'\s|\\(?!`)|\\(?=`)', '', results), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
         )
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
@@ -306,9 +306,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name)
-        status, results = undeclared.run()
-        details = json.loads(results['details'])
-        summary = results['summary']
+        status, data = undeclared.run()
+        results = json.loads(data['results'])
+        summary = data['summary']
         expected_summary_output = """3 undeclared component(s) were found.
                 Add the following snippet into your `scanoss.json` file
 
@@ -330,7 +330,7 @@ class MyTestCase(unittest.TestCase):
                 }
                 ```"""
         self.assertEqual(status, 0)
-        self.assertEqual(len(details['components']), 4)
+        self.assertEqual(len(results['components']), 4)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
         )
@@ -340,9 +340,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format_type='jira_md')
-        status, results = undeclared.run()
-        details = results['details']
-        summary = results['summary']
+        status, data = undeclared.run()
+        details = data['results']
+        summary = data['summary']
         expected_details_output = """|*Component*|*License*|
 |pkg:github/scanoss/jenkins-pipeline-example|unknown|
 |pkg:github/scanoss/scanner.c|GPL-2.0-only|
@@ -377,15 +377,15 @@ Add the following snippet into your `scanoss.json` file
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='jira_md')
-        status, results = copyleft.run()
-        details = results['details']
+        status, data = copyleft.run()
+        results = data['results']
         expected_details_output = """|*Component*|*License*|*URL*|*Copyleft*|
 |pkg:github/scanoss/scanner.c|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
 |pkg:github/scanoss/engine|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
 |pkg:github/scanoss/wfp|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
 """
         self.assertEqual(status, 0)
-        self.assertEqual(expected_details_output, details)
+        self.assertEqual(expected_details_output, results)
 
     def test_inspect_license_summary(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))

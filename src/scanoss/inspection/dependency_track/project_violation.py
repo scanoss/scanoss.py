@@ -92,7 +92,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
 
     def _json(self, project_violations: list[PolicyViolationDict]) -> Dict[str, Any]:
         return {
-            "details": json.dumps(project_violations, indent=2),
+            "results": json.dumps(project_violations, indent=2),
             "summary": f"{len(project_violations)} policy violations were found.\n",
         }
 
@@ -122,7 +122,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             # End license loop
         # End component loop
         return {
-            "details": self.generate_table(headers, rows, centered_columns),
+            "results": self.generate_table(headers, rows, centered_columns),
             "summary": f"{len(project_violations)} policy violations were found.\n",
         }
 
@@ -177,12 +177,12 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         formatter = self._get_formatter()
         if formatter is None:
             return PolicyStatus.ERROR.value, {}
-        # Format results
-        results = formatter(sorted_project_violations)
+        # Format data
+        data = formatter(sorted_project_violations)
         ## Save outputs if required
-        self.print_to_file_or_stdout(results['details'], self.output)
-        self.print_to_file_or_stderr(results['summary'], self.status)
+        self.print_to_file_or_stdout(data['results'], self.output)
+        self.print_to_file_or_stderr(data['summary'], self.status)
         # Check to see if we have policy violations
         if len(dep_track_project_violations) <= 0:
-            return PolicyStatus.FAIL.value, results
-        return PolicyStatus.SUCCESS.value, results
+            return PolicyStatus.FAIL.value, data
+        return PolicyStatus.SUCCESS.value, data

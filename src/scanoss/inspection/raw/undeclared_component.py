@@ -174,7 +174,7 @@ class UndeclaredComponent(RawBase[Component]):
         if len(components) > 0:
             details = {'components': components}
         return {
-            'details': f'{json.dumps(details, indent=2)}\n',
+            'results': f'{json.dumps(details, indent=2)}\n',
             'summary': self._get_summary(component_licenses),
         }
 
@@ -192,7 +192,7 @@ class UndeclaredComponent(RawBase[Component]):
         for component in component_licenses:
             rows.append([component.get('purl'), component.get('spdxid')])
         return {
-            'details': f'### Undeclared components\n{self.generate_table(headers, rows)}\n',
+            'results': f'### Undeclared components\n{self.generate_table(headers, rows)}\n',
             'summary': self._get_summary(component_licenses),
         }
 
@@ -210,7 +210,7 @@ class UndeclaredComponent(RawBase[Component]):
         for component in component_licenses:
             rows.append([component.get('purl'), component.get('spdxid')])
         return {
-            'details': f'{self.generate_jira_table(headers, rows)}',
+            'results': f'{self.generate_jira_table(headers, rows)}',
             'summary': self._get_jira_summary(component_licenses),
         }
 
@@ -302,14 +302,14 @@ class UndeclaredComponent(RawBase[Component]):
         formatter = self._get_formatter()
         if formatter is None:
             return PolicyStatus.ERROR.value, {}
-        results = formatter(undeclared_components)
+        data = formatter(undeclared_components)
         # Output the results
-        self.print_to_file_or_stdout(results['details'], self.output)
-        self.print_to_file_or_stderr(results['summary'], self.status)
+        self.print_to_file_or_stdout(data['results'], self.output)
+        self.print_to_file_or_stderr(data['summary'], self.status)
         # Determine if the filter found results or not
         if len(undeclared_components) <= 0:
-            return PolicyStatus.FAIL.value, results
-        return PolicyStatus.SUCCESS.value, results
+            return PolicyStatus.FAIL.value, data
+        return PolicyStatus.SUCCESS.value, data
 
 #
 # End of UndeclaredComponent Class

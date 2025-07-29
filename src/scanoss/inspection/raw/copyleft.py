@@ -100,7 +100,7 @@ class Copyleft(RawBase[Component]):
         if len(components) > 0:
             details = {'components': components}
         return {
-            'details': f'{json.dumps(details, indent=2)}\n',
+            'results': f'{json.dumps(details, indent=2)}\n',
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
@@ -127,7 +127,7 @@ class Copyleft(RawBase[Component]):
             # End license loop
         # End component loop
         return {
-            'details': f'### Copyleft licenses\n{self.generate_table(headers, rows, centered_columns)}\n',
+            'results': f'### Copyleft licenses\n{self.generate_table(headers, rows, centered_columns)}\n',
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
@@ -154,7 +154,7 @@ class Copyleft(RawBase[Component]):
             # End license loop
         # End component loop
         return {
-            'details': f'{self.generate_jira_table(headers, rows, centered_columns)}',
+            'results': f'{self.generate_jira_table(headers, rows, centered_columns)}',
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
@@ -228,14 +228,14 @@ class Copyleft(RawBase[Component]):
         if formatter is None:
             return PolicyStatus.ERROR.value, {}
         # Format the results
-        results = formatter(copyleft_components)
+        data = formatter(copyleft_components)
         ## Save outputs if required
-        self.print_to_file_or_stdout(results['details'], self.output)
-        self.print_to_file_or_stderr(results['summary'], self.status)
+        self.print_to_file_or_stdout(data['results'], self.output)
+        self.print_to_file_or_stderr(data['summary'], self.status)
         # Check to see if we have policy violations
         if len(copyleft_components) <= 0:
-            return PolicyStatus.FAIL.value, results
-        return PolicyStatus.SUCCESS.value, results
+            return PolicyStatus.FAIL.value, data
+        return PolicyStatus.SUCCESS.value, data
 
 
 #
