@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 import requests
 
-from ..policy_check import PolicyCheck, PolicyStatus
 from ...services.dependency_track_service import DependencyTrackService
+from ..policy_check import PolicyCheck, PolicyStatus
 
 # Constants
 MAX_PROCESSING_RETRIES = 10
@@ -171,7 +171,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             Dictionary with formatted Markdown details and summary
         """
         headers = ['State', 'Risk Type', 'Policy Name', 'Component', 'Date']
-        centered_columns = [0, 1]
+        c_cols = [0, 1]
         rows: List[List[str]] = []
         
         for project_violation in project_violations:
@@ -189,7 +189,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             rows.append(row)
             
         return {
-            "details": f"### Dependency Track Project Violations\n{self.generate_table(headers, rows, centered_columns)}\n",
+            "details": f"### Dependency Track Project Violations\n{self.generate_table(headers,rows, c_cols)}\n",
             "summary": f"{len(project_violations)} policy violations were found.\n",
         }
 
@@ -210,7 +210,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             }
 
         headers = ['State', 'Risk Type', 'Policy Name', 'Component', 'Date']
-        centered_columns = [0, 1]
+        c_cols = [0, 1]
         rows: List[List[str]] = []
 
         for project_violation in data:
@@ -228,7 +228,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             rows.append(row)
         
         return {
-            "details": f"### Dependency Track Project Violations\n{self.generate_jira_table(headers, rows, centered_columns)}\n",
+            "details": f"### Dependency Track Project Violations\n{self.generate_jira_table(headers, rows, c_cols)}\n",
             "summary": f"{len(data)} policy violations were found.\n",
         }
 

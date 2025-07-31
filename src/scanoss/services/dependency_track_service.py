@@ -22,9 +22,9 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-from ..scanossbase import ScanossBase
-
 import requests
+
+from ..scanossbase import ScanossBase
 
 HTTP_OK = 200
 

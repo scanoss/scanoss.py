@@ -86,7 +86,11 @@ class DependencyTrackExporter(ScanossBase):
         super().__init__(debug=debug, trace=trace, quiet=quiet)
         self.dt_url = config.dt_url.rstrip('/')
         self.dt_apikey = config.dt_apikey
-        self.dependencyTrackService = DependencyTrackService(self.dt_apikey, self.dt_url, debug=debug, trace=trace, quiet=quiet)
+        self.dependencyTrackService = DependencyTrackService(self.dt_apikey,
+                                                             self.dt_url,
+                                                             debug=debug,
+                                                             trace=trace,
+                                                             quiet=quiet)
         self.dt_projectid = config.dt_projectid
         self.dt_projectname = config.dt_projectname
         self.dt_projectversion = config.dt_projectversion
@@ -202,7 +206,8 @@ class DependencyTrackExporter(ScanossBase):
                         has_name_version = bool(self.dt_projectname and self.dt_projectversion)
                         project_uuid = self.dt_projectid
                         if has_name_version:
-                          project_data = self.dependencyTrackService.get_project_by_name_version(self.dt_projectname, self.dt_projectversion)
+                          project_data = self.dependencyTrackService.get_project_by_name_version(self.dt_projectname,
+                                                                                                 self.dt_projectversion)
                           if project_data.get("uuid"):
                              project_uuid = project_data.get("uuid")
                         token_json = json.dumps(
