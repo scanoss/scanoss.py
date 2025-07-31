@@ -6,6 +6,7 @@ for a specific project.
 """
 
 import json
+import sys
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
@@ -133,17 +134,18 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         super().__init__(debug, trace, quiet, format_type, status, 'dependency-track', output)
         self.dependency_track_url = dependency_track_url
         self.dependency_track_api_key = dependency_track_api_key
-        self.dependency_track_service = DependencyTrackService(
-            dependency_track_api_key,
-            dependency_track_url,
-            debug,
-            trace,
-            quiet
-        )
         self.dependency_track_project_id = dependency_track_project_id
         self.dependency_track_project_name = dependency_track_project_name
         self.dependency_track_project_version = dependency_track_project_version
-        self.dependency_track_upload_token = dependency_track_upload_token
+        try:
+            self.dependency_track_service = DependencyTrackService(self.dependency_track_api_key,
+                                                             self.dependency_track_url,
+                                                             debug=debug,
+                                                             trace=trace,
+                                                             quiet=quiet)
+        except (ValueError, RuntimeError) as e:
+            self.print_stderr(f"Error: Dependency Track export: {e}")
+            sys.exit(PolicyStatus.ERROR.value)
 
     def _json(self, project_violations: list[PolicyViolationDict]) -> Dict[str, Any]:
         """
@@ -381,6 +383,6 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
                 return PolicyStatus.FAIL.value, data
             return PolicyStatus.SUCCESS.value, data
             
-        except (ValueError, RuntimeError) as e:
-            self.print_stderr(f"Error during policy check: {e}")
+        except (ValueError, RuntimeError, Exception) as e:
+            self.print_stderr(f"Error: Dependency Track project violation: {e}")
             return PolicyStatus.ERROR.value, None

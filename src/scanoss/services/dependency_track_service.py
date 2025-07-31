@@ -39,14 +39,12 @@ class DependencyTrackService(ScanossBase):
             quiet: bool = False,
     ):
         super().__init__(debug=debug, trace=trace, quiet=quiet)
+        if not url:
+            raise ValueError("Dependency Track URL is required")
         self.url = url.rstrip('/')
+        if not api_key:
+            raise ValueError("Dependency Track API key is required")
         self.api_key = api_key
-
-    def _valid_key(self):
-        return len(self.api_key) != 0
-
-    def _valid_url(self):
-        return len(self.url) != 0
 
     def get_project_by_name_version(self, name, version):
         """
@@ -60,15 +58,8 @@ class DependencyTrackService(ScanossBase):
             dict: Project data if found, None otherwise
         """
         try:
-
-            if not self._valid_url():
-                raise Exception("Invalid Dependency Track URL ")
-
-            if not self._valid_key():
-                raise Exception("Invalid key")
-
             if not name or not version:
-                raise Exception("Invalid name or version")
+                raise ValueError("Invalid name or version")
 
             # Use the project search endpoint
             params = {

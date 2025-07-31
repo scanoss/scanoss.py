@@ -24,6 +24,7 @@ SPDX-License-Identifier: MIT
 
 import base64
 import json
+import sys
 import traceback
 from dataclasses import dataclass
 from typing import Optional
@@ -86,14 +87,19 @@ class DependencyTrackExporter(ScanossBase):
         super().__init__(debug=debug, trace=trace, quiet=quiet)
         self.dt_url = config.dt_url.rstrip('/')
         self.dt_apikey = config.dt_apikey
-        self.dependencyTrackService = DependencyTrackService(self.dt_apikey,
+        self.dt_projectid = config.dt_projectid
+        self.dt_projectname = config.dt_projectname
+        self.dt_projectversion = config.dt_projectversion
+
+        try:
+            self.dependencyTrackService = DependencyTrackService(self.dt_apikey,
                                                              self.dt_url,
                                                              debug=debug,
                                                              trace=trace,
                                                              quiet=quiet)
-        self.dt_projectid = config.dt_projectid
-        self.dt_projectname = config.dt_projectname
-        self.dt_projectversion = config.dt_projectversion
+        except (ValueError, RuntimeError) as e:
+            self.print_stderr(f"Error: Dependency Track export: {e}")
+            sys.exit(1)
 
         self._validate_config()
 
