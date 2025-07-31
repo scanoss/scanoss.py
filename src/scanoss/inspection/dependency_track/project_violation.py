@@ -126,7 +126,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             dependency_track_project_version: Version of the project in Dependency Track
             dependency_track_api_key: API key for Dependency Track authentication
             dependency_track_url: Base URL of the Dependency Track instance
-            dependency_track_upload_token: Token for tracking upload processing status
+            dependency_track_upload_token: Upload token for uploading BOMs to Dependency Track
             format_type: Output format type (json, markdown, etc.)
             status: Status output destination
             output: Results output destination
@@ -137,6 +137,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         self.dependency_track_project_id = dependency_track_project_id
         self.dependency_track_project_name = dependency_track_project_name
         self.dependency_track_project_version = dependency_track_project_version
+        self.dependency_track_upload_token = dependency_track_upload_token
         try:
             self.dependency_track_service = DependencyTrackService(self.dependency_track_api_key,
                                                              self.dependency_track_url,
@@ -234,36 +235,105 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             "summary": f"{len(data)} policy violations were found.\n",
         }
 
-    def _wait_project_processing(self) -> Optional[Dict[str, Any]]:
+
+    def _wait_processing_by_project_id(self):
+        """
+                Wait for project processing to complete in Dependency Track.
+
+                Returns:
+                    Return project or None if processing fails
+                """
+        try:
+            dt_project = self.dependency_track_service.get_project_by_id(project_id=self.dependency_track_project_id)
+
+            max_tries = MAX_PROCESSING_RETRIES
+            last_import = dt_project.get('lastBomImport', 0)
+            last_vulnerability_analysis = dt_project.get('lastVulnerabilityAnalysis', 0)
+            metrics = dt_project.get('metrics', {})
+            last_occurrence = metrics.get('lastOccurrence', 0) if isinstance(metrics, dict) else 0
+
+
+            if self.trace:
+                self.print_trace(f"last_import: {last_import}")
+                self.print_trace(f"last_vulnerability_analysis: {last_vulnerability_analysis}")
+                self.print_trace(f"last_occurrence: {last_occurrence}")
+                self.print_trace(
+                 f"last_vulnerability_analysis is updated: {last_vulnerability_analysis >= last_import}"
+                )
+                self.print_trace(
+                 f"last_occurrence is updated: {last_occurrence >= last_import}"
+                )
+
+            while (last_vulnerability_analysis < last_import or last_occurrence < last_import) and max_tries > 0:
+                max_tries -= 1
+                time.sleep(PROCESSING_RETRY_DELAY)
+                try:
+                    dt_project = self.dependency_track_service.get_project_by_id(
+                        project_id=self.dependency_track_project_id)
+                    last_vulnerability_analysis = dt_project.get('lastVulnerabilityAnalysis', 0)
+                    metrics = dt_project.get('metrics', {})
+                    last_occurrence = metrics.get('lastOccurrence', 0) if isinstance(metrics, dict) else 0
+                except requests.exceptions.RequestException as e:
+                    self.print_debug(f"Error getting project status: {e}")
+                    return None
+
+            return dt_project
+        except requests.exceptions.RequestException as e:
+            self.print_stderr(f"Error getting project status: {e}")
+            return None
+
+
+    def _wait_processing_by_project_status(self):
         """
         Wait for project processing to complete in Dependency Track.
-        
+
         Returns:
             Project status dictionary or None if processing fails
         """
-        if self.dependency_track_upload_token is None:
-            return None
-            
         try:
             status = self.dependency_track_service.get_project_status(
                 upload_token=self.dependency_track_upload_token
             )
-            
+
+            if self.trace:
+                self.print_trace(f"Project Status: {status}")
+
             max_tries = MAX_PROCESSING_RETRIES
             while status and status.get('processing') and max_tries > 0:
                 max_tries -= 1
                 time.sleep(PROCESSING_RETRY_DELAY)
                 try:
                     status = self.dependency_track_service.get_project_status(
-                        upload_token=self.dependency_track_upload_token
-                    )
+                        upload_token=self.dependency_track_upload_token)
                 except requests.exceptions.RequestException as e:
                     self.print_debug(f"Error getting project status: {e}")
                     return None
-                    
             return status
         except requests.exceptions.RequestException as e:
-            self.print_stderr(f"Error getting project status: {e}")
+            self.print_debug(f"Error getting project status: {e}")
+            return None
+
+
+
+    def _wait_project_processing(self):
+        """
+        Wait for project processing to complete in Dependency Track.
+        
+        Returns:
+            Project status dictionary or None if processing fails
+        """
+        try:
+
+            if self.dependency_track_upload_token:
+                if self.debug:
+                    self.print_debug("Using upload token to get project status")
+                self._wait_processing_by_project_status()
+            else:
+                if self.debug:
+                    self.print_debug("Using project id to get project status")
+                self._wait_processing_by_project_id()
+        except requests.exceptions.RequestException as e:
+            self.print_stderr(f"Error waiting for project processing: {e}")
             return None
 
 
@@ -357,7 +427,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
                 self.print_trace(f'Project Id: {self.dependency_track_project_id}')
                 self.print_trace(f'Project Name: {self.dependency_track_project_name}')
                 self.print_trace(f'Project Version: {self.dependency_track_project_version}')
-                self.print_trace(f'Upload Token: {self.dependency_track_upload_token}')
+                self.print_trace(f'API Key: {self.dependency_track_api_key}')
                 self.print_trace(f'Format: {self.format_type}')
                 self.print_trace(f'Status: {self.status}')
                 self.print_trace(f'Output: {self.output}')

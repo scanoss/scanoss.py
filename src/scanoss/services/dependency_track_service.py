@@ -128,3 +128,29 @@ class DependencyTrackService(ScanossBase):
         except requests.exceptions.RequestException as e:
             self.print_stderr(f"Error getting Dependency Track project violations: {e}")
             return e
+
+    def get_project_by_id(self, project_id:str):
+        """
+        Get a Dependency Track project by id.
+
+        Queries the Dependency Track API to get a project by id
+
+        Returns:
+            dict
+        """
+
+        if self.trace:
+            self.print_trace(f'URL: {self.url}')
+            self.print_trace(f'Project UUID: {project_id}')
+
+        url = f"{self.url}/api/v1/project/{project_id}"
+        req_headers = {'X-Api-Key': self.api_key, 'Content-Type': 'application/json'}
+        try:
+            response = requests.get(url, headers=req_headers)
+            response.raise_for_status()  # Raises an HTTPError for bad responses
+
+            return response.json()
+
+        except requests.exceptions.RequestException as e:
+            self.print_stderr(f"Error getting project status: {e}")
+            return None
