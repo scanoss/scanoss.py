@@ -822,6 +822,22 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         type=str,
         help='Dependency Track API key for authentication'
     )
+
+    # Dependency Track project name
+    p_inspect_dep_track_project_violation.add_argument(
+        '--dt-projectname',
+        required=False,
+        type=str,
+        help='Dependency Track project name'
+    )
+
+    # Dependency Track project name
+    p_inspect_dep_track_project_violation.add_argument(
+        '--dt-projectversion',
+        required=False,
+        type=str,
+        help='Dependency Track project version'
+    )
     
     # Output options for Dependency Track inspection
     p_inspect_dep_track_project_violation.add_argument(
@@ -1828,6 +1844,8 @@ def inspect_dependency_track_project_violations(parser, args):
         dependency_track_api_key=args.dt_apikey,       # Authentication key
         dependency_track_project_id=args.dt_projectid, # Target project UUID
         dependency_track_upload_token=args.dt_upload_token,  # Upload access token
+        dependency_track_project_name=args.dt_projectname, # DT project name
+        dependency_track_project_version=args.dt_projectversion, # DT project version
     )
     
     # Execute inspection and exit with appropriate status code
