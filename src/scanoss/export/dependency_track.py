@@ -32,6 +32,7 @@ import requests
 
 from ..cyclonedx import CycloneDx
 from ..scanossbase import ScanossBase
+from ..services.dependency_track_service import DependencyTrackService
 from ..utils.file import validate_json_file
 
 HTTP_OK = 200
@@ -66,7 +67,6 @@ class DependencyTrackExporter(ScanossBase):
     """
     Class for exporting SBOM files to Dependency Track
     """
-
     def __init__(
         self,
         config: DependencyTrackExporterConfig,
@@ -84,9 +84,9 @@ class DependencyTrackExporter(ScanossBase):
             quiet: Enable quiet mode
         """
         super().__init__(debug=debug, trace=trace, quiet=quiet)
-
         self.dt_url = config.dt_url.rstrip('/')
         self.dt_apikey = config.dt_apikey
+        self.dependencyTrackService = DependencyTrackService(self.dt_apikey, self.dt_url, debug=debug, trace=trace, quiet=quiet)
         self.dt_projectid = config.dt_projectid
         self.dt_projectname = config.dt_projectname
         self.dt_projectversion = config.dt_projectversion
@@ -163,39 +163,6 @@ class DependencyTrackExporter(ScanossBase):
                 'bom': encoded_sbom,
             }
 
-    def get_project_by_name_version(self, name, version):
-        """
-        Get project information by name and version from Dependency Track
-        
-        Args:
-            name: Project name to search for
-            version: Project version to search for
-            
-        Returns:
-            dict: Project data if found, None otherwise
-        """
-        try:
-            # Use the project search endpoint
-            params = {
-                'name': name,
-                'version': version
-            }
-
-            project_response = requests.get(
-                f"{self.dt_url}/api/v1/project/lookup",
-                headers={"X-API-Key": self.dt_apikey, "Content-Type": "application/json"},
-                params=params
-            )
-
-            if project_response.status_code == HTTP_OK:
-                project_data = project_response.json()
-                return project_data
-
-        except Exception as e:
-            self.print_stdout(f"Error looking up project: {e}")
-            return None
-
-
     def upload_sbom(self, input_file: str) -> bool:
         """
         Upload SBOM file to Dependency Track
@@ -235,7 +202,7 @@ class DependencyTrackExporter(ScanossBase):
                         has_name_version = bool(self.dt_projectname and self.dt_projectversion)
                         project_uuid = self.dt_projectid
                         if has_name_version:
-                          project_data =  self.get_project_by_name_version(self.dt_projectname, self.dt_projectversion)
+                          project_data = self.dependencyTrackService.get_project_by_name_version(self.dt_projectname, self.dt_projectversion)
                           if project_data.get("uuid"):
                              project_uuid = project_data.get("uuid")
                         token_json = json.dumps(

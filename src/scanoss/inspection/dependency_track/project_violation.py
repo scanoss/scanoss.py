@@ -5,7 +5,9 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 import requests
 
+
 from ..policy_check import PolicyCheck, PolicyStatus
+from ...services.dependency_track_service import DependencyTrackService
 
 
 class ResolvedLicenseDict(TypedDict):
@@ -110,6 +112,10 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         super().__init__(debug, trace, quiet, format_type, status, 'dependency-track', output)
         self.dependency_track_url = dependency_track_url
         self.dependency_track_api_key = dependency_track_api_key
+        self.dependency_track_service = DependencyTrackService(dependency_track_api_key,
+                                                               dependency_track_url,debug,
+                                                               trace,
+                                                               quiet)
         self.dependency_track_project_id = dependency_track_project_id
         self.dependency_track_upload_token = dependency_track_upload_token
 
@@ -154,7 +160,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             # End license loop
         # End component loop
         return {
-            "details": self.generate_table(headers, rows, centered_columns),
+            "details": f"### Dependency Track Project Violations\n{self.generate_table(headers, rows, centered_columns)}\n",
             "summary": f"{len(project_violations)} policy violations were found.\n",
         }
 
@@ -173,28 +179,25 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         """
         pass
 
-
-    def _get_project_status(self):
-        """
-        Get Dependency Track project processing status.
-        
-        Queries the Dependency Track API to check if the project upload
-        processing is complete using the upload token.
-        
-        Returns:
-            dict: Project status information or None if request fails
-        """
-        url = f"{self.dependency_track_url}/api/v1/event/token/{self.dependency_track_upload_token}"
-        req_headers = {'X-Api-Key': self.dependency_track_api_key, 'Content-Type': 'application/json'}
+    def _wait_project_processing(self):
         try:
-            response = requests.get(url, headers=req_headers)
-            response.raise_for_status()  # Raises an HTTPError for bad responses
-
-            return response.json()
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error calling API: {e}")
+            status = self.dependency_track_service.get_project_status(upload_token=self.dependency_track_upload_token)
+            max_tries = 10
+            while status['processing'] and max_tries > 0:
+                max_tries = max_tries - 1
+                time.sleep(1)
+                try:
+                    status = self.dependency_track_service.get_project_status(
+                        upload_token=self.dependency_track_upload_token)
+                except Exception as e:
+                    self.print_debug(f"Error getting project status: {e}")
+                    status = None
+                    break
+            return status
+        except Exception as e:
+            self.print_stderr(f"Error getting project status: {e}")
             return None
+
 
     def _get_dependency_track_project_violations(self):
         """
@@ -206,22 +209,11 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         Returns:
             list: List of policy violations or None if request fails
         """
-        status = self._get_project_status()
-        max_tries = 10
-        while status['processing'] and max_tries > 0:
-            max_tries = max_tries - 1
-            time.sleep(1)
-            status = self._get_project_status()
-        url = f"{self.dependency_track_url}/api/v1/violation/project/{self.dependency_track_project_id}"
-        req_headers = {'X-Api-Key': self.dependency_track_api_key, 'Content-Type': 'application/json'}
+        self._wait_project_processing()
         try:
-            response = requests.get(url, headers=req_headers)
-            response.raise_for_status()  # Raises an HTTPError for bad responses
-
-            return response.json()
-
+            return self.dependency_track_service.get_project_violations(self.dependency_track_project_id)
         except requests.exceptions.RequestException as e:
-            print(f"Error calling API: {e}")
+            self.print_stderr(f"Error: {e}")
             return None
 
     def _sort_project_violations(self, violations):
@@ -253,7 +245,14 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             tuple: (status_code, formatted_data) where status_code indicates
                    SUCCESS if violations found, FAIL if no violations, ERROR if failed
         """
+        if self.trace:
+            self.print_trace(f'URL: {self.dependency_track_url}')
+            self.print_trace(f'Project Id: {self.dependency_track_project_id}')
+
         dep_track_project_violations = self._get_dependency_track_project_violations()
+        if dep_track_project_violations is None:
+            return PolicyStatus.FAIL.value, None
+
         sorted_project_violations = self._sort_project_violations(dep_track_project_violations)
         formatter = self._get_formatter()
         if formatter is None:

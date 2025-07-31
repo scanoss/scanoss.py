@@ -26,6 +26,7 @@ import json
 import os
 import re
 import unittest
+from unittest.mock import Mock, patch
 
 
 
@@ -167,9 +168,9 @@ class MyTestCase(unittest.TestCase):
        Inspect for undeclared components empty path
     """
 
-    def test_copyleft_policy_empty_path(self):
-        copyleft = Copyleft(filepath='', format_type='json')
-        success, results = copyleft.run()
+    def test_undeclared_policy_empty_path(self):
+        undeclared = UndeclaredComponent(filepath='', format_type='json')
+        success, results = undeclared.run()
         self.assertTrue(success, 2)
 
     """
@@ -437,8 +438,15 @@ Add the following snippet into your `scanoss.json` file
 
     ## Dependency Track Project Violation Policy Tests ##
 
-    def test_dependency_track_project_violation_json_formatter(self):
-        project_violation = DependencyTrackProjectViolationPolicyCheck(format_type='json')
+    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    def test_dependency_track_project_violation_json_formatter(self, mock_service):
+        mock_service.return_value = Mock()
+        project_violation = DependencyTrackProjectViolationPolicyCheck(
+            format_type='json',
+            dependency_track_api_key='test_key',
+            dependency_track_url='http://localhost',
+            dependency_track_project_id='test_project'
+        )
         test_violations = [
             {
                 'uuid': 'violation-1',
@@ -465,8 +473,15 @@ Add the following snippet into your `scanoss.json` file
         self.assertEqual(len(details), 1)
         self.assertEqual(details[0]['type'], 'SECURITY')
 
-    def test_dependency_track_project_violation_markdown_formatter(self):
-        project_violation = DependencyTrackProjectViolationPolicyCheck(format_type='md')
+    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    def test_dependency_track_project_violation_markdown_formatter(self, mock_service):
+        mock_service.return_value = Mock()
+        project_violation = DependencyTrackProjectViolationPolicyCheck(
+            format_type='md',
+            dependency_track_api_key='test_key',
+            dependency_track_url='http://localhost',
+            dependency_track_project_id='test_project'
+        )
         test_violations = [
             {
                 'uuid': 'violation-1',
@@ -495,8 +510,14 @@ Add the following snippet into your `scanoss.json` file
         self.assertIn('Component', result['details'])
         self.assertIn('Date', result['details'])
 
-    def test_dependency_track_project_violation_sort_violations(self):
-        project_violation = DependencyTrackProjectViolationPolicyCheck()
+    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    def test_dependency_track_project_violation_sort_violations(self, mock_service):
+        mock_service.return_value = Mock()
+        project_violation = DependencyTrackProjectViolationPolicyCheck(
+            dependency_track_api_key='test_key',
+            dependency_track_url='http://localhost',
+            dependency_track_project_id='test_project'
+        )
         test_violations = [
             {'type': 'LICENSE', 'uuid': 'license-violation'},
             {'type': 'SECURITY', 'uuid': 'security-violation'},
@@ -509,24 +530,45 @@ Add the following snippet into your `scanoss.json` file
         self.assertEqual(sorted_violations[2]['type'], 'LICENSE')
         self.assertEqual(sorted_violations[3]['type'], 'OTHER')
 
-    def test_dependency_track_project_violation_empty_violations(self):
-        project_violation = DependencyTrackProjectViolationPolicyCheck(format_type='json')
+    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    def test_dependency_track_project_violation_empty_violations(self, mock_service):
+        mock_service.return_value = Mock()
+        project_violation = DependencyTrackProjectViolationPolicyCheck(
+            format_type='json',
+            dependency_track_api_key='test_key',
+            dependency_track_url='http://localhost',
+            dependency_track_project_id='test_project'
+        )
         empty_violations = []
         result = project_violation._json(empty_violations)
         self.assertEqual(result['summary'], '0 policy violations were found.\n')
         details = json.loads(result['details'])
         self.assertEqual(len(details), 0)
 
-    def test_dependency_track_project_violation_markdown_empty(self):
-        project_violation = DependencyTrackProjectViolationPolicyCheck(format_type='md')
+    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    def test_dependency_track_project_violation_markdown_empty(self, mock_service):
+        mock_service.return_value = Mock()
+        project_violation = DependencyTrackProjectViolationPolicyCheck(
+            format_type='md',
+            dependency_track_api_key='test_key',
+            dependency_track_url='http://localhost',
+            dependency_track_project_id='test_project'
+        )
         empty_violations = []
         result = project_violation._markdown(empty_violations)
         self.assertEqual(result['summary'], '0 policy violations were found.\n')
         self.assertIn('State', result['details'])
         self.assertIn('Risk Type', result['details'])
 
-    def test_dependency_track_project_violation_multiple_types(self):
-        project_violation = DependencyTrackProjectViolationPolicyCheck(format_type='json')
+    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    def test_dependency_track_project_violation_multiple_types(self, mock_service):
+        mock_service.return_value = Mock()
+        project_violation = DependencyTrackProjectViolationPolicyCheck(
+            format_type='json',
+            dependency_track_api_key='test_key',
+            dependency_track_url='http://localhost',
+            dependency_track_project_id='test_project'
+        )
         test_violations = [
             {
                 'uuid': 'violation-1',
