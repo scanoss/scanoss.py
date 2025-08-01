@@ -30,10 +30,13 @@ from typing import Optional
 
 import requests
 
-from scanoss.cyclonedx import CycloneDx
-
+from ..cyclonedx import CycloneDx
 from ..scanossbase import ScanossBase
+from ..services.dependency_track_service import DependencyTrackService
 from ..utils.file import validate_json_file
+
+HTTP_OK = 200
+HTTP_CREATED = 201
 
 
 @dataclass
@@ -65,7 +68,6 @@ class DependencyTrackExporter(ScanossBase):
     """
     Class for exporting SBOM files to Dependency Track
     """
-
     def __init__(
         self,
         config: DependencyTrackExporterConfig,
@@ -83,12 +85,16 @@ class DependencyTrackExporter(ScanossBase):
             quiet: Enable quiet mode
         """
         super().__init__(debug=debug, trace=trace, quiet=quiet)
-
         self.dt_url = config.dt_url.rstrip('/')
         self.dt_apikey = config.dt_apikey
         self.dt_projectid = config.dt_projectid
         self.dt_projectname = config.dt_projectname
         self.dt_projectversion = config.dt_projectversion
+        self.dependency_track_service = DependencyTrackService(self.dt_apikey,
+                                                             self.dt_url,
+                                                             debug=debug,
+                                                             trace=trace,
+                                                             quiet=quiet)
 
         self._validate_config()
 
@@ -192,13 +198,24 @@ class DependencyTrackExporter(ScanossBase):
             self.print_msg('Uploading SBOM to Dependency Track...')
             response = requests.put(url, json=payload, headers=headers)
 
-            if response.status_code in [200, 201]:
+            if response.status_code in [HTTP_OK, HTTP_CREATED]:
                 self.print_stderr('SBOM uploaded successfully')
 
                 try:
                     response_data = response.json()
                     if 'token' in response_data:
-                        self.print_stderr(f'Upload token: {response_data["token"]}')
+                        has_name_version = bool(self.dt_projectname and self.dt_projectversion)
+                        project_uuid = self.dt_projectid
+                        if has_name_version:
+                          project_data = self.dependency_track_service.get_project_by_name_version(self.dt_projectname,
+                                                                                                 self.dt_projectversion)
+                          if project_data.get("uuid"):
+                             project_uuid = project_data.get("uuid")
+                        token_json = json.dumps(
+                            {"token": response_data["token"], "project_uuid": project_uuid}, 
+                            indent=2
+                        )
+                        self.print_stdout(token_json)
                 except json.JSONDecodeError:
                     pass
 

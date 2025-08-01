@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.31.0] - 2025-07-31
+### Added
+- Add `inspect dependency-track project-violations` subcommand to retrieve Dependency Track project violations in Markdown and JSON formats
+### Changed
+- Renamed `inspect copyleft` to `inspect raw copyleft`
+- Renamed `inspect undeclared` to `inspect raw undeclared`
+- Renamed `inspect component-summary` to `inspect raw component-summary`
+- Renamed `inspect license-summary` to `inspect raw license-summary`
+
 ## [1.30.0] - 2025-07-22
 ### Added
 - Add `export dt` subcommand to export SBOM files to Dependency Track
@@ -615,5 +624,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.28.2]: https://github.com/scanoss/scanoss.py/compare/v1.28.1...v1.28.2
 [1.29.0]: https://github.com/scanoss/scanoss.py/compare/v1.28.2...v1.29.0
 [1.30.0]: https://github.com/scanoss/scanoss.py/compare/v1.29.0...v1.30.0
-
+[1.31.0]: https://github.com/scanoss/scanoss.py/compare/v1.30.0...v1.31.0
 

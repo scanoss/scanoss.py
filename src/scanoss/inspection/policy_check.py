@@ -24,9 +24,9 @@ SPDX-License-Identifier: MIT
 
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, Generic, List, TypeVar
 
-from .inspect_base import InspectBase
+from ..scanossbase import ScanossBase
 from .utils.license_utils import LicenseUtil
 
 
@@ -35,19 +35,21 @@ class PolicyStatus(Enum):
     Enumeration representing the status of a policy check.
 
     Attributes:
-        SUCCESS (int): Indicates that the policy check passed successfully (value: 0).
-        FAIL (int): Indicates that the policy check failed (value: 1).
+        POLICY_SUCCESS (int): Indicates that the policy check passed successfully (value: 0).
+        POLICY_FAIL (int): Indicates that the policy check failed (value: 1).
         ERROR (int): Indicates that an error occurred during the policy check (value: 2).
     """
 
-    SUCCESS = 0
-    FAIL = 1
-    ERROR = 2
+    POLICY_SUCCESS = 0
+    POLICY_FAIL = 2
+    ERROR = 1
 #
 # End of PolicyStatus Class
 #
 
-class PolicyCheck(InspectBase):
+T = TypeVar('T')
+
+class PolicyCheck(ScanossBase, Generic[T]):
     """
     A base class for implementing various software policy checks.
 
@@ -66,19 +68,17 @@ class PolicyCheck(InspectBase):
             debug: bool = False,
             trace: bool = False,
             quiet: bool = False,
-            filepath: str = None,
             format_type: str = None,
             status: str = None,
-            output: str = None,
             name: str = None,
+            output: str = None,
     ):
-        super().__init__(debug, trace, quiet, filepath, output)
+        super().__init__(debug, trace, quiet)
         self.license_util = LicenseUtil()
-        self.filepath = filepath
         self.name = name
         self.format_type = format_type
         self.status = status
-        self.results = self._load_input_file()
+        self.output = output
 
     @abstractmethod
     def run(self):
@@ -99,41 +99,41 @@ class PolicyCheck(InspectBase):
         pass
 
     @abstractmethod
-    def _json(self, components: list) -> Dict[str, Any]:
+    def _json(self, data: list[T]) -> Dict[str, Any]:
         """
         Format the policy checks results as JSON.
         This method should be implemented by subclasses to create a Markdown representation
         of the policy check results.
 
-        :param components: List of components to be formatted.
+        :param data: List of data to be formatted.
         :return: A dictionary containing two keys:
-                 - 'details': A JSON-formatted string with the full list of components
+                 - 'results': A JSON-formatted string with the full list of components
                  - 'summary': A string summarizing the number of components found
         """
         pass
 
     @abstractmethod
-    def _markdown(self, components: list) -> Dict[str, Any]:
+    def _markdown(self, data: list[T]) -> Dict[str, Any]:
         """
         Generate Markdown output for the policy check results.
 
         This method should be implemented by subclasses to create a Markdown representation
         of the policy check results.
 
-        :param components: List of components to be included in the output.
+        :param data: List of data to be included in the output.
         :return: A dictionary representing the Markdown output.
         """
         pass
 
     @abstractmethod
-    def _jira_markdown(self, components: list) -> Dict[str, Any]:
+    def _jira_markdown(self, data: list[T]) -> Dict[str, Any]:
         """
         Generate Markdown output for the policy check results.
 
         This method should be implemented by subclasses to create a Markdown representation
         of the policy check results.
 
-        :param components: List of components to be included in the output.
+        :param data: List of data to be included in the output.
         :return: A dictionary representing the Markdown output.
         """
         pass
@@ -208,7 +208,6 @@ class PolicyCheck(InspectBase):
             self.print_stderr(f'Format: {self.format_type}')
             self.print_stderr(f'Status: {self.status}')
             self.print_stderr(f'Output: {self.output}')
-            self.print_stderr(f'Input: {self.filepath}')
 
     def _is_valid_format(self) -> bool:
         """
