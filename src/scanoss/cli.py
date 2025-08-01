@@ -801,12 +801,14 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
     # Dependency Track connection and authentication options
     p_inspect_dep_track_project_violation.add_argument(
-        '--dt-url', 
+        '--dt-url',
+        required=True,
         type=str, 
         help='Dependency Track server base URL (e.g., https://dtrack.example.com)'
     )
     p_inspect_dep_track_project_violation.add_argument(
-        '--dt-upload-token', 
+        '--dt-upload-token',
+        required=False,
         type=str, 
         help='Project-specific upload token for accessing DT project data'
     )
@@ -818,7 +820,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
     p_inspect_dep_track_project_violation.add_argument(
         '--dt-apikey', 
-        required=False, 
+        required=True,
         type=str,
         help='Dependency Track API key for authentication'
     )
@@ -861,6 +863,13 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         choices=['json', 'md'],
         default='json',
         help='Output format: json (default) or md (Markdown)'
+    )
+
+    p_inspect_dep_track_project_violation.add_argument(
+        '--timeout',
+        required=False,
+        default='3600',
+        help='Timeout (in seconds) for API communication (optional - default 3600 sec)'
     )
 
     # RAW results
@@ -1647,23 +1656,29 @@ def inspect_copyleft(parser, args):
         status_output = args.status
         open(status_output, 'w').close()  # Create/clear status file
 
-    # Create and configure copyleft inspector
-    i_copyleft = Copyleft(
-        debug=args.debug,
-        trace=args.trace,
-        quiet=args.quiet,
-        filepath=args.input,
-        format_type=args.format,
-        status=status_output,
-        output=output,
-        include=args.include,     # Additional licenses to check
-        exclude=args.exclude,     # Licenses to ignore
-        explicit=args.explicit,   # Explicit license list
-    )
-    
-    # Execute inspection and exit with appropriate status code
-    status, _ = i_copyleft.run()
-    sys.exit(status)
+    try:
+        # Create and configure copyleft inspector
+        i_copyleft = Copyleft(
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+            filepath=args.input,
+            format_type=args.format,
+            status=status_output,
+            output=output,
+            include=args.include,     # Additional licenses to check
+            exclude=args.exclude,     # Licenses to ignore
+            explicit=args.explicit,   # Explicit license list
+        )
+
+        # Execute inspection and exit with appropriate status code
+        status, _ = i_copyleft.run()
+        sys.exit(status)
+    except Exception as e:
+        print_stderr(e)
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
 
 
 def inspect_undeclared(parser, args):
@@ -1703,22 +1718,28 @@ def inspect_undeclared(parser, args):
     if args.status:
         status_output = args.status
         open(status_output, 'w').close()  # Create/clear status file
-        
-    # Create and configure undeclared component inspector
-    i_undeclared = UndeclaredComponent(
-        debug=args.debug,
-        trace=args.trace,
-        quiet=args.quiet,
-        filepath=args.input,
-        format_type=args.format,
-        status=status_output,
-        output=output,
-        sbom_format=args.sbom_format,  # Format for SBOM comparison
-    )
-    
-    # Execute inspection and exit with appropriate status code
-    status, _ = i_undeclared.run()
-    sys.exit(status)
+
+    try:
+        # Create and configure undeclared component inspector
+        i_undeclared = UndeclaredComponent(
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+            filepath=args.input,
+            format_type=args.format,
+            status=status_output,
+            output=output,
+            sbom_format=args.sbom_format,  # Format for SBOM comparison
+        )
+
+        # Execute inspection and exit with appropriate status code
+        status, _ = i_undeclared.run()
+        sys.exit(status)
+    except Exception as e:
+        print_stderr(e)
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
 
 
 def inspect_license_summary(parser, args):
@@ -1761,10 +1782,14 @@ def inspect_license_summary(parser, args):
         exclude=args.exclude,     # Licenses to exclude from summary
         explicit=args.explicit,   # Explicit license list to summarize
     )
-    
-    # Execute summary generation
-    i_license_summary.run()
-
+    try:
+        # Execute summary generation
+        i_license_summary.run()
+    except Exception as e:
+        print_stderr(e)
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
 
 def inspect_component_summary(parser, args):
     """
@@ -1802,9 +1827,15 @@ def inspect_component_summary(parser, args):
         filepath=args.input,
         output=output,
     )
-    
-    # Execute summary generation
-    i_component_summary.run()
+
+    try:
+        # Execute summary generation
+        i_component_summary.run()
+    except Exception as e:
+        print_stderr(e)
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
 
 def inspect_dependency_track_project_violations(parser, args):
     """
@@ -1823,9 +1854,13 @@ def inspect_dependency_track_project_violations(parser, args):
         - dt_url: Dependency Track base URL
         - dt_apikey: API key for authentication
         - dt_projectid: Project UUID to inspect
+        - dt_projectname: Project name to inspect
+        - dt_projectversion: Project version to inspect
         - dt_upload_token: Upload token for project access
         - output: Optional output file path
         - format: Output format (json, md)
+        - timeout: Optional timeout for API requests
+
     """
     # Initialize output file if specified
     output: str = None
@@ -1834,23 +1869,31 @@ def inspect_dependency_track_project_violations(parser, args):
         open(output, 'w').close()  # Create/clear output file
 
     # Create and configure Dependency Track inspector
-    i_dep_track_project_violation = DependencyTrackProjectViolationPolicyCheck(
-        debug=args.debug,
-        trace=args.trace,
-        quiet=args.quiet,
-        output=args.output,
-        format_type=args.format,
-        dependency_track_url=args.dt_url,              # DT server URL
-        dependency_track_api_key=args.dt_apikey,       # Authentication key
-        dependency_track_project_id=args.dt_projectid, # Target project UUID
-        dependency_track_upload_token=args.dt_upload_token,  # Upload access token
-        dependency_track_project_name=args.dt_projectname, # DT project name
-        dependency_track_project_version=args.dt_projectversion, # DT project version
-    )
-    
-    # Execute inspection and exit with appropriate status code
-    status, _ = i_dep_track_project_violation.run()
-    sys.exit(status)
+    try:
+        i_dep_track_project_violation = DependencyTrackProjectViolationPolicyCheck(
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+            output=output,
+            status= args.status,
+            format_type=args.format,
+            dependency_track_url=args.dt_url,              # DT server URL
+            dependency_track_api_key=args.dt_apikey,       # Authentication key
+            dependency_track_project_id=args.dt_projectid, # Target project UUID
+            dependency_track_upload_token=args.dt_upload_token,  # Upload access token
+            dependency_track_project_name=args.dt_projectname, # DT project name
+            dependency_track_project_version=args.dt_projectversion, # DT project version
+            timeout=args.timeout,
+        )
+
+        # Execute inspection and exit with appropriate status code
+        status, _ = i_dep_track_project_violation.run()
+        sys.exit(status)
+    except Exception as e:
+        print_stderr(e)
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
 
 
 # =============================================================================

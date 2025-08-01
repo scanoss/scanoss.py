@@ -35,14 +35,14 @@ class PolicyStatus(Enum):
     Enumeration representing the status of a policy check.
 
     Attributes:
-        SUCCESS (int): Indicates that the policy check passed successfully (value: 0).
-        FAIL (int): Indicates that the policy check failed (value: 1).
+        POLICY_SUCCESS (int): Indicates that the policy check passed successfully (value: 0).
+        POLICY_FAIL (int): Indicates that the policy check failed (value: 1).
         ERROR (int): Indicates that an error occurred during the policy check (value: 2).
     """
 
-    SUCCESS = 0
-    FAIL = 1
-    ERROR = 2
+    POLICY_SUCCESS = 0
+    POLICY_FAIL = 2
+    ERROR = 1
 #
 # End of PolicyStatus Class
 #

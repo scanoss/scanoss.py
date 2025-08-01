@@ -309,8 +309,8 @@ class UndeclaredComponent(RawBase[Component]):
         self.print_to_file_or_stderr(data['summary'], self.status)
         # Determine if the filter found results or not
         if len(undeclared_components) <= 0:
-            return PolicyStatus.FAIL.value, data
-        return PolicyStatus.SUCCESS.value, data
+            return PolicyStatus.POLICY_FAIL.value, data
+        return PolicyStatus.POLICY_SUCCESS.value, data
 
 #
 # End of UndeclaredComponent Class

@@ -234,8 +234,8 @@ class Copyleft(RawBase[Component]):
         self.print_to_file_or_stderr(data['summary'], self.status)
         # Check to see if we have policy violations
         if len(copyleft_components) <= 0:
-            return PolicyStatus.FAIL.value, data
-        return PolicyStatus.SUCCESS.value, data
+            return PolicyStatus.POLICY_FAIL.value, data
+        return PolicyStatus.POLICY_SUCCESS.value, data
 
 
 #

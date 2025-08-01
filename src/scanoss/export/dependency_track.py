@@ -24,7 +24,6 @@ SPDX-License-Identifier: MIT
 
 import base64
 import json
-import sys
 import traceback
 from dataclasses import dataclass
 from typing import Optional
@@ -37,6 +36,7 @@ from ..services.dependency_track_service import DependencyTrackService
 from ..utils.file import validate_json_file
 
 HTTP_OK = 200
+HTTP_CREATED = 201
 
 
 @dataclass
@@ -90,16 +90,11 @@ class DependencyTrackExporter(ScanossBase):
         self.dt_projectid = config.dt_projectid
         self.dt_projectname = config.dt_projectname
         self.dt_projectversion = config.dt_projectversion
-
-        try:
-            self.dependencyTrackService = DependencyTrackService(self.dt_apikey,
+        self.dependency_track_service = DependencyTrackService(self.dt_apikey,
                                                              self.dt_url,
                                                              debug=debug,
                                                              trace=trace,
                                                              quiet=quiet)
-        except (ValueError, RuntimeError) as e:
-            self.print_stderr(f"Error: Dependency Track export: {e}")
-            sys.exit(1)
 
         self._validate_config()
 
@@ -203,7 +198,7 @@ class DependencyTrackExporter(ScanossBase):
             self.print_msg('Uploading SBOM to Dependency Track...')
             response = requests.put(url, json=payload, headers=headers)
 
-            if response.status_code in [200, 201]:
+            if response.status_code in [HTTP_OK, HTTP_CREATED]:
                 self.print_stderr('SBOM uploaded successfully')
 
                 try:
@@ -212,7 +207,7 @@ class DependencyTrackExporter(ScanossBase):
                         has_name_version = bool(self.dt_projectname and self.dt_projectversion)
                         project_uuid = self.dt_projectid
                         if has_name_version:
-                          project_data = self.dependencyTrackService.get_project_by_name_version(self.dt_projectname,
+                          project_data = self.dependency_track_service.get_project_by_name_version(self.dt_projectname,
                                                                                                  self.dt_projectversion)
                           if project_data.get("uuid"):
                              project_uuid = project_data.get("uuid")

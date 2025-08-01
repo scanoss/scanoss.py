@@ -123,7 +123,7 @@ class LicenseSummary(RawBase):
         :return: A list of processed components with license data, or `None` if `self.results` is not set.
         """
         if self.results is None:
-            return None
+            raise ValueError(f'Error: No results found in ${self.filepath}')
 
         components: dict = {}
         # Extract component and license data from file and dependency results. Both helpers mutate `components`

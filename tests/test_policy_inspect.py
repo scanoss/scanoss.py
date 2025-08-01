@@ -28,9 +28,7 @@ import re
 import unittest
 from unittest.mock import Mock, patch
 
-
-
-
+from src.scanoss.inspection.policy_check import PolicyStatus
 from src.scanoss.inspection.raw.component_summary import ComponentSummary
 from src.scanoss.inspection.raw.copyleft import Copyleft
 from src.scanoss.inspection.raw.license_summary import LicenseSummary
@@ -71,7 +69,7 @@ class MyTestCase(unittest.TestCase):
         copyleft = Copyleft(filepath=input_file_name, format_type='json')
         status, data = copyleft.run()
         details = json.loads(data['details'])
-        self.assertEqual(status, 1)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
         self.assertEqual(details, {})
         self.assertEqual(data['summary'], '0 component(s) with copyleft licenses were found.\n')
 
@@ -108,7 +106,7 @@ class MyTestCase(unittest.TestCase):
         status, data = copyleft.run()
         results = json.loads(data['details'])
         self.assertEqual(results, {})
-        self.assertEqual(status, 1)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
 
     """
         Inspect for copyleft licenses explicit

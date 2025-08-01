@@ -6,7 +6,6 @@ for a specific project.
 """
 
 import json
-import sys
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
@@ -18,7 +17,8 @@ from ..policy_check import PolicyCheck, PolicyStatus
 
 # Constants
 MAX_PROCESSING_RETRIES = 10
-PROCESSING_RETRY_DELAY = 1  # seconds
+PROCESSING_RETRY_DELAY = 5  # seconds
+DEFAULT_TIME_OUT = 3600
 MILLISECONDS_TO_SECONDS = 1000
 
 
@@ -110,6 +110,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             dependency_track_api_key: str = None,
             dependency_track_url: str = None,
             dependency_track_upload_token: str = None,
+            timeout: int = DEFAULT_TIME_OUT,
             format_type: str = None,
             status: str = None,
             output: str = None,
@@ -130,6 +131,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             format_type: Output format type (json, markdown, etc.)
             status: Status output destination
             output: Results output destination
+            timeout: Timeout for processing in seconds (default: 5 seconds)
         """
         super().__init__(debug, trace, quiet, format_type, status, 'dependency-track', output)
         self.dependency_track_url = dependency_track_url
@@ -138,15 +140,13 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         self.dependency_track_project_name = dependency_track_project_name
         self.dependency_track_project_version = dependency_track_project_version
         self.dependency_track_upload_token = dependency_track_upload_token
-        try:
-            self.dependency_track_service = DependencyTrackService(self.dependency_track_api_key,
+        self.timeout = timeout
+        self.dependency_track_service = DependencyTrackService(self.dependency_track_api_key,
                                                              self.dependency_track_url,
                                                              debug=debug,
                                                              trace=trace,
                                                              quiet=quiet)
-        except (ValueError, RuntimeError) as e:
-            self.print_stderr(f"Error: Dependency Track export: {e}")
-            sys.exit(PolicyStatus.ERROR.value)
+
 
     def _json(self, project_violations: list[PolicyViolationDict]) -> Dict[str, Any]:
         """
@@ -235,52 +235,67 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             "summary": f"{len(data)} policy violations were found.\n",
         }
 
+    def is_project_updated(self, dt_project: Dict[str, Any]) -> bool:
+        """
+        Check if a Dependency Track project has completed processing.
+        
+        This method determines if a project has finished processing by comparing
+        the timestamps of the last BOM import, vulnerability analysis, and last
+        occurrence metrics. A project is considered updated when either the
+        vulnerability analysis or metrics last occurrence timestamp is greater
+        than or equal to the last BOM import timestamp.
+        
+        Args:
+            dt_project: Project dictionary from Dependency Track containing
+                       project metadata and timestamps
+                       
+        Returns:
+            True if the project has completed processing (vulnerability analysis
+            or metrics are up-to-date with the last BOM import), False otherwise
+        """
+        last_import = dt_project.get('lastBomImport', 0)
+        last_vulnerability_analysis = dt_project.get('lastVulnerabilityAnalysis', 0)
+        metrics = dt_project.get('metrics', {})
+        last_occurrence = metrics.get('lastOccurrence', 0) if isinstance(metrics, dict) else 0
+
+        if self.debug:
+            self.print_debug(f"last_import: {last_import}")
+            self.print_debug(f"last_vulnerability_analysis: {last_vulnerability_analysis}")
+            self.print_debug(f"last_occurrence: {last_occurrence}")
+            self.print_debug(
+                f"last_vulnerability_analysis is updated: {last_vulnerability_analysis >= last_import}"
+            )
+            self.print_debug(
+                f"last_occurrence is updated: {last_occurrence >= last_import}"
+            )
+        return last_vulnerability_analysis >= last_import or last_occurrence >= last_import
 
     def _wait_processing_by_project_id(self):
         """
                 Wait for project processing to complete in Dependency Track.
 
                 Returns:
-                    Return project or None if processing fails
+                    Return project or None if processing fails or times out
                 """
-        try:
-            dt_project = self.dependency_track_service.get_project_by_id(project_id=self.dependency_track_project_id)
 
-            max_tries = MAX_PROCESSING_RETRIES
-            last_import = dt_project.get('lastBomImport', 0)
-            last_vulnerability_analysis = dt_project.get('lastVulnerabilityAnalysis', 0)
-            metrics = dt_project.get('metrics', {})
-            last_occurrence = metrics.get('lastOccurrence', 0) if isinstance(metrics, dict) else 0
+        dt_project = self.dependency_track_service.get_project_by_id(project_id=self.dependency_track_project_id)
+        is_project_updated = self.is_project_updated(dt_project)
+        start_time = time.time()
 
+        while not is_project_updated:
+            # Check timeout
+            if time.time() - start_time > self.timeout:
+                self.print_debug(f"Timeout reached ({self.timeout}s) while waiting for project processing")
+                return None
 
-            if self.trace:
-                self.print_trace(f"last_import: {last_import}")
-                self.print_trace(f"last_vulnerability_analysis: {last_vulnerability_analysis}")
-                self.print_trace(f"last_occurrence: {last_occurrence}")
-                self.print_trace(
-                 f"last_vulnerability_analysis is updated: {last_vulnerability_analysis >= last_import}"
-                )
-                self.print_trace(
-                 f"last_occurrence is updated: {last_occurrence >= last_import}"
-                )
-
-            while (last_vulnerability_analysis < last_import or last_occurrence < last_import) and max_tries > 0:
-                max_tries -= 1
-                time.sleep(PROCESSING_RETRY_DELAY)
-                try:
-                    dt_project = self.dependency_track_service.get_project_by_id(
-                        project_id=self.dependency_track_project_id)
-                    last_vulnerability_analysis = dt_project.get('lastVulnerabilityAnalysis', 0)
-                    metrics = dt_project.get('metrics', {})
-                    last_occurrence = metrics.get('lastOccurrence', 0) if isinstance(metrics, dict) else 0
-                except requests.exceptions.RequestException as e:
-                    self.print_debug(f"Error getting project status: {e}")
-                    return None
-
-            return dt_project
-        except requests.exceptions.RequestException as e:
-            self.print_stderr(f"Error getting project status: {e}")
-            return None
+            time.sleep(PROCESSING_RETRY_DELAY)
+            try:
+                dt_project = self.dependency_track_service.get_project_by_id(
+                    project_id=self.dependency_track_project_id)
+                is_project_updated = self.is_project_updated(dt_project)
+            except requests.exceptions.RequestException as e:
+                raise ValueError(f"Error getting project status by project id from Dependency Track: {e}")
+        return dt_project
 
 
     def _wait_processing_by_project_status(self):
@@ -288,32 +303,30 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         Wait for project processing to complete in Dependency Track.
 
         Returns:
-            Project status dictionary or None if processing fails
+            Project status dictionary or None if processing fails or times out
         """
-        try:
-            status = self.dependency_track_service.get_project_status(
-                upload_token=self.dependency_track_upload_token
-            )
 
-            if self.trace:
-                self.print_trace(f"Project Status: {status}")
+        status = self.dependency_track_service.get_project_status(
+            upload_token=self.dependency_track_upload_token
+        )
 
-            max_tries = MAX_PROCESSING_RETRIES
-            while status and status.get('processing') and max_tries > 0:
-                max_tries -= 1
-                time.sleep(PROCESSING_RETRY_DELAY)
-                try:
-                    status = self.dependency_track_service.get_project_status(
-                        upload_token=self.dependency_track_upload_token)
-                except requests.exceptions.RequestException as e:
-                    self.print_debug(f"Error getting project status: {e}")
-                    return None
-            return status
-        except requests.exceptions.RequestException as e:
-            self.print_debug(f"Error getting project status: {e}")
-            return None
+        if self.debug:
+            self.print_debug(f"Project Status: {status}")
 
+        start_time = time.time()
+        while status and status.get('processing'):
+            # Check timeout
+            if time.time() - start_time > self.timeout:
+                self.print_debug(f"Timeout reached ({self.timeout}s) while waiting for project processing")
+                return None
 
+            time.sleep(PROCESSING_RETRY_DELAY)
+            try:
+                status = self.dependency_track_service.get_project_status(
+                    upload_token=self.dependency_track_upload_token)
+            except requests.exceptions.RequestException as e:
+                raise ValueError(f"Error getting project status: {e}")
+        return status
 
     def _wait_project_processing(self):
         """
@@ -322,19 +335,14 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         Returns:
             Project status dictionary or None if processing fails
         """
-        try:
-
-            if self.dependency_track_upload_token:
-                if self.debug:
-                    self.print_debug("Using upload token to get project status")
-                self._wait_processing_by_project_status()
-            else:
-                if self.debug:
-                    self.print_debug("Using project id to get project status")
-                self._wait_processing_by_project_id()
-        except requests.exceptions.RequestException as e:
-            self.print_stderr(f"Error waiting for project processing: {e}")
-            return None
+        if self.dependency_track_upload_token:
+            if self.debug:
+                self.print_debug("Using upload token to get project status")
+            self._wait_processing_by_project_status()
+        else:
+            if self.debug:
+                self.print_debug("Using project id to get project status")
+            self._wait_processing_by_project_id()
 
 
     def _set_project_id(self) -> None:
@@ -350,7 +358,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             
         if self.dependency_track_project_name is None or self.dependency_track_project_version is None:
             raise ValueError(
-                "Project name and version must be specified when not using project ID"
+                "Error: Project name and version must be specified when not using project ID"
             )
             
         try:
@@ -362,12 +370,13 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             
             if dt_project is None:
                 raise ValueError(
-                    f"Project {self.dependency_track_project_name}@{self.dependency_track_project_version} not found"
+                    f"Error: Project {self.dependency_track_project_name}@{self.dependency_track_project_version}"
+                    f" not found in Dependency Track"
                 )
                 
             self.dependency_track_project_id = dt_project.get("uuid")
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"Error communicating with Dependency Track: {e}") from e
+            raise ValueError(f"Error: Error getting project id from Dependency Track: {e}") from e
 
     def _get_dependency_track_project_violations(self) -> Optional[List[PolicyViolationDict]]:
         """
@@ -379,13 +388,11 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         Returns:
             List of policy violations or None if request fails
         """
-        self._wait_project_processing()
-        
         try:
             return self.dependency_track_service.get_project_violations(self.dependency_track_project_id)
         except requests.exceptions.RequestException as e:
-            self.print_stderr(f"Error retrieving project violations: {e}")
-            return None
+            raise ValueError(f"Error: Error retrieving project violations from Dependency Track: {e}") from e
+
 
     @staticmethod
     def _sort_project_violations(violations: List[PolicyViolationDict]) -> List[PolicyViolationDict]:
@@ -418,41 +425,43 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             Tuple of (status_code, formatted_data) where status_code indicates:
                 SUCCESS if violations found, FAIL if no violations, ERROR if failed
         """
-        try:
-            # Set project ID based on name/version if needed
-            self._set_project_id()
+        # Set project ID based on name/version if needed
+        self._set_project_id()
 
-            if self.trace:
-                self.print_trace(f'URL: {self.dependency_track_url}')
-                self.print_trace(f'Project Id: {self.dependency_track_project_id}')
-                self.print_trace(f'Project Name: {self.dependency_track_project_name}')
-                self.print_trace(f'Project Version: {self.dependency_track_project_version}')
-                self.print_trace(f'API Key: {self.dependency_track_api_key}')
-                self.print_trace(f'Format: {self.format_type}')
-                self.print_trace(f'Status: {self.status}')
-                self.print_trace(f'Output: {self.output}')
+        if self.debug:
+            self.print_debug(f'URL: {self.dependency_track_url}')
+            self.print_debug(f'Project Id: {self.dependency_track_project_id}')
+            self.print_debug(f'Project Name: {self.dependency_track_project_name}')
+            self.print_debug(f'Project Version: {self.dependency_track_project_version}')
+            self.print_debug(f'API Key: {"*" * len(self.dependency_track_api_key)}')
+            self.print_debug(f'Format: {self.format_type}')
+            self.print_debug(f'Status: {self.status}')
+            self.print_debug(f'Output: {self.output}')
+            self.print_debug(f'Timeout: {self.timeout}')
 
-            # Get project violations from Dependency Track
-            dep_track_project_violations = self._get_dependency_track_project_violations()
-            if dep_track_project_violations is None:
-                return PolicyStatus.ERROR.value, None
+        self._wait_project_processing()
 
-            # Sort violations by priority and format output
-            sorted_project_violations = self._sort_project_violations(dep_track_project_violations)
-            formatter = self._get_formatter()
-            if formatter is None:
-                return PolicyStatus.ERROR.value, {}
-                
-            # Format and output data
-            data = formatter(sorted_project_violations)
-            self.print_to_file_or_stdout(data['details'], self.output)
-            self.print_to_file_or_stderr(data['summary'], self.status)
-            
-            # Return appropriate status based on violation count
-            if len(dep_track_project_violations) == 0:
-                return PolicyStatus.FAIL.value, data
-            return PolicyStatus.SUCCESS.value, data
-            
-        except (ValueError, RuntimeError, Exception) as e:
-            self.print_stderr(f"Error: Dependency Track project violation: {e}")
-            return PolicyStatus.ERROR.value, None
+        # Check if the project was processed
+        dt_project = self.dependency_track_service.get_project_by_id(self.dependency_track_project_id)
+        if not self.is_project_updated(dt_project):
+            raise ValueError(
+                f'Error: Project {self.dependency_track_project_id} is still processing project violations')
+
+        # Get project violations from Dependency Track
+        dep_track_project_violations = self._get_dependency_track_project_violations()
+
+        # Sort violations by priority and format output
+        sorted_project_violations = self._sort_project_violations(dep_track_project_violations)
+        formatter = self._get_formatter()
+        if formatter is None:
+            return PolicyStatus.ERROR.value, {}
+
+        # Format and output data
+        data = formatter(sorted_project_violations)
+        self.print_to_file_or_stdout(data['details'], self.output)
+        self.print_to_file_or_stderr(data['summary'], self.status)
+
+        # Return appropriate status based on violation count
+        if len(dep_track_project_violations) == 0:
+            return PolicyStatus.POLICY_FAIL.value, data
+        return PolicyStatus.POLICY_SUCCESS.value, data

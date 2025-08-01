@@ -40,10 +40,10 @@ class DependencyTrackService(ScanossBase):
     ):
         super().__init__(debug=debug, trace=trace, quiet=quiet)
         if not url:
-            raise ValueError("Dependency Track URL is required")
+            raise ValueError("Error: Dependency Track URL is required")
         self.url = url.rstrip('/')
         if not api_key:
-            raise ValueError("Dependency Track API key is required")
+            raise ValueError("Error: Dependency Track API key is required")
         self.api_key = api_key
 
     def get_project_by_name_version(self, name, version):
