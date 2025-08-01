@@ -16,6 +16,43 @@
       {
         "purl": "pkg:github/scanoss/scanoss.py"
       }
+    ],
+    "remove": [
+      {
+        "path": "docs/make.bat",
+        "purl": "pkg:github/twilight-logic/ar488"
+      },
+      {
+        "path": "src/protoc_gen_swagger/options/annotations_pb2_grpc.py",
+        "purl": "pkg:pypi/bauplan"
+      },
+      {
+        "path": "src/protoc_gen_swagger/options/openapiv2_pb2_grpc.py",
+        "purl": "pkg:pypi/bauplan"
+      },
+      {
+        "path": "src/scanoss/api/common/v2/scanoss_common_pb2_grpc.py",
+        "purl": "pkg:pypi/bauplan"
+      },
+      {
+        "purl": "pkg:pypi/ocellus"
+      },
+      {
+        "purl": "pkg:pypi/device-api-e2e"
+      },
+      {
+        "purl": "pkg:github/ssaurabh9/py_package"
+      },
+      {
+        "purl": "pkg:pypi/sift-stack-py"
+      },
+      {
+        "purl": "pkg:pypi/datasphere"
+      },
+      {
+        "purl": "pkg:pypi/v4-proto"
+      }
     ]
   }
 }
+
