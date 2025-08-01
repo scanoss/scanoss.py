@@ -337,6 +337,44 @@ The following command provides the capability to search the SCANOSS KB for compo
 scanoss-py comp prov -p "pkg:github/unoconv/unoconv" --origin
 ```
 
+#### Component Licenses
+The following command provides the capability to search the SCANOSS KB for licenses for Open Source components:
+```bash
+scanoss-py comp licenses -p "pkg:github/jquery/jquery" -p "pkg:npm/express"
+```
+It is possible to supply multiple PURLs by repeating the `-p pkg` option, or providing a purl input file `-i purl-input.json` ([for example](tests/data/purl-input.json)):
+```bash
+scanoss-py comp licenses -i purl-input.json -o component-licenses.json
+```
+
+The licenses command also supports CycloneDX (CDX) input files. You can provide a CycloneDX SBOM file and retrieve license information for all components:
+```bash
+scanoss-py comp licenses -i cyclonedx-sbom.json -o component-licenses.json
+```
+
+### CDX Input Support for Component Commands
+Several component commands now support CycloneDX (CDX) input files. This allows you to analyze components from existing SBOM files:
+
+**Supported commands with CDX input:**
+- `comp vulns` - Analyze vulnerabilities from CDX file
+- `comp licenses` - Retrieve licenses from CDX file  
+- `comp crypto` - Detect cryptographic algorithms from CDX file
+- `comp semgrep` - Find semgrep issues from CDX file
+
+**Example using CDX input:**
+```bash
+# Analyze vulnerabilities from a CycloneDX SBOM
+scanoss-py comp vulns -i sbom.cdx.json -o vulnerabilities.json
+
+# Get licenses for all components in a CycloneDX SBOM
+scanoss-py comp licenses -i sbom.cdx.json -o licenses.json
+
+# Detect cryptographic usage from CDX
+scanoss-py comp crypto -i sbom.cdx.json -o crypto-findings.json
+```
+
+The CDX input file is automatically validated to ensure it's a valid CycloneDX format before processing.
+
 
 ### Results Commands
 The `results` command provides the capability to operate on scan results. For example:
