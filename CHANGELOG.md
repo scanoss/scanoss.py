@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.29.0] - 2025-07-10
+## [1.31.0] - 2025-08-01
 ### Added
 - Add `licenses` sub-command to `component` command
 - Add support for ingesting CDX to all decoration commands
@@ -621,5 +621,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.28.2]: https://github.com/scanoss/scanoss.py/compare/v1.28.1...v1.28.2
 [1.29.0]: https://github.com/scanoss/scanoss.py/compare/v1.28.2...v1.29.0
 [1.30.0]: https://github.com/scanoss/scanoss.py/compare/v1.29.0...v1.30.0
+[1.31.0]: https://github.com/scanoss/scanoss.py/compare/v1.30.0...v1.31.0
 
 
