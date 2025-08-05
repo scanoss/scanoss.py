@@ -72,7 +72,7 @@ class ScannerHFH:
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
             rank_threshold (int): Get results with rank below this threshold (default: 5).
             depth (int): How many levels to scan (default: 1).
-            min_cutoff_threshold (float): Minimum score threshold to consider a match (default: 0.5).
+            min_cutoff_threshold (float): Minimum score threshold to consider a match (default: 0.25).
         """
         self.base = ScanossBase(
             debug=config.debug,
