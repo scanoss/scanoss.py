@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.31.0] - 2025-08-05
+### Added
+- Add `--min-cutoff-threshold` argument to folder scan command
+- Add `--depth` argument to `folder-scan` and `folder-hash` commands
+
 ## [1.30.0] - 2025-07-22
 ### Added
 - Add `export dt` subcommand to export SBOM files to Dependency Track
@@ -615,5 +620,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.28.2]: https://github.com/scanoss/scanoss.py/compare/v1.28.1...v1.28.2
 [1.29.0]: https://github.com/scanoss/scanoss.py/compare/v1.28.2...v1.29.0
 [1.30.0]: https://github.com/scanoss/scanoss.py/compare/v1.29.0...v1.30.0
+[1.31.0]: https://github.com/scanoss/scanoss.py/compare/v1.30.0...v1.31.0
 
 
