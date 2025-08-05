@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.31.0] - 2025-08-05
+### Added
+- Add `--min-cutoff-threshold` argument to folder scan command
+- Add `--depth` argument to `folder-scan` and `folder-hash` commands
+
 ## [1.35.0] - 2025-10-07
 ### Modified
 - Use gRPC instead of REST for API calls
