@@ -34,6 +34,7 @@ PROCESSING_RETRY_DELAY = 5  # seconds
 DEFAULT_TIME_OUT = 300
 MILLISECONDS_TO_SECONDS = 1000
 
+
 """
 Dependency Track project violation policy check implementation.
 
