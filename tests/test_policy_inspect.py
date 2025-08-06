@@ -441,9 +441,9 @@ Add the following snippet into your `scanoss.json` file
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
             format_type='json',
-            dependency_track_api_key='test_key',
-            dependency_track_url='http://localhost',
-            dependency_track_project_id='test_project'
+            api_key='test_key',
+            url='http://localhost',
+            project_id='test_project'
         )
         test_violations = [
             {
@@ -476,9 +476,9 @@ Add the following snippet into your `scanoss.json` file
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
             format_type='md',
-            dependency_track_api_key='test_key',
-            dependency_track_url='http://localhost',
-            dependency_track_project_id='test_project'
+            api_key='test_key',
+            url='http://localhost',
+            project_id='test_project'
         )
         test_violations = [
             {
@@ -512,9 +512,9 @@ Add the following snippet into your `scanoss.json` file
     def test_dependency_track_project_violation_sort_violations(self, mock_service):
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
-            dependency_track_api_key='test_key',
-            dependency_track_url='http://localhost',
-            dependency_track_project_id='test_project'
+            api_key='test_key',
+            url='http://localhost',
+            project_id='test_project'
         )
         test_violations = [
             {'type': 'LICENSE', 'uuid': 'license-violation'},
@@ -533,9 +533,9 @@ Add the following snippet into your `scanoss.json` file
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
             format_type='json',
-            dependency_track_api_key='test_key',
-            dependency_track_url='http://localhost',
-            dependency_track_project_id='test_project'
+            api_key='test_key',
+            url='http://localhost',
+            project_id='test_project'
         )
         empty_violations = []
         result = project_violation._json(empty_violations)
@@ -548,9 +548,9 @@ Add the following snippet into your `scanoss.json` file
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
             format_type='md',
-            dependency_track_api_key='test_key',
-            dependency_track_url='http://localhost',
-            dependency_track_project_id='test_project'
+            api_key='test_key',
+            url='http://localhost',
+            project_id='test_project'
         )
         empty_violations = []
         result = project_violation._markdown(empty_violations)
@@ -563,9 +563,9 @@ Add the following snippet into your `scanoss.json` file
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
             format_type='json',
-            dependency_track_api_key='test_key',
-            dependency_track_url='http://localhost',
-            dependency_track_project_id='test_project'
+            api_key='test_key',
+            url='http://localhost',
+            project_id='test_project'
         )
         test_violations = [
             {

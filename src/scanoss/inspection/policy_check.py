@@ -39,7 +39,6 @@ class PolicyStatus(Enum):
         POLICY_FAIL (int): Indicates that the policy check failed (value: 1).
         ERROR (int): Indicates that an error occurred during the policy check (value: 2).
     """
-
     POLICY_SUCCESS = 0
     POLICY_FAIL = 2
     ERROR = 1
@@ -223,6 +222,39 @@ class PolicyCheck(ScanossBase, Generic[T]):
             self.print_stderr(f'ERROR: Invalid format "{self.format_type}". Valid formats are: {valid_formats_str}')
             return False
         return True
+
+    def _generate_formatter_report(self, components: list[Dict]):
+        """
+        Generates a formatted report for a given component based on the defined formatter.
+
+        Parameters:
+            components (List[dict]): A list of dictionaries representing the components to be
+            processed and formatted. Each dictionary contains detailed information that adheres
+            to the format requirements for the specified formatter.
+
+        Returns:
+            Tuple[int, dict]: A tuple where the first element represents the policy status code
+            and the second element is a dictionary containing formatted results information,
+            typically with keys 'details' and 'summary'.
+
+        Raises:
+            KeyError: When a required key is missing from the provided component, causing the
+            formatter to fail.
+            ValueError: If an invalid component is passed and renders unable to process.
+        """
+        # Get a formatter for the output results
+        formatter = self._get_formatter()
+        if formatter is None:
+            return PolicyStatus.ERROR.value, {}
+        # Format the results
+        data = formatter(components)
+        ## Save outputs if required
+        self.print_to_file_or_stdout(data['details'], self.output)
+        self.print_to_file_or_stderr(data['summary'], self.status)
+        # Check to see if we have policy violations
+        if len(components) > 0:
+            return PolicyStatus.POLICY_FAIL.value, data
+        return PolicyStatus.POLICY_SUCCESS.value, data
 #
 # End of PolicyCheck Class
 #

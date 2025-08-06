@@ -187,7 +187,7 @@ class UndeclaredComponent(RawBase[Component]):
         :return: Dictionary with formatted Markdown details and summary
         """
         headers = ['Component', 'License']
-        rows: [[]] = []
+        rows = []
         # TODO look at using SpdxLite license name lookup method
         component_licenses = self._group_components_by_license(components)
         for component in component_licenses:
@@ -205,7 +205,7 @@ class UndeclaredComponent(RawBase[Component]):
         :return: Dictionary with formatted Markdown details and summary
         """
         headers = ['Component', 'License']
-        rows: [[]] = []
+        rows = []
         # TODO look at using SpdxLite license name lookup method
         component_licenses = self._group_components_by_license(components)
         for component in component_licenses:
@@ -295,23 +295,13 @@ class UndeclaredComponent(RawBase[Component]):
         components = self._get_components()
         if components is None:
             return PolicyStatus.ERROR.value, {}
-        # Get undeclared component summary (if any)
+        # Get an undeclared component summary (if any)
         undeclared_components = self._get_undeclared_components(components)
         if undeclared_components is None:
             return PolicyStatus.ERROR.value, {}
         self.print_debug(f'Undeclared components: {undeclared_components}')
-        formatter = self._get_formatter()
-        if formatter is None:
-            return PolicyStatus.ERROR.value, {}
-        data = formatter(undeclared_components)
-        # Output the results
-        self.print_to_file_or_stdout(data['details'], self.output)
-        self.print_to_file_or_stderr(data['summary'], self.status)
-        # Determine if the filter found results or not
-        if len(undeclared_components) <= 0:
-            return PolicyStatus.POLICY_FAIL.value, data
-        return PolicyStatus.POLICY_SUCCESS.value, data
-
+        # Format the results and save to files if required
+        return self._generate_formatter_report(undeclared_components)
 #
 # End of UndeclaredComponent Class
 #
