@@ -160,7 +160,7 @@ class Copyleft(RawBase[Component]):
         # End license loop
         # End component loop
         return {
-            'details': f'### Copyleft Licenses\n{table_generator(headers, rows, centered_columns)}.\n',
+            'details': f'### Copyleft Licenses\n{table_generator(headers, rows, centered_columns)}',
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 

@@ -69,7 +69,7 @@ class MyTestCase(unittest.TestCase):
         copyleft = Copyleft(filepath=input_file_name, format_type='json')
         status, data = copyleft.run()
         details = json.loads(data['details'])
-        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertEqual(status, PolicyStatus.POLICY_SUCCESS.value)
         self.assertEqual(details, {})
         self.assertEqual(data['summary'], '0 component(s) with copyleft licenses were found.\n')
 
@@ -91,7 +91,7 @@ class MyTestCase(unittest.TestCase):
                     has_mit_license = True
                     break
 
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
         self.assertEqual(has_mit_license, True)
 
     """
@@ -106,7 +106,7 @@ class MyTestCase(unittest.TestCase):
         status, data = copyleft.run()
         results = json.loads(data['details'])
         self.assertEqual(results, {})
-        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertEqual(status, PolicyStatus.POLICY_SUCCESS.value)
 
     """
         Inspect for copyleft licenses explicit
@@ -120,7 +120,7 @@ class MyTestCase(unittest.TestCase):
         status, data = copyleft.run()
         results = json.loads(data['details'])
         self.assertEqual(len(results['components']), 2)
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
 
     """
         Inspect for copyleft licenses empty explicit licenses (should set the default ones)
@@ -134,7 +134,7 @@ class MyTestCase(unittest.TestCase):
         status, data = copyleft.run()
         results = json.loads(data['details'])
         self.assertEqual(len(results['components']), 5)
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
 
     """
         Export copyleft licenses in Markdown
@@ -147,7 +147,7 @@ class MyTestCase(unittest.TestCase):
         copyleft = Copyleft(filepath=input_file_name, format_type='md', explicit='MIT')
         status, data = copyleft.run()
         expected_detail_output = (
-            '### Copyleft licenses \n  | Component | License | URL | Copyleft |\n'
+            '### Copyleft Licenses \n  | Component | License | URL | Copyleft |\n'
             ' | - | :-: | - | - |\n'
             ' | pkg:npm/%40electron/rebuild | MIT | https://spdx.org/licenses/MIT.html | YES |\n'
             '| pkg:npm/%40emotion/react | MIT | https://spdx.org/licenses/MIT.html | YES | \n'
@@ -158,7 +158,7 @@ class MyTestCase(unittest.TestCase):
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_detail_output),
         )
         self.assertEqual(data['summary'], expected_summary_output)
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
 
     ## Undeclared Components Policy Tests ##
 
@@ -204,7 +204,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
         )
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
 
     """
        Undeclared component markdown output
@@ -242,7 +242,7 @@ class MyTestCase(unittest.TestCase):
                 ]             
                }```
            """
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', results), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
         )
@@ -289,7 +289,7 @@ class MyTestCase(unittest.TestCase):
               }
             }
             ```"""
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', results), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_details_output)
         )
@@ -329,7 +329,7 @@ class MyTestCase(unittest.TestCase):
                   }
                 }
                 ```"""
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
         self.assertEqual(len(results['components']), 4)
         self.assertEqual(
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', summary), re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_summary_output)
@@ -368,7 +368,7 @@ Add the following snippet into your `scanoss.json` file
 }
 {code}
 """
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
         self.assertEqual(expected_details_output, details)
         self.assertEqual(summary, expected_summary_output)
 
@@ -379,12 +379,12 @@ Add the following snippet into your `scanoss.json` file
         copyleft = Copyleft(filepath=input_file_name, format_type='jira_md')
         status, data = copyleft.run()
         results = data['details']
-        expected_details_output = """|*Component*|*License*|*URL*|*Copyleft*|
+        expected_details_output = """### Copyleft Licenses\n|*Component*|*License*|*URL*|*Copyleft*|
 |pkg:github/scanoss/scanner.c|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
 |pkg:github/scanoss/engine|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
 |pkg:github/scanoss/wfp|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
 """
-        self.assertEqual(status, 0)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
         self.assertEqual(expected_details_output, results)
 
     def test_inspect_license_summary(self):

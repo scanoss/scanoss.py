@@ -21,7 +21,6 @@ SPDX-License-Identifier: MIT
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 """
-
 """
 Dependency Track project violation policy check implementation.
 
@@ -33,7 +32,6 @@ import json
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
-
 from ...services.dependency_track_service import DependencyTrackService
 from ..policy_check import PolicyCheck, PolicyStatus
 
