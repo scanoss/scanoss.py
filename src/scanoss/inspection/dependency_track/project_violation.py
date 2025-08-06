@@ -21,17 +21,11 @@ SPDX-License-Identifier: MIT
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 """
-"""
-Dependency Track project violation policy check implementation.
-
-This module provides policy checking functionality for Dependency Track project violations.
-It retrieves, processes, and formats policy violations from a Dependency Track instance
-for a specific project.
-"""
 import json
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
+
 from ...services.dependency_track_service import DependencyTrackService
 from ..policy_check import PolicyCheck, PolicyStatus
 
@@ -40,6 +34,13 @@ PROCESSING_RETRY_DELAY = 5  # seconds
 DEFAULT_TIME_OUT = 300
 MILLISECONDS_TO_SECONDS = 1000
 
+"""
+Dependency Track project violation policy check implementation.
+
+This module provides policy checking functionality for Dependency Track project violations.
+It retrieves, processes, and formats policy violations from a Dependency Track instance
+for a specific project.
+"""
 
 class ResolvedLicenseDict(TypedDict):
     """TypedDict for resolved license information from Dependency Track."""
