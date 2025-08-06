@@ -548,8 +548,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_inspect = subparsers.add_parser(
         'inspect', 
         aliases=['insp', 'ins'], 
-        description=f'Inspect and analyze scan results: {__version__}', 
-        help='Inspect and analyze scan results'
+        description=f'Inspect and analyse scan results: {__version__}',
+        help='Inspect and analyse scan results'
     )
 
     # Inspect sub-commands parser
@@ -561,14 +561,14 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
 
     # -------------------------------------------------------------------------
-    # RAW RESULTS INSPECTION - Analyze raw scan output
+    # RAW RESULTS INSPECTION - Analyse raw scan output
     # -------------------------------------------------------------------------
     
     # Raw results parser - handles inspection of unprocessed scan results
     p_inspect_raw = p_inspect_sub.add_parser(
         'raw',
-        description='Inspect and analyze SCANOSS raw scan results',
-        help='Analyze raw scan results for various compliance issues'
+        description='Inspect and analyse SCANOSS raw scan results',
+        help='Analyse raw scan results for various compliance issues'
     )
 
     # Raw results sub-commands parser
@@ -639,7 +639,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument(
             '-i', '--input', 
             nargs='?', 
-            help='Path to scan results file to analyze'
+            help='Path to scan results file to analyse'
         )
         p.add_argument(
             '-f', '--format',
@@ -664,7 +664,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument(
             '-i', '--input', 
             nargs='?', 
-            help='Path to scan results file to analyze'
+            help='Path to scan results file to analyse'
         )
         p.add_argument(
             '-o', '--output', 
@@ -739,7 +739,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument(
             '-i', '--input', 
             nargs='?', 
-            help='Path to scan results file to analyze'
+            help='Path to scan results file to analyse'
         )
         p.add_argument(
             '-f', '--format',
@@ -764,7 +764,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument(
             '-i', '--input', 
             nargs='?', 
-            help='Path to scan results file to analyze'
+            help='Path to scan results file to analyse'
         )
         p.add_argument(
             '-o', '--output', 
@@ -773,119 +773,108 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         )
 
     # -------------------------------------------------------------------------
-    # DEPENDENCY TRACK INSPECTION - Analyze Dependency Track project data
+    # DEPENDENCY TRACK INSPECTION - Analyse Dependency Track project data
     # -------------------------------------------------------------------------
     
     # Dependency Track parser - handles inspection of DT project status and violations
     p_dep_track_sub = p_inspect_sub.add_parser(
         'dependency-track',
         aliases=['dt'],
-        description='Inspect and analyze Dependency Track project status and policy violations',
-        help='Analyze Dependency Track projects'
+        description='Inspect and analyse Dependency Track project status and policy violations',
+        help='Analyse Dependency Track projects'
     )
     
     # Dependency Track sub-commands parser
     p_inspect_dep_track_sub = p_dep_track_sub.add_subparsers(
         title='Dependency Track Inspection Commands',
         dest='dep_track_subcommand',
-        description='Tools for analyzing Dependency Track project data',
+        description='Tools for analysing Dependency Track project data',
         help='Choose a Dependency Track analysis type'
     )
 
-    # Project violations inspection - analyzes policy violations in DT projects
-    p_inspect_dep_track_project_violation = p_inspect_dep_track_sub.add_parser(
+    # Project violations inspection - analyses policy violations in DT projects
+    p_inspect_dt_project_violation = p_inspect_dep_track_sub.add_parser(
         'project-violations',
         aliases=['pv'],
-        description='Analyze policy violations and compliance issues in Dependency Track projects',
+        description='Analyse policy violations and compliance issues in Dependency Track projects',
         help='Inspect project policy violations'
     )
     # Dependency Track connection and authentication options
-    p_inspect_dep_track_project_violation.add_argument(
-        '--dt-url',
+    p_inspect_dt_project_violation.add_argument(
+        '--url',
         required=True,
         type=str, 
         help='Dependency Track server base URL (e.g., https://dtrack.example.com)'
     )
-    p_inspect_dep_track_project_violation.add_argument(
-        '--dt-upload-token',
+    p_inspect_dt_project_violation.add_argument(
+        '--upload-token', '-ut',
         required=False,
         type=str, 
         help='Project-specific upload token for accessing DT project data'
     )
-    p_inspect_dep_track_project_violation.add_argument(
-        '--dt-projectid', 
+    p_inspect_dt_project_violation.add_argument(
+        '--project-id', '-pid',
         required=False, 
         type=str,
         help='Dependency Track project UUID to inspect'
     )
-    p_inspect_dep_track_project_violation.add_argument(
-        '--dt-apikey', 
+    p_inspect_dt_project_violation.add_argument(
+        '--apikey', '-k',
         required=True,
         type=str,
         help='Dependency Track API key for authentication'
     )
-
-    # Dependency Track project name
-    p_inspect_dep_track_project_violation.add_argument(
-        '--dt-projectname',
+    p_inspect_dt_project_violation.add_argument(
+        '--project-name', '-pn',
         required=False,
         type=str,
         help='Dependency Track project name'
     )
-
-    # Dependency Track project name
-    p_inspect_dep_track_project_violation.add_argument(
-        '--dt-projectversion',
+    p_inspect_dt_project_violation.add_argument(
+        '--project-version', '-pv',
         required=False,
         type=str,
         help='Dependency Track project version'
     )
-    
-    # Output options for Dependency Track inspection
-    p_inspect_dep_track_project_violation.add_argument(
-        '--output', 
+    p_inspect_dt_project_violation.add_argument(
+        '--output', '-o',
         required=False, 
         type=str,
         help='Save inspection results to specified file'
     )
-
-    # Status options for Dependency Track inspection
-    p_inspect_dep_track_project_violation.add_argument(
+    p_inspect_dt_project_violation.add_argument(
         '--status',
         required=False,
         type=str,
         help='Save summary status report to specified file'
     )
-
-    p_inspect_dep_track_project_violation.add_argument(
-        '-f', '--format',
+    p_inspect_dt_project_violation.add_argument(
+        '--format', '-f',
         required=False,
         choices=['json', 'md'],
         default='json',
         help='Output format: json (default) or md (Markdown)'
     )
-
-    p_inspect_dep_track_project_violation.add_argument(
-        '--timeout',
+    p_inspect_dt_project_violation.add_argument(
+        '--timeout', '-M',
         required=False,
-        default='3600',
-        help='Timeout (in seconds) for API communication (optional - default 3600 sec)'
+        default='300',
+        help='Timeout (in seconds) for API communication (optional - default 300 sec)'
     )
 
+    # TODO Move to the command call def location
     # RAW results
     p_inspect_raw_undeclared.set_defaults(func=inspect_undeclared)
     p_inspect_raw_copyleft.set_defaults(func=inspect_copyleft)
     p_inspect_raw_license_summary.set_defaults(func=inspect_license_summary)
     p_inspect_raw_component_summary.set_defaults(func=inspect_component_summary)
-
     # Legacy backward compatibility commands
     p_inspect_legacy_copyleft.set_defaults(func=inspect_copyleft)
     p_inspect_legacy_undeclared.set_defaults(func=inspect_undeclared)
     p_inspect_legacy_license_summary.set_defaults(func=inspect_license_summary)
     p_inspect_legacy_component_summary.set_defaults(func=inspect_component_summary)
-
     # Dependency Track
-    p_inspect_dep_track_project_violation.set_defaults(func=inspect_dependency_track_project_violations)
+    p_inspect_dt_project_violation.set_defaults(func=inspect_dep_track_project_violations)
 
     # =========================================================================
     # END INSPECT SUBCOMMAND CONFIGURATION
@@ -1158,7 +1147,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_inspect_legacy_undeclared,
         p_inspect_legacy_license_summary,
         p_inspect_legacy_component_summary,
-        p_inspect_dep_track_project_violation,
+        p_inspect_dt_project_violation,
         c_provenance,
         p_folder_scan,
         p_folder_hash,
@@ -1623,7 +1612,7 @@ def inspect_copyleft(parser, args):
     """
     Handle copyleft license inspection command.
     
-    Analyzes scan results to identify components using copyleft licenses
+    Analyses scan results to identify components using copyleft licenses
     that may require compliance actions such as source code disclosure.
     
     Parameters
@@ -1643,19 +1632,12 @@ def inspect_copyleft(parser, args):
         print_stderr('ERROR: Input file is required for copyleft inspection')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         sys.exit(1)
-    
-    # Initialize output file if specified
-    output: str = None
+    # Initialise output file if specified
     if args.output:
-        output = args.output
-        open(output, 'w').close()  # Create/clear output file
-
-    # Initialize status summary file if specified
-    status_output: str = None
+        initialise_empty_file(args.output)
+    # Initialise status summary file if specified
     if args.status:
-        status_output = args.status
-        open(status_output, 'w').close()  # Create/clear status file
-
+        initialise_empty_file(args.status)
     try:
         # Create and configure copyleft inspector
         i_copyleft = Copyleft(
@@ -1664,8 +1646,8 @@ def inspect_copyleft(parser, args):
             quiet=args.quiet,
             filepath=args.input,
             format_type=args.format,
-            status=status_output,
-            output=output,
+            status=args.status,
+            output=args.output,
             include=args.include,     # Additional licenses to check
             exclude=args.exclude,     # Licenses to ignore
             explicit=args.explicit,   # Explicit license list
@@ -1685,7 +1667,7 @@ def inspect_undeclared(parser, args):
     """
     Handle undeclared components inspection command.
     
-    Analyzes scan results to identify components that are present in the
+    Analyses scan results to identify components that are present in the
     codebase but not declared in SBOM or manifest files, which may indicate
     security or compliance risks.
     
@@ -1707,13 +1689,13 @@ def inspect_undeclared(parser, args):
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         sys.exit(1)
     
-    # Initialize output file if specified
+    # Initialise output file if specified
     output: str = None
     if args.output:
         output = args.output
         open(output, 'w').close()  # Create/clear output file
 
-    # Initialize status summary file if specified
+    # Initialise status summary file if specified
     status_output: str = None
     if args.status:
         status_output = args.status
@@ -1765,7 +1747,7 @@ def inspect_license_summary(parser, args):
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         sys.exit(1)
     
-    # Initialize output file if specified
+    # Initialise output file if specified
     output: str = None
     if args.output:
         output = args.output
@@ -1813,7 +1795,7 @@ def inspect_component_summary(parser, args):
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         sys.exit(1)
     
-    # Initialize output file if specified
+    # Initialise output file if specified
     output: str = None
     if args.output:
         output = args.output
@@ -1837,7 +1819,7 @@ def inspect_component_summary(parser, args):
             traceback.print_exc()
         sys.exit(1)
 
-def inspect_dependency_track_project_violations(parser, args):
+def inspect_dep_track_project_violations(parser, args):
     """
     Handle Dependency Track project inspection command.
     
@@ -1851,43 +1833,52 @@ def inspect_dependency_track_project_violations(parser, args):
         Command line parser object for help display
     args : Namespace
         Parsed command line arguments containing:
-        - dt_url: Dependency Track base URL
-        - dt_apikey: API key for authentication
-        - dt_projectid: Project UUID to inspect
-        - dt_projectname: Project name to inspect
-        - dt_projectversion: Project version to inspect
-        - dt_upload_token: Upload token for project access
+        - url: Dependency Track base URL
+        - apikey: API key for authentication
+        - project_id: Project UUID to inspect
+        - project_name: Project name to inspect
+        - project_version: Project version to inspect
+        - upload_token: Upload token for project access
         - output: Optional output file path
         - format: Output format (json, md)
         - timeout: Optional timeout for API requests
 
     """
-    # Initialize output file if specified
-    output: str = None
+    if not args.project_id and not args.project_name and not args.project_version:
+        print_stderr(
+            'Please specify either a project ID (--project-id) or a project name (--project-name) and version (--project-version)'
+        )
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+    if not args.project_id and (not args.project_name or not args.project_version):
+        print_stderr('Please supply a project name (--project-name) and version (--project-version)')
+        sys.exit(1)
+
+
+    # Initialise the output file if specified
     if args.output:
-        output = args.output
-        open(output, 'w').close()  # Create/clear output file
+        initialise_empty_file(args.output)
 
     # Create and configure Dependency Track inspector
     try:
-        i_dep_track_project_violation = DependencyTrackProjectViolationPolicyCheck(
+        dt_proj_violations = DependencyTrackProjectViolationPolicyCheck(
             debug=args.debug,
             trace=args.trace,
             quiet=args.quiet,
-            output=output,
+            output=args.output,
             status= args.status,
             format_type=args.format,
-            dependency_track_url=args.dt_url,              # DT server URL
-            dependency_track_api_key=args.dt_apikey,       # Authentication key
-            dependency_track_project_id=args.dt_projectid, # Target project UUID
-            dependency_track_upload_token=args.dt_upload_token,  # Upload access token
-            dependency_track_project_name=args.dt_projectname, # DT project name
-            dependency_track_project_version=args.dt_projectversion, # DT project version
+            url=args.url,              # DT server URL
+            api_key=args.apikey,       # Authentication key
+            project_id=args.project_id, # Target project UUID
+            upload_token=args.upload_token,  # Upload access token
+            project_name=args.project_name, # DT project name
+            project_version=args.project_version, # DT project version
             timeout=args.timeout,
         )
 
         # Execute inspection and exit with appropriate status code
-        status, _ = i_dep_track_project_violation.run()
+        status, _ = dt_proj_violations.run() #TODO remove datastructre from return
         sys.exit(status)
     except Exception as e:
         print_stderr(e)
@@ -2537,6 +2528,30 @@ def get_scanoss_settings_from_args(args):
             print_stderr(f'Error: {e}')
             sys.exit(1)
         return scanoss_settings
+
+
+def initialise_empty_file(filename: str):
+    """
+    Initialises an empty file with the specified name. If the file already exists,
+    it truncates its content. Ensures proper error handling in case of failure.
+
+    Args:
+        filename (str): The name of the file to be initialised.
+
+    Raises:
+        SystemExit: If the file cannot be created or written due to an exception,
+        the function prints an error message and exits the program.
+
+    Note:
+        This function writes an empty file and handles exceptions to ensure the
+        program does not continue execution in case of an error.
+    """
+    if filename:
+        try:
+            open(filename, 'w').close()
+        except Exception as e:
+            print_stderr(f'Error: Unable to create output file {filename}: {e}')
+            sys.exit(1)
 
 
 def main():
