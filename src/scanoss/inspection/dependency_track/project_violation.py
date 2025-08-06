@@ -29,7 +29,6 @@ This module provides policy checking functionality for Dependency Track project 
 It retrieves, processes, and formats policy violations from a Dependency Track instance
 for a specific project.
 """
-
 import json
 import time
 from datetime import datetime
@@ -294,7 +293,6 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             time.sleep(PROCESSING_RETRY_DELAY)
             self.print_debug('Checking if complete...')
         # End while loop
-        return
 
     def _wait_project_processing(self):
         """

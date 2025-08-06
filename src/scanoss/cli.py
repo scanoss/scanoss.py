@@ -1846,7 +1846,8 @@ def inspect_dep_track_project_violations(parser, args):
     """
     if not args.project_id and not args.project_name and not args.project_version:
         print_stderr(
-            'Please specify either a project ID (--project-id) or a project name (--project-name) and version (--project-version)'
+            'Please specify either a project ID (--project-id) or a project name (--project-name) and '
+            'version (--project-version)'
         )
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
