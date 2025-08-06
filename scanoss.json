@@ -1,7 +1,13 @@
 {
   "settings": {
     "skip": {
-      "patterns": {},
+      "patterns": {
+        "scanning": [
+          "src/protoc_gen_swagger",
+          "docs",
+          "scanoss_common_pb2_grpc.py"
+        ]
+      },
       "sizes": {}
     }
   },
@@ -11,23 +17,6 @@
         "purl": "pkg:github/scanoss/scanoss.py"
       }
     ],
-    "remove": [
-      {
-        "path": "docs/make.bat",
-        "purl": "pkg:github/twilight-logic/ar488"
-      },
-      {
-        "path": "src/protoc_gen_swagger/options/annotations_pb2_grpc.py",
-        "purl": "pkg:pypi/bauplan"
-      },
-      {
-        "path": "src/protoc_gen_swagger/options/openapiv2_pb2_grpc.py",
-        "purl": "pkg:pypi/bauplan"
-      },
-      {
-        "path": "src/scanoss/api/common/v2/scanoss_common_pb2_grpc.py",
-        "purl": "pkg:pypi/bauplan"
-      }
-    ]
+    "remove": []
   }
 }
