@@ -33,10 +33,7 @@ from typing import List
 import pypac
 
 from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
-from scanoss.export.dependency_track import (
-    DependencyTrackExporter,
-    create_dependency_track_exporter_config_from_args,
-)
+from scanoss.export.dependency_track import DependencyTrackExporter
 from scanoss.inspection.dependency_track.project_violation import DependencyTrackProjectViolationPolicyCheck
 from scanoss.inspection.raw.component_summary import ComponentSummary
 from scanoss.inspection.raw.license_summary import LicenseSummary
@@ -574,7 +571,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     # Raw results sub-commands parser
     p_inspect_raw_sub = p_inspect_raw.add_subparsers(
         title='Raw Results Inspection Commands',
-        dest='raw_subcommand',
+        dest='subparser_subcmd',
         description='Tools for analyzing raw scan results',
         help='Choose a raw results analysis type'
     )
@@ -618,60 +615,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         default='settings',
         help='SBOM format type for comparison: legacy or settings (default)'
     )
-
-    # License filtering options - common to copyleft and license summary commands
-    for p in [p_inspect_raw_copyleft, p_inspect_raw_license_summary]:
-        p.add_argument(
-            '--include',
-            help='Additional licenses to include in analysis (comma-separated list)'
-        )
-        p.add_argument(
-            '--exclude',
-            help='Licenses to exclude from analysis (comma-separated list)'
-        )
-        p.add_argument(
-            '--explicit',
-            help='Use only these specific licenses for analysis (comma-separated list)'
-        )
-
-    # Common options for copyleft and undeclared component inspection
-    for p in [p_inspect_raw_copyleft, p_inspect_raw_undeclared]:
-        p.add_argument(
-            '-i', '--input', 
-            nargs='?', 
-            help='Path to scan results file to analyse'
-        )
-        p.add_argument(
-            '-f', '--format',
-            required=False,
-            choices=['json', 'md', 'jira_md'],
-            default='json',
-            help='Output format: json (default), md (Markdown), or jira_md (JIRA Markdown)'
-        )
-        p.add_argument(
-            '-o', '--output', 
-            type=str, 
-            help='Save detailed results to specified file'
-        )
-        p.add_argument(
-            '-s', '--status', 
-            type=str, 
-            help='Save summary status report to Markdown file'
-        )
-
-    # Common options for license and component summary commands
-    for p in [p_inspect_raw_license_summary, p_inspect_raw_component_summary]:
-        p.add_argument(
-            '-i', '--input', 
-            nargs='?', 
-            help='Path to scan results file to analyse'
-        )
-        p.add_argument(
-            '-o', '--output', 
-            type=str, 
-            help='Save summary report to specified file'
-        )
-
 
     # -------------------------------------------------------------------------
     # BACKWARD COMPATIBILITY - Support old inspect command format
@@ -718,9 +661,10 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Generate component summary report (legacy format)'
     )
 
-    # Apply same argument configurations as the raw versions
-    # License filtering options - common to legacy copyleft and license summary commands
-    for p in [p_inspect_legacy_copyleft, p_inspect_legacy_license_summary]:
+    # Applies the same configuration to both legacy and raw versions
+    # License filtering options - common to (legacy) copyleft and license summary commands
+    for p in [p_inspect_raw_copyleft, p_inspect_raw_license_summary,
+              p_inspect_legacy_copyleft, p_inspect_legacy_license_summary]:
         p.add_argument(
             '--include',
             help='Additional licenses to include in analysis (comma-separated list)'
@@ -734,8 +678,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             help='Use only these specific licenses for analysis (comma-separated list)'
         )
 
-    # Common options for legacy copyleft and undeclared component inspection
-    for p in [p_inspect_legacy_copyleft, p_inspect_legacy_undeclared]:
+    # Common options for (legacy) copyleft and undeclared component inspection
+    for p in [p_inspect_raw_copyleft, p_inspect_raw_undeclared, p_inspect_legacy_copyleft, p_inspect_legacy_undeclared]:
         p.add_argument(
             '-i', '--input', 
             nargs='?', 
@@ -759,8 +703,9 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             help='Save summary status report to Markdown file'
         )
 
-    # Common options for legacy license and component summary commands
-    for p in [p_inspect_legacy_license_summary, p_inspect_legacy_component_summary]:
+    # Common options for (legacy) license and component summary commands
+    for p in [p_inspect_raw_license_summary, p_inspect_raw_component_summary,
+              p_inspect_legacy_license_summary, p_inspect_legacy_component_summary]:
         p.add_argument(
             '-i', '--input', 
             nargs='?', 
@@ -787,7 +732,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     # Dependency Track sub-commands parser
     p_inspect_dep_track_sub = p_dep_track_sub.add_subparsers(
         title='Dependency Track Inspection Commands',
-        dest='dep_track_subcommand',
+        dest='subparser_subcmd',
         description='Tools for analysing Dependency Track project data',
         help='Choose a Dependency Track analysis type'
     )
@@ -903,11 +848,12 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Upload SBOM files to Dependency Track',
     )
     e_dt.add_argument('-i', '--input', type=str, required=True, help='Input SBOM file (CycloneDX JSON format)')
-    e_dt.add_argument('--dt-url', type=str, required=True, help='Dependency Track base URL')
-    e_dt.add_argument('--dt-apikey', type=str, required=True, help='Dependency Track API key')
-    e_dt.add_argument('--dt-projectid', type=str, help='Dependency Track project UUID')
-    e_dt.add_argument('--dt-projectname', type=str, help='Dependency Track project name')
-    e_dt.add_argument('--dt-projectversion', type=str, help='Dependency Track project version')
+    e_dt.add_argument('--url', type=str, required=True, help='Dependency Track base URL')
+    e_dt.add_argument('--apikey', '-k', type=str, required=True, help='Dependency Track API key')
+    e_dt.add_argument('--output', '-o', type=str,  help='File to save export token and uuid into')
+    e_dt.add_argument('--project-id', '-pid', type=str, help='Dependency Track project UUID')
+    e_dt.add_argument('--project-name', '-pn', type=str, help='Dependency Track project name')
+    e_dt.add_argument('--project-version', '-pv', type=str, help='Dependency Track project version')
     e_dt.set_defaults(func=export_dt)
 
     # Sub-command: folder-scan
@@ -1174,6 +1120,9 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     ) and not args.subparsercmd:
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
+    elif (args.subparser in 'inspect') and (args.subparsercmd in ('raw', 'dt')) and (args.subparser_subcmd is None):
+        parser.parse_args([args.subparser, args.subparsercmd, '--help'])  # Force utils helps to be displayed
+        sys.exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
 
 
@@ -1207,16 +1156,14 @@ def file_count(parser, args):
         print_stderr('Please specify a folder')
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
-    scan_output: str = None
     if args.output:
-        scan_output = args.output
-        open(scan_output, 'w').close()
+        initialise_empty_file(args.output)
 
     counter = FileCount(
         debug=args.debug,
         quiet=args.quiet,
         trace=args.trace,
-        scan_output=scan_output,
+        scan_output=args.output,
         hidden_files_folders=args.all_hidden,
     )
     if not os.path.exists(args.scan_dir):
@@ -1245,10 +1192,8 @@ def wfp(parser, args):
         sys.exit(1)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
         print_stderr('Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
-    scan_output: str = None
     if args.output:
-        scan_output = args.output
-        open(scan_output, 'w').close()
+        initialise_empty_file(args.output)
 
     # Load scan settings
     scan_settings = None
@@ -1281,15 +1226,15 @@ def wfp(parser, args):
     )
     if args.stdin:
         contents = sys.stdin.buffer.read()
-        scanner.wfp_contents(args.stdin, contents, scan_output)
+        scanner.wfp_contents(args.stdin, contents, args.output)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
             print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
             sys.exit(1)
         if os.path.isdir(args.scan_dir):
-            scanner.wfp_folder(args.scan_dir, scan_output)
+            scanner.wfp_folder(args.scan_dir, args.output)
         elif os.path.isfile(args.scan_dir):
-            scanner.wfp_file(args.scan_dir, scan_output)
+            scanner.wfp_file(args.scan_dir, args.output)
         else:
             print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
             sys.exit(1)
@@ -1386,10 +1331,8 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
     if args.strip_hpsm and not args.hpsm and not args.quiet:
         print_stderr('Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
 
-    scan_output: str = None
     if args.output:
-        scan_output = args.output
-        open(scan_output, 'w').close()
+        initialise_empty_file(args.output)
     output_format = args.format if args.format else 'plain'
     flags = args.flags if args.flags else None
     if args.debug and not args.quiet:
@@ -1444,7 +1387,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         quiet=args.quiet,
         api_key=args.key,
         url=args.apiurl,
-        scan_output=scan_output,
+        scan_output=args.output,
         output_format=output_format,
         flags=flags,
         nb_threads=args.threads,
@@ -1556,16 +1499,15 @@ def dependency(parser, args):
     if not os.path.exists(args.scan_loc):
         print_stderr(f'Error: File or folder specified does not exist: {args.scan_loc}.')
         sys.exit(1)
-    scan_output: str = None
     if args.output:
-        scan_output = args.output
-        open(scan_output, 'w').close()
+        initialise_empty_file(args.output)
 
     sc_deps = ScancodeDeps(
         debug=args.debug, quiet=args.quiet, trace=args.trace, sc_command=args.sc_command, timeout=args.sc_timeout
     )
-    if not sc_deps.get_dependencies(what_to_scan=args.scan_loc, result_output=scan_output):
+    if not sc_deps.get_dependencies(what_to_scan=args.scan_loc, result_output=args.output):
         sys.exit(1)
+    return None
 
 
 def convert(parser, args):
@@ -1630,7 +1572,7 @@ def inspect_copyleft(parser, args):
     # Validate required input file parameter
     if args.input is None:
         print_stderr('ERROR: Input file is required for copyleft inspection')
-        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
         sys.exit(1)
     # Initialise output file if specified
     if args.output:
@@ -1686,20 +1628,16 @@ def inspect_undeclared(parser, args):
     # Validate required input file parameter
     if args.input is None:
         print_stderr('ERROR: Input file is required for undeclared component inspection')
-        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
         sys.exit(1)
     
     # Initialise output file if specified
-    output: str = None
     if args.output:
-        output = args.output
-        open(output, 'w').close()  # Create/clear output file
+        initialise_empty_file(args.output)
 
     # Initialise status summary file if specified
-    status_output: str = None
     if args.status:
-        status_output = args.status
-        open(status_output, 'w').close()  # Create/clear status file
+        initialise_empty_file(args.status)
 
     try:
         # Create and configure undeclared component inspector
@@ -1709,8 +1647,8 @@ def inspect_undeclared(parser, args):
             quiet=args.quiet,
             filepath=args.input,
             format_type=args.format,
-            status=status_output,
-            output=output,
+            status=args.status,
+            output=args.output,
             sbom_format=args.sbom_format,  # Format for SBOM comparison
         )
 
@@ -1744,14 +1682,12 @@ def inspect_license_summary(parser, args):
     # Validate required input file parameter
     if args.input is None:
         print_stderr('ERROR: Input file is required for license summary')
-        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
         sys.exit(1)
     
     # Initialise output file if specified
-    output: str = None
     if args.output:
-        output = args.output
-        open(output, 'w').close()  # Create/clear output file
+        initialise_empty_file(args.output)
 
     # Create and configure license summary generator
     i_license_summary = LicenseSummary(
@@ -1759,7 +1695,7 @@ def inspect_license_summary(parser, args):
         trace=args.trace,
         quiet=args.quiet,
         filepath=args.input,
-        output=output,
+        output=args.output,
         include=args.include,     # Additional licenses to include
         exclude=args.exclude,     # Licenses to exclude from summary
         explicit=args.explicit,   # Explicit license list to summarize
@@ -1777,7 +1713,7 @@ def inspect_component_summary(parser, args):
     """
     Handle component summary inspection command.
     
-    Generates comprehensive summary of all components detected in scan results,
+    Generates a comprehensive summary of all components detected in scan results,
     including component counts, versions, match types, and security information.
     
     Parameters
@@ -1792,14 +1728,12 @@ def inspect_component_summary(parser, args):
     # Validate required input file parameter
     if args.input is None:
         print_stderr('ERROR: Input file is required for component summary')
-        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
         sys.exit(1)
     
-    # Initialise output file if specified
-    output: str = None
+    # Initialise an output file if specified
     if args.output:
-        output = args.output
-        open(output, 'w').close()  # Create/clear output file
+        initialise_empty_file(args.output) # Create/clear output file
 
     # Create and configure component summary generator
     i_component_summary = ComponentSummary(
@@ -1807,7 +1741,7 @@ def inspect_component_summary(parser, args):
         trace=args.trace,
         quiet=args.quiet,
         filepath=args.input,
-        output=output,
+        output=args.output,
     )
 
     try:
@@ -1823,7 +1757,7 @@ def inspect_dep_track_project_violations(parser, args):
     """
     Handle Dependency Track project inspection command.
     
-    Analyzes Dependency Track projects for policy violations, security issues,
+    Analyses Dependency Track projects for policy violations, security issues,
     and compliance status. Connects to DT API to retrieve project data and
     generate detailed violation reports.
     
@@ -1844,22 +1778,11 @@ def inspect_dep_track_project_violations(parser, args):
         - timeout: Optional timeout for API requests
 
     """
-    if not args.project_id and not args.project_name and not args.project_version:
-        print_stderr(
-            'Please specify either a project ID (--project-id) or a project name (--project-name) and '
-            'version (--project-version)'
-        )
-        parser.parse_args([args.subparser, '-h'])
-        sys.exit(1)
-    if not args.project_id and (not args.project_name or not args.project_version):
-        print_stderr('Please supply a project name (--project-name) and version (--project-version)')
-        sys.exit(1)
-
-
+    # Make sure we have project id/project name and version
+    _dt_args_validator(parser, args)
     # Initialise the output file if specified
     if args.output:
         initialise_empty_file(args.output)
-
     # Create and configure Dependency Track inspector
     try:
         dt_proj_violations = DependencyTrackProjectViolationPolicyCheck(
@@ -1879,7 +1802,7 @@ def inspect_dep_track_project_violations(parser, args):
         )
 
         # Execute inspection and exit with appropriate status code
-        status, _ = dt_proj_violations.run() #TODO remove datastructre from return
+        status, _ = dt_proj_violations.run() #TODO remove datastructure from return
         sys.exit(status)
     except Exception as e:
         print_stderr(e)
@@ -1892,38 +1815,71 @@ def inspect_dep_track_project_violations(parser, args):
 # END INSPECT COMMAND HANDLERS
 # =============================================================================
 
-
 def export_dt(parser, args):
     """
-    Run the "export dt" sub-command
-    Parameters
-    ----------
-        parser: ArgumentParser
-            command line parser object
-        args: Namespace
-            Parsed arguments
-    """
+    Validates and exports a Software Bill of Materials (SBOM) to a Dependency-Track server.
 
+    Parameters:
+        parser (argparse.ArgumentParser): The argument parser to validate input arguments.
+        args (argparse.Namespace): Parsed arguments passed to the command.
+
+    Raises:
+        SystemExit: If argument validation fails or uploading the SBOM to the Dependency-Track server
+        is unsuccessful.
+    """
+    # Make sure we have project id/project name and version
+    _dt_args_validator(parser, args)
+    if args.output:
+        initialise_empty_file(args.output)
+        if not args.quiet:
+            print_stderr(f'Outputting export data result to: {args.output}')
     try:
-        config = create_dependency_track_exporter_config_from_args(args)
         dt_exporter = DependencyTrackExporter(
-            config=config,
+            url=args.url,
+            apikey=args.apikey,
+            output=args.output,
             debug=args.debug,
             trace=args.trace,
             quiet=args.quiet,
         )
-
-        success = dt_exporter.upload_sbom(args.input)
-
+        success = dt_exporter.upload_sbom_file(args.input, args.project_id, args.project_name,
+                                               args.project_version, args.output)
         if not success:
             sys.exit(1)
-
     except Exception as e:
         print_stderr(f'ERROR: {e}')
         if args.debug:
             traceback.print_exc()
         sys.exit(1)
 
+def _dt_args_validator(parser, args):
+    """
+    Validates command-line arguments related to project identification.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        An argument parser instance for handling command-line arguments.
+    args : argparse.Namespace
+        Parsed arguments from the command line containing project-related information.
+
+    Raises
+    ------
+    SystemExit
+        If neither a project ID nor the required combination of project name and
+        project version is provided, or if any of the compulsory arguments
+        are missing.
+    """
+    if not args.project_id and not args.project_name and not args.project_version:
+        print_stderr(
+            'Please specify either a project ID (--project-id) or a project name (--project-name) and '
+            'version (--project-version)'
+        )
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+    if not args.project_id and (not args.project_name or not args.project_version):
+        print_stderr('Please supply a project name (--project-name) and version (--project-version)')
+        sys.exit(1)
 
 def utils_certloc(*_):
     """
@@ -2528,7 +2484,7 @@ def get_scanoss_settings_from_args(args):
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
             sys.exit(1)
-        return scanoss_settings
+    return scanoss_settings
 
 
 def initialise_empty_file(filename: str):
