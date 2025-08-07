@@ -59,7 +59,7 @@ class DependencyTrackExporter(ScanossBase):
     """
     Class for exporting SBOM files to Dependency Track
     """
-    def __init__(
+    def __init__( # noqa: PLR0913
         self,
         url: str = None,
         apikey: str = None,
