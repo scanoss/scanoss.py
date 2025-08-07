@@ -398,20 +398,17 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             "summary": f'{len(project_violations)} policy violations were found.\n',
         }
 
-    # TODO Why return a tuple? Doesn't look like it's used anywhere?
-    def run(self) -> tuple[int, Optional[Dict[str, Any]]]:
+    def run(self) -> int:
         """
-        Execute the policy check for Dependency Track project violations.
-        
-        Retrieves project violations from Dependency Track, sorts them by priority,
-        formats the output according to the specified format, and outputs the results.
-        
+        Runs the primary execution logic of the instance.
+
         Returns:
-            Tuple of (status_code, formatted_data) where status_code indicates:
-                SUCCESS if violations are found, FAIL if no violations, ERROR if failed
+            int: Status code indicating the result of the run process. Possible
+            values are derived from the PolicyStatus enumeration.
+            FAIL if violations are found, SUCCESS if no violations are found, ERROR if an error occurs.
+
         Raises:
-            ValueError: If the project is still processing violations or if the???
-            ?????
+            ValueError: If an invalid format is specified during the execution.
         """
         # Set project ID based on name/version if needed
         self._set_project_id()
@@ -425,29 +422,22 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             self.print_msg(f'Status: {self.status}')
             self.print_msg(f'Output: {self.output}')
             self.print_msg(f'Timeout: {self.timeout}')
-
+        # Confirm processing is complete before returning project violations
         dt_project = self._wait_project_processing()
         if not dt_project:
-            return PolicyStatus.ERROR.value, {}
-        # TODO add different check or nothing?
-        # if not self.is_project_updated(dt_project):
-        #     raise ValueError(f'Error: Project {self.project_id} is still processing project violations')
-
+            return PolicyStatus.ERROR.value
         # Get project violations from Dependency Track
         dt_project_violations = self.dep_track_service.get_project_violations(self.project_id)
-
         # Sort violations by priority and format output
         formatter = self._get_formatter()
         if formatter is None:
             self.print_stderr('Error: Invalid format specified.')
-            return PolicyStatus.ERROR.value, {}
-
+            return PolicyStatus.ERROR.value
         # Format and output data
         data = formatter(self._sort_project_violations(dt_project_violations))
         self.print_to_file_or_stdout(data['details'], self.output)
         self.print_to_file_or_stderr(data['summary'], self.status)
-
         # Return appropriate status based on violation count
         if len(dt_project_violations) > 0:
-            return PolicyStatus.POLICY_FAIL.value, data
-        return PolicyStatus.POLICY_SUCCESS.value, data
+            return PolicyStatus.POLICY_FAIL.value
+        return PolicyStatus.POLICY_SUCCESS.value
