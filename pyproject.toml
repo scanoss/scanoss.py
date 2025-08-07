@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 # Enable pycodestyle (E), pyflakes (F), isort (I), pylint (PL)
-select = ["E", "F", "I", "PL"]
+lint.select = ["E", "F", "I", "PL"]
 line-length = 120
 # Assume Python 3.9+
 target-version = "py39"
@@ -22,3 +22,6 @@ line-ending = "auto"
 
 [tool.ruff.lint.isort]
 known-first-party = ["scanoss"]
+
+[tool.ruff.lint.pylint]
+max-args = 10
