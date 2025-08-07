@@ -182,10 +182,7 @@ class DependencyTrackExporter(ScanossBase):
             payload = _build_payload(self._encode_sbom(sbom_content), project_id, project_name, project_version)
             url = f'{self.url}/api/v1/bom'
             headers = {'Content-Type': 'application/json', 'X-Api-Key': self.apikey}
-            if self.trace:
-                self.print_stderr(f'URL: {url}')
-                self.print_stderr(f'Headers: {headers}')
-                self.print_stderr(f'Payload keys: {list(payload.keys())}')
+            self.print_trace(f'URL: {url}, Headers: {headers}, Payload keys: {list(payload.keys())}')
             self.print_msg('Uploading SBOM to Dependency Track...')
             response = requests.put(url, json=payload, headers=headers)
             response.raise_for_status()
