@@ -186,7 +186,8 @@ class DependencyTrackExporter(ScanossBase):
             self.print_msg('Uploading SBOM to Dependency Track...')
             response = requests.put(url, json=payload, headers=headers)
             response.raise_for_status()
-            if response.status_code in [requests.codes.ok, requests.codes.created]:
+            # Treat any 2xx status as success
+            if 200 <= response.status_code < 300:
                 self.print_msg('SBOM uploaded successfully')
                 try:
                     response_data = response.json()
