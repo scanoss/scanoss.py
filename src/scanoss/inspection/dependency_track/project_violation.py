@@ -386,12 +386,10 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
 
             purl = project_violation["component"]["purl"]
             version = project_violation["component"]["version"]
-            
             # If PURL doesn't contain version but version is available, append it
             component_display = purl
             if version and '@' not in purl:
                 component_display = f'{purl}@{version}'
-            
             row = [
                 project_violation['policyCondition']["policy"]["violationState"],
                 project_violation['type'],
