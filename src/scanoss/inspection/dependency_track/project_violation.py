@@ -384,15 +384,21 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             timestamp_seconds = timestamp / MILLISECONDS_TO_SECONDS
             formatted_date = datetime.fromtimestamp(timestamp_seconds).strftime("%d %b %Y at %H:%M:%S")
 
+            purl = project_violation["component"]["purl"]
+            version = project_violation["component"]["version"]
+            # If PURL doesn't contain version but version is available, append it
+            component_display = purl
+            if version and '@' not in purl:
+                component_display = f'{purl}@{version}'
             row = [
                 project_violation['policyCondition']["policy"]["violationState"],
                 project_violation['type'],
                 project_violation['policyCondition']["policy"]["name"],
-                f'{project_violation["component"]["purl"]}@{project_violation["component"]["version"]}',
+                component_display,
                 formatted_date,
             ]
             rows.append(row)
-
+        # End for loop
         return {
             "details": f'### Dependency Track Project Violations\n{table_generator(headers, rows, c_cols)}\n',
             "summary": f'{len(project_violations)} policy violations were found.\n',

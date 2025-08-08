@@ -1800,9 +1800,8 @@ def inspect_dep_track_project_violations(parser, args):
             project_version=args.project_version, # DT project version
             timeout=args.timeout,
         )
-
         # Execute inspection and exit with appropriate status code
-        status, _ = dt_proj_violations.run() #TODO remove datastructure from return
+        status = dt_proj_violations.run()
         sys.exit(status)
     except Exception as e:
         print_stderr(e)
