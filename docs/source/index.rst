@@ -156,7 +156,7 @@ Calculates hashes for a directory or file and shows them on the STDOUT.
      - Fingerprint all hidden files/folders
 
 -----------------------------------------
-Detect dependecies: dependencies, dp, dep
+Detect dependencies: dependencies, dp, dep
 -----------------------------------------
 
 Scan source code for dependencies, but do not decorate them.

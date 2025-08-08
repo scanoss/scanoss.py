@@ -26,10 +26,10 @@ import json
 import os.path
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, TypeVar
 
-from ..scanossbase import ScanossBase
-from .utils.license_utils import LicenseUtil
+from ..policy_check import PolicyCheck
+from ..utils.license_utils import LicenseUtil
 
 
 class ComponentID(Enum):
@@ -51,8 +51,8 @@ class ComponentID(Enum):
 # End of ComponentID Class
 #
 
-
-class InspectBase(ScanossBase):
+T = TypeVar('T')
+class RawBase(PolicyCheck[T]):
     """
     A base class to perform inspections over scan results.
 
@@ -68,10 +68,13 @@ class InspectBase(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
+        format_type: str = None,
         filepath: str = None,
         output: str = None,
+        status: str = None,
+        name: str = None,
     ):
-        super().__init__(debug, trace, quiet)
+        super().__init__(debug, trace, quiet, format_type,status, name, output)
         self.license_util = LicenseUtil()
         self.filepath = filepath
         self.output = output

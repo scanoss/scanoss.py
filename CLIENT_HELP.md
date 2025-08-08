@@ -367,10 +367,11 @@ The `inspect` command has a suite of sub-commands designed to inspect the result
 Details, such as license compliance or component declarations, can be examined.
 
 For example:
-* Copyleft (`copylefet`)
+* Copyleft (`copyleft`)
 * Undeclared Components (`undeclared`)
 * License Summary (`license-summary`)
 * Component Summary (`component-summary`)
+* Dependency Track project violations (`dependency-track project-violations`)
 
 For the latest list of sub-commands, please run:
 ```bash
@@ -475,6 +476,21 @@ Example with an output file:
 ```bash
 scanoss-py insp component-summary -i scan-results.json --output component-summary.json
 ```
+
+#### Inspect Dependency Track project violations Markdown output
+The following command can be used to retrieve project violations from Dependency Track in Markdown format.
+
+**Note:** The upload token is optional. It is used to check the project processing status. If no token is provided, the latest project violations will be retrieved without waiting for project processing to complete.
+
+Example with project id:
+```bash
+scanoss-py inspect dt project-violations  --dt-upload-token <dt-upload-token> --dt-url <dependency-track-url>  --dt-projectid <dependency-track-project-id>  --dt-apikey <dependency-track-api-key> --format md --output project-violations.md
+```
+Example with project name and version:
+```bash
+scanoss-py inspect dt project-violations  --dt-upload-token <dt-upload-token> --dt-url <dependency-track-url>  --dt-projectname <dependency-track-project-name>  --dt-projectversion <dependency-track-project-version> --dt-apikey <dependency-track-api-key> --format md --output project-violations.md
+```
+
 
 ### Folder-Scan a Project Folder
 

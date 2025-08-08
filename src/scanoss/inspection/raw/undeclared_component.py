@@ -23,12 +23,27 @@ SPDX-License-Identifier: MIT
 """
 
 import json
-from typing import Any, Dict
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
-from .policy_check import PolicyCheck, PolicyStatus
+from ..policy_check import PolicyStatus
+from .raw_base import RawBase
 
 
-class UndeclaredComponent(PolicyCheck):
+@dataclass
+class License:
+    spdxid: str
+    copyleft: bool
+    url: str
+
+@dataclass
+class Component:
+    purl: str
+    version: str
+    licenses: List[License]
+    status: str
+
+class UndeclaredComponent(RawBase[Component]):
     """
     SCANOSS UndeclaredComponent class
     Inspects for undeclared components
@@ -58,7 +73,7 @@ class UndeclaredComponent(PolicyCheck):
         :param sbom_format: Sbom format for status output (default 'settings')
         """
         super().__init__(
-            debug, trace, quiet, filepath, format_type, status, output, name='Undeclared Components Policy'
+            debug, trace, quiet,format_type, filepath, output, status, name='Undeclared Components Policy'
         )
         self.filepath = filepath
         self.format = format
@@ -66,7 +81,7 @@ class UndeclaredComponent(PolicyCheck):
         self.status = status
         self.sbom_format = sbom_format
 
-    def _get_undeclared_component(self, components: list) -> list or None:
+    def _get_undeclared_components(self, components: list[Component]) -> list or None:
         """
         Filter the components list to include only undeclared components.
 
@@ -90,7 +105,7 @@ class UndeclaredComponent(PolicyCheck):
         # end component loop
         return undeclared_components
 
-    def _get_jira_summary(self, components: list) -> str:
+    def _get_jira_summary(self, components: list[Component]) -> str:
         """
         Get a summary of the undeclared components.
 
@@ -147,7 +162,7 @@ class UndeclaredComponent(PolicyCheck):
 
         return summary
 
-    def _json(self, components: list) -> Dict[str, Any]:
+    def _json(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the undeclared components as JSON.
 
@@ -164,7 +179,7 @@ class UndeclaredComponent(PolicyCheck):
             'summary': self._get_summary(component_licenses),
         }
 
-    def _markdown(self, components: list) -> Dict[str, Any]:
+    def _markdown(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the undeclared components as Markdown.
 
@@ -172,7 +187,7 @@ class UndeclaredComponent(PolicyCheck):
         :return: Dictionary with formatted Markdown details and summary
         """
         headers = ['Component', 'License']
-        rows: [[]] = []
+        rows = []
         # TODO look at using SpdxLite license name lookup method
         component_licenses = self._group_components_by_license(components)
         for component in component_licenses:
@@ -190,7 +205,7 @@ class UndeclaredComponent(PolicyCheck):
         :return: Dictionary with formatted Markdown details and summary
         """
         headers = ['Component', 'License']
-        rows: [[]] = []
+        rows = []
         # TODO look at using SpdxLite license name lookup method
         component_licenses = self._group_components_by_license(components)
         for component in component_licenses:
@@ -280,24 +295,13 @@ class UndeclaredComponent(PolicyCheck):
         components = self._get_components()
         if components is None:
             return PolicyStatus.ERROR.value, {}
-        # Get undeclared component summary (if any)
-        undeclared_components = self._get_undeclared_component(components)
+        # Get an undeclared component summary (if any)
+        undeclared_components = self._get_undeclared_components(components)
         if undeclared_components is None:
             return PolicyStatus.ERROR.value, {}
         self.print_debug(f'Undeclared components: {undeclared_components}')
-        formatter = self._get_formatter()
-        if formatter is None:
-            return PolicyStatus.ERROR.value, {}
-        results = formatter(undeclared_components)
-        # Output the results
-        self.print_to_file_or_stdout(results['details'], self.output)
-        self.print_to_file_or_stderr(results['summary'], self.status)
-        # Determine if the filter found results or not
-        if len(undeclared_components) <= 0:
-            return PolicyStatus.FAIL.value, results
-        return PolicyStatus.SUCCESS.value, results
-
-
+        # Format the results and save to files if required
+        return self._generate_formatter_report(undeclared_components)
 #
 # End of UndeclaredComponent Class
 #

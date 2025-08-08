@@ -10,7 +10,7 @@ FROM base AS builder
 
 # Setup the required build tooling
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential gcc \
+    && apt-get install -y --no-install-recommends build-essential gcc libicu-dev pkg-config \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -54,9 +54,9 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
 ENV GRPC_POLL_STRATEGY=poll
 
-# Install jq and curl commands
+# Install jq and curl commands and ICU runtime library
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends jq curl \
+    && apt-get install -y --no-install-recommends jq curl libicu72 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
