@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.31.0] - 2025-07-31
+## [1.31.0] - 2025-08-08
 ### Added
 - Add `inspect dependency-track project-violations` subcommand to retrieve Dependency Track project violations in Markdown and JSON formats
 ### Changed
@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `inspect undeclared` to `inspect raw undeclared`
 - Renamed `inspect component-summary` to `inspect raw component-summary`
 - Renamed `inspect license-summary` to `inspect raw license-summary`
+- Updated Policy return codes. 0 → Success, 2 → Fail, 1 → Error
+### Fixed
+- Fixed incorrect folder filtering configurations for fingerprinting and scanning
 
 ## [1.30.0] - 2025-07-22
 ### Added
