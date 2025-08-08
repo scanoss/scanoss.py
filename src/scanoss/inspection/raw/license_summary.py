@@ -24,10 +24,10 @@ SPDX-License-Identifier: MIT
 
 import json
 
-from .inspect_base import InspectBase
+from .raw_base import RawBase
 
 
-class LicenseSummary(InspectBase):
+class LicenseSummary(RawBase):
     """
        SCANOSS LicenseSummary class
        Inspects results and generates comprehensive license summaries from detected components.
@@ -63,7 +63,7 @@ class LicenseSummary(InspectBase):
         :param exclude: Licenses to exclude from the analysis
         :param explicit: Explicitly defined licenses
         """
-        super().__init__(debug, trace, quiet, filepath, output)
+        super().__init__(debug, trace, quiet, filepath = filepath, output=output)
         self.license_util.init(include, exclude, explicit)
         self.filepath = filepath
         self.output = output
@@ -123,7 +123,7 @@ class LicenseSummary(InspectBase):
         :return: A list of processed components with license data, or `None` if `self.results` is not set.
         """
         if self.results is None:
-            return None
+            raise ValueError(f'Error: No results found in ${self.filepath}')
 
         components: dict = {}
         # Extract component and license data from file and dependency results. Both helpers mutate `components`
@@ -132,6 +132,7 @@ class LicenseSummary(InspectBase):
         return self._convert_components_to_list(components)
 
     def run(self):
+        print("Running LicenseSummary")
         components = self._get_components()
         license_summary = self._get_licenses_summary_from_components(components)
         self.print_to_file_or_stdout(json.dumps(license_summary, indent=2), self.output)

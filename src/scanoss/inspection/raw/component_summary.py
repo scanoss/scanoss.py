@@ -24,10 +24,10 @@ SPDX-License-Identifier: MIT
 
 import json
 
-from .inspect_base import InspectBase
+from .raw_base import RawBase
 
 
-class ComponentSummary(InspectBase):
+class ComponentSummary(RawBase):
     def _get_component_summary_from_components(self, scan_components: list)-> dict:
         """
         Get a component summary from detected components.
@@ -77,7 +77,7 @@ class ComponentSummary(InspectBase):
         :return: A list of processed components with license data, or `None` if `self.results` is not set.
         """
         if self.results is None:
-            return None
+            raise ValueError(f'Error: No results found in ${self.filepath}')
 
         components: dict = {}
         # Extract component and license data from file and dependency results. Both helpers mutate `components`

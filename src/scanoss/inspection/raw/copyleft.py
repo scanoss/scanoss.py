@@ -23,12 +23,28 @@ SPDX-License-Identifier: MIT
 """
 
 import json
-from typing import Any, Dict
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
-from .policy_check import PolicyCheck, PolicyStatus
+from ..policy_check import PolicyStatus
+from .raw_base import RawBase
 
 
-class Copyleft(PolicyCheck):
+@dataclass
+class License:
+    spdxid: str
+    copyleft: bool
+    url: str
+    source: str
+
+@dataclass
+class Component:
+    purl: str
+    version: str
+    licenses: List[License]
+    status: str
+
+class Copyleft(RawBase[Component]):
     """
     SCANOSS Copyleft class
     Inspects components for copyleft licenses
@@ -48,7 +64,7 @@ class Copyleft(PolicyCheck):
         explicit: str = None,
     ):
         """
-        Initialize the Copyleft class.
+        Initialise the Copyleft class.
 
         :param debug: Enable debug mode
         :param trace: Enable trace mode (default True)
@@ -61,7 +77,7 @@ class Copyleft(PolicyCheck):
         :param exclude: Licenses to exclude from the analysis
         :param explicit: Explicitly defined licenses
         """
-        super().__init__(debug, trace, quiet, filepath, format_type, status, output, name='Copyleft Policy')
+        super().__init__(debug, trace, quiet, format_type,filepath, output ,status, name='Copyleft Policy')
         self.license_util.init(include, exclude, explicit)
         self.filepath = filepath
         self.format = format
@@ -71,7 +87,7 @@ class Copyleft(PolicyCheck):
         self.exclude = exclude
         self.explicit = explicit
 
-    def _json(self, components: list) -> Dict[str, Any]:
+    def _json(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the components with copyleft licenses as JSON.
 
@@ -88,61 +104,67 @@ class Copyleft(PolicyCheck):
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
-    def _markdown(self, components: list) -> Dict[str, Any]:
+    def _markdown(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the components with copyleft licenses as Markdown.
 
         :param components: List of components with copyleft licenses
         :return: Dictionary with formatted Markdown details and summary
         """
-        # A component is considered unique by its combination of PURL (Package URL) and license
-        component_licenses = self._group_components_by_license(components)
-        headers = ['Component', 'License', 'URL', 'Copyleft']
-        centered_columns = [1, 4]
-        rows: [[]] = []
-        for comp_lic_item in component_licenses:
-                row = [
-                    comp_lic_item['purl'],
-                    comp_lic_item['spdxid'],
-                    comp_lic_item['url'],
-                    'YES' if comp_lic_item['copyleft'] else 'NO',
-                ]
-                rows.append(row)
-            # End license loop
-        # End component loop
-        return {
-            'details': f'### Copyleft licenses\n{self.generate_table(headers, rows, centered_columns)}\n',
-            'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
-        }
+        return self._md_summary_generator(components, self.generate_table)
 
-    def _jira_markdown(self, components: list) -> Dict[str, Any]:
+    def _jira_markdown(self, components: list[Component]) -> Dict[str, Any]:
         """
         Format the components with copyleft licenses as Markdown.
 
         :param components: List of components with copyleft licenses
         :return: Dictionary with formatted Markdown details and summary
         """
+        return self._md_summary_generator(components, self.generate_jira_table)
+
+    def _md_summary_generator(self, components: list[Component], table_generator):
+        """
+        Generates a Markdown summary for components with a focus on copyleft licenses.
+
+        This function processes a list of components and groups them by their licenses.
+        For each group, the components are mapped with their license data and a tabular representation is created.
+        The generated Markdown summary includes a detailed table and a summary overview.
+
+        Parameters:
+        components: list[Component]
+            A list of Component objects to process for generating the summary.
+        table_generator
+            A callable function to generate tabular data for components.
+
+        Returns:
+        dict
+            A dictionary containing two keys:
+            - 'details': A detailed Markdown representation including a table of components
+              and associated copyleft license data.
+            - 'summary': A textual summary highlighting the total number of components
+              with copyleft licenses.
+        """
         # A component is considered unique by its combination of PURL (Package URL) and license
         component_licenses = self._group_components_by_license(components)
         headers = ['Component', 'License', 'URL', 'Copyleft']
         centered_columns = [1, 4]
-        rows: [[]] = []
+        rows = []
         for comp_lic_item in component_licenses:
-                row = [
-                    comp_lic_item['purl'],
-                    comp_lic_item['spdxid'],
-                    comp_lic_item['url'],
-                    'YES' if comp_lic_item['copyleft'] else 'NO',
-                ]
-                rows.append(row)
-            # End license loop
+            row = [
+                comp_lic_item['purl'],
+                comp_lic_item['spdxid'],
+                comp_lic_item['url'],
+                'YES' if comp_lic_item['copyleft'] else 'NO',
+            ]
+            rows.append(row)
+        # End license loop
         # End component loop
         return {
-            'details': f'{self.generate_jira_table(headers, rows, centered_columns)}',
+            'details': f'### Copyleft Licenses\n{table_generator(headers, rows, centered_columns)}',
             'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
         }
 
-    def _filter_components_with_copyleft_licenses(self, components: list) -> list:
+    def _get_components_with_copyleft_licenses(self, components: list) -> list[Dict]:
         """
         Filter the components list to include only those with copyleft licenses.
 
@@ -206,22 +228,9 @@ class Copyleft(PolicyCheck):
         if components is None:
             return PolicyStatus.ERROR.value, {}
         # Get a list of copyleft components if they exist
-        copyleft_components = self._filter_components_with_copyleft_licenses(components)
-        # Get a formatter for the output results
-        formatter = self._get_formatter()
-        if formatter is None:
-            return PolicyStatus.ERROR.value, {}
-        # Format the results
-        results = formatter(copyleft_components)
-        ## Save outputs if required
-        self.print_to_file_or_stdout(results['details'], self.output)
-        self.print_to_file_or_stderr(results['summary'], self.status)
-        # Check to see if we have policy violations
-        if len(copyleft_components) <= 0:
-            return PolicyStatus.FAIL.value, results
-        return PolicyStatus.SUCCESS.value, results
-
-
+        copyleft_components = self._get_components_with_copyleft_licenses(components)
+        # Format the results and save to files if required
+        return self._generate_formatter_report(copyleft_components)
 #
 # End of Copyleft Class
 #

@@ -72,11 +72,7 @@ DEFAULT_SKIPPED_DIRS = {
     'htmlcov',
     '__pypackages__',
     'example',
-    'examples',
-    'docs',
-    'tests',
-    'doc',
-    'test',
+    'examples'
 }
 
 DEFAULT_SKIPPED_DIRS_HFH = {
