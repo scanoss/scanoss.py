@@ -132,7 +132,6 @@ class LicenseSummary(RawBase):
         return self._convert_components_to_list(components)
 
     def run(self):
-        print("Running LicenseSummary")
         components = self._get_components()
         license_summary = self._get_licenses_summary_from_components(components)
         self.print_to_file_or_stdout(json.dumps(license_summary, indent=2), self.output)

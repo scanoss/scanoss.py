@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.31.2] - 2025-08-12
+### Fixed
+- Removed an unnecessary print statement from the policy checker
+
 ## [1.31.1] - 2025-08-08
 ### Fixed
 - Fixed purl formatting bug in dependency track output
@@ -633,3 +637,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.30.0]: https://github.com/scanoss/scanoss.py/compare/v1.29.0...v1.30.0
 [1.31.0]: https://github.com/scanoss/scanoss.py/compare/v1.30.0...v1.31.0
 [1.31.1]: https://github.com/scanoss/scanoss.py/compare/v1.31.0...v1.31.1
+[1.31.2]: https://github.com/scanoss/scanoss.py/compare/v1.31.1...v1.31.2
