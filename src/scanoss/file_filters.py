@@ -273,6 +273,7 @@ DEFAULT_SKIPPED_EXT = {
     'sqlite3',
 }
 
+
 class FileFilters(ScanossBase):
     """
     Filter for determining which files to process during scanning, fingerprinting, etc.
@@ -556,7 +557,6 @@ class FileFilters(ScanossBase):
         file_name = os.path.basename(file_rel_path)
 
         DEFAULT_SKIPPED_FILES_LIST = DEFAULT_SKIPPED_FILES_HFH if self.is_folder_hashing_scan else DEFAULT_SKIPPED_FILES
-        DEFAULT_SKIPPED_EXT_LIST = {} if self.is_folder_hashing_scan else DEFAULT_SKIPPED_EXT
 
         if not self.hidden_files_folders and file_name.startswith('.'):
             self.print_debug(f'Skipping file: {file_rel_path} (hidden file)')
@@ -569,7 +569,7 @@ class FileFilters(ScanossBase):
             self.print_debug(f'Skipping file: {file_rel_path} (matches default skip file)')
             return True
         # Look for file endings
-        for ending in DEFAULT_SKIPPED_EXT_LIST:
+        for ending in DEFAULT_SKIPPED_EXT:
             if file_name_lower.endswith(ending):
                 self.print_debug(f'Skipping file: {file_rel_path} (matches default skip ending: {ending})')
                 return True
