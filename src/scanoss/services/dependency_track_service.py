@@ -97,6 +97,7 @@ class DependencyTrackService(ScanossBase):
         if not project_id:
             self.print_stderr('Error: Missing project id. Cannot search for project violations.')
             return None
+        # Return the result as-is - None indicates API failure, empty list means no violations
         return self.get_dep_track_data(f'{self.url}/api/v1/violation/project/{project_id}')
 
     def get_project_by_id(self, project_id:str):

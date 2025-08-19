@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.31.3] - 2025-08-19
+### Fixed
+- Added handling for empty results files
+
 ## [1.31.2] - 2025-08-12
 ### Fixed
 - Removed an unnecessary print statement from the policy checker
@@ -638,3 +642,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.31.0]: https://github.com/scanoss/scanoss.py/compare/v1.30.0...v1.31.0
 [1.31.1]: https://github.com/scanoss/scanoss.py/compare/v1.31.0...v1.31.1
 [1.31.2]: https://github.com/scanoss/scanoss.py/compare/v1.31.1...v1.31.2
+[1.31.2]: https://github.com/scanoss/scanoss.py/compare/v1.31.2...v1.31.3

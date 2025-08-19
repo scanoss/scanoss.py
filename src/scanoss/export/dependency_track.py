@@ -118,7 +118,12 @@ class DependencyTrackExporter(ScanossBase):
             Base64 encoded string
         """
         if not sbom_content:
-            self.print_stderr('Warning: Empty SBOM content')
+            self.print_stderr('Warning: Empty SBOM content provided')
+            return ''
+        # Check if SBOM has no components (empty scan results)
+        components = sbom_content.get('components', [])
+        if len(components) == 0:
+            self.print_msg('Notice: SBOM contains no components (empty scan results)')
         json_str = json.dumps(sbom_content, separators=(',', ':'))
         encoded = base64.b64encode(json_str.encode('utf-8')).decode('utf-8')
         return encoded

@@ -50,9 +50,12 @@ class CsvOutput(ScanossBase):
         :param data: json - JSON object
         :return: CSV dictionary
         """
-        if not data:
+        if data is None:
             self.print_stderr('ERROR: No JSON data provided to parse.')
             return None
+        if len(data) == 0:
+            self.print_msg('Warning: Empty scan results provided. Returning empty CSV list.')
+            return []
         self.print_debug(f'Processing raw results into CSV format...')
         csv_dict = []
         row_id = 1
@@ -183,9 +186,11 @@ class CsvOutput(ScanossBase):
         :return: True if successful, False otherwise
         """
         csv_data = self.parse(data)
-        if not csv_data:
+        if csv_data is None:
             self.print_stderr('ERROR: No CSV data returned for the JSON string provided.')
             return False
+        if len(csv_data) == 0:
+            self.print_msg('Warning: Empty scan results - generating CSV with headers only.')
         # Header row/column details
         fields = [
             'inventory_id',
