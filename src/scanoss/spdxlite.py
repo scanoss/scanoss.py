@@ -71,9 +71,12 @@ class SpdxLite:
         :param data: json - JSON object
         :return: summary dictionary
         """
-        if not data:
+        if data is None:
             self.print_stderr('ERROR: No JSON data provided to parse.')
             return None
+        if len(data) == 0:
+            self.print_debug('Warning: Empty scan results provided. Returning empty summary.')
+            return {}
 
         self.print_debug('Processing raw results into summary format...')
         return self._process_files(data)
@@ -277,9 +280,11 @@ class SpdxLite:
         :return: True if successful, False otherwise
         """
         raw_data = self.parse(data)
-        if not raw_data:
+        if raw_data is None:
             self.print_stderr('ERROR: No SPDX data returned for the JSON string provided.')
             return False
+        if len(raw_data) == 0:
+            self.print_debug('Warning: Empty scan results - generating minimal SPDX Lite document with no packages.')
 
         self.load_license_data()
         spdx_document = self._create_base_document(raw_data)

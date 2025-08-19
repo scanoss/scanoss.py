@@ -57,9 +57,12 @@ class CycloneDx(ScanossBase):
         :param data: dict - JSON object
         :return: CycloneDX dictionary, and vulnerability dictionary
         """
-        if not data:
+        if data is None:
             self.print_stderr('ERROR: No JSON data provided to parse.')
             return None, None
+        if len(data) == 0:
+            self.print_msg('Warning: Empty scan results provided. Returning empty component dictionary.')
+            return {}, {}
         self.print_debug('Processing raw results into CycloneDX format...')
         cdx = {}
         vdx = {}
@@ -186,9 +189,11 @@ class CycloneDx(ScanossBase):
             json: The CycloneDX output
         """
         cdx, vdx = self.parse(data)
-        if not cdx:
+        if cdx is None:
             self.print_stderr('ERROR: No CycloneDX data returned for the JSON string provided.')
-            return False, None
+            return False, {}
+        if len(cdx) == 0:
+            self.print_msg('Warning: Empty scan results - generating minimal CycloneDX SBOM with no components.')
         self._spdx.load_license_data()  # Load SPDX license name data for later reference
         #
         # Using CDX version 1.4: https://cyclonedx.org/docs/1.4/json/
