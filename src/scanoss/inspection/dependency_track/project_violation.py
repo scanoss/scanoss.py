@@ -243,9 +243,14 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
                 return float(default)
         
         last_import = _safe_timestamp('lastBomImport', dt_project.get('lastBomImport'), 0)
-        last_vulnerability_analysis = _safe_timestamp('lastVulnerabilityAnalysis', dt_project.get('lastVulnerabilityAnalysis'), 0)
+        last_vulnerability_analysis = _safe_timestamp('lastVulnerabilityAnalysis',
+                                                      dt_project.get('lastVulnerabilityAnalysis'), 0
+                                                      )
         metrics = dt_project.get('metrics', {})
-        last_occurrence = _safe_timestamp('lastOccurrence', metrics.get('lastOccurrence', 0) if isinstance(metrics, dict) else 0, 0)
+        last_occurrence = _safe_timestamp('lastOccurrence',
+                                          metrics.get('lastOccurrence', 0)
+                                          if isinstance(metrics, dict) else 0, 0
+                                          )
         if self.debug:
             self.print_msg(f'last_import: {last_import}')
             self.print_msg(f'last_vulnerability_analysis: {last_vulnerability_analysis}')
