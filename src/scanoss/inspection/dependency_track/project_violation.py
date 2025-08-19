@@ -230,16 +230,34 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         if not dt_project:
             self.print_stderr('Warning: No project details supplied. Returning False.')
             return False
-        last_import = dt_project.get('lastBomImport', 0)
-        last_vulnerability_analysis = dt_project.get('lastVulnerabilityAnalysis', 0)
+        
+        # Safely extract and normalise timestamp values to numeric types
+        def _safe_timestamp(field, value=None, default=0) -> float:
+            """Convert timestamp value to float, handling string/numeric types safely."""
+            if value is None:
+                return float(default)
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                self.print_stderr(f'Warning: Invalid timestamp for {field}, value: {value}, using default: {default}')
+                return float(default)
+        
+        last_import = _safe_timestamp('lastBomImport', dt_project.get('lastBomImport'), 0)
+        last_vulnerability_analysis = _safe_timestamp('lastVulnerabilityAnalysis',
+                                                      dt_project.get('lastVulnerabilityAnalysis'), 0
+                                                      )
         metrics = dt_project.get('metrics', {})
-        last_occurrence = metrics.get('lastOccurrence', 0) if isinstance(metrics, dict) else 0
+        last_occurrence = _safe_timestamp('lastOccurrence',
+                                          metrics.get('lastOccurrence', 0)
+                                          if isinstance(metrics, dict) else 0, 0
+                                          )
         if self.debug:
             self.print_msg(f'last_import: {last_import}')
             self.print_msg(f'last_vulnerability_analysis: {last_vulnerability_analysis}')
             self.print_msg(f'last_occurrence: {last_occurrence}')
             self.print_msg(f'last_vulnerability_analysis is updated: {last_vulnerability_analysis >= last_import}')
             self.print_msg(f'last_occurrence is updated: {last_occurrence >= last_import}')
+        # If all timestamps are zero, this indicates no processing has occurred
         if last_vulnerability_analysis == 0 or last_occurrence == 0 or last_import == 0:
             self.print_stderr(f'Warning: Some project data appears to be unset. Returning False: {dt_project}')
             return False
@@ -434,12 +452,16 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             return PolicyStatus.ERROR.value
         # Get project violations from Dependency Track
         dt_project_violations = self.dep_track_service.get_project_violations(self.project_id)
+        # Handle case where service returns None (API error) vs empty list (no violations)
+        if dt_project_violations is None:
+            self.print_stderr('Error: Failed to retrieve project violations from Dependency Track')
+            return PolicyStatus.ERROR.value
         # Sort violations by priority and format output
         formatter = self._get_formatter()
         if formatter is None:
             self.print_stderr('Error: Invalid format specified.')
             return PolicyStatus.ERROR.value
-        # Format and output data
+        # Format and output data - handle empty results gracefully
         data = formatter(self._sort_project_violations(dt_project_violations))
         self.print_to_file_or_stdout(data['details'], self.output)
         self.print_to_file_or_stderr(data['summary'], self.status)
