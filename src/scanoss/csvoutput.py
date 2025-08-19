@@ -21,11 +21,10 @@ SPDX-License-Identifier: MIT
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 """
-
+import csv
 import json
 import os.path
 import sys
-import csv
 
 from .scanossbase import ScanossBase
 
@@ -44,7 +43,8 @@ class CsvOutput(ScanossBase):
         self.output_file = output_file
         self.debug = debug
 
-    def parse(self, data: json):
+    # TODO Refactor (fails linter)
+    def parse(self, data: json): #noqa PLR0912, PLR0915
         """
         Parse the given input (raw/plain) JSON string and return CSV summary
         :param data: json - JSON object
@@ -56,7 +56,7 @@ class CsvOutput(ScanossBase):
         if len(data) == 0:
             self.print_msg('Warning: Empty scan results provided. Returning empty CSV list.')
             return []
-        self.print_debug(f'Processing raw results into CSV format...')
+        self.print_debug('Processing raw results into CSV format...')
         csv_dict = []
         row_id = 1
         for f in data:
@@ -95,7 +95,8 @@ class CsvOutput(ScanossBase):
                             detected['licenses'] = ''
                         else:
                             detected['licenses'] = ';'.join(dc)
-                        # inventory_id,path,usage,detected_component,detected_license,detected_version,detected_latest,purl
+                        # inventory_id,path,usage,detected_component,detected_license,
+                        # detected_version,detected_latest,purl
                         csv_dict.append(
                             {
                                 'inventory_id': row_id,
