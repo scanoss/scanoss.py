@@ -803,7 +803,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_inspect_dt_project_violation.add_argument(
         '--timeout', '-M',
         required=False,
-        default='300',
+        default=300,
+        type=float,
         help='Timeout (in seconds) for API communication (optional - default 300 sec)'
     )
 

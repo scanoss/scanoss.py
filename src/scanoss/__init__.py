@@ -22,4 +22,4 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-__version__ = '1.31.3'
+__version__ = '1.31.4'
