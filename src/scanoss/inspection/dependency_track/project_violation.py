@@ -258,7 +258,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             self.print_msg(f'last_vulnerability_analysis is updated: {last_vulnerability_analysis >= last_import}')
             self.print_msg(f'last_occurrence is updated: {last_occurrence >= last_import}')
         # Catches case where vulnerability analysis is skipped for empty SBOMs
-        if last_occurrence >= last_import:
+        if 0 < last_import <= last_occurrence:
             component_count = metrics.get('components', 0) if isinstance(metrics, dict) else 0
             if component_count < 1:
                 self.print_msg('Notice: Empty SBOM detected. Assuming no violations.')
