@@ -31,7 +31,7 @@ from ..policy_check import PolicyCheck, PolicyStatus
 
 # Constants
 PROCESSING_RETRY_DELAY = 5  # seconds
-DEFAULT_TIME_OUT = 300
+DEFAULT_TIME_OUT = 300.0
 MILLISECONDS_TO_SECONDS = 1000
 
 
@@ -257,6 +257,12 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             self.print_msg(f'last_occurrence: {last_occurrence}')
             self.print_msg(f'last_vulnerability_analysis is updated: {last_vulnerability_analysis >= last_import}')
             self.print_msg(f'last_occurrence is updated: {last_occurrence >= last_import}')
+        # Catches case where vulnerability analysis is skipped for empty SBOMs
+        if last_occurrence >= last_import:
+            component_count = metrics.get('components', 0) if isinstance(metrics, dict) else 0
+            if component_count < 1:
+                self.print_msg('Notice: Empty SBOM detected. Assuming no violations.')
+                return True
         # If all timestamps are zero, this indicates no processing has occurred
         if last_vulnerability_analysis == 0 or last_occurrence == 0 or last_import == 0:
             self.print_stderr(f'Warning: Some project data appears to be unset. Returning False: {dt_project}')
