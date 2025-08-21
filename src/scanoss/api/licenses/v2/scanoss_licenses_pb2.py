@@ -27,46 +27,58 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from protoc_gen_openapiv2.options import annotations_pb2 as protoc__gen__openapiv2_dot_options_dot_annotations__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n.scanoss/api/licenses/v2/scanoss-licenses.proto\x12\x17scanoss.api.licenses.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\x89\x01\n\rSPDX_CrossRef\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x10\n\x08is_valid\x18\x02 \x01(\x08\x12\x0f\n\x07is_live\x18\x03 \x01(\x08\x12\x11\n\ttimestamp\x18\x04 \x01(\t\x12\x17\n\x0fis_wayback_link\x18\x05 \x01(\x08\x12\r\n\x05order\x18\x06 \x01(\x05\x12\r\n\x05match\x18\x07 \x01(\t\"m\n\x0eSPDX_Exception\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tfull_name\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65tails_url\x18\x03 \x01(\t\x12\x10\n\x08see_also\x18\x05 \x03(\t\x12\x15\n\ris_deprecated\x18\x06 \x01(\x08\"\xa2\x02\n\x04SPDX\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tfull_name\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65tails_url\x18\x04 \x01(\t\x12\x15\n\rreference_url\x18\x05 \x01(\t\x12\x15\n\ris_deprecated\x18\x06 \x01(\x08\x12\x14\n\x0cis_fsf_libre\x18\x07 \x01(\x08\x12\x17\n\x0fis_osi_approved\x18\x08 \x01(\x08\x12\x10\n\x08see_also\x18\t \x03(\t\x12:\n\ncross_refs\x18\n \x03(\x0b\x32&.scanoss.api.licenses.v2.SPDX_CrossRef\x12;\n\nexceptions\x18\x0b \x03(\x0b\x32\'.scanoss.api.licenses.v2.SPDX_Exception\"O\n\rOSADL_UseCase\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x17\n\x0fobligation_text\x18\x02 \x01(\t\x12\x17\n\x0fobligation_json\x18\x03 \x01(\t\"\xc2\x01\n\x05OSADL\x12\x17\n\x0f\x63opyleft_clause\x18\x01 \x01(\x08\x12\x14\n\x0cpatent_hints\x18\x02 \x01(\x08\x12\x15\n\rcompatibility\x18\x03 \x03(\t\x12\x1f\n\x17\x64\x65pending_compatibility\x18\x04 \x03(\t\x12\x17\n\x0fincompatibility\x18\x05 \x03(\t\x12\x39\n\tuse_cases\x18\x06 \x03(\x0b\x32&.scanoss.api.licenses.v2.OSADL_UseCase\"5\n\x14\x42\x61sicLicenseResponse\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tfull_name\x18\x02 \x01(\t\"\xad\x01\n\x0fLicenseResponse\x12\x11\n\tfull_name\x18\x01 \x01(\t\x12+\n\x04type\x18\x02 \x01(\x0e\x32\x1d.scanoss.api.licenses.v2.Type\x12+\n\x04spdx\x18\x03 \x01(\x0b\x32\x1d.scanoss.api.licenses.v2.SPDX\x12-\n\x05osadl\x18\x04 \x01(\x0b\x32\x1e.scanoss.api.licenses.v2.OSADL\"\x1c\n\x0eLicenseRequest\x12\n\n\x02id\x18\x01 \x01(\t\"\x9a\x01\n\rBasicResponse\x12\x11\n\tstatement\x18\x01 \x01(\t\x12?\n\x08licenses\x18\x02 \x03(\x0b\x32-.scanoss.api.licenses.v2.BasicLicenseResponse\x12\x35\n\x06status\x18\x03 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\"\x83\x01\n\x0f\x44\x65tailsResponse\x12\x39\n\x07license\x18\x01 \x01(\x0b\x32(.scanoss.api.licenses.v2.LicenseResponse\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\"\x81\x01\n\x13ObligationsResponse\x12\x33\n\x0bobligations\x18\x01 \x01(\x0b\x32\x1e.scanoss.api.licenses.v2.OSADL\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse*e\n\x04Type\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0e\n\nPERMISSIVE\x10\x01\x12\x0c\n\x08\x43OPYLEFT\x10\x02\x12\x0e\n\nCOMMERCIAL\x10\x03\x12\x0f\n\x0bPROPRIETARY\x10\x04\x12\x11\n\rPUBLIC_DOMAIN\x10\x05\x32\x9e\x04\n\x07License\x12q\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\" \x82\xd3\xe4\x93\x02\x1a\"\x15/api/v2/licenses/echo:\x01*\x12\x85\x01\n\x0bGetLicenses\x12,.scanoss.api.common.v2.ComponentBatchRequest\x1a&.scanoss.api.licenses.v2.BasicResponse\" \x82\xd3\xe4\x93\x02\x1a\"\x15/api/v2/licenses/purl:\x01*\x12\x84\x01\n\nGetDetails\x12\'.scanoss.api.licenses.v2.LicenseRequest\x1a(.scanoss.api.licenses.v2.DetailsResponse\"#\x82\xd3\xe4\x93\x02\x1d\"\x18/api/v2/licenses/details:\x01*\x12\x90\x01\n\x0eGetObligations\x12\'.scanoss.api.licenses.v2.LicenseRequest\x1a,.scanoss.api.licenses.v2.ObligationsResponse\"\'\x82\xd3\xe4\x93\x02!\"\x1c/api/v2/licenses/obligations:\x01*B\x89\x02Z1github.com/scanoss/papi/api/licensesv2;licensesv2\x92\x41\xd2\x01\x12l\n\x17SCANOSS License Service\"L\n\x10scanoss-licenses\x12#https://github.com/scanoss/licenses\x1a\x13support@scanoss.com2\x03\x32.0*\x01\x01\x32\x10\x61pplication/json:\x10\x61pplication/jsonR;\n\x03\x34\x30\x34\x12\x34\n*Returned when the resource does not exist.\x12\x06\n\x04\x9a\x02\x01\x07\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n.scanoss/api/licenses/v2/scanoss-licenses.proto\x12\x17scanoss.api.licenses.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xbd\x03\n\x18\x43omponentLicenseResponse\x12@\n\tcomponent\x18\x01 \x01(\x0b\x32-.scanoss.api.licenses.v2.ComponentLicenseInfo\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse:\xa7\x02\x92\x41\xa3\x02\n\xa0\x02J\x9d\x02{\"component\":{\"purl\": \"pkg:github/scanoss/engine@1.0.0\", \"requirement\": \"\", \"version\": \"1.0.0\", \"statement\": \"GPL-2.0\", \"licenses\": [{\"id\": \"GPL-2.0\", \"full_name\": \"GNU General Public License v2.0 only\"}]}, \"status\": {\"status\": \"SUCCESS\", \"message\": \"Licenses Successfully retrieved\"}}\"\xe9\x04\n\x19\x43omponentsLicenseResponse\x12\x41\n\ncomponents\x18\x01 \x03(\x0b\x32-.scanoss.api.licenses.v2.ComponentLicenseInfo\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse:\xd1\x03\x92\x41\xcd\x03\n\xca\x03J\xc7\x03{\"components\":[{\"purl\": \"pkg:github/scanoss/engine@1.0.0\", \"requirement\": \"\", \"version\": \"1.0.0\", \"statement\": \"GPL-2.0\", \"licenses\": [{\"id\": \"GPL-2.0\", \"full_name\": \"GNU General Public License v2.0 only\"}]}, {\"purl\": \"pkg:github/scanoss/scanoss.py@v1.30.0\",\"requirement\": \"\",\"version\": \"v1.30.0\",\"statement\": \"MIT\", \"licenses\": [{\"id\": \"MIT\",\"full_name\": \"MIT License\"}]}  ], \"status\": {\"status\": \"SUCCESS\", \"message\": \"Licenses Successfully retrieved\"}}\"\x89\x01\n\x16LicenseDetailsResponse\x12\x38\n\x07license\x18\x01 \x01(\x0b\x32\'.scanoss.api.licenses.v2.LicenseDetails\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\"\x81\x01\n\x13ObligationsResponse\x12\x33\n\x0bobligations\x18\x01 \x01(\x0b\x32\x1e.scanoss.api.licenses.v2.OSADL\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\"\xa3\x04\n\x04SPDX\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tfull_name\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65tails_url\x18\x04 \x01(\t\x12\x15\n\rreference_url\x18\x05 \x01(\t\x12\x15\n\ris_deprecated\x18\x06 \x01(\x08\x12\x14\n\x0cis_fsf_libre\x18\x07 \x01(\x08\x12\x17\n\x0fis_osi_approved\x18\x08 \x01(\x08\x12\x10\n\x08see_also\x18\t \x03(\t\x12>\n\ncross_refs\x18\n \x03(\x0b\x32*.scanoss.api.licenses.v2.SPDX.SPDXCrossRef\x12?\n\nexceptions\x18\x0b \x03(\x0b\x32+.scanoss.api.licenses.v2.SPDX.SPDXException\x1a\x88\x01\n\x0cSPDXCrossRef\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x10\n\x08is_valid\x18\x02 \x01(\x08\x12\x0f\n\x07is_live\x18\x03 \x01(\x08\x12\x11\n\ttimestamp\x18\x04 \x01(\t\x12\x17\n\x0fis_wayback_link\x18\x05 \x01(\x08\x12\r\n\x05order\x18\x06 \x01(\x05\x12\r\n\x05match\x18\x07 \x01(\t\x1al\n\rSPDXException\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tfull_name\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65tails_url\x18\x03 \x01(\t\x12\x10\n\x08see_also\x18\x05 \x03(\t\x12\x15\n\ris_deprecated\x18\x06 \x01(\x08\"\x97\x02\n\x05OSADL\x12\x17\n\x0f\x63opyleft_clause\x18\x01 \x01(\x08\x12\x14\n\x0cpatent_hints\x18\x02 \x01(\x08\x12\x15\n\rcompatibility\x18\x03 \x03(\t\x12\x1f\n\x17\x64\x65pending_compatibility\x18\x04 \x03(\t\x12\x17\n\x0fincompatibility\x18\x05 \x03(\t\x12>\n\tuse_cases\x18\x06 \x03(\x0b\x32+.scanoss.api.licenses.v2.OSADL.OSADLUseCase\x1aN\n\x0cOSADLUseCase\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x17\n\x0fobligation_text\x18\x02 \x01(\t\x12\x17\n\x0fobligation_json\x18\x03 \x01(\t\"{\n\x0bLicenseInfo\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tfull_name\x18\x02 \x01(\t:M\x92\x41J\nHJF{\"id\": \"GPL-2.0\", \"full_name\": \"GNU General Public License v2.0 only\"}\"\xb3\x01\n\x0eLicenseDetails\x12\x11\n\tfull_name\x18\x01 \x01(\t\x12\x32\n\x04type\x18\x02 \x01(\x0e\x32$.scanoss.api.licenses.v2.LicenseType\x12+\n\x04spdx\x18\x03 \x01(\x0b\x32\x1d.scanoss.api.licenses.v2.SPDX\x12-\n\x05osadl\x18\x04 \x01(\x0b\x32\x1e.scanoss.api.licenses.v2.OSADL\"\x1c\n\x0eLicenseRequest\x12\n\n\x02id\x18\x01 \x01(\t\"\x95\x01\n\x14\x43omponentLicenseInfo\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x13\n\x0brequirement\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\x12\x11\n\tstatement\x18\x04 \x01(\t\x12\x36\n\x08licenses\x18\x05 \x03(\x0b\x32$.scanoss.api.licenses.v2.LicenseInfo*l\n\x0bLicenseType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0e\n\nPERMISSIVE\x10\x01\x12\x0c\n\x08\x43OPYLEFT\x10\x02\x12\x0e\n\nCOMMERCIAL\x10\x03\x12\x0f\n\x0bPROPRIETARY\x10\x04\x12\x11\n\rPUBLIC_DOMAIN\x10\x05\x32\xd0\x05\n\x07License\x12q\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\" \x82\xd3\xe4\x93\x02\x1a\"\x15/api/v2/licenses/echo:\x01*\x12\x96\x01\n\x14GetComponentLicenses\x12\'.scanoss.api.common.v2.ComponentRequest\x1a\x31.scanoss.api.licenses.v2.ComponentLicenseResponse\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/api/v2/licenses/component\x12\x9d\x01\n\x15GetComponentsLicenses\x12(.scanoss.api.common.v2.ComponentsRequest\x1a\x32.scanoss.api.licenses.v2.ComponentsLicenseResponse\"&\x82\xd3\xe4\x93\x02 \"\x1b/api/v2/licenses/components:\x01*\x12\x88\x01\n\nGetDetails\x12\'.scanoss.api.licenses.v2.LicenseRequest\x1a/.scanoss.api.licenses.v2.LicenseDetailsResponse\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/api/v2/licenses/details\x12\x8d\x01\n\x0eGetObligations\x12\'.scanoss.api.licenses.v2.LicenseRequest\x1a,.scanoss.api.licenses.v2.ObligationsResponse\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/v2/licenses/obligationsB\xa7\x02Z1github.com/scanoss/papi/api/licensesv2;licensesv2\x92\x41\xf0\x01\x12\xb4\x01\n\x17SCANOSS License Service\x12\x46License service provides license intelligence for software components.\"L\n\x10scanoss-licenses\x12#https://github.com/scanoss/licenses\x1a\x13support@scanoss.com2\x03\x32.0\x1a\x0f\x61pi.scanoss.com*\x02\x01\x02\x32\x10\x61pplication/json:\x10\x61pplication/jsonb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'scanoss.api.licenses.v2.scanoss_licenses_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'Z1github.com/scanoss/papi/api/licensesv2;licensesv2\222A\322\001\022l\n\027SCANOSS License Service\"L\n\020scanoss-licenses\022#https://github.com/scanoss/licenses\032\023support@scanoss.com2\0032.0*\001\0012\020application/json:\020application/jsonR;\n\003404\0224\n*Returned when the resource does not exist.\022\006\n\004\232\002\001\007'
+  _globals['DESCRIPTOR']._serialized_options = b'Z1github.com/scanoss/papi/api/licensesv2;licensesv2\222A\360\001\022\264\001\n\027SCANOSS License Service\022FLicense service provides license intelligence for software components.\"L\n\020scanoss-licenses\022#https://github.com/scanoss/licenses\032\023support@scanoss.com2\0032.0\032\017api.scanoss.com*\002\001\0022\020application/json:\020application/json'
+  _globals['_COMPONENTLICENSERESPONSE']._loaded_options = None
+  _globals['_COMPONENTLICENSERESPONSE']._serialized_options = b'\222A\243\002\n\240\002J\235\002{\"component\":{\"purl\": \"pkg:github/scanoss/engine@1.0.0\", \"requirement\": \"\", \"version\": \"1.0.0\", \"statement\": \"GPL-2.0\", \"licenses\": [{\"id\": \"GPL-2.0\", \"full_name\": \"GNU General Public License v2.0 only\"}]}, \"status\": {\"status\": \"SUCCESS\", \"message\": \"Licenses Successfully retrieved\"}}'
+  _globals['_COMPONENTSLICENSERESPONSE']._loaded_options = None
+  _globals['_COMPONENTSLICENSERESPONSE']._serialized_options = b'\222A\315\003\n\312\003J\307\003{\"components\":[{\"purl\": \"pkg:github/scanoss/engine@1.0.0\", \"requirement\": \"\", \"version\": \"1.0.0\", \"statement\": \"GPL-2.0\", \"licenses\": [{\"id\": \"GPL-2.0\", \"full_name\": \"GNU General Public License v2.0 only\"}]}, {\"purl\": \"pkg:github/scanoss/scanoss.py@v1.30.0\",\"requirement\": \"\",\"version\": \"v1.30.0\",\"statement\": \"MIT\", \"licenses\": [{\"id\": \"MIT\",\"full_name\": \"MIT License\"}]}  ], \"status\": {\"status\": \"SUCCESS\", \"message\": \"Licenses Successfully retrieved\"}}'
+  _globals['_LICENSEINFO']._loaded_options = None
+  _globals['_LICENSEINFO']._serialized_options = b'\222AJ\nHJF{\"id\": \"GPL-2.0\", \"full_name\": \"GNU General Public License v2.0 only\"}'
   _globals['_LICENSE'].methods_by_name['Echo']._loaded_options = None
   _globals['_LICENSE'].methods_by_name['Echo']._serialized_options = b'\202\323\344\223\002\032\"\025/api/v2/licenses/echo:\001*'
-  _globals['_LICENSE'].methods_by_name['GetLicenses']._loaded_options = None
-  _globals['_LICENSE'].methods_by_name['GetLicenses']._serialized_options = b'\202\323\344\223\002\032\"\025/api/v2/licenses/purl:\001*'
+  _globals['_LICENSE'].methods_by_name['GetComponentLicenses']._loaded_options = None
+  _globals['_LICENSE'].methods_by_name['GetComponentLicenses']._serialized_options = b'\202\323\344\223\002\034\022\032/api/v2/licenses/component'
+  _globals['_LICENSE'].methods_by_name['GetComponentsLicenses']._loaded_options = None
+  _globals['_LICENSE'].methods_by_name['GetComponentsLicenses']._serialized_options = b'\202\323\344\223\002 \"\033/api/v2/licenses/components:\001*'
   _globals['_LICENSE'].methods_by_name['GetDetails']._loaded_options = None
-  _globals['_LICENSE'].methods_by_name['GetDetails']._serialized_options = b'\202\323\344\223\002\035\"\030/api/v2/licenses/details:\001*'
+  _globals['_LICENSE'].methods_by_name['GetDetails']._serialized_options = b'\202\323\344\223\002\032\022\030/api/v2/licenses/details'
   _globals['_LICENSE'].methods_by_name['GetObligations']._loaded_options = None
-  _globals['_LICENSE'].methods_by_name['GetObligations']._serialized_options = b'\202\323\344\223\002!\"\034/api/v2/licenses/obligations:\001*'
-  _globals['_TYPE']._serialized_start=1703
-  _globals['_TYPE']._serialized_end=1804
-  _globals['_SPDX_CROSSREF']._serialized_start=198
-  _globals['_SPDX_CROSSREF']._serialized_end=335
-  _globals['_SPDX_EXCEPTION']._serialized_start=337
-  _globals['_SPDX_EXCEPTION']._serialized_end=446
-  _globals['_SPDX']._serialized_start=449
-  _globals['_SPDX']._serialized_end=739
-  _globals['_OSADL_USECASE']._serialized_start=741
-  _globals['_OSADL_USECASE']._serialized_end=820
-  _globals['_OSADL']._serialized_start=823
-  _globals['_OSADL']._serialized_end=1017
-  _globals['_BASICLICENSERESPONSE']._serialized_start=1019
-  _globals['_BASICLICENSERESPONSE']._serialized_end=1072
-  _globals['_LICENSERESPONSE']._serialized_start=1075
-  _globals['_LICENSERESPONSE']._serialized_end=1248
-  _globals['_LICENSEREQUEST']._serialized_start=1250
-  _globals['_LICENSEREQUEST']._serialized_end=1278
-  _globals['_BASICRESPONSE']._serialized_start=1281
-  _globals['_BASICRESPONSE']._serialized_end=1435
-  _globals['_DETAILSRESPONSE']._serialized_start=1438
-  _globals['_DETAILSRESPONSE']._serialized_end=1569
-  _globals['_OBLIGATIONSRESPONSE']._serialized_start=1572
-  _globals['_OBLIGATIONSRESPONSE']._serialized_end=1701
-  _globals['_LICENSE']._serialized_start=1807
-  _globals['_LICENSE']._serialized_end=2349
+  _globals['_LICENSE'].methods_by_name['GetObligations']._serialized_options = b'\202\323\344\223\002\036\022\034/api/v2/licenses/obligations'
+  _globals['_LICENSETYPE']._serialized_start=2858
+  _globals['_LICENSETYPE']._serialized_end=2966
+  _globals['_COMPONENTLICENSERESPONSE']._serialized_start=198
+  _globals['_COMPONENTLICENSERESPONSE']._serialized_end=643
+  _globals['_COMPONENTSLICENSERESPONSE']._serialized_start=646
+  _globals['_COMPONENTSLICENSERESPONSE']._serialized_end=1263
+  _globals['_LICENSEDETAILSRESPONSE']._serialized_start=1266
+  _globals['_LICENSEDETAILSRESPONSE']._serialized_end=1403
+  _globals['_OBLIGATIONSRESPONSE']._serialized_start=1406
+  _globals['_OBLIGATIONSRESPONSE']._serialized_end=1535
+  _globals['_SPDX']._serialized_start=1538
+  _globals['_SPDX']._serialized_end=2085
+  _globals['_SPDX_SPDXCROSSREF']._serialized_start=1839
+  _globals['_SPDX_SPDXCROSSREF']._serialized_end=1975
+  _globals['_SPDX_SPDXEXCEPTION']._serialized_start=1977
+  _globals['_SPDX_SPDXEXCEPTION']._serialized_end=2085
+  _globals['_OSADL']._serialized_start=2088
+  _globals['_OSADL']._serialized_end=2367
+  _globals['_OSADL_OSADLUSECASE']._serialized_start=2289
+  _globals['_OSADL_OSADLUSECASE']._serialized_end=2367
+  _globals['_LICENSEINFO']._serialized_start=2369
+  _globals['_LICENSEINFO']._serialized_end=2492
+  _globals['_LICENSEDETAILS']._serialized_start=2495
+  _globals['_LICENSEDETAILS']._serialized_end=2674
+  _globals['_LICENSEREQUEST']._serialized_start=2676
+  _globals['_LICENSEREQUEST']._serialized_end=2704
+  _globals['_COMPONENTLICENSEINFO']._serialized_start=2707
+  _globals['_COMPONENTLICENSEINFO']._serialized_end=2856
+  _globals['_LICENSE']._serialized_start=2969
+  _globals['_LICENSE']._serialized_end=3689
 # @@protoc_insertion_point(module_scope)

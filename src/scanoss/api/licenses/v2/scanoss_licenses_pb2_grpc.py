@@ -28,7 +28,7 @@ if _version_not_supported:
 
 class LicenseStub(object):
     """
-    Expose all of the SCANOSS License RPCs here
+    License Service Definition
     """
 
     def __init__(self, channel):
@@ -42,15 +42,20 @@ class LicenseStub(object):
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.FromString,
                 _registered_method=True)
-        self.GetLicenses = channel.unary_unary(
-                '/scanoss.api.licenses.v2.License/GetLicenses',
-                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentBatchRequest.SerializeToString,
-                response_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.BasicResponse.FromString,
+        self.GetComponentLicenses = channel.unary_unary(
+                '/scanoss.api.licenses.v2.License/GetComponentLicenses',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ComponentLicenseResponse.FromString,
+                _registered_method=True)
+        self.GetComponentsLicenses = channel.unary_unary(
+                '/scanoss.api.licenses.v2.License/GetComponentsLicenses',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ComponentsLicenseResponse.FromString,
                 _registered_method=True)
         self.GetDetails = channel.unary_unary(
                 '/scanoss.api.licenses.v2.License/GetDetails',
                 request_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.SerializeToString,
-                response_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.DetailsResponse.FromString,
+                response_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseDetailsResponse.FromString,
                 _registered_method=True)
         self.GetObligations = channel.unary_unary(
                 '/scanoss.api.licenses.v2.License/GetObligations',
@@ -61,32 +66,60 @@ class LicenseStub(object):
 
 class LicenseServicer(object):
     """
-    Expose all of the SCANOSS License RPCs here
+    License Service Definition
     """
 
     def Echo(self, request, context):
-        """Standard echo
+        """
+        Returns the same message that was sent, used for health checks and connectivity testing
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetLicenses(self, request, context):
-        """Get basic license info given a component batch request
+    def GetComponentLicenses(self, request, context):
+        """
+        Get license information for a single software component.
+
+        Examines source code, license files, and package metadata to determine which licenses apply to the component.
+        Returns license data in both individual SPDX license and SPDX expressions when determinable.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/licenses/v2/README.md?tab=readme-ov-file#getcomponentlicenses
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentsLicenses(self, request, context):
+        """
+        Get license information for multiple software components in a single request.
+
+        Examines source code, license files, and package metadata to determine which licenses apply to each component.
+        Returns license data in both individual SPDX license and SPDX expressions when determinable.
+
+        See https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/licenses/v2/README.md?tab=readme-ov-file#getcomponentslicenses
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetDetails(self, request, context):
-        """Get detailed metadata for a specific license
+        """
+        Get detailed metadata for a specific license by SPDX identifier.
+
+        Provides comprehensive license information including SPDX registry data,
+        OSADL compliance metadata, license type classification, and official references.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetObligations(self, request, context):
-        """Get obligations and compliance data for a license
+        """
+        Get compliance obligations and usage requirements for a specific license.
+
+        Returns structured OSADL compliance data including use cases, obligations,
+        compatibility information, and patent hints for the specified license.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -100,15 +133,20 @@ def add_LicenseServicer_to_server(servicer, server):
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.EchoResponse.SerializeToString,
             ),
-            'GetLicenses': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetLicenses,
-                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentBatchRequest.FromString,
-                    response_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.BasicResponse.SerializeToString,
+            'GetComponentLicenses': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentLicenses,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ComponentLicenseResponse.SerializeToString,
+            ),
+            'GetComponentsLicenses': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentsLicenses,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ComponentsLicenseResponse.SerializeToString,
             ),
             'GetDetails': grpc.unary_unary_rpc_method_handler(
                     servicer.GetDetails,
                     request_deserializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.FromString,
-                    response_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.DetailsResponse.SerializeToString,
+                    response_serializer=scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseDetailsResponse.SerializeToString,
             ),
             'GetObligations': grpc.unary_unary_rpc_method_handler(
                     servicer.GetObligations,
@@ -125,7 +163,7 @@ def add_LicenseServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class License(object):
     """
-    Expose all of the SCANOSS License RPCs here
+    License Service Definition
     """
 
     @staticmethod
@@ -156,7 +194,7 @@ class License(object):
             _registered_method=True)
 
     @staticmethod
-    def GetLicenses(request,
+    def GetComponentLicenses(request,
             target,
             options=(),
             channel_credentials=None,
@@ -169,9 +207,36 @@ class License(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/scanoss.api.licenses.v2.License/GetLicenses',
-            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentBatchRequest.SerializeToString,
-            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.BasicResponse.FromString,
+            '/scanoss.api.licenses.v2.License/GetComponentLicenses',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ComponentLicenseResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentsLicenses(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.licenses.v2.License/GetComponentsLicenses',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.ComponentsLicenseResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -198,7 +263,7 @@ class License(object):
             target,
             '/scanoss.api.licenses.v2.License/GetDetails',
             scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseRequest.SerializeToString,
-            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.DetailsResponse.FromString,
+            scanoss_dot_api_dot_licenses_dot_v2_dot_scanoss__licenses__pb2.LicenseDetailsResponse.FromString,
             options,
             channel_credentials,
             insecure,

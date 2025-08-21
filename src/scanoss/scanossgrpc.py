@@ -42,7 +42,7 @@ from scanoss.constants import DEFAULT_TIMEOUT
 
 from . import __version__
 from .api.common.v2.scanoss_common_pb2 import (
-    ComponentBatchRequest,
+    ComponentsRequest,
     EchoRequest,
     EchoResponse,
     PurlRequest,
@@ -667,18 +667,18 @@ class ScanossGrpc(ScanossBase):
 
     def get_licenses(self, request: Dict) -> Optional[Dict]:
         """
-        Client function to call the rpc for GetLicenses
+        Client function to call the rpc for GetComponentsLicenses
 
         Args:
-            request (Dict): ComponentBatchRequest
+            request (Dict): ComponentsRequest
 
         Returns:
-            Optional[Dict]: BasicResponse, or None if the request was not successfull
+            Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
         """
         return self._call_rpc(
-            self.license_stub.GetLicenses,
+            self.license_stub.GetComponentsLicenses,
             request,
-            ComponentBatchRequest,
+            ComponentsRequest,
             'Sending data for license decoration (rqId: {rqId})...',
         )
 
