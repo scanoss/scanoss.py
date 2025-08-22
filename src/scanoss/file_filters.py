@@ -551,7 +551,7 @@ class FileFilters(ScanossBase):
             bool: True if file should be skipped, False otherwise
         """
         file_name = os.path.basename(file_rel_path)
-
+        DEFAULT_SKIPPED_EXT_LIST = {} if self.is_folder_hashing_scan else DEFAULT_SKIPPED_EXT
         DEFAULT_SKIPPED_FILES_LIST = DEFAULT_SKIPPED_FILES_HFH if self.is_folder_hashing_scan else DEFAULT_SKIPPED_FILES
 
         if not self.hidden_files_folders and file_name.startswith('.'):
@@ -565,7 +565,7 @@ class FileFilters(ScanossBase):
             self.print_debug(f'Skipping file: {file_rel_path} (matches default skip file)')
             return True
         # Look for file endings
-        for ending in DEFAULT_SKIPPED_EXT:
+        for ending in DEFAULT_SKIPPED_EXT_LIST:
             if file_name_lower.endswith(ending):
                 self.print_debug(f'Skipping file: {file_rel_path} (matches default skip ending: {ending})')
                 return True
