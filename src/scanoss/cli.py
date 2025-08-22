@@ -57,6 +57,8 @@ from . import __version__
 from .components import Components
 from .constants import (
     DEFAULT_API_TIMEOUT,
+    DEFAULT_HFH_DEPTH,
+    DEFAULT_HFH_MIN_CUTOFF_THRESHOLD,
     DEFAULT_HFH_RANK_THRESHOLD,
     DEFAULT_POST_SIZE,
     DEFAULT_RETRY,
@@ -887,6 +889,18 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Filter results to only show those with rank value at or below this threshold (e.g., --rank-threshold 3 '
         'returns results with rank 1, 2, or 3). Lower rank values indicate higher quality matches.',
     )
+    p_folder_scan.add_argument(
+        '--depth',
+        type=int,
+        default=DEFAULT_HFH_DEPTH,
+        help=f'Defines how deep to scan the root directory (optional - default {DEFAULT_HFH_DEPTH})',
+    )
+    p_folder_scan.add_argument(
+        '--min-cutoff-threshold',
+        type=float,
+        default=DEFAULT_HFH_MIN_CUTOFF_THRESHOLD,
+        help=f'Minimum score threshold to consider a match (optional - default: {DEFAULT_HFH_MIN_CUTOFF_THRESHOLD})',
+    )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
     # Sub-command: folder-hash
@@ -904,6 +918,12 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         choices=['json'],
         default='json',
         help='Result output format (optional - default: json)',
+    )
+    p_folder_hash.add_argument(
+        '--depth',
+        type=int,
+        default=DEFAULT_HFH_DEPTH,
+        help=f'Defines how deep to hash the root directory (optional - default {DEFAULT_HFH_DEPTH})',
     )
     p_folder_hash.set_defaults(func=folder_hash)
 
@@ -2397,6 +2417,8 @@ def folder_hashing_scan(parser, args):
             client=client,
             scanoss_settings=scanoss_settings,
             rank_threshold=args.rank_threshold,
+            depth=args.depth,
+            min_cutoff_threshold=args.min_cutoff_threshold,
         )
 
         if scanner.scan():
@@ -2430,6 +2452,7 @@ def folder_hash(parser, args):
             scan_dir=args.scan_dir,
             config=folder_hasher_config,
             scanoss_settings=scanoss_settings,
+            depth=args.depth,
         )
 
         folder_hasher.hash_directory(args.scan_dir)
