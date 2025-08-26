@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.31.5] - 2025-08-19
+### Added
+- Added jira markdown option for DT
+- Added Dependency Track project link to markdown summary
+
 ## [1.31.4] - 2025-08-20
 ### Added
 - Added support for empty dependency track project policy checks
@@ -648,3 +653,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.31.2]: https://github.com/scanoss/scanoss.py/compare/v1.31.1...v1.31.2
 [1.31.3]: https://github.com/scanoss/scanoss.py/compare/v1.31.2...v1.31.3
 [1.31.4]: https://github.com/scanoss/scanoss.py/compare/v1.31.3...v1.31.4
+[1.31.5]: https://github.com/scanoss/scanoss.py/compare/v1.31.4...v1.31.5

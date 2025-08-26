@@ -34,7 +34,6 @@ PROCESSING_RETRY_DELAY = 5  # seconds
 DEFAULT_TIME_OUT = 300.0
 MILLISECONDS_TO_SECONDS = 1000
 
-
 """
 Dependency Track project violation policy check implementation.
 
@@ -42,6 +41,7 @@ This module provides policy checking functionality for Dependency Track project 
 It retrieves, processes, and formats policy violations from a Dependency Track instance
 for a specific project.
 """
+
 
 class ResolvedLicenseDict(TypedDict):
     """TypedDict for resolved license information from Dependency Track."""
@@ -125,7 +125,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
     This class handles retrieving, processing, and formatting policy violations
     from a Dependency Track instance for a specific project.
     """
-    
+
     def __init__(  # noqa: PLR0913
             self,
             debug: bool = False,
@@ -161,13 +161,13 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             timeout: Timeout for processing in seconds (default: 300)
         """
         super().__init__(debug, trace, quiet, format_type, status, 'dependency-track', output)
-        self.url = url
         self.api_key = api_key
         self.project_id = project_id
         self.project_name = project_name
         self.project_version = project_version
         self.upload_token = upload_token
         self.timeout = timeout
+        self.url = url.strip().rstrip('/') if url else None
         self.dep_track_service = DependencyTrackService(self.api_key, self.url, debug=debug, trace=trace, quiet=quiet)
 
     def _json(self, project_violations: list[PolicyViolationDict]) -> Dict[str, Any]:
@@ -230,7 +230,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         if not dt_project:
             self.print_stderr('Warning: No project details supplied. Returning False.')
             return False
-        
+
         # Safely extract and normalise timestamp values to numeric types
         def _safe_timestamp(field, value=None, default=0) -> float:
             """Convert timestamp value to float, handling string/numeric types safely."""
@@ -241,7 +241,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             except (ValueError, TypeError):
                 self.print_stderr(f'Warning: Invalid timestamp for {field}, value: {value}, using default: {default}')
                 return float(default)
-        
+
         last_import = _safe_timestamp('lastBomImport', dt_project.get('lastBomImport'), 0)
         last_vulnerability_analysis = _safe_timestamp('lastVulnerabilityAnalysis',
                                                       dt_project.get('lastVulnerabilityAnalysis'), 0
@@ -372,7 +372,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         """
         type_priority = {'SECURITY': 3, 'LICENSE': 2, 'OTHER': 1}
         return sorted(
-            violations, 
+            violations,
             key=lambda x: -type_priority.get(x.get('type', 'OTHER'), 1)
         )
 
@@ -424,8 +424,9 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             rows.append(row)
         # End for loop
         return {
-            "details": f'### Dependency Track Project Violations\n{table_generator(headers, rows, c_cols)}\n',
-            "summary": f'{len(project_violations)} policy violations were found.\n',
+            "details": f'### Dependency Track Project Violations\n{table_generator(headers, rows, c_cols)}\n\n'
+                       f'View project in Dependency Track [here]({self.url}/projects/{self.project_id}).\n',
+            "summary": f'{len(project_violations)} policy violations were found.\n'
         }
 
     def run(self) -> int:

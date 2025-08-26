@@ -796,9 +796,9 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_inspect_dt_project_violation.add_argument(
         '--format', '-f',
         required=False,
-        choices=['json', 'md'],
+        choices=['json', 'md', 'jira_md'],
         default='json',
-        help='Output format: json (default) or md (Markdown)'
+        help='Output format: json (default), md (Markdown) or jira_md (JIRA Markdown)'
     )
     p_inspect_dt_project_violation.add_argument(
         '--timeout', '-M',
