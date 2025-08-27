@@ -22,12 +22,12 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-import threading
-import queue
 import json
-from enum import Enum
-from typing import Dict, Optional, Set
+import queue
+import threading
 from dataclasses import dataclass
+from enum import Enum
+from typing import Dict
 
 from .scancodedeps import ScancodeDeps
 from .scanossbase import ScanossBase
@@ -63,7 +63,7 @@ class ThreadedDependencies(ScanossBase):
     inputs: queue.Queue = queue.Queue()
     output: queue.Queue = queue.Queue()
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         sc_deps: ScancodeDeps,
         grpc_api: ScanossGrpc,
@@ -180,13 +180,15 @@ class ThreadedDependencies(ScanossBase):
             return self.filter_dependencies(
                 deps, lambda purl: (exclude and purl not in exclude) or (not exclude and purl in include)
             )
+        return None
 
-    def scan_dependencies(
+    def scan_dependencies(  # noqa: PLR0912
         self, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None
     ) -> None:
         """
         Scan for dependencies from the given file/dir or from an input file (from the input queue).
         """
+        # TODO refactor to simplify branches based on PLR0912
         current_thread = threading.get_ident()
         self.print_trace(f'Starting dependency worker {current_thread}...')
         try:
@@ -194,18 +196,17 @@ class ThreadedDependencies(ScanossBase):
             deps = None
             if what_to_scan.startswith(DEP_FILE_PREFIX):  # We have a pre-parsed dependency file, load it
                 deps = self.sc_deps.load_from_file(what_to_scan.strip(DEP_FILE_PREFIX))
-            else:  # Search the file/folder for dependency files to parse
-                if not self.sc_deps.run_scan(what_to_scan=what_to_scan):
-                    self._errors = True
-                else:
-                    deps = self.sc_deps.produce_from_file()
-                    if dep_scope is not None:
-                        self.print_debug(f'Filtering {dep_scope.name} dependencies')
-                    if dep_scope_include is not None:
-                        self.print_debug(f"Including dependencies with '{dep_scope_include.split(',')}' scopes")
-                    if dep_scope_exclude is not None:
-                        self.print_debug(f"Excluding dependencies with '{dep_scope_exclude.split(',')}' scopes")
-                    deps = self.filter_dependencies_by_scopes(deps, dep_scope, dep_scope_include, dep_scope_exclude)
+            elif not self.sc_deps.run_scan(what_to_scan=what_to_scan):
+                self._errors = True
+            else:
+                deps = self.sc_deps.produce_from_file()
+                if dep_scope is not None:
+                    self.print_debug(f'Filtering {dep_scope.name} dependencies')
+                if dep_scope_include is not None:
+                    self.print_debug(f"Including dependencies with '{dep_scope_include.split(',')}' scopes")
+                if dep_scope_exclude is not None:
+                    self.print_debug(f"Excluding dependencies with '{dep_scope_exclude.split(',')}' scopes")
+                deps = self.filter_dependencies_by_scopes(deps, dep_scope, dep_scope_include, dep_scope_exclude)
 
             if not self._errors:
                 if deps is None:
