@@ -24,4 +24,4 @@ line-ending = "auto"
 known-first-party = ["scanoss"]
 
 [tool.ruff.lint.pylint]
-max-args = 5
+max-args = 6
