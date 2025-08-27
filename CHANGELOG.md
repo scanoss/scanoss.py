@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.31.5] - 2025-08-19
+## [1.31.5] - 2025-08-27
 ### Added
 - Added jira markdown option for DT
 - Added Dependency Track project link to markdown summary
+- Updated protobuf client definitions
+- Added date field to `scanoss-py comp versions` response
 
 ## [1.31.4] - 2025-08-20
 ### Added

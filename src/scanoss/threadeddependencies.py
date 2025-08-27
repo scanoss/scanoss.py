@@ -180,6 +180,7 @@ class ThreadedDependencies(ScanossBase):
             return self.filter_dependencies(
                 deps, lambda purl: (exclude and purl not in exclude) or (not exclude and purl in include)
             )
+        return None
 
     def scan_dependencies(
         self, dep_scope: SCOPE = None, dep_scope_include: str = None, dep_scope_exclude: str = None
