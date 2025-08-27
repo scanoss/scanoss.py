@@ -13,5 +13,5 @@ packageurl-python
 pathspec
 jsonschema
 crc
-
+protoc-gen-openapiv2
 cyclonedx-python-lib[validation]
