@@ -88,7 +88,7 @@ class ScanossApi(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         self.url = url
-        self.api_key = api_key
+        self.api_key = api_key if api_key else SCANOSS_API_KEY
         self.sbom = None
         self.scan_format = scan_format if scan_format else 'plain'
         self.flags = flags
@@ -107,10 +107,7 @@ class ScanossApi(ScanossBase):
         self.headers['user-agent'] = f'scanoss-py/{__version__}'
         self.load_generic_headers()
 
-        self.url = url if url else SCANOSS_SCAN_URL
-        self.api_key = api_key if api_key else SCANOSS_API_KEY
-        if self.api_key and not url and not os.environ.get('SCANOSS_SCAN_URL'):
-            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+        self.url = self._get_scan_url()
 
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
@@ -284,6 +281,14 @@ class ScanossApi(ScanossBase):
                     self.api_key = value
                 self.headers[key] = value
 
+
+    def _get_scan_url(self):
+        url = SCANOSS_SCAN_URL
+        if url not in[DEFAULT_URL, DEFAULT_URL2]:
+            return url
+        if self.api_key and url in[DEFAULT_URL, DEFAULT_URL2]:
+            return DEFAULT_URL2
+        return url
 #
 # End of ScanossApi Class
 #
