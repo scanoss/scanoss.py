@@ -23,6 +23,7 @@ SPDX-License-Identifier: MIT
 """
 
 import concurrent.futures
+import http.client as http_client
 import json
 import logging
 import os
@@ -31,13 +32,12 @@ import time
 import uuid
 from dataclasses import dataclass
 from enum import IntEnum
-import requests
 from typing import Dict, Optional
 from urllib.parse import urlparse
-import http.client as http_client
-import urllib3
 
 import grpc
+import requests
+import urllib3
 from google.protobuf.json_format import MessageToDict, ParseDict
 from pypac import PACSession
 from pypac.parser import PACFile
@@ -49,12 +49,12 @@ from scanoss.constants import DEFAULT_TIMEOUT
 
 from . import __version__
 from .api.common.v2.scanoss_common_pb2 import (
+    ComponentsRequest,
     EchoRequest,
     EchoResponse,
     PurlRequest,
     StatusCode,
     StatusResponse,
-    ComponentsRequest,
 )
 from .api.components.v2.scanoss_components_pb2 import (
     CompSearchRequest,
@@ -104,7 +104,7 @@ class ScanossGrpc(ScanossBase):
     Client for gRPC functionality
     """
 
-    def __init__(  # noqa: PLR0913, PLR0915
+    def __init__(  # noqa: PLR0912, PLR0913, PLR0915
         self,
         url: str = None,
         debug: bool = False,
@@ -799,7 +799,9 @@ class ScanossGrpc(ScanossBase):
         request_id = str(uuid.uuid4())
         self.print_debug(f'Sending data for Dependencies via REST (request id: {request_id})...')
         file_request = {'files': [file], 'depth': depth}
-        response = self.rest_post(f'{self.orig_url}{DEFAULT_URI_PREFIX}/dependencies/dependencies', request_id, file_request)
+        response = self.rest_post(f'{self.orig_url}{DEFAULT_URI_PREFIX}/dependencies/dependencies',
+                                  request_id, file_request
+                                  )
         self.print_trace(f'Received response for Dependencies via REST (request id: {request_id}): {response}')
         if response:
             return response
