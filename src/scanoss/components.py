@@ -52,6 +52,8 @@ class Components(ScanossBase):
         ca_cert: str = None,
         pac: PACFile = None,
         req_headers: dict = None,
+        ignore_cert_errors: bool = False,
+        use_grpc: bool = False,
     ):
         """
         Handle all component style requests
@@ -66,6 +68,9 @@ class Components(ScanossBase):
         :param grpc_proxy: Specific gRPC proxy (optional)
         :param ca_cert: TLS client certificate (optional)
         :param pac: Proxy Auto-Config file (optional)
+        :param req_headers: Additional headers to send with requests (optional)
+        :param ignore_cert_errors: Ignore TLS certificate errors (optional)
+        :param use_grpc: Use gRPC instead of HTTP (optional)
         """
         super().__init__(debug, trace, quiet)
         ver_details = Scanner.version_details()
@@ -82,14 +87,28 @@ class Components(ScanossBase):
             grpc_proxy=grpc_proxy,
             timeout=timeout,
             req_headers=req_headers,
+            ignore_cert_errors=ignore_cert_errors,
+            use_grpc=use_grpc,
         )
 
-    def load_purls(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None) -> Optional[dict]:
+    def load_comps(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None)-> Optional[dict]:
+        """
+        Load the specified components and return a dictionary
+
+        :param json_file: JSON Components file (optional)
+        :param purls: list pf PURLs (optional)
+        :return: Components Request dictionary or None
+        """
+        return self.load_purls(json_file, purls, 'components')
+
+    def load_purls(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None, field:str = 'purls'
+                   ) -> Optional[dict]:
         """
         Load the specified purls and return a dictionary
 
         :param json_file: JSON PURL file (optional)
         :param purls: list of PURLs (optional)
+        :param field: Name of the dictionary field to store the purls in (default: 'purls')
         :return: PURL Request dictionary or None
         """
         if json_file:
@@ -109,14 +128,14 @@ class Components(ScanossBase):
             parsed_purls = []
             for p in purls:
                 parsed_purls.append({'purl': p})
-            purl_request = {'purls': parsed_purls}
+            purl_request = {field: parsed_purls}
         else:
             self.print_stderr('ERROR: No purls specified to process.')
             return None
-        purl_count = len(purl_request.get('purls', []))
-        self.print_debug(f'Parsed Purls ({purl_count}): {purl_request}')
+        purl_count = len(purl_request.get(field, []))
+        self.print_debug(f'Parsed {field} ({purl_count}): {purl_request}')
         if purl_count == 0:
-            self.print_stderr('ERROR: No PURLs parsed from request.')
+            self.print_stderr(f'ERROR: No {field} parsed from request.')
             return None
         return purl_request
 
@@ -142,8 +161,8 @@ class Components(ScanossBase):
         """
         Open the given filename if requested, otherwise return STDOUT
 
-        :param filename:
-        :return:
+        :param filename: filename to open or None to return STDOUT
+        :return: file descriptor or None
         """
         file = sys.stdout
         if filename:
@@ -202,7 +221,7 @@ class Components(ScanossBase):
         :return: True on success, False otherwise
         """
         success = False
-        purls_request = self.load_purls(json_file, purls)
+        purls_request = self.load_comps(json_file, purls)
         if purls_request is None or len(purls_request) == 0:
             return False
         file = self._open_file_or_sdtout(output_file)
