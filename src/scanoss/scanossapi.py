@@ -22,23 +22,23 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import http.client as http_client
 import logging
 import os
 import sys
 import time
-from json.decoder import JSONDecodeError
-import requests
 import uuid
-import http.client as http_client
-import urllib3
+from json.decoder import JSONDecodeError
 
+import requests
+import urllib3
 from pypac import PACSession
 from pypac.parser import PACFile
 from urllib3.exceptions import InsecureRequestWarning
 
-from .scanossbase import ScanossBase
 from . import __version__
-
+from .constants import DEFAULT_TIMEOUT, MIN_TIMEOUT
+from .scanossbase import ScanossBase
 
 DEFAULT_URL = 'https://api.osskb.org/scan/direct'  # default free service URL
 DEFAULT_URL2 = 'https://api.scanoss.com/scan/direct'  # default premium service URL
@@ -52,7 +52,7 @@ class ScanossApi(ScanossBase):
     Currently support posting scan requests to the SCANOSS streaming API
     """
 
-    def __init__(  # noqa: PLR0913, PLR0915
+    def __init__(  # noqa: PLR0912, PLR0913, PLR0915
         self,
         scan_format: str = None,
         flags: str = None,
@@ -61,7 +61,7 @@ class ScanossApi(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        timeout: int = 180,
+        timeout: int = DEFAULT_TIMEOUT,
         ver_details: str = None,
         ignore_cert_errors: bool = False,
         proxy: str = None,
@@ -90,7 +90,7 @@ class ScanossApi(ScanossBase):
         self.sbom = None
         self.scan_format = scan_format if scan_format else 'plain'
         self.flags = flags
-        self.timeout = timeout if timeout > 5 else 180
+        self.timeout = timeout if timeout > MIN_TIMEOUT else DEFAULT_TIMEOUT
         self.retry_limit = retry if retry >= 0 else 5
         self.ignore_cert_errors = ignore_cert_errors
         self.req_headers = req_headers if req_headers else {}
@@ -131,7 +131,7 @@ class ScanossApi(ScanossBase):
         if self.proxies:
             self.session.proxies = self.proxies
 
-    def scan(self, wfp: str, context: str = None, scan_id: int = None):
+    def scan(self, wfp: str, context: str = None, scan_id: int = None):  # noqa: PLR0912, PLR0915
         """
         Scan the specified WFP and return the JSON object
         :param wfp: WFP to scan
@@ -190,7 +190,7 @@ class ScanossApi(ScanossBase):
                     else:
                         self.print_stderr(f'Warning: No response received from {self.url}. Retrying...')
                         time.sleep(5)
-                elif r.status_code == 503:  # Service limits have most likely been reached
+                elif r.status_code == requests.codes.service_unavailable:  # Service limits most likely reached
                     self.print_stderr(
                         f'ERROR: SCANOSS API rejected the scan request ({request_id}) due to '
                         f'service limits being exceeded'
@@ -200,7 +200,7 @@ class ScanossApi(ScanossBase):
                         f'ERROR: {r.status_code} - The SCANOSS API request ({request_id}) rejected '
                         f'for {self.url} due to service limits being exceeded.'
                     )
-                elif r.status_code >= 400:
+                elif r.status_code >= requests.codes.bad_request:
                     if retry > self.retry_limit:  # No response retry_limit or more times, fail
                         self.save_bad_req_wfp(scan_files, request_id, scan_id)
                         raise Exception(
