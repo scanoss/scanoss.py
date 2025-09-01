@@ -308,6 +308,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Retrieve vulnerabilities for the given components',
     )
     c_vulns.set_defaults(func=comp_vulns)
+    c_vulns.add_argument('--grpc', action='store_true', help='Enable gRPC support')
 
     # Component Sub-command: component semgrep
     c_semgrep = comp_sub.add_parser(
@@ -964,7 +965,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument(
             '--apiurl', type=str, help='SCANOSS API URL (optional - default: https://api.osskb.org/scan/direct)'
         )
-        p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
+        p.add_argument('--grpc', action='store_true', help='Enable gRPC support')
 
     # Global Scan/Fingerprint filter options
     for p in [p_scan, p_wfp]:
@@ -1055,6 +1056,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             type=str,
             help='Headers to be sent on request (e.g., -hdr "Name: Value") - can be used multiple times',
         )
+        p.add_argument('--ignore-cert-errors', action='store_true', help='Ignore certificate errors')
 
     # Syft options
     for p in [p_cs, p_dep]:
@@ -1418,6 +1420,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         strip_snippet_ids=args.strip_snippet,
         scan_settings=scan_settings,
         req_headers=process_req_headers(args.header),
+        use_grpc=args.grpc
     )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
@@ -2144,6 +2147,8 @@ def comp_vulns(parser, args):
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
+        ignore_cert_errors=args.ignore_cert_errors,
+        use_grpc=args.grpc,
     )
     if not comps.get_vulnerabilities(args.input, args.purl, args.output):
         sys.exit(1)

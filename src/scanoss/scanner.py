@@ -107,6 +107,7 @@ class Scanner(ScanossBase):
         skip_md5_ids=None,
         scan_settings: 'ScanossSettings | None' = None,
         req_headers: dict = None,
+        use_grpc: bool = False,
     ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
@@ -173,6 +174,8 @@ class Scanner(ScanossBase):
             pac=pac,
             grpc_proxy=grpc_proxy,
             req_headers=self.req_headers,
+            ignore_cert_errors=ignore_cert_errors,
+            use_grpc=use_grpc
         )
         self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
         self.nb_threads = nb_threads
