@@ -137,7 +137,6 @@ class ScanossGrpc(ScanossBase):
             grpc_proxy='http://<ip>:<port>'
         """
         super().__init__(debug, trace, quiet)
-        self.url = url
         self.api_key = api_key if api_key else SCANOSS_API_KEY
         self.timeout = timeout
         self.proxy = proxy
@@ -157,15 +156,16 @@ class ScanossGrpc(ScanossBase):
         if ver_details:
             self.metadata.append(('x-scanoss-client', ver_details))
             self.headers['x-scanoss-client'] = ver_details
-        self.metadata.append(('user-agent', f'scanoss-py/{__version__}'))
-        self.headers['User-Agent'] = f'scanoss-py/{__version__}'
-        self.headers['user-agent'] = f'scanoss-py/{__version__}'
+        user_agent = f'scanoss-py/{__version__}'
+        self.metadata.append(('user-agent', user_agent))
+        self.headers['User-Agent'] = user_agent
+        self.headers['user-agent'] = user_agent
         self.headers['Content-Type'] = 'application/json'
-        self.load_generic_headers()
-
+        # Set the correct URL/API key combination
         self.url = url if url else SCANOSS_GRPC_URL
         if self.api_key and not url and not os.environ.get('SCANOSS_GRPC_URL'):
             self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+        self.load_generic_headers(url)
         self.url = self.url.lower()
         self.orig_url = self.url.strip().rstrip('/')  # Used for proxy lookup
         # REST setup
@@ -700,7 +700,7 @@ class ScanossGrpc(ScanossBase):
             'Sending data for cryptographic versions in range decoration (rqId: {rqId})...',
         )
 
-    def load_generic_headers(self):
+    def load_generic_headers(self, url):
         """
         Adds custom headers from req_headers to metadata.
 
@@ -710,7 +710,7 @@ class ScanossGrpc(ScanossBase):
         if self.req_headers:  # Load generic headers
             for key, value in self.req_headers.items():
                 if key == 'x-api-key':  # Set premium URL if x-api-key header is set
-                    if not self.url and not os.environ.get('SCANOSS_GRPC_URL'):
+                    if not url and not os.environ.get('SCANOSS_GRPC_URL'):
                         self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
                     self.api_key = value
                 self.metadata.append((key, value))
