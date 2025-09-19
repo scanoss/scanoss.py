@@ -72,7 +72,9 @@ from .api.geoprovenance.v2.scanoss_geoprovenance_pb2_grpc import GeoProvenanceSt
 from .api.scanning.v2.scanoss_scanning_pb2 import HFHRequest
 from .api.semgrep.v2.scanoss_semgrep_pb2 import SemgrepResponse
 from .api.semgrep.v2.scanoss_semgrep_pb2_grpc import SemgrepStub
-from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import ComponentsVulnerabilityResponse
+from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import (
+    ComponentsVulnerabilityResponse,
+)
 from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2_grpc import VulnerabilitiesStub
 from .scanossbase import ScanossBase
 
@@ -82,18 +84,20 @@ SCANOSS_GRPC_URL = os.environ.get('SCANOSS_GRPC_URL') if os.environ.get('SCANOSS
 SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_API_KEY') else ''
 DEFAULT_URI_PREFIX = '/v2'
 
-MAX_CONCURRENT_REQUESTS = 5 # Maximum number of concurrent requests to make
+MAX_CONCURRENT_REQUESTS = 5  # Maximum number of concurrent requests to make
 
 
 class ScanossGrpcError(Exception):
     """
     Custom exception for SCANOSS gRPC errors
     """
+
     pass
 
 
 class ScanossGrpcStatusCode(IntEnum):
     """Status codes for SCANOSS gRPC responses"""
+
     SUCCESS = 1
     SUCCESS_WITH_WARNINGS = 2
     FAILED_WITH_WARNINGS = 3
@@ -720,7 +724,7 @@ class ScanossGrpc(ScanossBase):
             'Sending data for license decoration (rqId: {rqId})...',
         )
 
-    def load_generic_headers(self):
+    def load_generic_headers(self, url: str = None):
         """
         Adds custom headers from req_headers to metadata.
 
@@ -819,16 +823,19 @@ class ScanossGrpc(ScanossBase):
         request_id = str(uuid.uuid4())
         self.print_debug(f'Sending data for Dependencies via REST (request id: {request_id})...')
         file_request = {'files': [file], 'depth': depth}
-        response = self.rest_post(f'{self.orig_url}{DEFAULT_URI_PREFIX}/dependencies/dependencies',
-                                  request_id, file_request
-                                  )
+        response = self.rest_post(
+            f'{self.orig_url}{DEFAULT_URI_PREFIX}/dependencies/dependencies', request_id, file_request
+        )
         self.print_trace(f'Received response for Dependencies via REST (request id: {request_id}): {response}')
         if response:
             return response
         return None
+
+
 #
 # End of ScanossGrpc Class
 #
+
 
 @dataclass
 class GrpcConfig:
@@ -859,6 +866,7 @@ def create_grpc_config_from_args(args) -> GrpcConfig:
         proxy=getattr(args, 'proxy', None),
         grpc_proxy=getattr(args, 'grpc_proxy', None),
     )
+
 
 #
 # End of GrpcConfig class
