@@ -411,12 +411,13 @@ class CycloneDx(ScanossBase):
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
             return False
 
-    def get_purls_request_from_cdx(self, cdx_dict: dict) -> dict:
+    def get_purls_request_from_cdx(self, cdx_dict: dict, field: str = 'purls') -> dict:
         """
         Get the list of PURL requests (purl + requirement) from the given CDX dictionary
 
         Args:
             cdx_dict (dict): CDX dictionary to parse
+            field (str): Field to extract from the CDX dictionary
         Returns:
             list[dict]: List of PURL requests (purl + requirement)
         """
@@ -428,8 +429,10 @@ class CycloneDx(ScanossBase):
                 parsed_purls.append({'purl': component.get('purl'), 'requirement': version})
             else:
                 parsed_purls.append({'purl': component.get('purl')})
-        purl_request = {'purls': parsed_purls}
+        purl_request = {field: parsed_purls}
         return purl_request
+
+
 #
 # End of CycloneDX Class
 #

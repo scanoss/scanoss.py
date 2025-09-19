@@ -95,7 +95,7 @@ class Components(ScanossBase):
         )
         self.cdx = CycloneDx(debug=self.debug)
 
-    def load_comps(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None)-> Optional[dict]:
+    def load_comps(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None) -> Optional[dict]:
         """
         Load the specified components and return a dictionary
 
@@ -105,8 +105,9 @@ class Components(ScanossBase):
         """
         return self.load_purls(json_file, purls, 'components')
 
-    def load_purls(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None, field:str = 'purls'
-                   ) -> Optional[dict]:
+    def load_purls(
+        self, json_file: Optional[str] = None, purls: Optional[List[str]] = None, field: str = 'purls'
+    ) -> Optional[dict]:
         """
         Load the specified purls and return a dictionary
 
@@ -122,7 +123,7 @@ class Components(ScanossBase):
                 return None
 
             if self.cdx.is_cyclonedx_json(json.dumps(result.data)):
-                purl_request = self.cdx.get_purls_request_from_cdx(result.data)
+                purl_request = self.cdx.get_purls_request_from_cdx(result.data, field)
             else:
                 purl_request = result.data
         elif purls:
