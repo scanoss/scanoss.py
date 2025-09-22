@@ -60,8 +60,8 @@ from .components import Components
 from .constants import (
     DEFAULT_API_TIMEOUT,
     DEFAULT_HFH_DEPTH,
-    DEFAULT_HFH_MIN_CUTOFF_THRESHOLD,
     DEFAULT_HFH_RANK_THRESHOLD,
+    DEFAULT_HFH_RECURSIVE_THRESHOLD,
     DEFAULT_POST_SIZE,
     DEFAULT_RETRY,
     DEFAULT_TIMEOUT,
@@ -878,10 +878,10 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help=f'Defines how deep to scan the root directory (optional - default {DEFAULT_HFH_DEPTH})',
     )
     p_folder_scan.add_argument(
-        '--min-cutoff-threshold',
+        '--recursive-threshold',
         type=float,
-        default=DEFAULT_HFH_MIN_CUTOFF_THRESHOLD,
-        help=f'Minimum score threshold to consider a match (optional - default: {DEFAULT_HFH_MIN_CUTOFF_THRESHOLD})',
+        default=DEFAULT_HFH_RECURSIVE_THRESHOLD,
+        help=f'Minimum score threshold to consider a match (optional - default: {DEFAULT_HFH_RECURSIVE_THRESHOLD})',
     )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
@@ -2477,7 +2477,7 @@ def folder_hashing_scan(parser, args):
             scanoss_settings=scanoss_settings,
             rank_threshold=args.rank_threshold,
             depth=args.depth,
-            min_cutoff_threshold=args.min_cutoff_threshold,
+            recursive_threshold=args.recursive_threshold,
         )
 
         if scanner.scan():

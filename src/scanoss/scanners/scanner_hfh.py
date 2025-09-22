@@ -31,8 +31,8 @@ from progress.spinner import Spinner
 
 from scanoss.constants import (
     DEFAULT_HFH_DEPTH,
-    DEFAULT_HFH_MIN_CUTOFF_THRESHOLD,
     DEFAULT_HFH_RANK_THRESHOLD,
+    DEFAULT_HFH_RECURSIVE_THRESHOLD,
 )
 from scanoss.cyclonedx import CycloneDx
 from scanoss.file_filters import FileFilters
@@ -60,7 +60,7 @@ class ScannerHFH:
         scanoss_settings: Optional[ScanossSettings] = None,
         rank_threshold: int = DEFAULT_HFH_RANK_THRESHOLD,
         depth: int = DEFAULT_HFH_DEPTH,
-        min_cutoff_threshold: float = DEFAULT_HFH_MIN_CUTOFF_THRESHOLD,
+        recursive_threshold: float = DEFAULT_HFH_RECURSIVE_THRESHOLD,
     ):
         """
         Initialize the ScannerHFH.
@@ -72,7 +72,7 @@ class ScannerHFH:
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
             rank_threshold (int): Get results with rank below this threshold (default: 5).
             depth (int): How many levels to scan (default: 1).
-            min_cutoff_threshold (float): Minimum score threshold to consider a match (default: 0.25).
+            recursive_threshold (float): Minimum score threshold to consider a match (default: 0.25).
         """
         self.base = ScanossBase(
             debug=config.debug,
@@ -102,7 +102,7 @@ class ScannerHFH:
         self.client = client
         self.scan_results = None
         self.rank_threshold = rank_threshold
-        self.min_cutoff_threshold = min_cutoff_threshold
+        self.recursive_threshold = recursive_threshold
 
     def scan(self) -> Optional[Dict]:
         """
@@ -114,7 +114,7 @@ class ScannerHFH:
         hfh_request = {
             'root': self.folder_hasher.hash_directory(path=self.scan_dir),
             'rank_threshold': self.rank_threshold,
-            'min_cutoff_threshold': self.min_cutoff_threshold,
+            'recursive_threshold': self.recursive_threshold,
         }
 
         spinner = Spinner('Scanning folder...')
