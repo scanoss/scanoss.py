@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.32.0] - 2025-08-13
 ### Added
-- Add `--min-cutoff-threshold` argument to folder scan command
+- Add `--recursive-threshold` argument to folder scan command
 - Add `--depth` argument to `folder-scan` and `folder-hash` commands
 
 ## [1.31.4] - 2025-08-20
