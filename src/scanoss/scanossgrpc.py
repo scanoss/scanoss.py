@@ -44,6 +44,7 @@ from pypac.parser import PACFile
 from pypac.resolver import ProxyResolver
 from urllib3.exceptions import InsecureRequestWarning
 
+from scanoss.api.licenses.v2.scanoss_licenses_pb2 import ComponentsLicenseResponse
 from scanoss.api.licenses.v2.scanoss_licenses_pb2_grpc import LicenseStub
 from scanoss.api.scanning.v2.scanoss_scanning_pb2_grpc import ScanningStub
 from scanoss.constants import DEFAULT_TIMEOUT
@@ -709,11 +710,25 @@ class ScanossGrpc(ScanossBase):
 
     def get_licenses(self, request: Dict) -> Optional[Dict]:
         """
+        Client function to call the rpc for Licenses GetComponentsLicenses
+        It will either use REST (default) or gRPC depending on the use_grpc flag
+
+        Args:
+            request (Dict): ComponentsRequest
+        Returns:
+            Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
+        """
+        if self.use_grpc:
+            return self._get_licenses_grpc(request)
+        else:
+            return self._get_licenses_rest(request)
+
+    def _get_licenses_grpc(self, request: Dict) -> Optional[Dict]:
+        """
         Client function to call the rpc for GetComponentsLicenses
 
         Args:
             request (Dict): ComponentsRequest
-
         Returns:
             Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
         """
@@ -786,6 +801,33 @@ class ScanossGrpc(ScanossBase):
                     f'ERROR: Exception ({e.__class__.__name__}) POSTing data ({request_id}) to {uri}: {e}'
                 )
                 raise Exception(f'ERROR: The SCANOSS Decoration API request failed for {uri}') from e
+        return None
+
+    def _get_licenses_rest(self, purls: Dict) -> Optional[Dict]:
+        """
+        Get the licenses for the given purls using REST API
+
+        Args:
+            purls (Dict): Purl Request dictionary
+        Returns:
+            Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
+        """
+        if not purls:
+            self.print_stderr('ERROR: No message supplied to send to REST decoration service.')
+            return None
+        request_id = str(uuid.uuid4())
+        self.print_debug(f'Sending data for Licenses via REST (request id: {request_id})...')
+        response = self.rest_post(f'{self.orig_url}{DEFAULT_URI_PREFIX}/licenses/components', request_id, purls)
+        self.print_trace(f'Received response for Licenses via REST (request id: {request_id}): {response}')
+        if response:
+            # Parse the JSON/Dict into the purl response
+            resp_obj = ParseDict(response, ComponentsLicenseResponse(), True)
+            if resp_obj:
+                self.print_debug(f'License Response: {resp_obj}')
+                if not self._check_status_response(resp_obj.status, request_id):
+                    return None
+            del response['status']
+            return response
         return None
 
     def _get_vulnerabilities_rest(self, purls: dict):
