@@ -60,6 +60,7 @@ from .components import Components
 from .constants import (
     DEFAULT_API_TIMEOUT,
     DEFAULT_HFH_DEPTH,
+    DEFAULT_HFH_MIN_ACCEPTED_SCORE,
     DEFAULT_HFH_RANK_THRESHOLD,
     DEFAULT_HFH_RECURSIVE_THRESHOLD,
     DEFAULT_POST_SIZE,
@@ -864,6 +865,15 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         type=float,
         default=DEFAULT_HFH_RECURSIVE_THRESHOLD,
         help=f'Minimum score threshold to consider a match (optional - default: {DEFAULT_HFH_RECURSIVE_THRESHOLD})',
+    )
+    p_folder_scan.add_argument(
+        '--min-accepted-score',
+        type=float,
+        default=DEFAULT_HFH_MIN_ACCEPTED_SCORE,
+        help=(
+            'Only show results with a score at or above this threshold '
+            f'(optional - default: {DEFAULT_HFH_MIN_ACCEPTED_SCORE})'
+        ),
     )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
@@ -2390,6 +2400,7 @@ def folder_hashing_scan(parser, args):
             rank_threshold=args.rank_threshold,
             depth=args.depth,
             recursive_threshold=args.recursive_threshold,
+            min_accepted_score=args.min_accepted_score,
         )
 
         if scanner.scan():
