@@ -31,6 +31,7 @@ from progress.spinner import Spinner
 
 from scanoss.constants import (
     DEFAULT_HFH_DEPTH,
+    DEFAULT_HFH_MIN_ACCEPTED_SCORE,
     DEFAULT_HFH_RANK_THRESHOLD,
     DEFAULT_HFH_RECURSIVE_THRESHOLD,
 )
@@ -61,6 +62,7 @@ class ScannerHFH:
         rank_threshold: int = DEFAULT_HFH_RANK_THRESHOLD,
         depth: int = DEFAULT_HFH_DEPTH,
         recursive_threshold: float = DEFAULT_HFH_RECURSIVE_THRESHOLD,
+        min_accepted_score: float = DEFAULT_HFH_MIN_ACCEPTED_SCORE,
     ):
         """
         Initialize the ScannerHFH.
@@ -73,6 +75,7 @@ class ScannerHFH:
             rank_threshold (int): Get results with rank below this threshold (default: 5).
             depth (int): How many levels to scan (default: 1).
             recursive_threshold (float): Minimum score threshold to consider a match (default: 0.25).
+            min_accepted_score (float): Only show results with a score at or above this threshold (default: 0.15).
         """
         self.base = ScanossBase(
             debug=config.debug,
@@ -103,6 +106,7 @@ class ScannerHFH:
         self.scan_results = None
         self.rank_threshold = rank_threshold
         self.recursive_threshold = recursive_threshold
+        self.min_accepted_score = min_accepted_score
 
     def scan(self) -> Optional[Dict]:
         """
@@ -115,6 +119,7 @@ class ScannerHFH:
             'root': self.folder_hasher.hash_directory(path=self.scan_dir),
             'rank_threshold': self.rank_threshold,
             'recursive_threshold': self.recursive_threshold,
+            'min_accepted_score': self.min_accepted_score,
         }
 
         spinner = Spinner('Scanning folder...')
