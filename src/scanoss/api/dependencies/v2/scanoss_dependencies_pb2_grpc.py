@@ -68,6 +68,7 @@ class DependenciesServicer(object):
 
     def GetDependencies(self, request, context):
         """Get dependency details
+        Deprecated: Use /v2/licenses/components instead
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

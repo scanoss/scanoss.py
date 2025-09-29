@@ -26,7 +26,7 @@ from protoc_gen_openapiv2.options import annotations_pb2 as protoc__gen__openapi
 from google.api import field_behavior_pb2 as google_dot_api_dot_field__behavior__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*scanoss/api/common/v2/scanoss-common.proto\x12\x15scanoss.api.common.v2\x1a.protoc-gen-openapiv2/options/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\"T\n\x0eStatusResponse\x12\x31\n\x06status\x18\x01 \x01(\x0e\x32!.scanoss.api.common.v2.StatusCode\x12\x0f\n\x07message\x18\x02 \x01(\t\"\x1e\n\x0b\x45\x63hoRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x1f\n\x0c\x45\x63hoResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"k\n\x10\x43omponentRequest\x12\x11\n\x04purl\x18\x01 \x01(\tB\x03\xe0\x41\x02\x12\x13\n\x0brequirement\x18\x02 \x01(\t:/\x92\x41,2*{\"purl\":\"pkg:github/scanoss/engine@1.0.0\"}\"\xc8\x01\n\x11\x43omponentsRequest\x12@\n\ncomponents\x18\x01 \x03(\x0b\x32\'.scanoss.api.common.v2.ComponentRequestB\x03\xe0\x41\x02:q\x92\x41n2l{\"components\":[{\"purl\":\"pkg:github/scanoss/engine@1.0.0\"},{\"purl\":\"pkg:github/scanoss/scanoss.py@v1.30.0\"}]}\"r\n\x0bPurlRequest\x12\x37\n\x05purls\x18\x01 \x03(\x0b\x32(.scanoss.api.common.v2.PurlRequest.Purls\x1a*\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x13\n\x0brequirement\x18\x02 \x01(\t\")\n\x04Purl\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x13\n\x0brequirement\x18\x02 \x01(\t*`\n\nStatusCode\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x0b\n\x07SUCCESS\x10\x01\x12\x1b\n\x17SUCCEEDED_WITH_WARNINGS\x10\x02\x12\x0b\n\x07WARNING\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\x42/Z-github.com/scanoss/papi/api/commonv2;commonv2b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*scanoss/api/common/v2/scanoss-common.proto\x12\x15scanoss.api.common.v2\x1a.protoc-gen-openapiv2/options/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\"T\n\x0eStatusResponse\x12\x31\n\x06status\x18\x01 \x01(\x0e\x32!.scanoss.api.common.v2.StatusCode\x12\x0f\n\x07message\x18\x02 \x01(\t\"\x1e\n\x0b\x45\x63hoRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x1f\n\x0c\x45\x63hoResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"k\n\x10\x43omponentRequest\x12\x11\n\x04purl\x18\x01 \x01(\tB\x03\xe0\x41\x02\x12\x13\n\x0brequirement\x18\x02 \x01(\t:/\x92\x41,2*{\"purl\":\"pkg:github/scanoss/engine@1.0.0\"}\"\xc8\x01\n\x11\x43omponentsRequest\x12@\n\ncomponents\x18\x01 \x03(\x0b\x32\'.scanoss.api.common.v2.ComponentRequestB\x03\xe0\x41\x02:q\x92\x41n2l{\"components\":[{\"purl\":\"pkg:github/scanoss/engine@1.0.0\"},{\"purl\":\"pkg:github/scanoss/scanoss.py@v1.30.0\"}]}\"v\n\x0bPurlRequest\x12\x37\n\x05purls\x18\x01 \x03(\x0b\x32(.scanoss.api.common.v2.PurlRequest.Purls\x1a*\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x13\n\x0brequirement\x18\x02 \x01(\t:\x02\x18\x01\")\n\x04Purl\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x13\n\x0brequirement\x18\x02 \x01(\t*`\n\nStatusCode\x12\x0f\n\x0bUNSPECIFIED\x10\x00\x12\x0b\n\x07SUCCESS\x10\x01\x12\x1b\n\x17SUCCEEDED_WITH_WARNINGS\x10\x02\x12\x0b\n\x07WARNING\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\x42/Z-github.com/scanoss/papi/api/commonv2;commonv2b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -42,8 +42,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_COMPONENTSREQUEST'].fields_by_name['components']._serialized_options = b'\340A\002'
   _globals['_COMPONENTSREQUEST']._loaded_options = None
   _globals['_COMPONENTSREQUEST']._serialized_options = b'\222An2l{\"components\":[{\"purl\":\"pkg:github/scanoss/engine@1.0.0\"},{\"purl\":\"pkg:github/scanoss/scanoss.py@v1.30.0\"}]}'
-  _globals['_STATUSCODE']._serialized_start=772
-  _globals['_STATUSCODE']._serialized_end=868
+  _globals['_PURLREQUEST']._loaded_options = None
+  _globals['_PURLREQUEST']._serialized_options = b'\030\001'
+  _globals['_STATUSCODE']._serialized_start=776
+  _globals['_STATUSCODE']._serialized_end=872
   _globals['_STATUSRESPONSE']._serialized_start=150
   _globals['_STATUSRESPONSE']._serialized_end=234
   _globals['_ECHOREQUEST']._serialized_start=236
@@ -55,9 +57,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_COMPONENTSREQUEST']._serialized_start=411
   _globals['_COMPONENTSREQUEST']._serialized_end=611
   _globals['_PURLREQUEST']._serialized_start=613
-  _globals['_PURLREQUEST']._serialized_end=727
+  _globals['_PURLREQUEST']._serialized_end=731
   _globals['_PURLREQUEST_PURLS']._serialized_start=685
   _globals['_PURLREQUEST_PURLS']._serialized_end=727
-  _globals['_PURL']._serialized_start=729
-  _globals['_PURL']._serialized_end=770
+  _globals['_PURL']._serialized_start=733
+  _globals['_PURL']._serialized_end=774
 # @@protoc_insertion_point(module_scope)
