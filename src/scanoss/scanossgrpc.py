@@ -24,7 +24,6 @@ SPDX-License-Identifier: MIT
 
 import concurrent.futures
 import http.client as http_client
-import json
 import logging
 import os
 import sys
@@ -53,25 +52,19 @@ from . import __version__
 from .api.common.v2.scanoss_common_pb2 import (
     ComponentsRequest,
     EchoRequest,
-    EchoResponse,
-    PurlRequest,
     StatusCode,
     StatusResponse,
 )
 from .api.components.v2.scanoss_components_pb2 import (
     CompSearchRequest,
-    CompSearchResponse,
     CompVersionRequest,
-    CompVersionResponse,
 )
 from .api.components.v2.scanoss_components_pb2_grpc import ComponentsStub
 from .api.cryptography.v2.scanoss_cryptography_pb2_grpc import CryptographyStub
 from .api.dependencies.v2.scanoss_dependencies_pb2 import DependencyRequest
 from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
-from .api.geoprovenance.v2.scanoss_geoprovenance_pb2 import ContributorResponse
 from .api.geoprovenance.v2.scanoss_geoprovenance_pb2_grpc import GeoProvenanceStub
 from .api.scanning.v2.scanoss_scanning_pb2 import HFHRequest
-from .api.semgrep.v2.scanoss_semgrep_pb2 import SemgrepResponse
 from .api.semgrep.v2.scanoss_semgrep_pb2_grpc import SemgrepStub
 from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import (
     ComponentsVulnerabilityResponse,
@@ -86,6 +79,34 @@ SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_A
 DEFAULT_URI_PREFIX = '/v2'
 
 MAX_CONCURRENT_REQUESTS = 5  # Maximum number of concurrent requests to make
+
+# REST API endpoint mappings with HTTP methods
+REST_ENDPOINTS = {
+    'vulnerabilities.GetComponentsVulnerabilities': {'path': '/vulnerabilities/components', 'method': 'POST'},
+    'dependencies.Echo': {'path': '/dependencies/echo', 'method': 'POST'},
+    'dependencies.GetDependencies': {'path': '/dependencies/dependencies', 'method': 'POST'},
+    'cryptography.Echo': {'path': '/cryptography/echo', 'method': 'POST'},
+    'cryptography.GetComponentsAlgorithms': {'path': '/cryptography/algorithms/components', 'method': 'POST'},
+    'cryptography.GetComponentsAlgorithmsInRange': {
+        'path': '/cryptography/algorithms/range/components',
+        'method': 'POST',
+    },
+    'cryptography.GetComponentsEncryptionHints': {'path': '/cryptography/hints/components', 'method': 'POST'},
+    'cryptography.GetComponentsHintsInRange': {'path': '/cryptography/hints/components/range', 'method': 'POST'},
+    'cryptography.GetComponentsVersionsInRange': {
+        'path': '/cryptography/algorithms/versions/range/components',
+        'method': 'POST',
+    },
+    'components.SearchComponents': {'path': '/components/search', 'method': 'GET'},
+    'components.GetComponentVersions': {'path': '/components/versions', 'method': 'GET'},
+    'geoprovenance.GetCountryContributorsByComponents': {
+        'path': '/geoprovenance/countries/components',
+        'method': 'POST',
+    },
+    'geoprovenance.GetOriginByComponents': {'path': '/geoprovenance/origin/components', 'method': 'POST'},
+    'semgrep.GetComponentsIssues': {'path': '/semgrep/issues/components', 'method': 'POST'},
+    'scanning.FolderHashScan': {'path': '/scanning/hfh/scan', 'method': 'POST'},
+}
 
 
 class ScanossGrpcError(Exception):
@@ -241,21 +262,7 @@ class ScanossGrpc(ScanossBase):
         :param message: Message to send (default: Hello there!)
         :return: echo or None
         """
-        request_id = str(uuid.uuid4())
-        resp: EchoResponse
-        try:
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            resp = self.dependencies_stub.Echo(EchoRequest(message=message), metadata=metadata, timeout=3)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                return resp.message
-            self.print_stderr(f'ERROR: Problem sending Echo request ({message}) to {self.url}. rqId: {request_id}')
-        return None
+        return self._call_api('dependencies.Echo', self.dependencies_stub.Echo, {'message': message}, EchoRequest)
 
     def crypto_echo(self, message: str = 'Hello there!') -> str:
         """
@@ -264,23 +271,9 @@ class ScanossGrpc(ScanossBase):
         :param message: Message to send (default: Hello there!)
         :return: echo or None
         """
-        request_id = str(uuid.uuid4())
-        resp: EchoResponse
-        try:
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            resp = self.crypto_stub.Echo(EchoRequest(message=message), metadata=metadata, timeout=3)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                return resp.message
-            self.print_stderr(f'ERROR: Problem sending Echo request ({message}) to {self.url}. rqId: {request_id}')
-        return None
+        return self._call_api('cryptography.Echo', self.crypto_stub.Echo, {'message': message}, EchoRequest)
 
-    def get_dependencies(self, dependencies: json, depth: int = 1) -> dict:
+    def get_dependencies(self, dependencies: Optional[dict] = None, depth: int = 1) -> Optional[dict]:
         if not dependencies:
             self.print_stderr('ERROR: No dependency data supplied to submit to the API.')
             return None
@@ -304,11 +297,11 @@ class ScanossGrpc(ScanossBase):
             self.print_stderr('ERROR: No dependency data supplied to send to decoration service.')
             return None
         all_responses = []
-        # determine if we are using gRPC or REST based on the use_grpc flag
-        process_file = self._process_dep_file_grpc if self.use_grpc else self._process_dep_file_rest
         # Process the dependency files in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENT_REQUESTS) as executor:
-            future_to_file = {executor.submit(process_file, file, depth): file for file in files_json}
+            future_to_file = {
+                executor.submit(self._process_dep_file, file, depth, self.use_grpc): file for file in files_json
+            }
             for future in concurrent.futures.as_completed(future_to_file):
                 response = future.result()
                 if response:
@@ -326,161 +319,103 @@ class ScanossGrpc(ScanossBase):
                     merged_response['status'] = response['status']
         return merged_response
 
-    def _process_dep_file_grpc(self, file, depth: int = 1) -> dict:
+    def _process_dep_file(self, file, depth: int = 1, use_grpc: bool = None) -> dict:
         """
-        Process a single file using gRPC
+        Process a single dependency file using either gRPC or REST
 
-        :param file: dependency file purls
-        :param depth: depth to search (default: 1)
-        :return: response JSON or None
+        Args:
+            file: dependency file purls
+            depth: depth to search (default: 1)
+            use_grpc: Whether to use gRPC or REST (None = use instance default)
+
+        Returns:
+            response JSON or None
         """
-        request_id = str(uuid.uuid4())
-        try:
-            file_request = {'files': [file]}
-            request = ParseDict(file_request, DependencyRequest())
-            request.depth = depth
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))
-            self.print_debug(f'Sending dependency data via gRPC for decoration (rqId: {request_id})...')
-            resp = self.dependencies_stub.GetDependencies(request, metadata=metadata, timeout=self.timeout)
-            return MessageToDict(resp, preserving_proto_field_name=True)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        return None
+        file_request = {'files': [file], 'depth': depth}
 
-    def get_vulnerabilities_json(self, purls: dict) -> dict:
+        return self._call_api(
+            'dependencies.GetDependencies',
+            self.dependencies_stub.GetDependencies,
+            file_request,
+            DependencyRequest,
+            'Sending dependency data for decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
+        )
+
+    def get_vulnerabilities_json(self, purls: Optional[dict] = None, use_grpc: bool = None) -> Optional[dict]:
         """
         Client function to call the rpc for Vulnerability GetVulnerabilities
-        It will either use REST (default) or gRPC depending on the use_grpc flag
-        :param purls: Message to send to the service
-        :return: Server response or None
-        """
-        if self.use_grpc:
-            return self._get_vulnerabilities_grpc(purls)
-        else:
-            return self._get_vulnerabilities_rest(purls)
+        It will either use REST (default) or gRPC
 
-    def _get_vulnerabilities_grpc(self, purls: dict) -> dict:
-        """
-        Client function to call the rpc for Vulnerability GetVulnerabilities
-        :param purls: Message to send to the service
-        :return: Server response or None
-        """
-        if not purls:
-            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
-            return None
-        request_id = str(uuid.uuid4())
-        resp: ComponentsVulnerabilityResponse
-        try:
-            request = ParseDict(purls, ComponentsRequest())  # Parse the JSON/Dict into the purl request object
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            self.print_debug(f'Sending vulnerability data for decoration (rqId: {request_id})...')
-            resp = self.vuln_stub.GetComponentsVulnerabilities(request, metadata=metadata, timeout=self.timeout)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                if not self._check_status_response(resp.status, request_id):
-                    return None
-                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
-                del resp_dict['status']
-                return resp_dict
-        return None
+        Args:
+            purls (dict): Message to send to the service
 
-    def get_semgrep_json(self, purls: dict) -> dict:
+        Returns:
+            Server response or None
+        """
+        return self._call_api(
+            'vulnerabilities.GetComponentsVulnerabilities',
+            self.vuln_stub.GetComponentsVulnerabilities,
+            purls,
+            ComponentsRequest,
+            'Sending vulnerability data for decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
+        )
+
+    def get_semgrep_json(self, purls: Optional[dict] = None, use_grpc: bool = None) -> Optional[dict]:
         """
         Client function to call the rpc for Semgrep GetIssues
-        :param purls: Message to send to the service
-        :return: Server response or None
-        """
-        if not purls:
-            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
-            return None
-        request_id = str(uuid.uuid4())
-        resp: SemgrepResponse
-        try:
-            request = ParseDict(purls, PurlRequest())  # Parse the JSON/Dict into the purl request object
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            self.print_debug(f'Sending semgrep data for decoration (rqId: {request_id})...')
-            resp = self.semgrep_stub.GetIssues(request, metadata=metadata, timeout=self.timeout)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                if not self._check_status_response(resp.status, request_id):
-                    return None
-                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
-                del resp_dict['status']
-                return resp_dict
-        return None
 
-    def search_components_json(self, search: dict) -> dict:
+        Args:
+            purls (dict): Message to send to the service
+            use_grpc (bool): Whether to use gRPC or REST
+
+        Returns:
+            Server response or None
+        """
+        return self._call_api(
+            'semgrep.GetComponentsIssues',
+            self.semgrep_stub.GetComponentsIssues,
+            purls,
+            ComponentsRequest,
+            'Sending semgrep data for decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
+        )
+
+    def search_components_json(self, search: dict, use_grpc: bool = None) -> dict:
         """
         Client function to call the rpc for Components SearchComponents
-        :param search: Message to send to the service
-        :return: Server response or None
-        """
-        if not search:
-            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
-            return None
-        request_id = str(uuid.uuid4())
-        resp: CompSearchResponse
-        try:
-            request = ParseDict(search, CompSearchRequest())  # Parse the JSON/Dict into the purl request object
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            self.print_debug(f'Sending component search data (rqId: {request_id})...')
-            resp = self.comp_search_stub.SearchComponents(request, metadata=metadata, timeout=self.timeout)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                if not self._check_status_response(resp.status, request_id):
-                    return None
-                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
-                del resp_dict['status']
-                return resp_dict
-        return None
 
-    def get_component_versions_json(self, search: dict) -> dict:
+        Args:
+            search (dict): Message to send to the service
+        Returns:
+            Server response or None
+        """
+        return self._call_api(
+            'components.SearchComponents',
+            self.comp_search_stub.SearchComponents,
+            search,
+            CompSearchRequest,
+            'Sending component search data for decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
+        )
+
+    def get_component_versions_json(self, search: dict, use_grpc: bool = None) -> dict:
         """
         Client function to call the rpc for Components GetComponentVersions
-        :param search: Message to send to the service
-        :return: Server response or None
+
+        Args:
+            search (dict): Message to send to the service
+        Returns:
+            Server response or None
         """
-        if not search:
-            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
-            return None
-        request_id = str(uuid.uuid4())
-        resp: CompVersionResponse
-        try:
-            request = ParseDict(search, CompVersionRequest())  # Parse the JSON/Dict into the purl request object
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            self.print_debug(f'Sending component version data (rqId: {request_id})...')
-            resp = self.comp_search_stub.GetComponentVersions(request, metadata=metadata, timeout=self.timeout)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                if not self._check_status_response(resp.status, request_id):
-                    return None
-                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
-                del resp_dict['status']
-                return resp_dict
-        return None
+        return self._call_api(
+            'components.GetComponentVersions',
+            self.comp_search_stub.GetComponentVersions,
+            search,
+            CompVersionRequest,
+            'Sending component version data for decoration (rqId: {rqId})...',
+        )
 
     def folder_hash_scan(self, request: Dict) -> Optional[Dict]:
         """
@@ -498,6 +433,44 @@ class ScanossGrpc(ScanossBase):
             HFHRequest,
             'Sending folder hash scan data (rqId: {rqId})...',
         )
+
+    def _call_api(
+        self,
+        endpoint_key: str,
+        rpc_method,
+        request_input,
+        request_type,
+        debug_msg: Optional[str] = None,
+        use_grpc: bool = None,
+    ) -> Optional[Dict]:
+        """
+        Unified method to call either gRPC or REST API based on configuration
+
+        Args:
+            endpoint_key (str): The key to lookup the REST endpoint in REST_ENDPOINTS
+            rpc_method: The gRPC stub method (used only if use_grpc is True)
+            request_input: Either a dict or a gRPC request object
+            request_type: The type of the gRPC request object (used only if use_grpc is True)
+            debug_msg (str, optional): Debug message template that can include {rqId} placeholder
+            use_grpc (bool, optional): Override the instance's use_grpc setting. If None, uses self.use_grpc
+
+        Returns:
+            dict: The parsed response as a dictionary, or None if something went wrong
+        """
+        if not request_input:
+            self.print_stderr('ERROR: No message supplied to send to service.')
+            return None
+
+        # Determine whether to use gRPC or REST
+        use_grpc_flag = use_grpc if use_grpc is not None else self.use_grpc
+
+        if use_grpc_flag:
+            return self._call_rpc(rpc_method, request_input, request_type, debug_msg)
+        else:
+            # For REST, we only need the dict input
+            if not isinstance(request_input, dict):
+                request_input = MessageToDict(request_input, preserving_proto_field_name=True)
+            return self._call_rest(endpoint_key, request_input, debug_msg)
 
     def _call_rpc(self, rpc_method, request_input, request_type, debug_msg: Optional[str] = None) -> Optional[Dict]:
         """
@@ -577,135 +550,143 @@ class ScanossGrpc(ScanossBase):
             os.environ['http_proxy'] = proxies.get('http') or ''
             os.environ['https_proxy'] = proxies.get('https') or ''
 
-    def get_provenance_json(self, purls: dict) -> dict:
+    def get_provenance_json(self, purls: dict, use_grpc: bool = None) -> Optional[Dict]:
         """
-        Client function to call the rpc for GetComponentProvenance
-        :param purls: Message to send to the service
-        :return: Server response or None
-        """
-        if not purls:
-            self.print_stderr('ERROR: No message supplied to send to gRPC service.')
-            return None
-        request_id = str(uuid.uuid4())
-        resp: ContributorResponse
-        try:
-            request = ParseDict(purls, PurlRequest())  # Parse the JSON/Dict into the purl request object
-            metadata = self.metadata[:]
-            metadata.append(('x-request-id', request_id))  # Set a Request ID
-            self.print_debug(f'Sending data for provenance decoration (rqId: {request_id})...')
-            resp = self.provenance_stub.GetComponentContributors(request, metadata=metadata, timeout=self.timeout)
-        except Exception as e:
-            self.print_stderr(
-                f'ERROR: {e.__class__.__name__} Problem encountered sending gRPC message (rqId: {request_id}): {e}'
-            )
-        else:
-            if resp:
-                if not self._check_status_response(resp.status, request_id):
-                    return None
-                resp_dict = MessageToDict(resp, preserving_proto_field_name=True)  # Convert gRPC response to a dict
-                return resp_dict
-        return None
-
-    def get_provenance_origin(self, request: Dict) -> Optional[Dict]:
-        """
-        Client function to call the rpc for GetComponentOrigin
+        Client function to call the rpc for GetComponentContributors
 
         Args:
-            request (Dict): GetComponentOrigin Request
+            purls (dict): ComponentsRequest
+            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
+
+        Returns:
+            dict: JSON response or None
+        """
+        return self._call_api(
+            'geoprovenance.GetCountryContributorsByComponents',
+            self.provenance_stub.GetCountryContributorsByComponents,
+            purls,
+            ComponentsRequest,
+            'Sending data for provenance decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
+        )
+
+    def get_provenance_origin(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetOriginByComponents
+
+        Args:
+            request (Dict): GetOriginByComponents Request
 
         Returns:
             Optional[Dict]: OriginResponse, or None if the request was not successfull
         """
-        return self._call_rpc(
-            self.provenance_stub.GetComponentOrigin,
+        return self._call_api(
+            'geoprovenance.GetOriginByComponents',
+            self.provenance_stub.GetOriginByComponents,
             request,
-            PurlRequest,
+            ComponentsRequest,
             'Sending data for provenance origin decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
-    def get_crypto_algorithms_for_purl(self, request: Dict) -> Optional[Dict]:
+    def get_crypto_algorithms_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
         """
-        Client function to call the rpc for GetAlgorithms for a list of purls
+        Client function to call the rpc for GetComponentsAlgorithms for a list of purls
 
         Args:
-            request (Dict): PurlRequest
+            request (Dict): ComponentsRequest
+            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: AlgorithmResponse, or None if the request was not successfull
         """
-        return self._call_rpc(
-            self.crypto_stub.GetAlgorithms,
+        return self._call_api(
+            'cryptography.GetComponentsAlgorithms',
+            self.crypto_stub.GetComponentsAlgorithms,
             request,
-            PurlRequest,
+            ComponentsRequest,
             'Sending data for cryptographic algorithms decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
-    def get_crypto_algorithms_in_range_for_purl(self, request: Dict) -> Optional[Dict]:
+    def get_crypto_algorithms_in_range_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
         """
-        Client function to call the rpc for GetAlgorithmsInRange for a list of purls
+        Client function to call the rpc for GetComponentsAlgorithmsInRange for a list of purls
 
         Args:
-            request (Dict): PurlRequest
+            request (Dict): ComponentsRequest
+            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: AlgorithmsInRangeResponse, or None if the request was not successfull
         """
-        return self._call_rpc(
-            self.crypto_stub.GetAlgorithmsInRange,
+        return self._call_api(
+            'cryptography.GetComponentsAlgorithmsInRange',
+            self.crypto_stub.GetComponentsAlgorithmsInRange,
             request,
-            PurlRequest,
+            ComponentsRequest,
             'Sending data for cryptographic algorithms in range decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
-    def get_encryption_hints_for_purl(self, request: Dict) -> Optional[Dict]:
+    def get_encryption_hints_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
         """
-        Client function to call the rpc for GetEncryptionHints for a list of purls
+        Client function to call the rpc for GetComponentsEncryptionHints for a list of purls
 
         Args:
-            request (Dict): PurlRequest
+            request (Dict): ComponentsRequest
+            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: HintsResponse, or None if the request was not successfull
         """
-        return self._call_rpc(
-            self.crypto_stub.GetEncryptionHints,
+        return self._call_api(
+            'cryptography.GetComponentsEncryptionHints',
+            self.crypto_stub.GetComponentsEncryptionHints,
             request,
-            PurlRequest,
+            ComponentsRequest,
             'Sending data for encryption hints decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
-    def get_encryption_hints_in_range_for_purl(self, request: Dict) -> Optional[Dict]:
+    def get_encryption_hints_in_range_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
         """
-        Client function to call the rpc for GetHintsInRange for a list of purls
+        Client function to call the rpc for GetComponentsHintsInRange for a list of purls
 
         Args:
-            request (Dict): PurlRequest
+            request (Dict): ComponentsRequest
+            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: HintsInRangeResponse, or None if the request was not successfull
         """
-        return self._call_rpc(
-            self.crypto_stub.GetHintsInRange,
+        return self._call_api(
+            'cryptography.GetComponentsHintsInRange',
+            self.crypto_stub.GetComponentsHintsInRange,
             request,
-            PurlRequest,
+            ComponentsRequest,
             'Sending data for encryption hints in range decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
-    def get_versions_in_range_for_purl(self, request: Dict) -> Optional[Dict]:
+    def get_versions_in_range_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
         """
-        Client function to call the rpc for GetVersionsInRange for a list of purls
+        Client function to call the rpc for GetComponentsVersionsInRange for a list of purls
 
         Args:
-            request (Dict): PurlRequest
+            request (Dict): ComponentsRequest
+            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: VersionsInRangeResponse, or None if the request was not successfull
         """
-        return self._call_rpc(
-            self.crypto_stub.GetVersionsInRange,
+        return self._call_api(
+            'cryptography.GetComponentsVersionsInRange',
+            self.crypto_stub.GetComponentsVersionsInRange,
             request,
-            PurlRequest,
+            ComponentsRequest,
             'Sending data for cryptographic versions in range decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
     def get_licenses(self, request: Dict) -> Optional[Dict]:
@@ -761,21 +742,71 @@ class ScanossGrpc(ScanossBase):
     # Start of REST Client Functions
     #
 
-    def rest_post(self, uri: str, request_id: str, data: dict) -> dict:
+    def _rest_get(self, uri: str, request_id: str, params: dict = None) -> dict:
+        """
+        Send a GET request to the specified URI with optional query parameters.
+
+        Args:
+            uri (str): URI to send GET request to
+            request_id (str): request id
+            params (dict, optional): Optional query parameters as dictionary
+
+        Returns:
+            dict: JSON response or None
+        """
+        if not uri:
+            self.print_stderr('Error: Missing URI. Cannot perform GET request.')
+            return None
+        self.print_trace(f'Sending REST GET request to {uri}...')
+        headers = self.headers.copy()
+        headers['x-request-id'] = request_id
+        retry = 0
+        while retry <= self.retry_limit:
+            retry += 1
+            try:
+                response = self.session.get(uri, headers=headers, params=params, timeout=self.timeout)
+                response.raise_for_status()  # Raises an HTTPError for bad responses
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                self.print_stderr(f'Error: Problem sending GET request to {uri}: {e}')
+            except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
+                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) sending GET request - {e}.')
+                raise Exception(f'ERROR: The SCANOSS API GET request failed for {uri}') from e
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if retry > self.retry_limit:  # Timed out retry_limit or more times, fail
+                    self.print_stderr(f'ERROR: {e.__class__.__name__} sending GET request ({request_id}): {e}')
+                    raise Exception(
+                        f'ERROR: The SCANOSS API GET request timed out ({e.__class__.__name__}) for {uri}'
+                    ) from e
+                else:
+                    self.print_stderr(f'Warning: {e.__class__.__name__} communicating with {self.url}. Retrying...')
+                    time.sleep(5)
+            except Exception as e:
+                self.print_stderr(
+                    f'ERROR: Exception ({e.__class__.__name__}) sending GET request ({request_id}) to {uri}: {e}'
+                )
+                raise Exception(f'ERROR: The SCANOSS API GET request failed for {uri}') from e
+        return None
+
+    def _rest_post(self, uri: str, request_id: str, data: dict) -> dict:
         """
         Post the specified data to the given URI.
-        :param request_id: request id
-        :param uri: URI to post to
-        :param data: json data to post
-        :return: JSON response or None
+
+        Args:
+            uri (str): URI to post to
+            request_id (str): request id
+            data (dict): json data to post
+
+        Returns:
+            dict: JSON response or None
         """
         if not uri:
             self.print_stderr('Error: Missing URI. Cannot search for project.')
             return None
         self.print_trace(f'Sending REST POST data to {uri}...')
-        headers = self.headers
-        headers['x-request-id'] = request_id  # send a unique request id for each post
-        retry = 0  # Add some retry logic to cater for timeouts, etc.
+        headers = self.headers.copy()
+        headers['x-request-id'] = request_id
+        retry = 0
         while retry <= self.retry_limit:
             retry += 1
             try:
@@ -803,75 +834,45 @@ class ScanossGrpc(ScanossBase):
                 raise Exception(f'ERROR: The SCANOSS Decoration API request failed for {uri}') from e
         return None
 
-    def _get_licenses_rest(self, purls: Dict) -> Optional[Dict]:
+    def _call_rest(self, endpoint_key: str, request_input: dict, debug_msg: Optional[str] = None) -> Optional[Dict]:
         """
-        Get the licenses for the given purls using REST API
+        Call a REST endpoint and return the response as a dictionary
 
         Args:
-            purls (Dict): Purl Request dictionary
+            endpoint_key (str): The key to lookup the REST endpoint in REST_ENDPOINTS
+            request_input (dict): The request data to send
+            debug_msg (str, optional): Debug message template that can include {rqId} placeholder.
+
         Returns:
-            Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
+            dict: The parsed REST response as a dictionary, or None if something went wrong
         """
-        if not purls:
-            self.print_stderr('ERROR: No message supplied to send to REST decoration service.')
-            return None
+        if endpoint_key not in REST_ENDPOINTS:
+            raise ScanossGrpcError(f'Unknown REST endpoint key: {endpoint_key}')
+
+        endpoint_config = REST_ENDPOINTS[endpoint_key]
+        endpoint_path = endpoint_config['path']
+        method = endpoint_config['method']
+        endpoint_url = f'{self.orig_url}{DEFAULT_URI_PREFIX}{endpoint_path}'
         request_id = str(uuid.uuid4())
-        self.print_debug(f'Sending data for Licenses via REST (request id: {request_id})...')
-        response = self.rest_post(f'{self.orig_url}{DEFAULT_URI_PREFIX}/licenses/components', request_id, purls)
-        self.print_trace(f'Received response for Licenses via REST (request id: {request_id}): {response}')
-        if response:
-            # Parse the JSON/Dict into the purl response
-            resp_obj = ParseDict(response, ComponentsLicenseResponse(), True)
-            if resp_obj:
-                self.print_debug(f'License Response: {resp_obj}')
-                if not self._check_status_response(resp_obj.status, request_id):
+
+        if debug_msg:
+            self.print_debug(debug_msg.format(rqId=request_id))
+
+        if method == 'GET':
+            response = self._rest_get(endpoint_url, request_id, params=request_input)
+        else:  # POST
+            response = self._rest_post(endpoint_url, request_id, request_input)
+
+        # Check for status in response and validate
+        if response and 'status' in response:
+            status_dict = response.get('status', {})
+            if status_dict.get('status') != 'SUCCESS':
+                self.print_stderr(f'Request failed (rqId: {request_id}): {status_dict.get("message", "Unknown error")}')
+                if status_dict.get('status') in ['FAILED', 'FAILED_WITH_WARNINGS']:
                     return None
             del response['status']
-            return response
-        return None
 
-    def _get_vulnerabilities_rest(self, purls: dict):
-        """
-        Get the vulnerabilities for the given purls using REST API
-        :param purls: Purl Request dictionary
-        :return: Vulnerability Response, or None if the request was unsuccessful
-        """
-        if not purls:
-            self.print_stderr('ERROR: No message supplied to send to REST decoration service.')
-            return None
-        request_id = str(uuid.uuid4())
-        self.print_debug(f'Sending data for Vulnerabilities via REST (request id: {request_id})...')
-        response = self.rest_post(f'{self.orig_url}{DEFAULT_URI_PREFIX}/vulnerabilities/components', request_id, purls)
-        self.print_trace(f'Received response for Vulnerabilities via REST (request id: {request_id}): {response}')
-        if response:
-            # Parse the JSON/Dict into the purl response
-            resp_obj = ParseDict(response, ComponentsVulnerabilityResponse(), True)
-            if resp_obj:
-                self.print_debug(f'Vulnerability Response: {resp_obj}')
-                if not self._check_status_response(resp_obj.status, request_id):
-                    return None
-            del response['status']
-            return response
-        return None
-
-    def _process_dep_file_rest(self, file, depth: int = 1) -> dict:
-        """
-        Porcess a single dependency file using REST
-
-        :param file: dependency file purls
-        :param depth: depth to search (default: 1)
-        :return: response JSON or None
-        """
-        request_id = str(uuid.uuid4())
-        self.print_debug(f'Sending data for Dependencies via REST (request id: {request_id})...')
-        file_request = {'files': [file], 'depth': depth}
-        response = self.rest_post(
-            f'{self.orig_url}{DEFAULT_URI_PREFIX}/dependencies/dependencies', request_id, file_request
-        )
-        self.print_trace(f'Received response for Dependencies via REST (request id: {request_id}): {response}')
-        if response:
-            return response
-        return None
+        return response
 
 
 #

@@ -28,7 +28,10 @@ if _version_not_supported:
 
 class CryptographyStub(object):
     """
-    Expose all of the SCANOSS Cryptography RPCs here
+    Cryptography Service Definition
+
+    Provides comprehensive cryptographic intelligence for software components
+    including algorithm detection, encryption hints, and security assessments.
     """
 
     def __init__(self, channel):
@@ -47,70 +50,280 @@ class CryptographyStub(object):
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.AlgorithmResponse.FromString,
                 _registered_method=True)
+        self.GetComponentAlgorithms = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentAlgorithms',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentAlgorithmsResponse.FromString,
+                _registered_method=True)
+        self.GetComponentsAlgorithms = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentsAlgorithms',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsAlgorithmsResponse.FromString,
+                _registered_method=True)
         self.GetAlgorithmsInRange = channel.unary_unary(
                 '/scanoss.api.cryptography.v2.Cryptography/GetAlgorithmsInRange',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.AlgorithmsInRangeResponse.FromString,
+                _registered_method=True)
+        self.GetComponentAlgorithmsInRange = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentAlgorithmsInRange',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentAlgorithmsInRangeResponse.FromString,
+                _registered_method=True)
+        self.GetComponentsAlgorithmsInRange = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentsAlgorithmsInRange',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsAlgorithmsInRangeResponse.FromString,
                 _registered_method=True)
         self.GetVersionsInRange = channel.unary_unary(
                 '/scanoss.api.cryptography.v2.Cryptography/GetVersionsInRange',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.VersionsInRangeResponse.FromString,
                 _registered_method=True)
+        self.GetComponentVersionsInRange = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentVersionsInRange',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentVersionsInRangeResponse.FromString,
+                _registered_method=True)
+        self.GetComponentsVersionsInRange = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentsVersionsInRange',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsVersionsInRangeResponse.FromString,
+                _registered_method=True)
         self.GetHintsInRange = channel.unary_unary(
                 '/scanoss.api.cryptography.v2.Cryptography/GetHintsInRange',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.HintsInRangeResponse.FromString,
+                _registered_method=True)
+        self.GetComponentHintsInRange = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentHintsInRange',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentHintsInRangeResponse.FromString,
+                _registered_method=True)
+        self.GetComponentsHintsInRange = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentsHintsInRange',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsHintsInRangeResponse.FromString,
                 _registered_method=True)
         self.GetEncryptionHints = channel.unary_unary(
                 '/scanoss.api.cryptography.v2.Cryptography/GetEncryptionHints',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.HintsResponse.FromString,
                 _registered_method=True)
+        self.GetComponentEncryptionHints = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentEncryptionHints',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentEncryptionHintsResponse.FromString,
+                _registered_method=True)
+        self.GetComponentsEncryptionHints = channel.unary_unary(
+                '/scanoss.api.cryptography.v2.Cryptography/GetComponentsEncryptionHints',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsEncryptionHintsResponse.FromString,
+                _registered_method=True)
 
 
 class CryptographyServicer(object):
     """
-    Expose all of the SCANOSS Cryptography RPCs here
+    Cryptography Service Definition
+
+    Provides comprehensive cryptographic intelligence for software components
+    including algorithm detection, encryption hints, and security assessments.
     """
 
     def Echo(self, request, context):
-        """Standard echo
+        """
+        Returns the same message that was sent, used for health checks and connectivity testing
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetAlgorithms(self, request, context):
-        """Get Cryptographic algorithms associated with a list of PURLs and, optionally, a requirement
+        """****** Algorithms ****** //
+
+
+        Get cryptographic algorithms associated with a list of PURLs - legacy endpoint.
+
+        Legacy method for retrieving cryptographic algorithms used by software components.
+        Use GetComponentAlgorithms or GetComponentsAlgorithms instead.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentAlgorithms(self, request, context):
+        """
+        Get cryptographic algorithms associated with a single software component.
+
+        Analyzes the component and returns cryptographic algorithms detected in the codebase
+        including algorithm names and strength classifications.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/cryptography/v2/README.md#getcomponentalgorithms
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentsAlgorithms(self, request, context):
+        """
+        Get cryptographic algorithms associated with multiple software components in a single request.
+
+        Analyzes multiple components and returns cryptographic algorithms detected in each codebase
+        including algorithm names and strength classifications.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/cryptography/v2/README.md#getcomponentsalgorithms
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetAlgorithmsInRange(self, request, context):
-        """Given a list of PURLS and version ranges, get a list of cryptographic algorithms used
+        """****** Algorithms in range ****** //
+
+
+        Get cryptographic algorithms used across version ranges - legacy endpoint.
+
+        Legacy method for retrieving cryptographic algorithms across component version ranges.
+        Use GetComponentAlgorithmsInRange or GetComponentsAlgorithmsInRange instead.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentAlgorithmsInRange(self, request, context):
+        """
+        Get cryptographic algorithms used by a component across specified version ranges.
+
+        Analyzes the component across version ranges and returns all cryptographic algorithms
+        detected along with the versions where they appear.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/cryptography/v2/README.md#getcomponentalgorithmsinrange
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentsAlgorithmsInRange(self, request, context):
+        """
+        Get cryptographic algorithms used by multiple components across specified version ranges.
+
+        Analyzes multiple components across version ranges and returns all cryptographic algorithms
+        detected along with the versions where they appear for each component.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/cryptography/v2/README.md#getcomponentsalgorithmsinrange
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetVersionsInRange(self, request, context):
-        """Given a list of PURLS and version ranges, get a list of versions that do/do not contain cryptographic algorithms
+        """****** Versions in range ****** //
+
+
+        Get component versions that contain or don't contain cryptographic algorithms - legacy endpoint.
+
+        Legacy method for retrieving version lists based on cryptographic algorithm presence.
+        Use ComponentVersionsInRange or ComponentsVersionsInRange instead.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentVersionsInRange(self, request, context):
+        """
+        Get component versions that contain or don't contain cryptographic algorithms within specified ranges.
+
+        Returns lists of versions that either contain cryptographic algorithms or don't,
+        helping assess cryptographic presence across component evolution.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/cryptography/v2/README.md#componentversionsinrange
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentsVersionsInRange(self, request, context):
+        """
+        Get multiple component versions that contain or don't contain cryptographic algorithms within specified ranges.
+
+        Returns lists of versions for multiple components that either contain cryptographic algorithms or don't,
+        helping assess cryptographic presence across component evolution in batch operations.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/cryptography/v2/README.md#componentsversionsinrange
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetHintsInRange(self, request, context):
-        """Given a list of PURLS and version ranges, get hints related to protocol/library/sdk/framework
+        """****** Hints in range ****** //
+
+
+        Get cryptographic hints across version ranges - legacy endpoint.
+
+        Legacy method for retrieving cryptographic hints related to protocols, libraries,
+        SDKs and frameworks across version ranges. Use ComponentHintsInRange or ComponentsHintsInRange instead.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentHintsInRange(self, request, context):
+        """
+        Get cryptographic hints across version ranges - legacy endpoint.
+
+        Legacy method for retrieving cryptographic hints related to protocols, libraries,
+        SDKs and frameworks across version ranges. Use ComponentHintsInRange or ComponentsHintsInRange instead.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentsHintsInRange(self, request, context):
+        """
+        Get cryptographic hints across version ranges - legacy endpoint.
+
+        Legacy method for retrieving cryptographic hints related to protocols, libraries,
+        SDKs and frameworks across version ranges. Use ComponentHintsInRange or ComponentsHintsInRange instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetEncryptionHints(self, request, context):
-        """Given a list of PURLS, get hints related to protocol/library/sdk/framework
+        """****** Encryption hints ****** //
+
+
+        Get encryption hints for components - legacy endpoint.
+
+        Legacy method for retrieving hints about cryptographic protocols, libraries,
+        SDKs and frameworks used by components. Use ComponentHintsInRange or ComponentsHintsInRange instead.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentEncryptionHints(self, request, context):
+        """
+        Get cryptographic hints for a single component.
+
+        Returns hints about cryptographic protocols, libraries, SDKs and frameworks
+        used by the component, providing insights into cryptographic dependencies.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/cryptography/v2/README.md#componenthintsinrange
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentsEncryptionHints(self, request, context):
+        """
+        Get cryptographic hints for multiple components in a single request.
+
+        Returns hints about cryptographic protocols, libraries, SDKs and frameworks
+        used by multiple components, providing insights into cryptographic dependencies.
+
+        See: https://github.com/scanoss/papi/blob/main/protobuf/scanoss/api/cryptography/v2/README.md#componentshintsinrange
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -129,25 +342,75 @@ def add_CryptographyServicer_to_server(servicer, server):
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.AlgorithmResponse.SerializeToString,
             ),
+            'GetComponentAlgorithms': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentAlgorithms,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentAlgorithmsResponse.SerializeToString,
+            ),
+            'GetComponentsAlgorithms': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentsAlgorithms,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsAlgorithmsResponse.SerializeToString,
+            ),
             'GetAlgorithmsInRange': grpc.unary_unary_rpc_method_handler(
                     servicer.GetAlgorithmsInRange,
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.AlgorithmsInRangeResponse.SerializeToString,
+            ),
+            'GetComponentAlgorithmsInRange': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentAlgorithmsInRange,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentAlgorithmsInRangeResponse.SerializeToString,
+            ),
+            'GetComponentsAlgorithmsInRange': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentsAlgorithmsInRange,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsAlgorithmsInRangeResponse.SerializeToString,
             ),
             'GetVersionsInRange': grpc.unary_unary_rpc_method_handler(
                     servicer.GetVersionsInRange,
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.VersionsInRangeResponse.SerializeToString,
             ),
+            'GetComponentVersionsInRange': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentVersionsInRange,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentVersionsInRangeResponse.SerializeToString,
+            ),
+            'GetComponentsVersionsInRange': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentsVersionsInRange,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsVersionsInRangeResponse.SerializeToString,
+            ),
             'GetHintsInRange': grpc.unary_unary_rpc_method_handler(
                     servicer.GetHintsInRange,
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.HintsInRangeResponse.SerializeToString,
             ),
+            'GetComponentHintsInRange': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentHintsInRange,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentHintsInRangeResponse.SerializeToString,
+            ),
+            'GetComponentsHintsInRange': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentsHintsInRange,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsHintsInRangeResponse.SerializeToString,
+            ),
             'GetEncryptionHints': grpc.unary_unary_rpc_method_handler(
                     servicer.GetEncryptionHints,
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.HintsResponse.SerializeToString,
+            ),
+            'GetComponentEncryptionHints': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentEncryptionHints,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentEncryptionHintsResponse.SerializeToString,
+            ),
+            'GetComponentsEncryptionHints': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentsEncryptionHints,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsEncryptionHintsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -159,7 +422,10 @@ def add_CryptographyServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class Cryptography(object):
     """
-    Expose all of the SCANOSS Cryptography RPCs here
+    Cryptography Service Definition
+
+    Provides comprehensive cryptographic intelligence for software components
+    including algorithm detection, encryption hints, and security assessments.
     """
 
     @staticmethod
@@ -217,6 +483,60 @@ class Cryptography(object):
             _registered_method=True)
 
     @staticmethod
+    def GetComponentAlgorithms(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentAlgorithms',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentAlgorithmsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentsAlgorithms(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentsAlgorithms',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsAlgorithmsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def GetAlgorithmsInRange(request,
             target,
             options=(),
@@ -233,6 +553,60 @@ class Cryptography(object):
             '/scanoss.api.cryptography.v2.Cryptography/GetAlgorithmsInRange',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
             scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.AlgorithmsInRangeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentAlgorithmsInRange(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentAlgorithmsInRange',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentAlgorithmsInRangeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentsAlgorithmsInRange(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentsAlgorithmsInRange',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsAlgorithmsInRangeResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -271,6 +645,60 @@ class Cryptography(object):
             _registered_method=True)
 
     @staticmethod
+    def GetComponentVersionsInRange(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentVersionsInRange',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentVersionsInRangeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentsVersionsInRange(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentsVersionsInRange',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsVersionsInRangeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def GetHintsInRange(request,
             target,
             options=(),
@@ -298,6 +726,60 @@ class Cryptography(object):
             _registered_method=True)
 
     @staticmethod
+    def GetComponentHintsInRange(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentHintsInRange',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentHintsInRangeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentsHintsInRange(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentsHintsInRange',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsHintsInRangeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def GetEncryptionHints(request,
             target,
             options=(),
@@ -314,6 +796,60 @@ class Cryptography(object):
             '/scanoss.api.cryptography.v2.Cryptography/GetEncryptionHints',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
             scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.HintsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentEncryptionHints(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentEncryptionHints',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentEncryptionHintsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentsEncryptionHints(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.cryptography.v2.Cryptography/GetComponentsEncryptionHints',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_cryptography_dot_v2_dot_scanoss__cryptography__pb2.ComponentsEncryptionHintsResponse.FromString,
             options,
             channel_credentials,
             insecure,

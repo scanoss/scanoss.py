@@ -19,12 +19,13 @@ MIN_SPLIT_PARTS = 2
 @dataclass
 class CryptographyConfig:
     purl: List[str]
+    debug: bool = False
+    header: Optional[str] = None
     input_file: Optional[str] = None
     output_file: Optional[str] = None
-    header: Optional[str] = None
-    debug: bool = False
-    trace: bool = False
     quiet: bool = False
+    trace: bool = False
+    use_grpc: bool = False
     with_range: bool = False
 
     def _process_input_file(self) -> dict:
@@ -69,7 +70,7 @@ class CryptographyConfig:
                     parts = purl.split('@')
                     if not (len(parts) >= MIN_SPLIT_PARTS and parts[1]):
                         raise ScanossCryptographyError(
-                            f'Invalid PURL format: "{purl}".' f'It must include a version (e.g., pkg:type/name@version)'
+                            f'Invalid PURL format: "{purl}".It must include a version (e.g., pkg:type/name@version)'
                         )
         if self.input_file:
             purl_request = self._process_input_file()
@@ -91,13 +92,14 @@ class CryptographyConfig:
 def create_cryptography_config_from_args(args) -> CryptographyConfig:
     return CryptographyConfig(
         debug=getattr(args, 'debug', False),
-        trace=getattr(args, 'trace', False),
-        quiet=getattr(args, 'quiet', False),
-        with_range=getattr(args, 'with_range', False),
-        purl=getattr(args, 'purl', []),
+        header=getattr(args, 'header', None),
         input_file=getattr(args, 'input', None),
         output_file=getattr(args, 'output', None),
-        header=getattr(args, 'header', None),
+        purl=getattr(args, 'purl', []),
+        quiet=getattr(args, 'quiet', False),
+        trace=getattr(args, 'trace', False),
+        use_grpc=getattr(args, 'grpc', False),
+        with_range=getattr(args, 'with_range', False),
     )
 
 
@@ -134,7 +136,7 @@ class Cryptography:
 
         self.client = client
         self.config = config
-        self.purls_request = self._build_purls_request()
+        self.components_request = self._build_components_request()
         self.results = None
 
     def get_algorithms(self) -> Optional[Dict]:
@@ -145,15 +147,16 @@ class Cryptography:
             Optional[Dict]: The folder hash response from the gRPC client, or None if an error occurs.
         """
 
-        if not self.purls_request:
+        if not self.components_request:
             raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
-        self.base.print_stderr(
-            f'Getting cryptographic algorithms for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
-        )
+        components_str = ', '.join(p['purl'] for p in self.components_request['components'])
+        self.base.print_stderr(f'Getting cryptographic algorithms for {components_str}')
         if self.config.with_range:
-            response = self.client.get_crypto_algorithms_in_range_for_purl(self.purls_request)
+            response = self.client.get_crypto_algorithms_in_range_for_purl(
+                self.components_request, self.config.use_grpc
+            )
         else:
-            response = self.client.get_crypto_algorithms_for_purl(self.purls_request)
+            response = self.client.get_crypto_algorithms_for_purl(self.components_request, self.config.use_grpc)
         if response:
             self.results = response
 
@@ -167,17 +170,17 @@ class Cryptography:
             Optional[Dict]: The encryption hints response from the gRPC client, or None if an error occurs.
         """
 
-        if not self.purls_request:
+        if not self.components_request:
             raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
         self.base.print_stderr(
             f'Getting encryption hints '
             f'{"in range" if self.config.with_range else ""} '
-            f'for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
+            f'for {", ".join([p["purl"] for p in self.components_request["components"]])}'
         )
         if self.config.with_range:
-            response = self.client.get_encryption_hints_in_range_for_purl(self.purls_request)
+            response = self.client.get_encryption_hints_in_range_for_purl(self.components_request, self.config.use_grpc)
         else:
-            response = self.client.get_encryption_hints_for_purl(self.purls_request)
+            response = self.client.get_encryption_hints_for_purl(self.components_request, self.config.use_grpc)
         if response:
             self.results = response
 
@@ -191,20 +194,21 @@ class Cryptography:
             Optional[Dict]: The versions in range response from the gRPC client, or None if an error occurs.
         """
 
-        if not self.purls_request:
+        if not self.components_request:
             raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
 
-        self.base.print_stderr(
-            f'Getting versions in range for {", ".join([p["purl"] for p in self.purls_request["purls"]])}'
-        )
+        components_str = ', '.join(p['purl'] for p in self.components_request['components'])
+        self.base.print_stderr(f'Getting versions in range for {components_str}')
 
-        response = self.client.get_versions_in_range_for_purl(self.purls_request)
+        response = self.client.get_versions_in_range_for_purl(self.components_request, self.config.use_grpc)
         if response:
             self.results = response
 
         return self.results
 
-    def _build_purls_request(self) -> Optional[dict]:
+    def _build_components_request(
+        self,
+    ) -> Optional[dict]:
         """
         Load the specified purls from a JSON file or a list of PURLs and return a dictionary
 
@@ -212,7 +216,7 @@ class Cryptography:
             Optional[dict]: The dictionary containing the PURLs
         """
         return {
-            'purls': [
+            'components': [
                 {
                     'purl': self._remove_version_from_purl(purl),
                     'requirement': self._extract_version_from_purl(purl),

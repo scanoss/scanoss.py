@@ -310,7 +310,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Retrieve vulnerabilities for the given components',
     )
     c_vulns.set_defaults(func=comp_vulns)
-    c_vulns.add_argument('--grpc', action='store_true', help='Enable gRPC support')
 
     # Component Sub-command: component licenses
     c_licenses = comp_sub.add_parser(
@@ -949,7 +948,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument(
             '--apiurl', type=str, help='SCANOSS API URL (optional - default: https://api.osskb.org/scan/direct)'
         )
-        p.add_argument('--grpc', action='store_true', help='Enable gRPC support')
 
     # Global Scan/Fingerprint filter options
     for p in [p_scan, p_wfp]:
@@ -1058,6 +1056,21 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             default=DEFAULT_SYFT_TIMEOUT,
             help='Timeout (in seconds) for syft to complete (optional - default 600)',
         )
+
+    # gRPC support options
+    for p in [
+        c_vulns,
+        p_scan,
+        p_cs,
+        p_crypto_algorithms,
+        p_crypto_hints,
+        p_crypto_versions_in_range,
+        c_semgrep,
+        c_provenance,
+        c_search,
+        c_versions,
+    ]:
+        p.add_argument('--grpc', action='store_true', help='Enable gRPC support')
 
     # Help/Trace command options
     for p in [
@@ -2178,6 +2191,7 @@ def comp_semgrep(parser, args):
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
+        use_grpc=args.grpc,
     )
     if not comps.get_semgrep_details(args.input, args.purl, args.output):
         sys.exit(1)
@@ -2216,6 +2230,7 @@ def comp_search(parser, args):
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
+        use_grpc=args.grpc,
     )
     if not comps.search_components(
         args.output,
@@ -2261,6 +2276,7 @@ def comp_versions(parser, args):
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
+        use_grpc=args.grpc,
     )
     if not comps.get_component_versions(args.output, json_file=args.input, purl=args.purl, limit=args.limit):
         sys.exit(1)
@@ -2296,6 +2312,7 @@ def comp_provenance(parser, args):
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
+        use_grpc=args.grpc,
     )
     if not comps.get_provenance_details(args.input, args.purl, args.output, args.origin):
         sys.exit(1)
