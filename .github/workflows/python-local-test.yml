@@ -57,7 +57,8 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
-
+        env:
+          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
       - name: Run Tests (fast winnowing)
         run: |
           pip install scanoss_winnowing
@@ -71,6 +72,8 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
+        env:
+          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
 
       - name: Run Tests HPSM (fast winnowing)
         run: |
@@ -85,6 +88,8 @@ jobs:
             echo "Error: WFP test did not produce any results. Failing"
             exit 1
           fi
+        env:
+          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
 
       - name: Run Unit Tests
         run: |

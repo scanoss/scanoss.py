@@ -98,4 +98,6 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
+        env:
+          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
 
