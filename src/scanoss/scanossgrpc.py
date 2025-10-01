@@ -415,6 +415,7 @@ class ScanossGrpc(ScanossBase):
             search,
             CompVersionRequest,
             'Sending component version data for decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
     def folder_hash_scan(self, request: Dict) -> Optional[Dict]:

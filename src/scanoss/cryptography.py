@@ -147,7 +147,7 @@ class Cryptography:
             Optional[Dict]: The folder hash response from the gRPC client, or None if an error occurs.
         """
 
-        if not self.components_request:
+        if not self.components_request or not self.components_request.get('components'):
             raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
         components_str = ', '.join(p['purl'] for p in self.components_request['components'])
         self.base.print_stderr(f'Getting cryptographic algorithms for {components_str}')
@@ -170,7 +170,7 @@ class Cryptography:
             Optional[Dict]: The encryption hints response from the gRPC client, or None if an error occurs.
         """
 
-        if not self.components_request:
+        if not self.components_request or not self.components_request.get('components'):
             raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
         self.base.print_stderr(
             f'Getting encryption hints '
@@ -194,7 +194,7 @@ class Cryptography:
             Optional[Dict]: The versions in range response from the gRPC client, or None if an error occurs.
         """
 
-        if not self.components_request:
+        if not self.components_request or not self.components_request.get('components'):
             raise ScanossCryptographyError('No PURLs supplied. Provide --purl or --input.')
 
         components_str = ', '.join(p['purl'] for p in self.components_request['components'])
