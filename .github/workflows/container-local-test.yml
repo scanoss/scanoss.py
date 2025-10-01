@@ -91,7 +91,7 @@ jobs:
           docker image ls -a
           docker run ${{ env.IMAGE_NAME }} version
           docker run ${{ env.IMAGE_NAME }} utils fast
-          docker run -v "$(pwd)":"/scanoss" ${{ env.IMAGE_NAME }} scan -o results.json tests
+          docker run -e SCANOSS_API_KEY=${{ secrets.SC_API_KEY }} -v "$(pwd)":"/scanoss" ${{ env.IMAGE_NAME }} scan -o results.json tests
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
           if [[ $id_count -lt 1 ]]; then
