@@ -43,7 +43,6 @@ from pypac.parser import PACFile
 from pypac.resolver import ProxyResolver
 from urllib3.exceptions import InsecureRequestWarning
 
-from scanoss.api.licenses.v2.scanoss_licenses_pb2 import ComponentsLicenseResponse
 from scanoss.api.licenses.v2.scanoss_licenses_pb2_grpc import LicenseStub
 from scanoss.api.scanning.v2.scanoss_scanning_pb2_grpc import ScanningStub
 from scanoss.constants import DEFAULT_TIMEOUT
@@ -66,9 +65,6 @@ from .api.dependencies.v2.scanoss_dependencies_pb2_grpc import DependenciesStub
 from .api.geoprovenance.v2.scanoss_geoprovenance_pb2_grpc import GeoProvenanceStub
 from .api.scanning.v2.scanoss_scanning_pb2 import HFHRequest
 from .api.semgrep.v2.scanoss_semgrep_pb2_grpc import SemgrepStub
-from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import (
-    ComponentsVulnerabilityResponse,
-)
 from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2_grpc import VulnerabilitiesStub
 from .scanossbase import ScanossBase
 
