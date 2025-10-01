@@ -29,6 +29,9 @@ from typing import List, Optional, TextIO
 
 from pypac.parser import PACFile
 
+from scanoss.cyclonedx import CycloneDx
+from scanoss.utils.file import validate_json_file
+
 from .scanner import Scanner
 from .scanossbase import ScanossBase
 from .scanossgrpc import ScanossGrpc
@@ -90,8 +93,9 @@ class Components(ScanossBase):
             ignore_cert_errors=ignore_cert_errors,
             use_grpc=use_grpc,
         )
+        self.cdx = CycloneDx(debug=self.debug)
 
-    def load_comps(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None)-> Optional[dict]:
+    def load_comps(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None) -> Optional[dict]:
         """
         Load the specified components and return a dictionary
 
@@ -101,8 +105,9 @@ class Components(ScanossBase):
         """
         return self.load_purls(json_file, purls, 'components')
 
-    def load_purls(self, json_file: Optional[str] = None, purls: Optional[List[str]] = None, field:str = 'purls'
-                   ) -> Optional[dict]:
+    def load_purls(
+        self, json_file: Optional[str] = None, purls: Optional[List[str]] = None, field: str = 'purls'
+    ) -> Optional[dict]:
         """
         Load the specified purls and return a dictionary
 
@@ -112,15 +117,15 @@ class Components(ScanossBase):
         :return: PURL Request dictionary or None
         """
         if json_file:
-            if not os.path.isfile(json_file) or not os.access(json_file, os.R_OK):
-                self.print_stderr(f'ERROR: JSON file does not exist, is not a file, or is not readable: {json_file}')
+            result = validate_json_file(json_file)
+            if not result.is_valid:
+                self.print_stderr(f'ERROR: Problem parsing input JSON: {result.error}')
                 return None
-            with open(json_file, 'r') as f:
-                try:
-                    purl_request = json.loads(f.read())
-                except Exception as e:
-                    self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
-                    return None
+
+            if self.cdx.is_cyclonedx_json(json.dumps(result.data)):
+                purl_request = self.cdx.get_purls_request_from_cdx(result.data, field)
+            else:
+                purl_request = result.data
         elif purls:
             if not all(isinstance(purl, str) for purl in purls):
                 self.print_stderr('ERROR: PURLs must be a list of strings.')
@@ -377,6 +382,38 @@ class Components(ScanossBase):
         else:
             self.print_msg('Sending PURLs to Geo Provenance Declared API for decoration...')
             response = self.grpc_api.get_provenance_json(purls_request)
+        if response:
+            print(json.dumps(response, indent=2, sort_keys=True), file=file)
+            success = True
+            if output_file:
+                self.print_msg(f'Results written to: {output_file}')
+        self._close_file(output_file, file)
+        return success
+
+    def get_licenses(self, json_file: str = None, purls: [] = None, output_file: str = None) -> bool:
+        """
+        Retrieve the license details for the supplied PURLs
+
+        Args:
+            json_file (str, optional): Input JSON file. Defaults to None.
+            purls (None, optional): PURLs to retrieve license details for. Defaults to None.
+            output_file (str, optional): Output file. Defaults to None.
+
+        Returns:
+            bool: True on success, False otherwise
+        """
+        success = False
+
+        purls_request = self.load_purls(json_file, purls)
+        if not purls_request:
+            return False
+        file = self._open_file_or_sdtout(output_file)
+        if file is None:
+            return False
+
+        # We'll use the new ComponentBatchRequest instead of deprecated PurlRequest for the license api
+        component_batch_request = {'components': purls_request.get('purls')}
+        response = self.grpc_api.get_licenses(component_batch_request)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True

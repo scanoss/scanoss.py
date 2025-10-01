@@ -6,6 +6,9 @@ on: [workflow_dispatch]
 permissions:
   contents: read
 
+env:
+  SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9.x"
+          python-version: '3.9.x'
 
       - name: Install Dependencies
         run: |
@@ -65,7 +68,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9.x"
+          python-version: '3.9.x'
 
       - name: Install Remote Package
         run: |

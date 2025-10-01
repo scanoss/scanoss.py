@@ -30,7 +30,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9.x"
+          python-version: '3.9.x'
 
       - name: Install Dependencies
         run: |
@@ -130,7 +130,7 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} version
           docker run ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} utils fast
-          docker run -v "$(pwd)":"/scanoss" ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} scan -o results.json tests
+          docker run -e SCANOSS_API_KEY="${{ secrets.SC_API_KEY }}" -v "$(pwd)":"/scanoss" ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} scan -o results.json tests
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
           if [[ $id_count -lt 1 ]]; then

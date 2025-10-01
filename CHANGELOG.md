@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.33.0] - 2025-09-19
+### Added
+- Add `licenses` sub-command to `component` command
+- Add support for ingesting CDX to all decoration commands
+- Add CDX input validation
+
 ## [1.32.0] - 2025-09-01
 ### Added
 - Switched vulnerability and dependency APIs to use REST by default
@@ -176,7 +182,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.20.2] - 2025-02-26
 ### Fixed
-- Fixed provenance command 
+- Fixed provenance command
 
 ## [1.20.1] - 2025-02-18
 ### Added
@@ -238,7 +244,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.17.5] - 2024-11-12
 ### Fixed
 - Fix dependencies scan result structure
-  
+
 ## [1.17.4] - 2024-11-08
 ### Fixed
 - Fix backslashes in file paths on Windows
@@ -255,7 +261,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added supplier to SPDX packages
 ### Changed
-- Changed undeclared summary output 
+- Changed undeclared summary output
 
 ## [1.17.1] - 2024-10-24
 ### Fixed
@@ -288,7 +294,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added support for Python3.12
 - Module `pkg_resources` has been replaced with `importlib_resources`
-- Added support for UTF-16 filenames 
+- Added support for UTF-16 filenames
 
 ## [1.13.0] - 2024-06-05
 ### Added
@@ -367,11 +373,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.0] - 2023-06-16
 ### Added
 - Added support for High Precision Snippet Matching (`--hpsm` or `-H`) while scanning
-  - `scanoss-py scan --hpsm ...` 
+  - `scanoss-py scan --hpsm ...`
 
 ## [1.5.2] - 2023-06-13
 ### Added
-- Added retry limit option (`--retry`) while scanning 
+- Added retry limit option (`--retry`) while scanning
   - `--retry 0` will fail immediately
 
 ## [1.5.1] - 2023-04-21
@@ -660,4 +666,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.31.3]: https://github.com/scanoss/scanoss.py/compare/v1.31.2...v1.31.3
 [1.31.4]: https://github.com/scanoss/scanoss.py/compare/v1.31.3...v1.31.4
 [1.31.5]: https://github.com/scanoss/scanoss.py/compare/v1.31.4...v1.31.5
-[1.31.5]: https://github.com/scanoss/scanoss.py/compare/v1.31.5...v1.32.0
+[1.32.0]: https://github.com/scanoss/scanoss.py/compare/v1.31.5...v1.32.0
+[1.33.0]: https://github.com/scanoss/scanoss.py/compare/v1.32.0...v1.33.0

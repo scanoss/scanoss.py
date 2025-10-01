@@ -2,8 +2,9 @@ requests
 crc32c>=2.2
 binaryornot
 progress
-grpcio>1.42.0
-protobuf>3.19.1
+grpcio>=1.73.1
+protobuf>=6.3.1
+protoc-gen-openapiv2
 pypac
 urllib3
 pyOpenSSL
@@ -13,5 +14,4 @@ packageurl-python
 pathspec
 jsonschema
 crc
-protoc-gen-openapiv2
 cyclonedx-python-lib[validation]

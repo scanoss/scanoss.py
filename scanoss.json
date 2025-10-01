@@ -3,9 +3,9 @@
     "skip": {
       "patterns": {
         "scanning": [
-          "src/protoc_gen_swagger/",
-          "src/scanoss/api/",
-          "docs/make.bat"
+          "src/protoc_gen_swagger",
+          "docs",
+          "scanoss_common_pb2_grpc.py"
         ]
       },
       "sizes": {}
@@ -16,6 +16,8 @@
       {
         "purl": "pkg:github/scanoss/scanoss.py"
       }
-    ]
+    ],
+    "remove": []
   }
 }
+
