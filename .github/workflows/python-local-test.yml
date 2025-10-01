@@ -59,7 +59,8 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
-
+        env:
+          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
       - name: Run Tests (fast winnowing)
         env:
           SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
@@ -75,6 +76,8 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
+        env:
+          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
 
       - name: Run Tests HPSM (fast winnowing)
         env:
@@ -91,6 +94,8 @@ jobs:
             echo "Error: WFP test did not produce any results. Failing"
             exit 1
           fi
+        env:
+          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
 
       - name: Run Unit Tests
         env:
