@@ -387,7 +387,7 @@ class Components(ScanossBase):
 
         # We'll use the new ComponentBatchRequest instead of deprecated PurlRequest for the license api
         component_batch_request = {'components': purls_request.get('purls')}
-        response = self.grpc_api.get_licenses(component_batch_request)
+        response = self.grpc_api.get_licenses(component_batch_request, use_grpc=self.use_grpc)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True

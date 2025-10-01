@@ -30,7 +30,7 @@ import sys
 import time
 import uuid
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import Enum, IntEnum
 from typing import Dict, Optional
 from urllib.parse import urlparse
 
@@ -100,10 +100,10 @@ REST_ENDPOINTS = {
         'method': 'POST',
     },
     'geoprovenance.GetOriginByComponents': {'path': '/geoprovenance/origin/components', 'method': 'POST'},
+    'licenses.GetComponentsLicenses': {'path': '/licenses/components', 'method': 'POST'},
     'semgrep.GetComponentsIssues': {'path': '/semgrep/issues/components', 'method': 'POST'},
     'scanning.FolderHashScan': {'path': '/scanning/hfh/scan', 'method': 'POST'},
 }
-
 
 class ScanossGrpcError(Exception):
     """
@@ -116,10 +116,19 @@ class ScanossGrpcError(Exception):
 class ScanossGrpcStatusCode(IntEnum):
     """Status codes for SCANOSS gRPC responses"""
 
+    UNSPECIFIED = 0
     SUCCESS = 1
-    SUCCESS_WITH_WARNINGS = 2
-    FAILED_WITH_WARNINGS = 3
+    SUCCEEDED_WITH_WARNINGS = 2
+    WARNING = 3
     FAILED = 4
+    
+class ScanossRESTStatusCode(Enum):
+    """Status codes for SCANOSS REST responses"""
+    UNSPECIFIED = 'UNSPECIFIED'
+    SUCCESS = 'SUCCESS'
+    SUCCEEDED_WITH_WARNINGS = 'SUCCEEDED_WITH_WARNINGS'
+    WARNING = 'WARNING'
+    FAILED = 'FAILED'
 
 
 class ScanossGrpc(ScanossBase):
@@ -495,13 +504,13 @@ class ScanossGrpc(ScanossBase):
             raise ScanossGrpcError(
                 f'{e.__class__.__name__} while sending gRPC message (rqId: {request_id}): {e.details()}'
             )
-        if resp and not self._check_status_response(resp.status, request_id):
+        if resp and not self._check_status_response_grpc(resp.status, request_id):
             return None
 
         resp_dict = MessageToDict(resp, preserving_proto_field_name=True)
         return resp_dict
 
-    def _check_status_response(self, status_response: StatusResponse, request_id: str = None) -> bool:
+    def _check_status_response_grpc(self, status_response: StatusResponse, request_id: str = None) -> bool:
         """
         Check the response object to see if the command was successful or not
         :param status_response: Status Response
@@ -516,13 +525,55 @@ class ScanossGrpc(ScanossBase):
         if status_code > ScanossGrpcStatusCode.SUCCESS:
             ret_val = False  # default to failed
             msg = 'Unsuccessful'
-            if status_code == ScanossGrpcStatusCode.SUCCESS_WITH_WARNINGS:
+            if status_code == ScanossGrpcStatusCode.SUCCEEDED_WITH_WARNINGS:
                 msg = 'Succeeded with warnings'
                 ret_val = True  # No need to fail as it succeeded with warnings
-            elif status_code == ScanossGrpcStatusCode.FAILED_WITH_WARNINGS:
+            elif status_code == ScanossGrpcStatusCode.WARNING:
                 msg = 'Failed with warnings'
             self.print_stderr(f'{msg} (rqId: {request_id} - status: {status_code}): {status_response.message}')
             return ret_val
+        return True
+
+    def check_status_response_rest(self, status_dict: dict, request_id: str = None) -> bool:
+        """
+        Check the REST response dictionary to see if the command was successful or not
+
+        Args:
+            status_dict (dict): Status dictionary from REST response containing 'status' and 'message' keys
+            request_id (str, optional): Request ID for logging
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not status_dict:
+            self.print_stderr(f'Warning: No status response supplied (rqId: {request_id}). Assuming it was ok.')
+            return True
+
+        self.print_debug(f'Checking response status (rqId: {request_id}): {status_dict}')
+
+        # Get status from dictionary - it can be either a string or nested dict
+        status = status_dict.get('status')
+        message = status_dict.get('message', '')
+
+        # Handle case where status might be a string directly
+        if isinstance(status, str):
+            status_str = status.upper()
+            if status_str == ScanossRESTStatusCode.SUCCESS.value:
+                return True
+            elif status_str == ScanossRESTStatusCode.SUCCEEDED_WITH_WARNINGS.value:
+                self.print_stderr(f'Succeeded with warnings (rqId: {request_id}): {message}')
+                return True
+            elif status_str == ScanossRESTStatusCode.WARNING.value:
+                self.print_stderr(f'Failed with warnings (rqId: {request_id}): {message}')
+                return False
+            elif status_str == ScanossRESTStatusCode.FAILED.value:
+                self.print_stderr(f'Unsuccessful (rqId: {request_id}): {message}')
+                return False
+            else:
+                self.print_debug(f'Unknown status "{status_str}" (rqId: {request_id}). Assuming success.')
+                return True
+
+        # Otherwise asume success
+        self.print_debug(f'Unexpected status type {type(status)} (rqId: {request_id}). Assuming success.')
         return True
 
     def _get_proxy_config(self):
@@ -686,7 +737,7 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_licenses(self, request: Dict) -> Optional[Dict]:
+    def get_licenses(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
         """
         Client function to call the rpc for Licenses GetComponentsLicenses
         It will either use REST (default) or gRPC depending on the use_grpc flag
@@ -695,26 +746,14 @@ class ScanossGrpc(ScanossBase):
             request (Dict): ComponentsRequest
         Returns:
             Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
-        """
-        if self.use_grpc:
-            return self._get_licenses_grpc(request)
-        else:
-            return self._get_licenses_rest(request)
-
-    def _get_licenses_grpc(self, request: Dict) -> Optional[Dict]:
-        """
-        Client function to call the rpc for GetComponentsLicenses
-
-        Args:
-            request (Dict): ComponentsRequest
-        Returns:
-            Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
-        """
-        return self._call_rpc(
+        """        
+        return self._call_api(
+            'licenses.GetComponentsLicenses',
             self.license_stub.GetComponentsLicenses,
             request,
             ComponentsRequest,
             'Sending data for license decoration (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
     def load_generic_headers(self, url: str = None):
@@ -860,14 +899,8 @@ class ScanossGrpc(ScanossBase):
         else:  # POST
             response = self._rest_post(endpoint_url, request_id, request_input)
 
-        # Check for status in response and validate
-        if response and 'status' in response:
-            status_dict = response.get('status', {})
-            if status_dict.get('status') != 'SUCCESS':
-                self.print_stderr(f'Request failed (rqId: {request_id}): {status_dict.get("message", "Unknown error")}')
-                if status_dict.get('status') in ['FAILED', 'FAILED_WITH_WARNINGS']:
-                    return None
-            del response['status']
+        if response and 'status' in response and not self.check_status_response_rest(response['status'], request_id):
+            return None
 
         return response
 

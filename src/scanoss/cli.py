@@ -318,7 +318,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         description=f'Show License details: {__version__}',
         help='Retrieve licenses for the given components',
     )
-    c_licenses.add_argument('--grpc', action='store_true', help='Enable gRPC support')
     c_licenses.set_defaults(func=comp_licenses)
 
     # Component Sub-command: component semgrep
@@ -1069,6 +1068,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         c_provenance,
         c_search,
         c_versions,
+        c_licenses,
     ]:
         p.add_argument('--grpc', action='store_true', help='Enable gRPC support')
 
