@@ -6,6 +6,9 @@ on: [workflow_dispatch]
 permissions:
   contents: read
 
+env:
+  SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -34,8 +37,6 @@ jobs:
           which scanoss-py
 
       - name: Run Local Tests
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
         run: |
           which scanoss-py
           scanoss-py version
@@ -78,8 +79,6 @@ jobs:
           which scanoss-py
 
       - name: Run Tests
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
         run: |
           which scanoss-py
           scanoss-py version
@@ -93,8 +92,6 @@ jobs:
           fi
 
       - name: Run Tests (fast winnowing)
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
         run: |
           pip install scanoss_winnowing
           which scanoss-py

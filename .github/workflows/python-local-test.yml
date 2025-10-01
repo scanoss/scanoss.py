@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+env:
+  SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -46,8 +49,6 @@ jobs:
             which scanoss-py
 
       - name: Run Tests
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
         run: |
           which scanoss-py
           scanoss-py version
@@ -59,11 +60,8 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
+
       - name: Run Tests (fast winnowing)
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
         run: |
           pip install scanoss_winnowing
           which scanoss-py
@@ -76,12 +74,9 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
+      
 
       - name: Run Tests HPSM (fast winnowing)
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
         run: |
           pip install scanoss_winnowing
           which scanoss-py
@@ -94,12 +89,9 @@ jobs:
             echo "Error: WFP test did not produce any results. Failing"
             exit 1
           fi
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
+      
 
       - name: Run Unit Tests
-        env:
-          SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
         run: |
           python -m unittest
 
