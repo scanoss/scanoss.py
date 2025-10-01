@@ -44,6 +44,8 @@ from pypac.parser import PACFile
 from pypac.resolver import ProxyResolver
 from urllib3.exceptions import InsecureRequestWarning
 
+from scanoss.api.licenses.v2.scanoss_licenses_pb2 import ComponentsLicenseResponse
+from scanoss.api.licenses.v2.scanoss_licenses_pb2_grpc import LicenseStub
 from scanoss.api.scanning.v2.scanoss_scanning_pb2_grpc import ScanningStub
 from scanoss.constants import DEFAULT_TIMEOUT
 
@@ -71,7 +73,9 @@ from .api.geoprovenance.v2.scanoss_geoprovenance_pb2_grpc import GeoProvenanceSt
 from .api.scanning.v2.scanoss_scanning_pb2 import HFHRequest
 from .api.semgrep.v2.scanoss_semgrep_pb2 import SemgrepResponse
 from .api.semgrep.v2.scanoss_semgrep_pb2_grpc import SemgrepStub
-from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import ComponentsVulnerabilityResponse
+from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2 import (
+    ComponentsVulnerabilityResponse,
+)
 from .api.vulnerabilities.v2.scanoss_vulnerabilities_pb2_grpc import VulnerabilitiesStub
 from .scanossbase import ScanossBase
 
@@ -81,18 +85,20 @@ SCANOSS_GRPC_URL = os.environ.get('SCANOSS_GRPC_URL') if os.environ.get('SCANOSS
 SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_API_KEY') else ''
 DEFAULT_URI_PREFIX = '/v2'
 
-MAX_CONCURRENT_REQUESTS = 5 # Maximum number of concurrent requests to make
+MAX_CONCURRENT_REQUESTS = 5  # Maximum number of concurrent requests to make
 
 
 class ScanossGrpcError(Exception):
     """
     Custom exception for SCANOSS gRPC errors
     """
+
     pass
 
 
 class ScanossGrpcStatusCode(IntEnum):
     """Status codes for SCANOSS gRPC responses"""
+
     SUCCESS = 1
     SUCCESS_WITH_WARNINGS = 2
     FAILED_WITH_WARNINGS = 3
@@ -208,6 +214,7 @@ class ScanossGrpc(ScanossBase):
             self.vuln_stub = VulnerabilitiesStub(grpc.insecure_channel(self.url))
             self.provenance_stub = GeoProvenanceStub(grpc.insecure_channel(self.url))
             self.scanning_stub = ScanningStub(grpc.insecure_channel(self.url))
+            self.license_stub = LicenseStub(grpc.insecure_channel(self.url))
         else:
             if ca_cert is not None:
                 credentials = grpc.ssl_channel_credentials(cert_data)  # secure with specified certificate
@@ -220,6 +227,7 @@ class ScanossGrpc(ScanossBase):
             self.vuln_stub = VulnerabilitiesStub(grpc.secure_channel(self.url, credentials))
             self.provenance_stub = GeoProvenanceStub(grpc.secure_channel(self.url, credentials))
             self.scanning_stub = ScanningStub(grpc.secure_channel(self.url, credentials))
+            self.license_stub = LicenseStub(grpc.secure_channel(self.url, credentials))
 
     @classmethod
     def _load_cert(cls, cert_file: str) -> bytes:
@@ -700,7 +708,38 @@ class ScanossGrpc(ScanossBase):
             'Sending data for cryptographic versions in range decoration (rqId: {rqId})...',
         )
 
-    def load_generic_headers(self, url):
+    def get_licenses(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for Licenses GetComponentsLicenses
+        It will either use REST (default) or gRPC depending on the use_grpc flag
+
+        Args:
+            request (Dict): ComponentsRequest
+        Returns:
+            Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
+        """
+        if self.use_grpc:
+            return self._get_licenses_grpc(request)
+        else:
+            return self._get_licenses_rest(request)
+
+    def _get_licenses_grpc(self, request: Dict) -> Optional[Dict]:
+        """
+        Client function to call the rpc for GetComponentsLicenses
+
+        Args:
+            request (Dict): ComponentsRequest
+        Returns:
+            Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
+        """
+        return self._call_rpc(
+            self.license_stub.GetComponentsLicenses,
+            request,
+            ComponentsRequest,
+            'Sending data for license decoration (rqId: {rqId})...',
+        )
+
+    def load_generic_headers(self, url: str = None):
         """
         Adds custom headers from req_headers to metadata.
 
@@ -764,6 +803,33 @@ class ScanossGrpc(ScanossBase):
                 raise Exception(f'ERROR: The SCANOSS Decoration API request failed for {uri}') from e
         return None
 
+    def _get_licenses_rest(self, purls: Dict) -> Optional[Dict]:
+        """
+        Get the licenses for the given purls using REST API
+
+        Args:
+            purls (Dict): Purl Request dictionary
+        Returns:
+            Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
+        """
+        if not purls:
+            self.print_stderr('ERROR: No message supplied to send to REST decoration service.')
+            return None
+        request_id = str(uuid.uuid4())
+        self.print_debug(f'Sending data for Licenses via REST (request id: {request_id})...')
+        response = self.rest_post(f'{self.orig_url}{DEFAULT_URI_PREFIX}/licenses/components', request_id, purls)
+        self.print_trace(f'Received response for Licenses via REST (request id: {request_id}): {response}')
+        if response:
+            # Parse the JSON/Dict into the purl response
+            resp_obj = ParseDict(response, ComponentsLicenseResponse(), True)
+            if resp_obj:
+                self.print_debug(f'License Response: {resp_obj}')
+                if not self._check_status_response(resp_obj.status, request_id):
+                    return None
+            del response['status']
+            return response
+        return None
+
     def _get_vulnerabilities_rest(self, purls: dict):
         """
         Get the vulnerabilities for the given purls using REST API
@@ -799,16 +865,19 @@ class ScanossGrpc(ScanossBase):
         request_id = str(uuid.uuid4())
         self.print_debug(f'Sending data for Dependencies via REST (request id: {request_id})...')
         file_request = {'files': [file], 'depth': depth}
-        response = self.rest_post(f'{self.orig_url}{DEFAULT_URI_PREFIX}/dependencies/dependencies',
-                                  request_id, file_request
-                                  )
+        response = self.rest_post(
+            f'{self.orig_url}{DEFAULT_URI_PREFIX}/dependencies/dependencies', request_id, file_request
+        )
         self.print_trace(f'Received response for Dependencies via REST (request id: {request_id}): {response}')
         if response:
             return response
         return None
+
+
 #
 # End of ScanossGrpc Class
 #
+
 
 @dataclass
 class GrpcConfig:
@@ -839,6 +908,7 @@ def create_grpc_config_from_args(args) -> GrpcConfig:
         proxy=getattr(args, 'proxy', None),
         grpc_proxy=getattr(args, 'grpc_proxy', None),
     )
+
 
 #
 # End of GrpcConfig class

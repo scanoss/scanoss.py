@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+env:
+  SCANOSS_API_KEY: ${{ secrets.SC_API_KEY }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -71,6 +74,7 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
+      
 
       - name: Run Tests HPSM (fast winnowing)
         run: |
@@ -85,6 +89,7 @@ jobs:
             echo "Error: WFP test did not produce any results. Failing"
             exit 1
           fi
+      
 
       - name: Run Unit Tests
         run: |
