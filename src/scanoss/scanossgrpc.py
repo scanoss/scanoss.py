@@ -105,6 +105,7 @@ REST_ENDPOINTS = {
     'scanning.FolderHashScan': {'path': '/scanning/hfh/scan', 'method': 'POST'},
 }
 
+
 class ScanossGrpcError(Exception):
     """
     Custom exception for SCANOSS gRPC errors
@@ -121,9 +122,11 @@ class ScanossGrpcStatusCode(IntEnum):
     SUCCEEDED_WITH_WARNINGS = 2
     WARNING = 3
     FAILED = 4
-    
+
+
 class ScanossRESTStatusCode(Enum):
     """Status codes for SCANOSS REST responses"""
+
     UNSPECIFIED = 'UNSPECIFIED'
     SUCCESS = 'SUCCESS'
     SUCCEEDED_WITH_WARNINGS = 'SUCCEEDED_WITH_WARNINGS'
@@ -553,28 +556,29 @@ class ScanossGrpc(ScanossBase):
         # Get status from dictionary - it can be either a string or nested dict
         status = status_dict.get('status')
         message = status_dict.get('message', '')
+        ret_val = True
 
         # Handle case where status might be a string directly
         if isinstance(status, str):
             status_str = status.upper()
             if status_str == ScanossRESTStatusCode.SUCCESS.value:
-                return True
+                ret_val = True
             elif status_str == ScanossRESTStatusCode.SUCCEEDED_WITH_WARNINGS.value:
                 self.print_stderr(f'Succeeded with warnings (rqId: {request_id}): {message}')
-                return True
+                ret_val = True
             elif status_str == ScanossRESTStatusCode.WARNING.value:
                 self.print_stderr(f'Failed with warnings (rqId: {request_id}): {message}')
-                return False
+                ret_val = False
             elif status_str == ScanossRESTStatusCode.FAILED.value:
                 self.print_stderr(f'Unsuccessful (rqId: {request_id}): {message}')
-                return False
+                ret_val = False
             else:
                 self.print_debug(f'Unknown status "{status_str}" (rqId: {request_id}). Assuming success.')
-                return True
+                ret_val = True
 
         # Otherwise asume success
         self.print_debug(f'Unexpected status type {type(status)} (rqId: {request_id}). Assuming success.')
-        return True
+        return ret_val
 
     def _get_proxy_config(self):
         """
@@ -746,7 +750,7 @@ class ScanossGrpc(ScanossBase):
             request (Dict): ComponentsRequest
         Returns:
             Optional[Dict]: ComponentsLicenseResponse, or None if the request was not successfull
-        """        
+        """
         return self._call_api(
             'licenses.GetComponentsLicenses',
             self.license_stub.GetComponentsLicenses,
