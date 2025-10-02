@@ -141,20 +141,20 @@ class ScanossGrpc(ScanossBase):
 
     def __init__(  # noqa: PLR0912, PLR0913, PLR0915
         self,
-        url: str = None,
+        url: Optional[str] = None,
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        ca_cert: str = None,
-        api_key: str = None,
-        ver_details: str = None,
+        ca_cert: Optional[str] = None,
+        api_key: Optional[str] = None,
+        ver_details: Optional[str] = None,
         timeout: int = 600,
-        proxy: str = None,
-        grpc_proxy: str = None,
-        pac: PACFile = None,
-        req_headers: dict = None,
+        proxy: Optional[str] = None,
+        grpc_proxy: Optional[str] = None,
+        pac: Optional[PACFile] = None,
+        req_headers: Optional[dict] = None,
         ignore_cert_errors: bool = False,
-        use_grpc: bool = False,
+        use_grpc: Optional[bool] = False,
     ):
         """
 
@@ -263,7 +263,7 @@ class ScanossGrpc(ScanossBase):
         with open(cert_file, 'rb') as f:
             return f.read()
 
-    def deps_echo(self, message: str = 'Hello there!') -> str:
+    def deps_echo(self, message: str = 'Hello there!') -> Optional[dict]:
         """
         Send Echo message to the Dependency service
         :param self:
@@ -272,7 +272,7 @@ class ScanossGrpc(ScanossBase):
         """
         return self._call_api('dependencies.Echo', self.dependencies_stub.Echo, {'message': message}, EchoRequest)
 
-    def crypto_echo(self, message: str = 'Hello there!') -> str:
+    def crypto_echo(self, message: str = 'Hello there!') -> Optional[dict]:
         """
         Send Echo message to the Cryptography service
         :param self:
@@ -290,7 +290,7 @@ class ScanossGrpc(ScanossBase):
             self.print_stderr(f'ERROR: No response for dependency request: {dependencies}')
         return resp
 
-    def get_dependencies_json(self, dependencies: dict, depth: int = 1) -> dict:
+    def get_dependencies_json(self, dependencies: dict, depth: int = 1) -> Optional[dict]:
         """
         Client function to call the rpc for GetDependencies
         :param dependencies: Message to send to the service
@@ -327,7 +327,7 @@ class ScanossGrpc(ScanossBase):
                     merged_response['status'] = response['status']
         return merged_response
 
-    def _process_dep_file(self, file, depth: int = 1, use_grpc: bool = None) -> dict:
+    def _process_dep_file(self, file, depth: int = 1, use_grpc: Optional[bool] = None) -> Optional[dict]:
         """
         Process a single dependency file using either gRPC or REST
 
@@ -350,7 +350,7 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_vulnerabilities_json(self, purls: Optional[dict] = None, use_grpc: bool = None) -> Optional[dict]:
+    def get_vulnerabilities_json(self, purls: Optional[dict] = None, use_grpc: Optional[bool] = None) -> Optional[dict]:
         """
         Client function to call the rpc for Vulnerability GetVulnerabilities
         It will either use REST (default) or gRPC
@@ -370,7 +370,7 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_semgrep_json(self, purls: Optional[dict] = None, use_grpc: bool = None) -> Optional[dict]:
+    def get_semgrep_json(self, purls: Optional[dict] = None, use_grpc: Optional[bool] = None) -> Optional[dict]:
         """
         Client function to call the rpc for Semgrep GetIssues
 
@@ -390,7 +390,7 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def search_components_json(self, search: dict, use_grpc: bool = None) -> dict:
+    def search_components_json(self, search: dict, use_grpc: Optional[bool] = None) -> Optional[dict]:
         """
         Client function to call the rpc for Components SearchComponents
 
@@ -408,7 +408,7 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_component_versions_json(self, search: dict, use_grpc: bool = None) -> dict:
+    def get_component_versions_json(self, search: dict, use_grpc: Optional[bool] = None) -> Optional[dict]:
         """
         Client function to call the rpc for Components GetComponentVersions
 
@@ -450,7 +450,7 @@ class ScanossGrpc(ScanossBase):
         request_input,
         request_type,
         debug_msg: Optional[str] = None,
-        use_grpc: bool = None,
+        use_grpc: Optional[bool] = None,
     ) -> Optional[Dict]:
         """
         Unified method to call either gRPC or REST API based on configuration
@@ -500,7 +500,8 @@ class ScanossGrpc(ScanossBase):
         else:
             request_obj = request_input
         metadata = self.metadata[:] + [('x-request-id', request_id)]
-        self.print_debug(debug_msg.format(rqId=request_id))
+        if debug_msg:
+            self.print_debug(debug_msg.format(rqId=request_id))
         try:
             resp = rpc_method(request_obj, metadata=metadata, timeout=self.timeout)
         except grpc.RpcError as e:
@@ -537,7 +538,7 @@ class ScanossGrpc(ScanossBase):
             return ret_val
         return True
 
-    def check_status_response_rest(self, status_dict: dict, request_id: str = None) -> bool:
+    def check_status_response_rest(self, status_dict: dict, request_id: Optional[str] = None) -> bool:
         """
         Check the REST response dictionary to see if the command was successful or not
 
@@ -551,7 +552,8 @@ class ScanossGrpc(ScanossBase):
             self.print_stderr(f'Warning: No status response supplied (rqId: {request_id}). Assuming it was ok.')
             return True
 
-        self.print_debug(f'Checking response status (rqId: {request_id}): {status_dict}')
+        if request_id:
+            self.print_debug(f'Checking response status (rqId: {request_id}): {status_dict}')
 
         # Get status from dictionary - it can be either a string or nested dict
         status = status_dict.get('status')
@@ -602,7 +604,7 @@ class ScanossGrpc(ScanossBase):
             os.environ['http_proxy'] = proxies.get('http') or ''
             os.environ['https_proxy'] = proxies.get('https') or ''
 
-    def get_provenance_json(self, purls: dict, use_grpc: bool = None) -> Optional[Dict]:
+    def get_provenance_json(self, purls: dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for GetComponentContributors
 
@@ -622,7 +624,7 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_provenance_origin(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
+    def get_provenance_origin(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for GetOriginByComponents
 
@@ -641,13 +643,13 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_crypto_algorithms_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
+    def get_crypto_algorithms_for_purl(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for GetComponentsAlgorithms for a list of purls
 
         Args:
             request (Dict): ComponentsRequest
-            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
+            use_grpc (Optional[bool]): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: AlgorithmResponse, or None if the request was not successfull
@@ -661,13 +663,13 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_crypto_algorithms_in_range_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
+    def get_crypto_algorithms_in_range_for_purl(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for GetComponentsAlgorithmsInRange for a list of purls
 
         Args:
             request (Dict): ComponentsRequest
-            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
+            use_grpc (Optional[bool]): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: AlgorithmsInRangeResponse, or None if the request was not successfull
@@ -681,13 +683,13 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_encryption_hints_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
+    def get_encryption_hints_for_purl(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for GetComponentsEncryptionHints for a list of purls
 
         Args:
             request (Dict): ComponentsRequest
-            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
+            use_grpc (Optional[bool]): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: HintsResponse, or None if the request was not successfull
@@ -701,13 +703,13 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_encryption_hints_in_range_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
+    def get_encryption_hints_in_range_for_purl(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for GetComponentsHintsInRange for a list of purls
 
         Args:
             request (Dict): ComponentsRequest
-            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
+            use_grpc (Optional[bool]): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: HintsInRangeResponse, or None if the request was not successfull
@@ -721,13 +723,13 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_versions_in_range_for_purl(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
+    def get_versions_in_range_for_purl(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for GetComponentsVersionsInRange for a list of purls
 
         Args:
             request (Dict): ComponentsRequest
-            use_grpc (bool): Whether to use gRPC or REST (None = use instance default)
+            use_grpc (Optional[bool]): Whether to use gRPC or REST (None = use instance default)
 
         Returns:
             Optional[Dict]: VersionsInRangeResponse, or None if the request was not successfull
@@ -741,7 +743,7 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def get_licenses(self, request: Dict, use_grpc: bool = None) -> Optional[Dict]:
+    def get_licenses(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for Licenses GetComponentsLicenses
         It will either use REST (default) or gRPC depending on the use_grpc flag
@@ -760,7 +762,7 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def load_generic_headers(self, url: str = None):
+    def load_generic_headers(self, url: Optional[str] = None):
         """
         Adds custom headers from req_headers to metadata.
 
@@ -782,7 +784,7 @@ class ScanossGrpc(ScanossBase):
     # Start of REST Client Functions
     #
 
-    def _rest_get(self, uri: str, request_id: str, params: dict = None) -> dict:
+    def _rest_get(self, uri: str, request_id: str, params: Optional[dict] = None) -> Optional[dict]:
         """
         Send a GET request to the specified URI with optional query parameters.
 
@@ -807,8 +809,6 @@ class ScanossGrpc(ScanossBase):
                 response = self.session.get(uri, headers=headers, params=params, timeout=self.timeout)
                 response.raise_for_status()  # Raises an HTTPError for bad responses
                 return response.json()
-            except requests.exceptions.RequestException as e:
-                self.print_stderr(f'Error: Problem sending GET request to {uri}: {e}')
             except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
                 self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) sending GET request - {e}.')
                 raise Exception(f'ERROR: The SCANOSS API GET request failed for {uri}') from e
@@ -821,6 +821,8 @@ class ScanossGrpc(ScanossBase):
                 else:
                     self.print_stderr(f'Warning: {e.__class__.__name__} communicating with {self.url}. Retrying...')
                     time.sleep(5)
+            except requests.exceptions.RequestException as e:
+                self.print_stderr(f'Error: Problem sending GET request to {uri}: {e}')
             except Exception as e:
                 self.print_stderr(
                     f'ERROR: Exception ({e.__class__.__name__}) sending GET request ({request_id}) to {uri}: {e}'
@@ -828,7 +830,7 @@ class ScanossGrpc(ScanossBase):
                 raise Exception(f'ERROR: The SCANOSS API GET request failed for {uri}') from e
         return None
 
-    def _rest_post(self, uri: str, request_id: str, data: dict) -> dict:
+    def _rest_post(self, uri: str, request_id: str, data: dict) -> Optional[dict]:
         """
         Post the specified data to the given URI.
 
@@ -853,8 +855,6 @@ class ScanossGrpc(ScanossBase):
                 response = self.session.post(uri, headers=headers, json=data, timeout=self.timeout)
                 response.raise_for_status()  # Raises an HTTPError for bad responses
                 return response.json()
-            except requests.exceptions.RequestException as e:
-                self.print_stderr(f'Error: Problem posting data to {uri}: {e}')
             except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
                 self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}.')
                 raise Exception(f'ERROR: The SCANOSS Decoration API request failed for {uri}') from e
@@ -867,6 +867,8 @@ class ScanossGrpc(ScanossBase):
                 else:
                     self.print_stderr(f'Warning: {e.__class__.__name__} communicating with {self.url}. Retrying...')
                     time.sleep(5)
+            except requests.exceptions.RequestException as e:
+                self.print_stderr(f'Error: Problem posting data to {uri}: {e}')
             except Exception as e:
                 self.print_stderr(
                     f'ERROR: Exception ({e.__class__.__name__}) POSTing data ({request_id}) to {uri}: {e}'
