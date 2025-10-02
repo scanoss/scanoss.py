@@ -812,6 +812,11 @@ class ScanossGrpc(ScanossBase):
             except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
                 self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) sending GET request - {e}.')
                 raise Exception(f'ERROR: The SCANOSS API GET request failed for {uri}') from e
+            except requests.exceptions.HTTPError as e:
+                self.print_stderr(f'ERROR: HTTP error sending GET request ({request_id}): {e}')
+                raise Exception(
+                    f'ERROR: The SCANOSS API GET request failed with status {e.response.status_code} for {uri}'
+                ) from e
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
                 if retry > self.retry_limit:  # Timed out retry_limit or more times, fail
                     self.print_stderr(f'ERROR: {e.__class__.__name__} sending GET request ({request_id}): {e}')
@@ -823,6 +828,7 @@ class ScanossGrpc(ScanossBase):
                     time.sleep(5)
             except requests.exceptions.RequestException as e:
                 self.print_stderr(f'Error: Problem sending GET request to {uri}: {e}')
+                raise Exception(f'ERROR: The SCANOSS API GET request failed for {uri}') from e
             except Exception as e:
                 self.print_stderr(
                     f'ERROR: Exception ({e.__class__.__name__}) sending GET request ({request_id}) to {uri}: {e}'
@@ -858,6 +864,11 @@ class ScanossGrpc(ScanossBase):
             except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
                 self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing data - {e}.')
                 raise Exception(f'ERROR: The SCANOSS Decoration API request failed for {uri}') from e
+            except requests.exceptions.HTTPError as e:
+                self.print_stderr(f'ERROR: HTTP error POSTing data ({request_id}): {e}')
+                raise Exception(
+                    f'ERROR: The SCANOSS Decoration API request failed with status {e.response.status_code} for {uri}'
+                ) from e
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
                 if retry > self.retry_limit:  # Timed out retry_limit or more times, fail
                     self.print_stderr(f'ERROR: {e.__class__.__name__} POSTing decoration data ({request_id}): {e}')
@@ -869,6 +880,7 @@ class ScanossGrpc(ScanossBase):
                     time.sleep(5)
             except requests.exceptions.RequestException as e:
                 self.print_stderr(f'Error: Problem posting data to {uri}: {e}')
+                raise Exception(f'ERROR: The SCANOSS Decoration API request failed for {uri}') from e
             except Exception as e:
                 self.print_stderr(
                     f'ERROR: Exception ({e.__class__.__name__}) POSTing data ({request_id}) to {uri}: {e}'
