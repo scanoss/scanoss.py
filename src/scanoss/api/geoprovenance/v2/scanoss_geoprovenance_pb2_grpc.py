@@ -47,10 +47,30 @@ class GeoProvenanceStub(object):
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ContributorResponse.FromString,
                 _registered_method=True)
+        self.GetCountryContributorsByComponents = channel.unary_unary(
+                '/scanoss.api.geoprovenance.v2.GeoProvenance/GetCountryContributorsByComponents',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentsContributorResponse.FromString,
+                _registered_method=True)
+        self.GetCountryContributorsByComponent = channel.unary_unary(
+                '/scanoss.api.geoprovenance.v2.GeoProvenance/GetCountryContributorsByComponent',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentContributorResponse.FromString,
+                _registered_method=True)
         self.GetComponentOrigin = channel.unary_unary(
                 '/scanoss.api.geoprovenance.v2.GeoProvenance/GetComponentOrigin',
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.OriginResponse.FromString,
+                _registered_method=True)
+        self.GetOriginByComponents = channel.unary_unary(
+                '/scanoss.api.geoprovenance.v2.GeoProvenance/GetOriginByComponents',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentsOriginResponse.FromString,
+                _registered_method=True)
+        self.GetOriginByComponent = channel.unary_unary(
+                '/scanoss.api.geoprovenance.v2.GeoProvenance/GetOriginByComponent',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentOriginResponse.FromString,
                 _registered_method=True)
 
 
@@ -60,21 +80,61 @@ class GeoProvenanceServicer(object):
     """
 
     def Echo(self, request, context):
-        """Standard echo
+        """Standard health check endpoint to verify service availability and connectivity
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetComponentContributors(self, request, context):
+        """[DEPRECATED] Get component-level Geo Provenance based on contributor declared location
+        This method accepts PURL-based requests and is deprecated in favor of GetCountryContributorsByComponent
+        which accepts ComponentRequest for better component identification
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetCountryContributorsByComponents(self, request, context):
         """Get component-level Geo Provenance based on contributor declared location
+        This is the current method that accepts ComponentsRequest for enhanced component identification
+        Replaces the deprecated GetComponentContributors method
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetCountryContributorsByComponent(self, request, context):
+        """Get component-level Geo Provenance based on contributor declared location
+        This is the current method that accepts ComponentRequest for enhanced component identification
+        Replaces the deprecated GetComponentContributors method
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetComponentOrigin(self, request, context):
+        """[DEPRECATED] Get component-level Geo Provenance based on contributor origin commit times
+        This method accepts PURL-based requests and is deprecated in favor of GetOriginByComponent
+        which accepts ComponentRequest for better component identification
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetOriginByComponents(self, request, context):
         """Get component-level Geo Provenance based on contributor origin commit times
+        This is the current method that accepts ComponentsRequest for enhanced component identification
+        Replaces the deprecated GetComponentOrigin method
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetOriginByComponent(self, request, context):
+        """Get component-level Geo Provenance based on contributor origin commit times
+        This is the current method that accepts ComponentRequest for enhanced component identification
+        Replaces the deprecated GetComponentOrigin method
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -93,10 +153,30 @@ def add_GeoProvenanceServicer_to_server(servicer, server):
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ContributorResponse.SerializeToString,
             ),
+            'GetCountryContributorsByComponents': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCountryContributorsByComponents,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentsContributorResponse.SerializeToString,
+            ),
+            'GetCountryContributorsByComponent': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCountryContributorsByComponent,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentContributorResponse.SerializeToString,
+            ),
             'GetComponentOrigin': grpc.unary_unary_rpc_method_handler(
                     servicer.GetComponentOrigin,
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.OriginResponse.SerializeToString,
+            ),
+            'GetOriginByComponents': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOriginByComponents,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentsOriginResponse.SerializeToString,
+            ),
+            'GetOriginByComponent': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOriginByComponent,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentOriginResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -166,6 +246,60 @@ class GeoProvenance(object):
             _registered_method=True)
 
     @staticmethod
+    def GetCountryContributorsByComponents(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.geoprovenance.v2.GeoProvenance/GetCountryContributorsByComponents',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentsContributorResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetCountryContributorsByComponent(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.geoprovenance.v2.GeoProvenance/GetCountryContributorsByComponent',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentContributorResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def GetComponentOrigin(request,
             target,
             options=(),
@@ -182,6 +316,60 @@ class GeoProvenance(object):
             '/scanoss.api.geoprovenance.v2.GeoProvenance/GetComponentOrigin',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
             scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.OriginResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetOriginByComponents(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.geoprovenance.v2.GeoProvenance/GetOriginByComponents',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentsOriginResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetOriginByComponent(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.geoprovenance.v2.GeoProvenance/GetOriginByComponent',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_geoprovenance_dot_v2_dot_scanoss__geoprovenance__pb2.ComponentOriginResponse.FromString,
             options,
             channel_credentials,
             insecure,

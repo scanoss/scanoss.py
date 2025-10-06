@@ -27,8 +27,8 @@ if _version_not_supported:
 
 
 class SemgrepStub(object):
-    """
-    Expose all of the SCANOSS Cryptography RPCs here
+    """*
+    Expose all of the SCANOSS Semgrep Security Analysis RPCs here
     """
 
     def __init__(self, channel):
@@ -47,22 +47,52 @@ class SemgrepStub(object):
                 request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
                 response_deserializer=scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.SemgrepResponse.FromString,
                 _registered_method=True)
+        self.GetComponentsIssues = channel.unary_unary(
+                '/scanoss.api.semgrep.v2.Semgrep/GetComponentsIssues',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.ComponentsIssueResponse.FromString,
+                _registered_method=True)
+        self.GetComponentIssues = channel.unary_unary(
+                '/scanoss.api.semgrep.v2.Semgrep/GetComponentIssues',
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.ComponentIssueResponse.FromString,
+                _registered_method=True)
 
 
 class SemgrepServicer(object):
-    """
-    Expose all of the SCANOSS Cryptography RPCs here
+    """*
+    Expose all of the SCANOSS Semgrep Security Analysis RPCs here
     """
 
     def Echo(self, request, context):
-        """Standard echo
+        """Standard health check endpoint to verify service availability and connectivity
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetIssues(self, request, context):
-        """Get Potential issues  associated with a list of PURLs
+        """[DEPRECATED] Get potential security issues associated with a list of PURLs
+        This method accepts PURL-based requests and is deprecated in favor of GetComponentsIssues
+        which accepts ComponentsRequest for better component identification
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentsIssues(self, request, context):
+        """Get potential security issues associated with multiple components
+        This is the current method that accepts ComponentsRequest for enhanced component identification
+        Replaces the deprecated GetIssues method
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetComponentIssues(self, request, context):
+        """Get potential security issues associated with a single component
+        This is the current method that accepts ComponentRequest for enhanced component identification
+        Replaces the deprecated GetIssues method for single component queries
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -81,6 +111,16 @@ def add_SemgrepServicer_to_server(servicer, server):
                     request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
                     response_serializer=scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.SemgrepResponse.SerializeToString,
             ),
+            'GetComponentsIssues': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentsIssues,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.ComponentsIssueResponse.SerializeToString,
+            ),
+            'GetComponentIssues': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetComponentIssues,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.ComponentIssueResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'scanoss.api.semgrep.v2.Semgrep', rpc_method_handlers)
@@ -90,8 +130,8 @@ def add_SemgrepServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class Semgrep(object):
-    """
-    Expose all of the SCANOSS Cryptography RPCs here
+    """*
+    Expose all of the SCANOSS Semgrep Security Analysis RPCs here
     """
 
     @staticmethod
@@ -138,6 +178,60 @@ class Semgrep(object):
             '/scanoss.api.semgrep.v2.Semgrep/GetIssues',
             scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
             scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.SemgrepResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentsIssues(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.semgrep.v2.Semgrep/GetComponentsIssues',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.ComponentsIssueResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetComponentIssues(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/scanoss.api.semgrep.v2.Semgrep/GetComponentIssues',
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentRequest.SerializeToString,
+            scanoss_dot_api_dot_semgrep_dot_v2_dot_scanoss__semgrep__pb2.ComponentIssueResponse.FromString,
             options,
             channel_credentials,
             insecure,

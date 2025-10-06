@@ -27,7 +27,7 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from protoc_gen_openapiv2.options import annotations_pb2 as protoc__gen__openapiv2_dot_options_dot_annotations__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n.scanoss/api/scanning/v2/scanoss-scanning.proto\x12\x17scanoss.api.scanning.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xc5\x03\n\nHFHRequest\x12:\n\x04root\x18\x01 \x01(\x0b\x32,.scanoss.api.scanning.v2.HFHRequest.Children\x12\x16\n\x0erank_threshold\x18\x02 \x01(\x05\x12\x10\n\x08\x63\x61tegory\x18\x03 \x01(\t\x12\x13\n\x0bquery_limit\x18\x04 \x01(\x05\x1a\xbb\x02\n\x08\x43hildren\x12\x0f\n\x07path_id\x18\x01 \x01(\t\x12\x16\n\x0esim_hash_names\x18\x02 \x01(\t\x12\x18\n\x10sim_hash_content\x18\x03 \x01(\t\x12>\n\x08\x63hildren\x18\x04 \x03(\x0b\x32,.scanoss.api.scanning.v2.HFHRequest.Children\x12\x1a\n\x12sim_hash_dir_names\x18\x05 \x01(\t\x12Y\n\x0flang_extensions\x18\x06 \x03(\x0b\x32@.scanoss.api.scanning.v2.HFHRequest.Children.LangExtensionsEntry\x1a\x35\n\x13LangExtensionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\"\xa3\x03\n\x0bHFHResponse\x12<\n\x07results\x18\x01 \x03(\x0b\x32+.scanoss.api.scanning.v2.HFHResponse.Result\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a)\n\x07Version\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\r\n\x05score\x18\x02 \x01(\x02\x1a\x94\x01\n\tComponent\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0e\n\x06vendor\x18\x03 \x01(\t\x12>\n\x08versions\x18\x04 \x03(\x0b\x32,.scanoss.api.scanning.v2.HFHResponse.Version\x12\x0c\n\x04rank\x18\x05 \x01(\x05\x12\r\n\x05order\x18\x06 \x01(\x05\x1a]\n\x06Result\x12\x0f\n\x07path_id\x18\x01 \x01(\t\x12\x42\n\ncomponents\x18\x02 \x03(\x0b\x32..scanoss.api.scanning.v2.HFHResponse.Component2\x81\x02\n\x08Scanning\x12q\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\" \x82\xd3\xe4\x93\x02\x1a\"\x15/api/v2/scanning/echo:\x01*\x12\x81\x01\n\x0e\x46olderHashScan\x12#.scanoss.api.scanning.v2.HFHRequest\x1a$.scanoss.api.scanning.v2.HFHResponse\"$\x82\xd3\xe4\x93\x02\x1e\"\x19/api/v2/scanning/hfh/scan:\x01*B\x8a\x02Z1github.com/scanoss/papi/api/scanningv2;scanningv2\x92\x41\xd3\x01\x12m\n\x18SCANOSS Scanning Service\"L\n\x10scanoss-scanning\x12#https://github.com/scanoss/scanning\x1a\x13support@scanoss.com2\x03\x32.0*\x01\x01\x32\x10\x61pplication/json:\x10\x61pplication/jsonR;\n\x03\x34\x30\x34\x12\x34\n*Returned when the resource does not exist.\x12\x06\n\x04\x9a\x02\x01\x07\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n.scanoss/api/scanning/v2/scanoss-scanning.proto\x12\x17scanoss.api.scanning.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xde\x04\n\nHFHRequest\x12:\n\x04root\x18\x01 \x01(\x0b\x32,.scanoss.api.scanning.v2.HFHRequest.Children\x12&\n\x0erank_threshold\x18\x02 \x01(\x05R\x0erank_threshold\x12\x10\n\x08\x63\x61tegory\x18\x03 \x01(\t\x12\x13\n\x0bquery_limit\x18\x04 \x01(\x05\x12\x1b\n\x13recursive_threshold\x18\x05 \x01(\x02\x12\x1a\n\x12min_accepted_score\x18\x06 \x01(\x02\x1a\x8b\x03\n\x08\x43hildren\x12\x18\n\x07path_id\x18\x01 \x01(\tR\x07path_id\x12&\n\x0esim_hash_names\x18\x02 \x01(\tR\x0esim_hash_names\x12*\n\x10sim_hash_content\x18\x03 \x01(\tR\x10sim_hash_content\x12>\n\x08\x63hildren\x18\x04 \x03(\x0b\x32,.scanoss.api.scanning.v2.HFHRequest.Children\x12.\n\x12sim_hash_dir_names\x18\x05 \x01(\tR\x12sim_hash_dir_names\x12j\n\x0flang_extensions\x18\x06 \x03(\x0b\x32@.scanoss.api.scanning.v2.HFHRequest.Children.LangExtensionsEntryR\x0flang_extensions\x1a\x35\n\x13LangExtensionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\"\xac\x03\n\x0bHFHResponse\x12<\n\x07results\x18\x01 \x03(\x0b\x32+.scanoss.api.scanning.v2.HFHResponse.Result\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a)\n\x07Version\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\r\n\x05score\x18\x02 \x01(\x02\x1a\x94\x01\n\tComponent\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0e\n\x06vendor\x18\x03 \x01(\t\x12>\n\x08versions\x18\x04 \x03(\x0b\x32,.scanoss.api.scanning.v2.HFHResponse.Version\x12\x0c\n\x04rank\x18\x05 \x01(\x05\x12\r\n\x05order\x18\x06 \x01(\x05\x1a\x66\n\x06Result\x12\x18\n\x07path_id\x18\x01 \x01(\tR\x07path_id\x12\x42\n\ncomponents\x18\x02 \x03(\x0b\x32..scanoss.api.scanning.v2.HFHResponse.Component2\xf8\x01\n\x08Scanning\x12m\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\"\x1c\x82\xd3\xe4\x93\x02\x16\"\x11/v2/scanning/echo:\x01*\x12}\n\x0e\x46olderHashScan\x12#.scanoss.api.scanning.v2.HFHRequest\x1a$.scanoss.api.scanning.v2.HFHResponse\" \x82\xd3\xe4\x93\x02\x1a\"\x15/v2/scanning/hfh/scan:\x01*B\x8a\x02Z1github.com/scanoss/papi/api/scanningv2;scanningv2\x92\x41\xd3\x01\x12m\n\x18SCANOSS Scanning Service\"L\n\x10scanoss-scanning\x12#https://github.com/scanoss/scanning\x1a\x13support@scanoss.com2\x03\x32.0*\x01\x01\x32\x10\x61pplication/json:\x10\x61pplication/jsonR;\n\x03\x34\x30\x34\x12\x34\n*Returned when the resource does not exist.\x12\x06\n\x04\x9a\x02\x01\x07\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -38,23 +38,23 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_HFHREQUEST_CHILDREN_LANGEXTENSIONSENTRY']._loaded_options = None
   _globals['_HFHREQUEST_CHILDREN_LANGEXTENSIONSENTRY']._serialized_options = b'8\001'
   _globals['_SCANNING'].methods_by_name['Echo']._loaded_options = None
-  _globals['_SCANNING'].methods_by_name['Echo']._serialized_options = b'\202\323\344\223\002\032\"\025/api/v2/scanning/echo:\001*'
+  _globals['_SCANNING'].methods_by_name['Echo']._serialized_options = b'\202\323\344\223\002\026\"\021/v2/scanning/echo:\001*'
   _globals['_SCANNING'].methods_by_name['FolderHashScan']._loaded_options = None
-  _globals['_SCANNING'].methods_by_name['FolderHashScan']._serialized_options = b'\202\323\344\223\002\036\"\031/api/v2/scanning/hfh/scan:\001*'
+  _globals['_SCANNING'].methods_by_name['FolderHashScan']._serialized_options = b'\202\323\344\223\002\032\"\025/v2/scanning/hfh/scan:\001*'
   _globals['_HFHREQUEST']._serialized_start=198
-  _globals['_HFHREQUEST']._serialized_end=651
-  _globals['_HFHREQUEST_CHILDREN']._serialized_start=336
-  _globals['_HFHREQUEST_CHILDREN']._serialized_end=651
-  _globals['_HFHREQUEST_CHILDREN_LANGEXTENSIONSENTRY']._serialized_start=598
-  _globals['_HFHREQUEST_CHILDREN_LANGEXTENSIONSENTRY']._serialized_end=651
-  _globals['_HFHRESPONSE']._serialized_start=654
-  _globals['_HFHRESPONSE']._serialized_end=1073
-  _globals['_HFHRESPONSE_VERSION']._serialized_start=786
-  _globals['_HFHRESPONSE_VERSION']._serialized_end=827
-  _globals['_HFHRESPONSE_COMPONENT']._serialized_start=830
-  _globals['_HFHRESPONSE_COMPONENT']._serialized_end=978
-  _globals['_HFHRESPONSE_RESULT']._serialized_start=980
-  _globals['_HFHRESPONSE_RESULT']._serialized_end=1073
-  _globals['_SCANNING']._serialized_start=1076
-  _globals['_SCANNING']._serialized_end=1333
+  _globals['_HFHREQUEST']._serialized_end=804
+  _globals['_HFHREQUEST_CHILDREN']._serialized_start=409
+  _globals['_HFHREQUEST_CHILDREN']._serialized_end=804
+  _globals['_HFHREQUEST_CHILDREN_LANGEXTENSIONSENTRY']._serialized_start=751
+  _globals['_HFHREQUEST_CHILDREN_LANGEXTENSIONSENTRY']._serialized_end=804
+  _globals['_HFHRESPONSE']._serialized_start=807
+  _globals['_HFHRESPONSE']._serialized_end=1235
+  _globals['_HFHRESPONSE_VERSION']._serialized_start=939
+  _globals['_HFHRESPONSE_VERSION']._serialized_end=980
+  _globals['_HFHRESPONSE_COMPONENT']._serialized_start=983
+  _globals['_HFHRESPONSE_COMPONENT']._serialized_end=1131
+  _globals['_HFHRESPONSE_RESULT']._serialized_start=1133
+  _globals['_HFHRESPONSE_RESULT']._serialized_end=1235
+  _globals['_SCANNING']._serialized_start=1238
+  _globals['_SCANNING']._serialized_end=1486
 # @@protoc_insertion_point(module_scope)

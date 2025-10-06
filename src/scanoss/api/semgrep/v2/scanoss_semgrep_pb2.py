@@ -27,7 +27,7 @@ from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
 from protoc_gen_openapiv2.options import annotations_pb2 as protoc__gen__openapiv2_dot_options_dot_annotations__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n,scanoss/api/semgrep/v2/scanoss-semgrep.proto\x12\x16scanoss.api.semgrep.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\x96\x03\n\x0fSemgrepResponse\x12<\n\x05purls\x18\x01 \x03(\x0b\x32-.scanoss.api.semgrep.v2.SemgrepResponse.Purls\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1a\x43\n\x05Issue\x12\x0e\n\x06ruleID\x18\x01 \x01(\t\x12\x0c\n\x04\x66rom\x18\x02 \x01(\t\x12\n\n\x02to\x18\x03 \x01(\t\x12\x10\n\x08severity\x18\x04 \x01(\t\x1a\x64\n\x04\x46ile\x12\x0f\n\x07\x66ileMD5\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12=\n\x06issues\x18\x03 \x03(\x0b\x32-.scanoss.api.semgrep.v2.SemgrepResponse.Issue\x1a\x63\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12;\n\x05\x66iles\x18\x03 \x03(\x0b\x32,.scanoss.api.semgrep.v2.SemgrepResponse.File2\xf8\x01\n\x07Semgrep\x12p\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\"\x14/api/v2/semgrep/echo:\x01*\x12{\n\tGetIssues\x12\".scanoss.api.common.v2.PurlRequest\x1a\'.scanoss.api.semgrep.v2.SemgrepResponse\"!\x82\xd3\xe4\x93\x02\x1b\"\x16/api/v2/semgrep/issues:\x01*B\x85\x02Z/github.com/scanoss/papi/api/semgrepv2;semgrepv2\x92\x41\xd0\x01\x12j\n\x17SCANOSS Semgrep Service\"J\n\x0fscanoss-semgrep\x12\"https://github.com/scanoss/semgrep\x1a\x13support@scanoss.com2\x03\x32.0*\x01\x01\x32\x10\x61pplication/json:\x10\x61pplication/jsonR;\n\x03\x34\x30\x34\x12\x34\n*Returned when the resource does not exist.\x12\x06\n\x04\x9a\x02\x01\x07\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n,scanoss/api/semgrep/v2/scanoss-semgrep.proto\x12\x16scanoss.api.semgrep.v2\x1a*scanoss/api/common/v2/scanoss-common.proto\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"C\n\x05Issue\x12\x0e\n\x06ruleID\x18\x01 \x01(\t\x12\x0c\n\x04\x66rom\x18\x02 \x01(\t\x12\n\n\x02to\x18\x03 \x01(\t\x12\x10\n\x08severity\x18\x04 \x01(\t\"T\n\x04\x46ile\x12\x0f\n\x07\x66ileMD5\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12-\n\x06issues\x18\x03 \x03(\x0b\x32\x1d.scanoss.api.semgrep.v2.Issue\"\xdf\x01\n\x0fSemgrepResponse\x12<\n\x05purls\x18\x01 \x03(\x0b\x32-.scanoss.api.semgrep.v2.SemgrepResponse.Purls\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse\x1aS\n\x05Purls\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12+\n\x05\x66iles\x18\x03 \x03(\x0b\x32\x1c.scanoss.api.semgrep.v2.File:\x02\x18\x01\"u\n\x12\x43omponentIssueInfo\x12\x0c\n\x04purl\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x13\n\x0brequirement\x18\x03 \x01(\t\x12+\n\x05\x66iles\x18\x04 \x03(\x0b\x32\x1c.scanoss.api.semgrep.v2.File\"\xe6\x06\n\x17\x43omponentsIssueResponse\x12>\n\ncomponents\x18\x01 \x03(\x0b\x32*.scanoss.api.semgrep.v2.ComponentIssueInfo\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse:\xd3\x05\x92\x41\xcf\x05\n\xcc\x05J\xc9\x05{\"components\":[{\"purl\":\"pkg:maven/org.apache.commons/commons-lang3\",\"version\":\"3.12.0\",\"requirement\":\"3.12.0\",\"files\":[{\"fileMD5\":\"a1b2c3d4e5f6\",\"path\":\"src/main/java/org/apache/commons/lang3/StringUtils.java\",\"issues\":[{\"ruleID\":\"java.lang.security.audit.crypto.weak-hash\",\"from\":\"156\",\"to\":\"159\",\"severity\":\"WARNING\"},{\"ruleID\":\"java.lang.security.audit.sql-injection.sql-injection\",\"from\":\"284\",\"to\":\"286\",\"severity\":\"ERROR\"}]},{\"fileMD5\":\"b2c3d4e5f6a1\",\"path\":\"src/main/java/org/apache/commons/lang3/Validate.java\",\"issues\":[{\"ruleID\":\"java.lang.security.audit.hardcoded-secret\",\"from\":\"95\",\"to\":\"95\",\"severity\":\"ERROR\"}]}]}],\"status\":{\"status\":\"SUCCESS\",\"message\":\"Security analysis completed successfully\"}}\"\xb9\x04\n\x16\x43omponentIssueResponse\x12=\n\tcomponent\x18\x01 \x01(\x0b\x32*.scanoss.api.semgrep.v2.ComponentIssueInfo\x12\x35\n\x06status\x18\x02 \x01(\x0b\x32%.scanoss.api.common.v2.StatusResponse:\xa8\x03\x92\x41\xa4\x03\n\xa1\x03J\x9e\x03{\"component\":{\"purl\":\"pkg:maven/org.apache.commons/commons-lang3\",\"version\":\"3.12.0\",\"requirement\":\"3.12.0\",\"files\":[{\"fileMD5\":\"a1b2c3d4e5f6\",\"path\":\"src/main/java/org/apache/commons/lang3/StringUtils.java\",\"issues\":[{\"ruleID\":\"java.lang.security.audit.sql-injection.sql-injection\",\"from\":\"284\",\"to\":\"286\",\"severity\":\"ERROR\"}]}]},\"status\":{\"status\":\"SUCCESS\",\"message\":\"Security analysis completed successfully\"}}2\x89\x04\n\x07Semgrep\x12l\n\x04\x45\x63ho\x12\".scanoss.api.common.v2.EchoRequest\x1a#.scanoss.api.common.v2.EchoResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\"\x10/v2/semgrep/echo:\x01*\x12]\n\tGetIssues\x12\".scanoss.api.common.v2.PurlRequest\x1a\'.scanoss.api.semgrep.v2.SemgrepResponse\"\x03\x88\x02\x01\x12\x9a\x01\n\x13GetComponentsIssues\x12(.scanoss.api.common.v2.ComponentsRequest\x1a/.scanoss.api.semgrep.v2.ComponentsIssueResponse\"(\x82\xd3\xe4\x93\x02\"\"\x1d/v2/semgrep/issues/components:\x01*\x12\x93\x01\n\x12GetComponentIssues\x12\'.scanoss.api.common.v2.ComponentRequest\x1a..scanoss.api.semgrep.v2.ComponentIssueResponse\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v2/semgrep/issues/componentB\x85\x02Z/github.com/scanoss/papi/api/semgrepv2;semgrepv2\x92\x41\xd0\x01\x12j\n\x17SCANOSS Semgrep Service\"J\n\x0fscanoss-semgrep\x12\"https://github.com/scanoss/semgrep\x1a\x13support@scanoss.com2\x03\x32.0*\x01\x01\x32\x10\x61pplication/json:\x10\x61pplication/jsonR;\n\x03\x34\x30\x34\x12\x34\n*Returned when the resource does not exist.\x12\x06\n\x04\x9a\x02\x01\x07\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,18 +35,34 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'scanoss.api.semgrep.v2.scan
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z/github.com/scanoss/papi/api/semgrepv2;semgrepv2\222A\320\001\022j\n\027SCANOSS Semgrep Service\"J\n\017scanoss-semgrep\022\"https://github.com/scanoss/semgrep\032\023support@scanoss.com2\0032.0*\001\0012\020application/json:\020application/jsonR;\n\003404\0224\n*Returned when the resource does not exist.\022\006\n\004\232\002\001\007'
+  _globals['_SEMGREPRESPONSE']._loaded_options = None
+  _globals['_SEMGREPRESPONSE']._serialized_options = b'\030\001'
+  _globals['_COMPONENTSISSUERESPONSE']._loaded_options = None
+  _globals['_COMPONENTSISSUERESPONSE']._serialized_options = b'\222A\317\005\n\314\005J\311\005{\"components\":[{\"purl\":\"pkg:maven/org.apache.commons/commons-lang3\",\"version\":\"3.12.0\",\"requirement\":\"3.12.0\",\"files\":[{\"fileMD5\":\"a1b2c3d4e5f6\",\"path\":\"src/main/java/org/apache/commons/lang3/StringUtils.java\",\"issues\":[{\"ruleID\":\"java.lang.security.audit.crypto.weak-hash\",\"from\":\"156\",\"to\":\"159\",\"severity\":\"WARNING\"},{\"ruleID\":\"java.lang.security.audit.sql-injection.sql-injection\",\"from\":\"284\",\"to\":\"286\",\"severity\":\"ERROR\"}]},{\"fileMD5\":\"b2c3d4e5f6a1\",\"path\":\"src/main/java/org/apache/commons/lang3/Validate.java\",\"issues\":[{\"ruleID\":\"java.lang.security.audit.hardcoded-secret\",\"from\":\"95\",\"to\":\"95\",\"severity\":\"ERROR\"}]}]}],\"status\":{\"status\":\"SUCCESS\",\"message\":\"Security analysis completed successfully\"}}'
+  _globals['_COMPONENTISSUERESPONSE']._loaded_options = None
+  _globals['_COMPONENTISSUERESPONSE']._serialized_options = b'\222A\244\003\n\241\003J\236\003{\"component\":{\"purl\":\"pkg:maven/org.apache.commons/commons-lang3\",\"version\":\"3.12.0\",\"requirement\":\"3.12.0\",\"files\":[{\"fileMD5\":\"a1b2c3d4e5f6\",\"path\":\"src/main/java/org/apache/commons/lang3/StringUtils.java\",\"issues\":[{\"ruleID\":\"java.lang.security.audit.sql-injection.sql-injection\",\"from\":\"284\",\"to\":\"286\",\"severity\":\"ERROR\"}]}]},\"status\":{\"status\":\"SUCCESS\",\"message\":\"Security analysis completed successfully\"}}'
   _globals['_SEMGREP'].methods_by_name['Echo']._loaded_options = None
-  _globals['_SEMGREP'].methods_by_name['Echo']._serialized_options = b'\202\323\344\223\002\031\"\024/api/v2/semgrep/echo:\001*'
+  _globals['_SEMGREP'].methods_by_name['Echo']._serialized_options = b'\202\323\344\223\002\025\"\020/v2/semgrep/echo:\001*'
   _globals['_SEMGREP'].methods_by_name['GetIssues']._loaded_options = None
-  _globals['_SEMGREP'].methods_by_name['GetIssues']._serialized_options = b'\202\323\344\223\002\033\"\026/api/v2/semgrep/issues:\001*'
-  _globals['_SEMGREPRESPONSE']._serialized_start=195
-  _globals['_SEMGREPRESPONSE']._serialized_end=601
-  _globals['_SEMGREPRESPONSE_ISSUE']._serialized_start=331
-  _globals['_SEMGREPRESPONSE_ISSUE']._serialized_end=398
-  _globals['_SEMGREPRESPONSE_FILE']._serialized_start=400
-  _globals['_SEMGREPRESPONSE_FILE']._serialized_end=500
-  _globals['_SEMGREPRESPONSE_PURLS']._serialized_start=502
-  _globals['_SEMGREPRESPONSE_PURLS']._serialized_end=601
-  _globals['_SEMGREP']._serialized_start=604
-  _globals['_SEMGREP']._serialized_end=852
+  _globals['_SEMGREP'].methods_by_name['GetIssues']._serialized_options = b'\210\002\001'
+  _globals['_SEMGREP'].methods_by_name['GetComponentsIssues']._loaded_options = None
+  _globals['_SEMGREP'].methods_by_name['GetComponentsIssues']._serialized_options = b'\202\323\344\223\002\"\"\035/v2/semgrep/issues/components:\001*'
+  _globals['_SEMGREP'].methods_by_name['GetComponentIssues']._loaded_options = None
+  _globals['_SEMGREP'].methods_by_name['GetComponentIssues']._serialized_options = b'\202\323\344\223\002\036\022\034/v2/semgrep/issues/component'
+  _globals['_ISSUE']._serialized_start=194
+  _globals['_ISSUE']._serialized_end=261
+  _globals['_FILE']._serialized_start=263
+  _globals['_FILE']._serialized_end=347
+  _globals['_SEMGREPRESPONSE']._serialized_start=350
+  _globals['_SEMGREPRESPONSE']._serialized_end=573
+  _globals['_SEMGREPRESPONSE_PURLS']._serialized_start=486
+  _globals['_SEMGREPRESPONSE_PURLS']._serialized_end=569
+  _globals['_COMPONENTISSUEINFO']._serialized_start=575
+  _globals['_COMPONENTISSUEINFO']._serialized_end=692
+  _globals['_COMPONENTSISSUERESPONSE']._serialized_start=695
+  _globals['_COMPONENTSISSUERESPONSE']._serialized_end=1565
+  _globals['_COMPONENTISSUERESPONSE']._serialized_start=1568
+  _globals['_COMPONENTISSUERESPONSE']._serialized_end=2137
+  _globals['_SEMGREP']._serialized_start=2140
+  _globals['_SEMGREP']._serialized_end=2661
 # @@protoc_insertion_point(module_scope)
