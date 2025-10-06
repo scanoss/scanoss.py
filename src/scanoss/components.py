@@ -77,6 +77,7 @@ class Components(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         ver_details = Scanner.version_details()
+        self.use_grpc = use_grpc
         self.grpc_api = ScanossGrpc(
             url=grpc_url,
             debug=debug,
@@ -91,7 +92,6 @@ class Components(ScanossBase):
             timeout=timeout,
             req_headers=req_headers,
             ignore_cert_errors=ignore_cert_errors,
-            use_grpc=use_grpc,
         )
         self.cdx = CycloneDx(debug=self.debug)
 
@@ -190,32 +190,6 @@ class Components(ScanossBase):
             self.print_trace(f'Closing file: {filename}')
             file.close()
 
-    def get_crypto_details(self, json_file: str = None, purls: [] = None, output_file: str = None) -> bool:
-        """
-        Retrieve the cryptographic details for the supplied PURLs
-
-        :param json_file: PURL JSON request file (optional)
-        :param purls: PURL request array (optional)
-        :param output_file: output filename (optional). Default: STDOUT
-        :return: True on success, False otherwise
-        """
-        success = False
-        purls_request = self.load_purls(json_file, purls)
-        if purls_request is None or len(purls_request) == 0:
-            return False
-        file = self._open_file_or_sdtout(output_file)
-        if file is None:
-            return False
-        self.print_msg('Sending PURLs to Crypto API for decoration...')
-        response = self.grpc_api.get_crypto_json(purls_request)
-        if response:
-            print(json.dumps(response, indent=2, sort_keys=True), file=file)
-            success = True
-            if output_file:
-                self.print_msg(f'Results written to: {output_file}')
-        self._close_file(output_file, file)
-        return success
-
     def get_vulnerabilities(self, json_file: str = None, purls: [] = None, output_file: str = None) -> bool:
         """
         Retrieve any vulnerabilities related to the given PURLs
@@ -233,7 +207,7 @@ class Components(ScanossBase):
         if file is None:
             return False
         self.print_msg('Sending PURLs to Vulnerability API for decoration...')
-        response = self.grpc_api.get_vulnerabilities_json(purls_request)
+        response = self.grpc_api.get_vulnerabilities_json(purls_request, use_grpc=self.use_grpc)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True
@@ -252,14 +226,14 @@ class Components(ScanossBase):
         :return: True on success, False otherwise
         """
         success = False
-        purls_request = self.load_purls(json_file, purls)
+        purls_request = self.load_comps(json_file, purls)
         if purls_request is None or len(purls_request) == 0:
             return False
         file = self._open_file_or_sdtout(output_file)
         if file is None:
             return False
         self.print_msg('Sending PURLs to Semgrep API for decoration...')
-        response = self.grpc_api.get_semgrep_json(purls_request)
+        response = self.grpc_api.get_semgrep_json(purls_request, use_grpc=self.use_grpc)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True
@@ -309,7 +283,7 @@ class Components(ScanossBase):
         if file is None:
             return False
         self.print_msg('Sending search data to Components API...')
-        response = self.grpc_api.search_components_json(request)
+        response = self.grpc_api.search_components_json(request, use_grpc=self.use_grpc)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True
@@ -345,7 +319,7 @@ class Components(ScanossBase):
         if file is None:
             return False
         self.print_msg('Sending PURLs to Component Versions API...')
-        response = self.grpc_api.get_component_versions_json(request)
+        response = self.grpc_api.get_component_versions_json(request, use_grpc=self.use_grpc)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True
@@ -370,7 +344,7 @@ class Components(ScanossBase):
             bool: True on success, False otherwise
         """
         success = False
-        purls_request = self.load_purls(json_file, purls)
+        purls_request = self.load_comps(json_file, purls)
         if purls_request is None or len(purls_request) == 0:
             return False
         file = self._open_file_or_sdtout(output_file)
@@ -378,10 +352,10 @@ class Components(ScanossBase):
             return False
         if origin:
             self.print_msg('Sending PURLs to Geo Provenance Origin API for decoration...')
-            response = self.grpc_api.get_provenance_origin(purls_request)
+            response = self.grpc_api.get_provenance_origin(purls_request, use_grpc=self.use_grpc)
         else:
             self.print_msg('Sending PURLs to Geo Provenance Declared API for decoration...')
-            response = self.grpc_api.get_provenance_json(purls_request)
+            response = self.grpc_api.get_provenance_json(purls_request, use_grpc=self.use_grpc)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True
@@ -413,7 +387,7 @@ class Components(ScanossBase):
 
         # We'll use the new ComponentBatchRequest instead of deprecated PurlRequest for the license api
         component_batch_request = {'components': purls_request.get('purls')}
-        response = self.grpc_api.get_licenses(component_batch_request)
+        response = self.grpc_api.get_licenses(component_batch_request, use_grpc=self.use_grpc)
         if response:
             print(json.dumps(response, indent=2, sort_keys=True), file=file)
             success = True

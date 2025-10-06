@@ -54,8 +54,8 @@ class ComponentsStub(object):
                 _registered_method=True)
         self.GetComponentStatistics = channel.unary_unary(
                 '/scanoss.api.components.v2.Components/GetComponentStatistics',
-                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
-                response_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.FromString,
+                request_serializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+                response_deserializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.ComponentsStatisticResponse.FromString,
                 _registered_method=True)
 
 
@@ -112,8 +112,8 @@ def add_ComponentsServicer_to_server(servicer, server):
             ),
             'GetComponentStatistics': grpc.unary_unary_rpc_method_handler(
                     servicer.GetComponentStatistics,
-                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.FromString,
-                    response_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.SerializeToString,
+                    request_deserializer=scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.FromString,
+                    response_serializer=scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.ComponentsStatisticResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -224,8 +224,8 @@ class Components(object):
             request,
             target,
             '/scanoss.api.components.v2.Components/GetComponentStatistics',
-            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.PurlRequest.SerializeToString,
-            scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.CompStatisticResponse.FromString,
+            scanoss_dot_api_dot_common_dot_v2_dot_scanoss__common__pb2.ComponentsRequest.SerializeToString,
+            scanoss_dot_api_dot_components_dot_v2_dot_scanoss__components__pb2.ComponentsStatisticResponse.FromString,
             options,
             channel_credentials,
             insecure,

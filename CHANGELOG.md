@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.34.0] - 2025-10-06
+### Added
+- Add REST API support for decoration commands
+
 ## [1.33.0] - 2025-09-19
 ### Added
 - Add `licenses` sub-command to `component` command
@@ -668,3 +672,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.31.5]: https://github.com/scanoss/scanoss.py/compare/v1.31.4...v1.31.5
 [1.32.0]: https://github.com/scanoss/scanoss.py/compare/v1.31.5...v1.32.0
 [1.33.0]: https://github.com/scanoss/scanoss.py/compare/v1.32.0...v1.33.0
+[1.34.0]: https://github.com/scanoss/scanoss.py/compare/v1.33.0...v1.34.0
