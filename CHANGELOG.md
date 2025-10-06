@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.34.0] - 2025-10-01
+## [1.34.0] - 2025-10-06
 ### Added
 - Add REST API support for decoration commands
 
