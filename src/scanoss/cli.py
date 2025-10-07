@@ -1070,7 +1070,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         c_versions,
         c_licenses,
     ]:
-        p.add_argument('--grpc', action='store_true', help='Enable gRPC support')
+        p.add_argument('--grpc', action='store_true', default=True, help='Use gRPC (default)')
+        p.add_argument('--rest', action='store_true', dest='rest', help='Use REST instead of gRPC')
 
     # Help/Trace command options
     for p in [
@@ -1111,6 +1112,12 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
 
     args = parser.parse_args()
+
+    # TODO: Remove this hack once we go back to using REST as default
+    # Handle --rest overriding --grpc default
+    if hasattr(args, 'rest') and args.rest:
+        args.grpc = False
+
     if args.version:
         ver(parser, args)
         sys.exit(0)
