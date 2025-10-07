@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.35.0] - 2025-10-07
+### Modified
+- Use gRPC instead of REST for API calls
+
 ## [1.34.0] - 2025-10-06
 ### Added
 - Add REST API support for decoration commands
