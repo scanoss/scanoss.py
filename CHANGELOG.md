@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.32.0] - 2025-08-13
+## [1.36.0] - 2025-10-08
 ### Added
 - Add `--recursive-threshold` argument to folder scan command
 - Add `--depth` argument to `folder-scan` and `folder-hash` commands
@@ -682,3 +682,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.32.0]: https://github.com/scanoss/scanoss.py/compare/v1.31.5...v1.32.0
 [1.33.0]: https://github.com/scanoss/scanoss.py/compare/v1.32.0...v1.33.0
 [1.34.0]: https://github.com/scanoss/scanoss.py/compare/v1.33.0...v1.34.0
+[1.35.0]: https://github.com/scanoss/scanoss.py/compare/v1.34.0...v1.35.0
+[1.36.0]: https://github.com/scanoss/scanoss.py/compare/v1.35.0...v1.36.0
