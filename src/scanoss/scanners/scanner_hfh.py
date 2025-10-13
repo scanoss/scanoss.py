@@ -29,7 +29,12 @@ from typing import Dict, Optional
 
 from progress.spinner import Spinner
 
-from scanoss.constants import DEFAULT_HFH_RANK_THRESHOLD
+from scanoss.constants import (
+    DEFAULT_HFH_DEPTH,
+    DEFAULT_HFH_MIN_ACCEPTED_SCORE,
+    DEFAULT_HFH_RANK_THRESHOLD,
+    DEFAULT_HFH_RECURSIVE_THRESHOLD,
+)
 from scanoss.cyclonedx import CycloneDx
 from scanoss.file_filters import FileFilters
 from scanoss.scanners.folder_hasher import FolderHasher
@@ -48,13 +53,16 @@ class ScannerHFH:
     and calculates simhash values based on file names and content to detect folder-level similarities.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         scan_dir: str,
         config: ScannerConfig,
         client: Optional[ScanossGrpc] = None,
         scanoss_settings: Optional[ScanossSettings] = None,
         rank_threshold: int = DEFAULT_HFH_RANK_THRESHOLD,
+        depth: int = DEFAULT_HFH_DEPTH,
+        recursive_threshold: float = DEFAULT_HFH_RECURSIVE_THRESHOLD,
+        min_accepted_score: float = DEFAULT_HFH_MIN_ACCEPTED_SCORE,
     ):
         """
         Initialize the ScannerHFH.
@@ -65,6 +73,9 @@ class ScannerHFH:
             client (ScanossGrpc): gRPC client for communicating with the scanning service.
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
             rank_threshold (int): Get results with rank below this threshold (default: 5).
+            depth (int): How many levels to scan (default: 1).
+            recursive_threshold (float): Minimum score threshold to consider a match (default: 0.25).
+            min_accepted_score (float): Only show results with a score at or above this threshold (default: 0.15).
         """
         self.base = ScanossBase(
             debug=config.debug,
@@ -87,12 +98,15 @@ class ScannerHFH:
             scan_dir=scan_dir,
             config=config,
             scanoss_settings=scanoss_settings,
+            depth=depth,
         )
 
         self.scan_dir = scan_dir
         self.client = client
         self.scan_results = None
         self.rank_threshold = rank_threshold
+        self.recursive_threshold = recursive_threshold
+        self.min_accepted_score = min_accepted_score
 
     def scan(self) -> Optional[Dict]:
         """
@@ -102,8 +116,10 @@ class ScannerHFH:
             Optional[Dict]: The folder hash response from the gRPC client, or None if an error occurs.
         """
         hfh_request = {
-            'root': self.folder_hasher.hash_directory(self.scan_dir),
+            'root': self.folder_hasher.hash_directory(path=self.scan_dir),
             'rank_threshold': self.rank_threshold,
+            'recursive_threshold': self.recursive_threshold,
+            'min_accepted_score': self.min_accepted_score,
         }
 
         spinner = Spinner('Scanning folder...')
@@ -193,7 +209,7 @@ class ScannerHFHPresenter(AbstractPresenter):
                     }
                 ]
             }
-            
+
             get_vulnerabilities_json_request = {
                 'purls': [{'purl': purl, 'requirement': best_match_version['version']}],
             }
@@ -210,10 +226,10 @@ class ScannerHFHPresenter(AbstractPresenter):
                 error_msg = 'ERROR: Failed to produce CycloneDX output'
                 self.base.print_stderr(error_msg)
                 return None
-            
+
             if vulnerabilities:
                 cdx_output = cdx.append_vulnerabilities(cdx_output, vulnerabilities, purl)
-                
+
             return json.dumps(cdx_output, indent=2)
         except Exception as e:
             self.base.print_stderr(f'ERROR: Failed to get license information: {e}')

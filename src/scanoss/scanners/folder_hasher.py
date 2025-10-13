@@ -6,6 +6,7 @@ from typing import Dict, List, Literal, Optional
 
 from progress.bar import Bar
 
+from scanoss.constants import DEFAULT_HFH_DEPTH
 from scanoss.file_filters import FileFilters
 from scanoss.scanoss_settings import ScanossSettings
 from scanoss.scanossbase import ScanossBase
@@ -15,8 +16,6 @@ from scanoss.utils.simhash import WordFeatureSet, fingerprint, simhash, vectoriz
 
 MINIMUM_FILE_COUNT = 8
 MINIMUM_CONCATENATED_NAME_LENGTH = 32
-MAXIMUM_FILE_NAME_LENGTH = 32
-
 
 class DirectoryNode:
     """
@@ -72,6 +71,12 @@ class FolderHasher:
 
     It builds a directory tree (DirectoryNode) and computes the associated
     hash data for the folder.
+
+    Args:
+        scan_dir (str): The directory to be hashed.
+        config (FolderHasherConfig): Configuration parameters for the folder hasher.
+        scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
+        depth (int): How many levels to hash from the root directory (default: 1).
     """
 
     def __init__(
@@ -79,6 +84,7 @@ class FolderHasher:
         scan_dir: str,
         config: FolderHasherConfig,
         scanoss_settings: Optional[ScanossSettings] = None,
+        depth: int = DEFAULT_HFH_DEPTH,
     ):
         self.base = ScanossBase(
             debug=config.debug,
@@ -101,6 +107,7 @@ class FolderHasher:
 
         self.scan_dir = scan_dir
         self.tree = None
+        self.depth = depth
 
     def hash_directory(self, path: str) -> dict:
         """
@@ -123,7 +130,10 @@ class FolderHasher:
 
         return tree
 
-    def _build_root_node(self, path: str) -> DirectoryNode:
+    def _build_root_node(
+        self,
+        path: str,
+    ) -> DirectoryNode:
         """
         Build a directory tree from the given path with file information.
 
@@ -140,7 +150,7 @@ class FolderHasher:
         root_node = DirectoryNode(str(root))
 
         all_files = [
-            f for f in root.rglob('*') if f.is_file() and len(f.name.encode('utf-8')) <= MAXIMUM_FILE_NAME_LENGTH
+            f for f in root.rglob('*') if f.is_file()
         ]
         filtered_files = self.file_filters.get_filtered_files_from_files(all_files, str(root))
 
@@ -180,7 +190,7 @@ class FolderHasher:
         bar.finish()
         return root_node
 
-    def _hash_calc_from_node(self, node: DirectoryNode) -> dict:
+    def _hash_calc_from_node(self, node: DirectoryNode, current_depth: int = 1) -> dict:
         """
         Recursively compute folder hash data for a directory node.
 
@@ -189,12 +199,13 @@ class FolderHasher:
 
         Args:
             node (DirectoryNode): The directory node to compute the hash for.
+            current_depth (int): The current depth level (1-based, root is depth 1).
 
         Returns:
             dict: The computed hash data for the node.
         """
         hash_data = self._hash_calc(node)
-        
+
         # Safely calculate relative path
         try:
             node_path = Path(node.path).resolve()
@@ -204,13 +215,18 @@ class FolderHasher:
             # If relative_to fails, use the node path as is or a fallback
             rel_path = Path(node.path).name if node.path else Path('.')
 
+        # Only process children if we haven't reached the depth limit
+        children = []
+        if current_depth < self.depth:
+            children = [self._hash_calc_from_node(child, current_depth + 1) for child in node.children.values()]
+
         return {
             'path_id': str(rel_path),
             'sim_hash_names': f'{hash_data["name_hash"]:02x}' if hash_data['name_hash'] is not None else None,
             'sim_hash_content': f'{hash_data["content_hash"]:02x}' if hash_data['content_hash'] is not None else None,
             'sim_hash_dir_names': f'{hash_data["dir_hash"]:02x}' if hash_data['dir_hash'] is not None else None,
             'lang_extensions': hash_data['lang_extensions'],
-            'children': [self._hash_calc_from_node(child) for child in node.children.values()],
+            'children': children,
         }
 
     def _hash_calc(self, node: DirectoryNode) -> dict:
@@ -237,8 +253,6 @@ class FolderHasher:
 
         for file in node.files:
             key_str = file.key_str
-            if key_str in processed_hashes:
-                continue
 
             file_name = os.path.basename(file.path)
 
