@@ -84,6 +84,7 @@ from .scantype import ScanType
 from .spdxlite import SpdxLite
 from .threadeddependencies import SCOPE
 from .utils.file import validate_json_file
+from scanoss.delta import Delta
 
 HEADER_PARTS_COUNT = 2
 
@@ -919,6 +920,43 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
     p_folder_hash.set_defaults(func=folder_hash)
 
+    # Sub-command: delta
+    p_delta = subparsers.add_parser(
+        'delta',
+        aliases=['dl'],
+        description=f'SCANOSS Delta commands: {__version__}',
+        help='Delta support commands',
+    )
+
+    delta_sub = p_delta.add_subparsers(
+        title='Delta Commands',
+        dest='subparsercmd',
+        description='Delta sub-commands',
+        help='Delta sub-commands'
+    )
+
+    # Delta Sub-command: copy
+    p_copy = delta_sub.add_parser(
+        'copy',
+        aliases=['cpy'],
+        description=f'Copy file list into delta dir: {__version__}',
+        help='Copy file list into delta dir',
+    )
+    p_copy.add_argument(
+        '--input',
+        '-i',
+        type=str,
+        required=True,
+        help='Input file with diff list',
+    )
+    p_copy.add_argument(
+        '--folder',
+        '-f',
+        type=str,
+        help='Delta folder to copy to',
+    )
+    p_copy.set_defaults(func=delta_copy)
+
     # Output options
     for p in [
         p_scan,
@@ -939,6 +977,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_hints,
         p_crypto_versions_in_range,
         c_licenses,
+        p_copy,
     ]:
         p.add_argument('--output', '-o', type=str, help='Output result file name (optional - default stdout).')
 
@@ -1136,6 +1175,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_versions_in_range,
         c_licenses,
         e_dt,
+        p_copy
     ]:
         p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
@@ -2603,6 +2643,52 @@ def initialise_empty_file(filename: str):
             print_stderr(f'Error: Unable to create output file {filename}: {e}')
             sys.exit(1)
 
+def delta_copy(parser, args):
+    """
+    Handle delta copy command.
+
+    Copies files listed in an input file to a target directory while preserving
+    their directory structure. Creates a unique delta directory if none is specified.
+
+    Parameters
+    ----------
+    parser : ArgumentParser
+        Command line parser object for help display
+    args : Namespace
+        Parsed command line arguments containing:
+        - input: Path to file containing list of files to copy
+        - folder: Optional target directory path
+        - output: Optional output file path
+    """
+    # Validate required input file parameter
+    if args.input is None:
+        print_stderr('ERROR: Input file is required for copying')
+        parser.parse_args([args.subparser, args.subparsercmd, '-h'])
+        sys.exit(1)
+
+    # Initialise output file if specified
+    if args.output:
+        initialise_empty_file(args.output)
+
+    try:
+        # Create and configure delta copy command
+        i_delta = Delta(
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+            filepath=args.input,
+            folder=args.folder,
+            output=args.output,
+        )
+
+        # Execute copy and exit with appropriate status code
+        status, _ = i_delta.copy()
+        sys.exit(status)
+    except Exception as e:
+        print_stderr(e)
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
 
 def main():
     """
