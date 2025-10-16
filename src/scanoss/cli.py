@@ -1196,7 +1196,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         sys.exit(1)
     elif (
         args.subparser
-        in ('utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins', 'crypto', 'cr', 'export', 'exp')
+        in ('utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins', 'crypto', 'cr', 'export', 'exp', 'delta', 'dl')
     ) and not args.subparsercmd:
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
