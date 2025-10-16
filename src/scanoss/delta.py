@@ -27,6 +27,7 @@ import tempfile
 
 from .scanossbase import ScanossBase
 
+
 class Delta(ScanossBase):
     """
 

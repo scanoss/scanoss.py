@@ -33,6 +33,7 @@ from typing import List
 import pypac
 
 from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
+from scanoss.delta import Delta
 from scanoss.export.dependency_track import DependencyTrackExporter
 from scanoss.inspection.dependency_track.project_violation import (
     DependencyTrackProjectViolationPolicyCheck,
@@ -84,7 +85,6 @@ from .scantype import ScanType
 from .spdxlite import SpdxLite
 from .threadeddependencies import SCOPE
 from .utils.file import validate_json_file
-from scanoss.delta import Delta
 
 HEADER_PARTS_COUNT = 2
 
