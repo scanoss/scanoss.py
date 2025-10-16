@@ -44,6 +44,7 @@ class Delta(ScanossBase):
         filepath: str = None,
         folder: str = None,
         output: str = None,
+        root_dir: str = '.',
     ):
         """
         Initialise the Delta instance.
@@ -59,8 +60,9 @@ class Delta(ScanossBase):
         self.filepath = filepath
         self.folder = folder
         self.output = output
+        self.root_dir = root_dir if root_dir else '.'
 
-    def copy(self):
+    def copy(self, input_file: str = None):
         """
         Copy files listed in the input file to the delta directory.
 
@@ -71,94 +73,119 @@ class Delta(ScanossBase):
         :return: Tuple of (status_code, folder_path) where status_code is 0 for success,
                  1 for error, and folder_path is the delta directory path
         """
-        # Validate that input file exists
-        if not os.path.exists(self.filepath):
-            self.print_stderr(f'ERROR: Input file {self.filepath} does not exist')
+        input_file = input_file if input_file else self.filepath
+        if not input_file:
+            self.print_stderr('ERROR: No input file specified')
+            return 1, ''
+        # Validate that an input file exists
+        if not os.path.exists(input_file):
+            self.print_stderr(f'ERROR: Input file {input_file} does not exist')
+            return 1, ''
+        # Load the input file and validate it contains valid file paths
+        files = self.load_input_file(input_file)
+        if files is None:
             return 1, ''
         # Create delta dir (folder)
-        folder = self.delta_dir(self.folder)
-        if not folder:
-            self.print_stderr(f'ERROR: Input folder {self.folder} already exists')
+        delta_folder = self.create_delta_dir(self.folder, self.root_dir)
+        if not delta_folder:
             return 1, ''
-        self.print_to_file_or_stdout(folder, self.output)
-        # Read files from filepath
-        try:
-            with open(self.filepath, 'r', encoding='utf-8') as f:
-                for line in f:
-                    source_file = line.rstrip('\n\r')
-                    # Skip empty lines
-                    if not source_file:
-                        continue
+        # Print delta folder location to output
+        self.print_to_file_or_stdout(delta_folder, self.output)
+        # Process each file and copy it to the delta dir
+        for source_file in files:
+            # Normalise the source path to handle ".." and redundant separators
+            normalised_source = os.path.normpath(source_file)
+            if normalised_source.startswith('..'):
+                self.print_stderr(f'WARNING: Source path escapes root directory for {source_file} skipping')
+                continue
+            # Resolve to the absolute path for source validation
+            abs_source = os.path.abspath(os.path.join(self.root_dir, normalised_source))
+            # Check if the source file exists and is a file
+            if not os.path.exists(abs_source) or not os.path.isfile(abs_source):
+                self.print_stderr(f'WARNING: File {source_file} does not exist or is not a file, skipping')
+                continue
+            # Use a normalised source for destination to prevent traversal
+            dest_path = os.path.normpath(os.path.join(self.root_dir, delta_folder, normalised_source.lstrip(os.sep)))
+            # Final safety check: ensure destination is within the delta folder
+            abs_dest = os.path.abspath(dest_path)
+            abs_folder = os.path.abspath(delta_folder)
+            if not abs_dest.startswith(abs_folder + os.sep):
+                self.print_stderr(
+                    f'WARNING: Destination path ({abs_dest}) escapes delta directory for {source_file} skipping')
+                continue
+            # Create the destination directory if it doesn't exist and copy the file
+            try:
+                dest_dir = os.path.dirname(dest_path)
+                if dest_dir:
+                    self.print_trace(f'Creating directory {dest_dir}...')
+                    os.makedirs(dest_dir, exist_ok=True)
+                self.print_debug(f'Copying {source_file} to {dest_path} ...')
+                shutil.copy(abs_source, dest_path)
+            except (OSError, shutil.Error) as e:
+                self.print_stderr(f'ERROR: Failed to copy {source_file} to {dest_path}: {e}')
+                return 1, ''
+        return 0, delta_folder
 
-                    # Normalise the source path to handle '..' and redundant separators
-                    normalised_source = os.path.normpath(source_file)
-
-                    # Resolve to the absolute path for source validation
-                    abs_source = os.path.abspath(normalised_source)
-
-                    # Check if the source file exists and is a file
-                    if not os.path.exists(abs_source):
-                        self.print_stderr(f'WARNING: File {source_file} does not exist, skipping')
-                        continue
-                    if not os.path.isfile(abs_source):
-                        self.print_stderr(f'WARNING: {source_file} is not a file, skipping')
-                        continue
-
-                    # Copy files into delta dir
-                    try:
-                        # Use a normalised source for destination to prevent traversal
-                        # Remove leading path separators and '..' components from destination
-                        safe_dest_path = normalised_source.lstrip(os.sep).lstrip('/')
-                        while safe_dest_path.startswith('..'):
-                            safe_dest_path = safe_dest_path[2:].lstrip(os.sep).lstrip('/')
-
-                        dest_path = os.path.join(folder, safe_dest_path)
-
-                        # Final safety check: ensure destination is within delta folder
-                        abs_dest = os.path.abspath(dest_path)
-                        abs_folder = os.path.abspath(folder)
-                        if not abs_dest.startswith(abs_folder + os.sep):
-                            self.print_stderr(f'ERROR: Destination path escapes delta directory for {source_file},'
-                                              f' skipping')
-                            continue
-
-                        dest_dir = os.path.dirname(dest_path)
-                        if dest_dir:
-                            os.makedirs(dest_dir, exist_ok=True)
-                        shutil.copy(abs_source, dest_path)
-                    except (OSError, shutil.Error) as copy_err:
-                        self.print_stderr(f'ERROR: Failed to copy {source_file}: {copy_err}')
-                        continue
-        except (OSError, IOError) as read_err:
-            self.print_stderr(f'ERROR: Failed to read input file: {read_err}')
-            return 1, ''
-        return 0, folder
-
-    def delta_dir(self, folder):
+    def create_delta_dir(self, folder: str, root_dir: str = '.') -> str or None:
         """
-        Create or validate the delta directory.
+        Create the delta directory.
 
         If no folder is specified, creates a unique temporary directory with
         a 'delta-' prefix in the current directory. If a folder is specified,
         validates that it doesn't already exist before creating it.
 
-        :param folder: Optional target directory path
-        :return: Path to the delta directory, or empty string if folder already exists or creation fails
+        :param root_dir: Root directory to create the delta directory in (default: current directory)
+        :param folder: Optional target directory
+        :return: Path to the delta directory, or None if it already exists or creation fails
         """
-        if folder and os.path.exists(folder):
-            self.print_stderr(f'Folder {folder} already exists')
-            return ''
-        elif folder:
-            try:
-                os.makedirs(folder)
-            except (OSError, IOError) as e:
-                self.print_stderr(f'ERROR: Failed to create directory {folder}: {e}')
-                return ''
+        if folder:
+            # Validate the target directory doesn't already exist and create it
+            if os.path.exists(folder):
+                self.print_stderr(f'Error: Folder {folder} already exists.')
+                return None
+            else:
+                try:
+                    self.print_debug(f'Creating delta directory {folder}...')
+                    os.makedirs(folder)
+                except (OSError, IOError) as e:
+                    self.print_stderr(f'ERROR: Failed to create directory {folder}: {e}')
+                    return None
         else:
+            # Create a unique temporary directory in the given root directory
             try:
-                folder = tempfile.mkdtemp(prefix="delta-", dir='.')
+                self.print_debug(f'Creating temporary delta directory in {root_dir} ...')
+                folder = tempfile.mkdtemp(prefix="delta-", dir=root_dir)
+                self.print_debug(f'Created temporary delta directory: {folder}')
             except (OSError, IOError) as e:
-                self.print_stderr(f'ERROR: Failed to create temporary directory: {e}')
-                return ''
-        return folder
+                self.print_stderr(f'ERROR: Failed to create temporary directory in {root_dir}: {e}')
+                return None
+        return os.path.normpath(folder)
+
+    def load_input_file(self, input_file: str) -> list[str] or None:
+        """
+        Loads and parses the input file line by line. Each line in the input
+        file represents a source file path, which will be stripped of trailing
+        whitespace and appended to the resulting list if it is not empty.
+
+        :param input_file: The path to the input file to be read.
+        :type input_file: String
+        :return: A list of source file paths extracted from the input file,
+            or None if an error occurs or the file path is invalid.
+        :rtype: An array list[str] or None
+        """
+        files = []
+        if input_file:
+            try:
+                with open(input_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        source_file = line.rstrip()
+                        if source_file:
+                          files.append(source_file.lstrip(os.sep))  # Save the file path without any leading separators
+                    # End of for loop
+            except (OSError, IOError) as e:
+                self.print_stderr(f'ERROR: Failed to read input file; {input_file}: {e}')
+                return None
+        self.print_debug(f'Loaded {len(files)} files from input file.')
+        return files
+
 

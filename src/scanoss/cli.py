@@ -938,23 +938,13 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     # Delta Sub-command: copy
     p_copy = delta_sub.add_parser(
         'copy',
-        aliases=['cpy'],
+        aliases=['cp'],
         description=f'Copy file list into delta dir: {__version__}',
-        help='Copy file list into delta dir',
+        help='Copy the given list of files into a delta directory',
     )
-    p_copy.add_argument(
-        '--input',
-        '-i',
-        type=str,
-        required=True,
-        help='Input file with diff list',
-    )
-    p_copy.add_argument(
-        '--folder',
-        '-f',
-        type=str,
-        help='Delta folder to copy to',
-    )
+    p_copy.add_argument('--input', '-i', type=str, required=True, help='Input file with diff list')
+    p_copy.add_argument('--folder', '-fd', type=str, help='Delta folder to copy into')
+    p_copy.add_argument('--root', '-rd', type=str, help='Root directory to place delta folder')
     p_copy.set_defaults(func=delta_copy)
 
     # Output options
@@ -2666,24 +2656,22 @@ def delta_copy(parser, args):
         print_stderr('ERROR: Input file is required for copying')
         parser.parse_args([args.subparser, args.subparsercmd, '-h'])
         sys.exit(1)
-
     # Initialise output file if specified
     if args.output:
         initialise_empty_file(args.output)
-
     try:
         # Create and configure delta copy command
-        i_delta = Delta(
+        delta = Delta(
             debug=args.debug,
             trace=args.trace,
             quiet=args.quiet,
             filepath=args.input,
             folder=args.folder,
             output=args.output,
+            root_dir=args.root,
         )
-
         # Execute copy and exit with appropriate status code
-        status, _ = i_delta.copy()
+        status, _ = delta.copy()
         sys.exit(status)
     except Exception as e:
         print_stderr(e)
