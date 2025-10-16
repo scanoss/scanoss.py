@@ -36,15 +36,16 @@ class Delta(ScanossBase):
     while preserving directory structure. Files are read from an input file where each
     line contains a file path to copy.
     """
-    def __init__(
-        self,
-        debug: bool = False,
-        trace: bool = False,
-        quiet: bool = False,
-        filepath: str = None,
-        folder: str = None,
-        output: str = None,
-        root_dir: str = '.',
+
+    def __init__(  # noqa: PLR0913
+            self,
+            debug: bool = False,
+            trace: bool = False,
+            quiet: bool = False,
+            filepath: str = None,
+            folder: str = None,
+            output: str = None,
+            root_dir: str = '.',
     ):
         """
         Initialise the Delta instance.
@@ -96,7 +97,7 @@ class Delta(ScanossBase):
             # Normalise the source path to handle ".." and redundant separators
             normalised_source = os.path.normpath(source_file)
             if normalised_source.startswith('..'):
-                self.print_stderr(f'WARNING: Source path escapes root directory for {source_file} skipping')
+                self.print_stderr(f'WARNING: Source path escapes root directory for {source_file}. Skipping.')
                 continue
             # Resolve to the absolute path for source validation
             abs_source = os.path.abspath(os.path.join(self.root_dir, normalised_source))
@@ -111,7 +112,7 @@ class Delta(ScanossBase):
             abs_folder = os.path.abspath(delta_folder)
             if not abs_dest.startswith(abs_folder + os.sep):
                 self.print_stderr(
-                    f'WARNING: Destination path ({abs_dest}) escapes delta directory for {source_file} skipping')
+                    f'WARNING: Destination path ({abs_dest}) escapes delta directory for {source_file}. Skipping.')
                 continue
             # Create the destination directory if it doesn't exist and copy the file
             try:
@@ -141,7 +142,7 @@ class Delta(ScanossBase):
         if folder:
             # Validate the target directory doesn't already exist and create it
             if os.path.exists(folder):
-                self.print_stderr(f'Error: Folder {folder} already exists.')
+                self.print_stderr(f'ERROR: Folder {folder} already exists.')
                 return None
             else:
                 try:
@@ -180,12 +181,11 @@ class Delta(ScanossBase):
                     for line in f:
                         source_file = line.rstrip()
                         if source_file:
-                          files.append(source_file.lstrip(os.sep))  # Save the file path without any leading separators
+                            # Save the file path without any leading separators
+                            files.append(source_file.lstrip(os.sep))
                     # End of for loop
             except (OSError, IOError) as e:
                 self.print_stderr(f'ERROR: Failed to read input file; {input_file}: {e}')
                 return None
         self.print_debug(f'Loaded {len(files)} files from input file.')
         return files
-
-
