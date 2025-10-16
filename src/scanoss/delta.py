@@ -30,7 +30,11 @@ from .scanossbase import ScanossBase
 
 class Delta(ScanossBase):
     """
+    Handle delta scan operations by copying files into a dedicated delta directory.
 
+    This class manages the creation of delta directories and copying of specified files
+    while preserving directory structure. Files are read from an input file where each
+    line contains a file path to copy.
     """
     def __init__(
         self,
@@ -42,7 +46,14 @@ class Delta(ScanossBase):
         output: str = None,
     ):
         """
+        Initialise the Delta instance.
 
+        :param debug: Enable debug logging
+        :param trace: Enable trace logging
+        :param quiet: Enable quiet mode (suppress non-essential output)
+        :param filepath: Path to input file containing list of files to copy
+        :param folder: Target delta directory path (auto-generated if not provided)
+        :param output: Output file path for delta directory location (stdout if not provided)
         """
         super().__init__(debug, trace, quiet)
         self.filepath = filepath
@@ -78,18 +89,39 @@ class Delta(ScanossBase):
                     # Skip empty lines
                     if not source_file:
                         continue
-                    # Resolve to absolute path for validation
-                    abs_source = os.path.abspath(source_file)
-                    # Check if source file exists and is a file
+
+                    # Normalise the source path to handle '..' and redundant separators
+                    normalised_source = os.path.normpath(source_file)
+
+                    # Resolve to the absolute path for source validation
+                    abs_source = os.path.abspath(normalised_source)
+
+                    # Check if the source file exists and is a file
                     if not os.path.exists(abs_source):
                         self.print_stderr(f'WARNING: File {source_file} does not exist, skipping')
                         continue
                     if not os.path.isfile(abs_source):
                         self.print_stderr(f'WARNING: {source_file} is not a file, skipping')
                         continue
+
                     # Copy files into delta dir
                     try:
-                        dest_path = os.path.join(folder, source_file)
+                        # Use a normalised source for destination to prevent traversal
+                        # Remove leading path separators and '..' components from destination
+                        safe_dest_path = normalised_source.lstrip(os.sep).lstrip('/')
+                        while safe_dest_path.startswith('..'):
+                            safe_dest_path = safe_dest_path[2:].lstrip(os.sep).lstrip('/')
+
+                        dest_path = os.path.join(folder, safe_dest_path)
+
+                        # Final safety check: ensure destination is within delta folder
+                        abs_dest = os.path.abspath(dest_path)
+                        abs_folder = os.path.abspath(folder)
+                        if not abs_dest.startswith(abs_folder + os.sep):
+                            self.print_stderr(f'ERROR: Destination path escapes delta directory for {source_file},'
+                                              f' skipping')
+                            continue
+
                         dest_dir = os.path.dirname(dest_path)
                         if dest_dir:
                             os.makedirs(dest_dir, exist_ok=True)
@@ -111,14 +143,22 @@ class Delta(ScanossBase):
         validates that it doesn't already exist before creating it.
 
         :param folder: Optional target directory path
-        :return: Path to the delta directory, or empty string if folder already exists
+        :return: Path to the delta directory, or empty string if folder already exists or creation fails
         """
         if folder and os.path.exists(folder):
             self.print_stderr(f'Folder {folder} already exists')
             return ''
         elif folder:
-            os.makedirs(folder, exist_ok=True)
+            try:
+                os.makedirs(folder)
+            except (OSError, IOError) as e:
+                self.print_stderr(f'ERROR: Failed to create directory {folder}: {e}')
+                return ''
         else:
-            folder = tempfile.mkdtemp(prefix="delta-", dir='.')
+            try:
+                folder = tempfile.mkdtemp(prefix="delta-", dir='.')
+            except (OSError, IOError) as e:
+                self.print_stderr(f'ERROR: Failed to create temporary directory: {e}')
+                return ''
         return folder
 
