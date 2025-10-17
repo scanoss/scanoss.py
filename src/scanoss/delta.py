@@ -24,6 +24,7 @@ SPDX-License-Identifier: MIT
 import os
 import shutil
 import tempfile
+from typing import Optional
 
 from .scanossbase import ScanossBase
 
@@ -160,14 +161,14 @@ class Delta(ScanossBase):
                 self.print_debug(f'Creating temporary delta directory in {root_dir} ...')
                 folder = tempfile.mkdtemp(prefix="delta-", dir=root_dir)
                 if folder:
-                    folder = folder.removeprefix(root_dir).lstrip(os.sep)  # Strip the root from the temp folder
+                    folder = os.path.relpath(folder, start=root_dir)  # Get the relative path from root_dir
                 self.print_debug(f'Created temporary delta directory: {folder}')
             except (OSError, IOError) as e:
                 self.print_stderr(f'ERROR: Failed to create temporary directory in {root_dir}: {e}')
                 return None
         return folder
 
-    def load_input_file(self, input_file: str) -> list[str] or None:
+    def load_input_file(self, input_file: str) -> Optional[list[str]]:
         """
         Loads and parses the input file line by line. Each line in the input
         file represents a source file path, which will be stripped of trailing
