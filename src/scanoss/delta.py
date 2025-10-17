@@ -80,8 +80,8 @@ class Delta(ScanossBase):
             self.print_stderr('ERROR: No input file specified')
             return 1, ''
         # Validate that an input file exists
-        if not os.path.exists(input_file):
-            self.print_stderr(f'ERROR: Input file {input_file} does not exist')
+        if not os.path.isfile(input_file):
+            self.print_stderr(f'ERROR: Input file {input_file} does not exist or is not a file')
             return 1, ''
         # Load the input file and validate it contains valid file paths
         files = self.load_input_file(input_file)
