@@ -140,16 +140,19 @@ class Delta(ScanossBase):
         :return: Path to the delta directory, or None if it already exists or creation fails
         """
         if folder:
+            # Resolve a relative folder under root_dir so checks/creation apply to the right place
+            resolved = folder if os.path.isabs(folder) else os.path.join(root_dir, folder)
+            resolved = os.path.normpath(resolved)
             # Validate the target directory doesn't already exist and create it
-            if os.path.exists(folder):
-                self.print_stderr(f'ERROR: Folder {folder} already exists.')
+            if os.path.exists(resolved):
+                self.print_stderr(f'ERROR: Folder {resolved} already exists.')
                 return None
             else:
                 try:
-                    self.print_debug(f'Creating delta directory {folder}...')
-                    os.makedirs(folder)
+                    self.print_debug(f'Creating delta directory {resolved}...')
+                    os.makedirs(resolved)
                 except (OSError, IOError) as e:
-                    self.print_stderr(f'ERROR: Failed to create directory {folder}: {e}')
+                    self.print_stderr(f'ERROR: Failed to create directory {resolved}: {e}')
                     return None
         else:
             # Create a unique temporary directory in the given root directory
