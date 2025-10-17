@@ -54,7 +54,7 @@ class Delta(ScanossBase):
         :param trace: Enable trace logging.
         :param quiet: Enable quiet mode (suppress non-essential output).
         :param filepath: Path to an input file containing a list of files to copy.
-        :param folder: A Target delta directory path (auto-generated if not provided).
+        :param folder: A target delta directory path (auto-generated if not provided).
         :param output: Output file path for the delta directory location (stdout if not provided).
         """
         super().__init__(debug, trace, quiet)
