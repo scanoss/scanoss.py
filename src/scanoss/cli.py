@@ -2661,15 +2661,8 @@ def delta_copy(parser, args):
         initialise_empty_file(args.output)
     try:
         # Create and configure delta copy command
-        delta = Delta(
-            debug=args.debug,
-            trace=args.trace,
-            quiet=args.quiet,
-            filepath=args.input,
-            folder=args.folder,
-            output=args.output,
-            root_dir=args.root,
-        )
+        delta = Delta(debug=args.debug, trace=args.trace, quiet=args.quiet, filepath=args.input, folder=args.folder,
+                      output=args.output, root_dir=args.root)
         # Execute copy and exit with appropriate status code
         status, _ = delta.copy()
         sys.exit(status)

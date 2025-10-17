@@ -33,7 +33,7 @@ class Delta(ScanossBase):
     Handle delta scan operations by copying files into a dedicated delta directory.
 
     This class manages the creation of delta directories and copying of specified files
-    while preserving directory structure. Files are read from an input file where each
+    while preserving the directory structure. Files are read from an input file where each
     line contains a file path to copy.
     """
 
@@ -45,17 +45,17 @@ class Delta(ScanossBase):
             filepath: str = None,
             folder: str = None,
             output: str = None,
-            root_dir: str = '.',
+            root_dir: str = None,
     ):
         """
         Initialise the Delta instance.
 
-        :param debug: Enable debug logging
-        :param trace: Enable trace logging
-        :param quiet: Enable quiet mode (suppress non-essential output)
-        :param filepath: Path to input file containing list of files to copy
-        :param folder: Target delta directory path (auto-generated if not provided)
-        :param output: Output file path for delta directory location (stdout if not provided)
+        :param debug: Enable debug logging.
+        :param trace: Enable trace logging.
+        :param quiet: Enable quiet mode (suppress non-essential output).
+        :param filepath: Path to an input file containing a list of files to copy.
+        :param folder: A Target delta directory path (auto-generated if not provided).
+        :param output: Output file path for the delta directory location (stdout if not provided).
         """
         super().__init__(debug, trace, quiet)
         self.filepath = filepath
