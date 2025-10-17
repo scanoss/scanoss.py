@@ -96,7 +96,7 @@ class Delta(ScanossBase):
         for source_file in files:
             # Normalise the source path to handle ".." and redundant separators
             normalised_source = os.path.normpath(source_file)
-            if normalised_source.startswith('..'):
+            if '..' in normalised_source:
                 self.print_stderr(f'WARNING: Source path escapes root directory for {source_file}. Skipping.')
                 continue
             # Resolve to the absolute path for source validation
@@ -109,7 +109,7 @@ class Delta(ScanossBase):
             dest_path = os.path.normpath(os.path.join(self.root_dir, delta_folder, normalised_source.lstrip(os.sep)))
             # Final safety check: ensure destination is within the delta folder
             abs_dest = os.path.abspath(dest_path)
-            abs_folder = os.path.abspath(delta_folder)
+            abs_folder = os.path.abspath(os.path.join(self.root_dir, delta_folder))
             if not abs_dest.startswith(abs_folder + os.sep):
                 self.print_stderr(
                     f'WARNING: Destination path ({abs_dest}) escapes delta directory for {source_file}. Skipping.')
