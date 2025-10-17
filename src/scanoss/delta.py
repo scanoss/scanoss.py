@@ -160,7 +160,7 @@ class Delta(ScanossBase):
                 self.print_debug(f'Creating temporary delta directory in {root_dir} ...')
                 folder = tempfile.mkdtemp(prefix="delta-", dir=root_dir)
                 if folder:
-                    folder = folder.lstrip(root_dir).lstrip(os.sep)  # Strip the root directory temp folder
+                    folder = folder.removeprefix(root_dir).lstrip(os.sep)  # Strip the root from the temp folder
                 self.print_debug(f'Created temporary delta directory: {folder}')
             except (OSError, IOError) as e:
                 self.print_stderr(f'ERROR: Failed to create temporary directory in {root_dir}: {e}')
