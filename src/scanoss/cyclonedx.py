@@ -152,7 +152,11 @@ class CycloneDx(ScanossBase):
                     fdl = []
                     if licenses:
                         for lic in licenses:
-                            fdl.append({'id': lic.get('name')})
+                            name = lic.get('name')
+                            source = lic.get('source')
+                            if source not in ('component_declared', 'license_file', 'file_header'):
+                                continue
+                            fdl.append({'id': name})
                     fd['licenses'] = fdl
                     cdx[purl] = fd
         # self.print_stderr(f'VD: {vdx}')
@@ -295,7 +299,8 @@ class CycloneDx(ScanossBase):
         except Exception as e:
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
             return False
-        return self.produce_from_json(data, output_file)
+        success, _ = self.produce_from_json(data, output_file)
+        return success
 
     def _normalize_vulnerability_id(self, vuln: dict) -> tuple[str, str]:
         """
