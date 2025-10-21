@@ -247,8 +247,9 @@ class SpdxLite:
         for license_info in licenses:
             name = license_info.get('name')
             source = license_info.get('source')
-            if source not in ("component_declared", "license_file", "file_header"):
-                continue
+            if source is not None or source == '':
+                if source not in ("component_declared", "license_file", "file_header"):
+                    continue
             if name and name not in seen_names:
                 processed_licenses.append({'id': name})
                 seen_names.add(name)
