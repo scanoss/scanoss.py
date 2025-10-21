@@ -226,7 +226,9 @@ class SpdxLite:
             Process license information and remove duplicates.
 
             This method filters license information to include only licenses from trusted sources
-            ('component_declared' or 'license_file') and removes any duplicate license names.
+            ('component_declared', 'license_file', 'file_header'). Licenses with an unspecified
+            source (None or '') are allowed. Non-empty, non-allowed sources are excluded. It also
+            removes any duplicate license names.
             The result is a simplified list of license dictionaries containing only the 'id' field.
 
             Args:
@@ -247,7 +249,7 @@ class SpdxLite:
         for license_info in licenses:
             name = license_info.get('name')
             source = license_info.get('source')
-            if source not in ("component_declared", "license_file", "file_header"):
+            if source not in (None, '') and source not in ("component_declared", "license_file", "file_header"):
                 continue
             if name and name not in seen_names:
                 processed_licenses.append({'id': name})
