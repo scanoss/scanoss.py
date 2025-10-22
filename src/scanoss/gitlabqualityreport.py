@@ -31,6 +31,7 @@ from .scanossbase import ScanossBase
 from .utils import scanoss_scan_results_utils
 
 
+
 @dataclass
 class Lines:
     begin: int
@@ -91,7 +92,7 @@ class GitLabQualityReport(ScanossBase):
                 location=Location(
                     path=file_name,
                     lines = Lines(
-                        begin= 0
+                        begin= 1
                     )
                 )
             )

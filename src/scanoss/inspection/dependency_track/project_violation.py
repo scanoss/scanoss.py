@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from ...services.dependency_track_service import DependencyTrackService
 from ..policy_check import PolicyCheck, PolicyStatus
+from ..utils.markdown_utils import generate_jira_table, generate_table
 
 # Constants
 PROCESSING_RETRY_DELAY = 5  # seconds
@@ -195,7 +196,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         Returns:
             Dictionary with formatted Markdown details and summary
         """
-        return self._md_summary_generator(project_violations, self.generate_table)
+        return self._md_summary_generator(project_violations, generate_table)
 
     def _jira_markdown(self, data: list[PolicyViolationDict]) -> Dict[str, Any]:
         """
@@ -207,7 +208,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         Returns:
             Dictionary containing Jira markdown formatted results and summary
         """
-        return self._md_summary_generator(data, self.generate_jira_table)
+        return self._md_summary_generator(data, generate_jira_table)
 
     def is_project_updated(self, dt_project: Dict[str, Any]) -> bool:
         """

@@ -11,7 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.38.0] - 2025-10-22
 ### Added
-- Added GitLab Code Quality report format support
+- Added `glc-codequality` format to convert subcomand
+- Added `inspect gitlab matches` subcommand to generate GitLab-compatible Markdown match summary from SCANOSS scan results
+- Added utility modules for shared functionality (`markdown_utils.py` and `file_utils.py`)
+### Changed
+- Refactored table generation utilities into shared `markdown_utils` module
+- Refactored JSON file loading into shared `file_utils` module
 
 ## [1.38.0] - 2025-10-24
 ### Added
