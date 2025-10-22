@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.38.0] - 2025-10-22
+### Added
+- Added GitLab Code Quality report format support
+
 ## [1.38.0] - 2025-10-24
 ### Added
 - Add support for settings debug mode via `SCANOSS_DEBUG` environment variable
