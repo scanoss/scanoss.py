@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from ..policy_check import PolicyStatus
+from ..utils.markdown_utils import generate_jira_table, generate_table
 from .raw_base import RawBase
 
 
@@ -193,7 +194,7 @@ class UndeclaredComponent(RawBase[Component]):
         for component in component_licenses:
             rows.append([component.get('purl'), component.get('spdxid')])
         return {
-            'details': f'### Undeclared components\n{self.generate_table(headers, rows)}\n',
+            'details': f'### Undeclared components\n{generate_table(headers, rows)}\n',
             'summary': self._get_summary(component_licenses),
         }
 
@@ -211,7 +212,7 @@ class UndeclaredComponent(RawBase[Component]):
         for component in component_licenses:
             rows.append([component.get('purl'), component.get('spdxid')])
         return {
-            'details': f'{self.generate_jira_table(headers, rows)}',
+            'details': f'{generate_jira_table(headers, rows)}',
             'summary': self._get_jira_summary(component_licenses),
         }
 

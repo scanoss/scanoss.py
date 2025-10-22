@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from ..policy_check import PolicyStatus
+from ..utils.markdown_utils import generate_jira_table, generate_table
 from .raw_base import RawBase
 
 
@@ -111,7 +112,7 @@ class Copyleft(RawBase[Component]):
         :param components: List of components with copyleft licenses
         :return: Dictionary with formatted Markdown details and summary
         """
-        return self._md_summary_generator(components, self.generate_table)
+        return self._md_summary_generator(components, generate_table)
 
     def _jira_markdown(self, components: list[Component]) -> Dict[str, Any]:
         """
@@ -120,7 +121,7 @@ class Copyleft(RawBase[Component]):
         :param components: List of components with copyleft licenses
         :return: Dictionary with formatted Markdown details and summary
         """
-        return self._md_summary_generator(components, self.generate_jira_table)
+        return self._md_summary_generator(components, generate_jira_table)
 
     def _md_summary_generator(self, components: list[Component], table_generator):
         """

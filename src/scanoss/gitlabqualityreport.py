@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from .scanossbase import ScanossBase
 
+
 @dataclass
 class Lines:
     begin: int
@@ -73,8 +74,10 @@ class GitLabQualityReport(ScanossBase):
         if len(lines) == 0:
             self.print_debug(f"Warning: empty lines for result: {result}")
             return None
+        end_line = lines[len(lines) - 1] if len(lines) > 1 else lines[0]
+        description = f"Snippet found in: {file_name} - lines {lines[0]}-{end_line}"
         return CodeQuality(
-            description=f"Snippet found in: {file_name} - lines {lines[0]}-{lines[len(lines) - 1] if len(lines) > 1 else lines[0]}",
+            description=description,
             check_name=file_name,
             fingerprint=result.get('file_hash'),
             severity="info",

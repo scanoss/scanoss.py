@@ -22,13 +22,12 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-import json
-import os.path
 from abc import abstractmethod
 from enum import Enum
 from typing import Any, Dict, TypeVar
 
 from ..policy_check import PolicyCheck
+from ..utils.file_utils import load_json_file
 from ..utils.license_utils import LicenseUtil
 
 
@@ -313,15 +312,11 @@ class RawBase(PolicyCheck[T]):
           Returns:
               Dict[str, Any]: The parsed JSON data
         """
-        if not os.path.exists(self.filepath):
-            self.print_stderr(f'ERROR: The file "{self.filepath}" does not exist.')
-            return None
-        with open(self.filepath, 'r') as jsonfile:
-            try:
-                return json.load(jsonfile)
-            except Exception as e:
+        try:
+            return load_json_file(self.filepath)
+        except Exception as e:
                 self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
-        return None
+                return None
 
     def _convert_components_to_list(self, components: dict):
         if components is None:
