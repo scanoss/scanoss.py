@@ -23,11 +23,15 @@ SPDX-License-Identifier: MIT
 """
 
 import json
+from typing import Dict, Any
 
 from .raw_base import RawBase
+from ..policy_check import T
 
 
 class ComponentSummary(RawBase):
+
+
     def _get_component_summary_from_components(self, scan_components: list)-> dict:
         """
         Get a component summary from detected components.

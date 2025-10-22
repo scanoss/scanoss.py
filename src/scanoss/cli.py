@@ -85,6 +85,7 @@ from .scantype import ScanType
 from .spdxlite import SpdxLite
 from .threadeddependencies import SCOPE
 from .utils.file import validate_json_file
+from .gitlabqualityreport import GitLabQualityReport
 
 HEADER_PARTS_COUNT = 2
 
@@ -283,7 +284,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--format',
         '-f',
         type=str,
-        choices=['cyclonedx', 'spdxlite', 'csv'],
+        choices=['cyclonedx', 'spdxlite', 'csv', 'glcodequality'],
         default='spdxlite',
         help='Output format (optional - default: spdxlite)',
     )
@@ -1628,6 +1629,11 @@ def convert(parser, args):
             print_stderr('Producing CSV report...')
         csvo = CsvOutput(debug=args.debug, output_file=args.output)
         success = csvo.produce_from_file(args.input)
+    elif args.format == 'glcodequality':
+        if not args.quiet:
+            print_stderr('Producing Gitlab code quality report...')
+        glcCodeQuality = GitLabQualityReport(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        success = glcCodeQuality.produce_from_file(args.input, output_file=args.output)
     else:
         print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
     if not success:
