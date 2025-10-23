@@ -1,9 +1,34 @@
+"""
+SPDX-License-Identifier: MIT
+
+  Copyright (c) 2025, SCANOSS
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+"""
+
 import json
 import os
 import sys
 from dataclasses import dataclass
 
 from .scanossbase import ScanossBase
+from .utils import scanoss_scan_results_utils
 
 
 @dataclass
@@ -38,17 +63,6 @@ class CodeQuality:
             }
         }
 
-
-def _get_lines(lines: str) -> list:
-    lineArray = []
-    lines = lines.split(',')
-    for line in lines:
-        line_parts = line.split('-')
-        for part in line_parts:
-            lineArray.append(int(part))
-    return lineArray
-
-
 class GitLabQualityReport(ScanossBase):
     """
     GitLabCodeQuality management class
@@ -63,14 +77,14 @@ class GitLabQualityReport(ScanossBase):
         self.output_file = output_file
         self.debug = debug
 
-    def _get_code_quality(self, file_name: str,result: dict) -> CodeQuality or None:
+    def _get_code_quality(self, file_name: str, result: dict) -> CodeQuality or None:
         if not result.get('file_hash'):
             self.print_debug(f"Warning: no hash found for result: {result}")
             return None
         if not result.get('lines') :
             self.print_debug(f"Warning: No lines found for result: {result}")
             return None
-        lines = _get_lines(result.get('lines'))
+        lines = scanoss_scan_results_utils.get_lines(result.get('lines'))
         if len(lines) == 0:
             self.print_debug(f"Warning: empty lines for result: {result}")
             return None
@@ -139,7 +153,7 @@ class GitLabQualityReport(ScanossBase):
 
     def produce_from_file(self, json_file: str, output_file: str = None) -> bool:
         """
-        Parse plain/raw input JSON file and produce CSV output
+        Parse plain/raw input JSON file and produce GitLab Code Quality JSON output
         :param json_file:
         :param output_file:
         :return: True if successful, False otherwise

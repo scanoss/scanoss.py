@@ -22,23 +22,20 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-import json
-import os
-
-
-def load_json_file(file_path: str) -> dict:
+def get_lines(lines: str) -> list:
     """
-    Load the file
+       Parse line range string into a list of line numbers.
 
-    :param file_path: file path to the JSON file
+       Converts SCANOSS line notation (e.g., '10-20,25-30') into a flat list
+       of individual line numbers for processing.
 
-      Returns:
-          Dict[str, Any]: The parsed JSON data
+       :param lines: Comma-separated line ranges in SCANOSS format (e.g., '10-20,25-30')
+       :return: Flat list of all line numbers extracted from the ranges
     """
-    if not os.path.exists(file_path):
-        raise ValueError(f'The file "{file_path}" does not exist.')
-    with open(file_path, 'r') as jsonfile:
-        try:
-            return json.load(jsonfile)
-        except Exception as e:
-            raise ValueError(f'ERROR: Problem parsing input JSON: {e}')
+    lines_list = []
+    lines = lines.split(',')
+    for line in lines:
+        line_parts = line.split('-')
+        for part in line_parts:
+            lines_list.append(int(part))
+    return lines_list
