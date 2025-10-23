@@ -25,6 +25,7 @@ SPDX-License-Identifier: MIT
 from dataclasses import dataclass
 
 from ...scanossbase import ScanossBase
+from ...utils import scanoss_scan_results_utils
 from ..utils.file_utils import load_json_file
 from ..utils.markdown_utils import generate_table
 
@@ -38,10 +39,12 @@ class MatchSummaryItem:
     match found during scanning, including file location, license details, and
     match quality metrics.
     """
+    file: str
     file_url: str
     license: str
     similarity: str
     purl: str
+    purl_url: str
     version: str
     lines: str
 
@@ -92,25 +95,6 @@ class MatchSummary(ScanossBase):
         self.line_range_prefix = line_range_prefix
         self.output = output
 
-    @staticmethod
-    def _get_lines(lines: str) -> list:
-        """
-        Parse line range string into a list of line numbers.
-
-        Converts SCANOSS line notation (e.g., '10-20,25-30') into a flat list
-        of individual line numbers for processing.
-
-        :param lines: Comma-separated line ranges in SCANOSS format (e.g., '10-20,25-30')
-        :return: Flat list of all line numbers extracted from the ranges
-        """
-        lineArray = []
-        lines = lines.split(',')
-        for line in lines:
-            line_parts = line.split('-')
-            for part in line_parts:
-                lineArray.append(int(part))
-        return lineArray
-
 
     def _get_match_summary_item(self, file_name: str, result: dict) -> MatchSummaryItem:
         """
@@ -126,26 +110,63 @@ class MatchSummary(ScanossBase):
         """
         if result.get('id') == "snippet":
             # Snippet match: create URL with line range anchor
-            lines = self._get_lines(result.get('lines'))
+            lines = scanoss_scan_results_utils.get_lines(result.get('lines'))
             end_line = lines[len(lines) - 1] if len(lines) > 1 else lines[0]
             file_url = f"{self.line_range_prefix}/{file_name}#L{lines[0]}-L{end_line}"
             return MatchSummaryItem(
                 file_url=file_url,
+                file=file_name,
                 license=result.get('licenses')[0].get('name'),
                 similarity=result.get('matched'),
                 purl=result.get('purl')[0],
+                purl_url=result.get('url'),
                 version=result.get('version'),
                 lines=f"{lines[0]}-{lines[len(lines) - 1] if len(lines) > 1 else lines[0]}"
             )
         # File match: create URL without line range
         return MatchSummaryItem(
+            file=file_name,
             file_url=f"{self.line_range_prefix}/{file_name}",
             license=result.get('licenses')[0].get('name'),
             similarity=result.get('matched'),
             purl=result.get('purl')[0],
+            purl_url=result.get('url'),
             version=result.get('version'),
             lines="all"
         )
+
+    def _validate_result(self, file_name: str, result: dict) -> bool:
+        """
+        Validate that a scan result has all required fields.
+
+        :param file_name: Name of the file being validated
+        :param result: The scan result to validate
+        :return: True if valid, False otherwise
+        """
+        validations = [
+            ('id', 'No id found'),
+            ('lines', 'No lines found'),
+            ('purl', 'No purl found'),
+            ('licenses', 'No licenses found'),
+            ('version', 'No version found'),
+            ('matched', 'No matched found'),
+            ('url', 'No url found'),
+        ]
+
+        for field, error_msg in validations:
+            if not result.get(field):
+                self.print_debug(f'ERROR: {error_msg} for file {file_name}')
+                return False
+
+        # Additional validation for non-empty lists
+        if len(result.get('purl')) == 0:
+            self.print_debug(f'ERROR: No purl found for file {file_name}')
+            return False
+        if len(result.get('licenses')) == 0:
+            self.print_debug(f'ERROR: Empty licenses list for file {file_name}')
+            return False
+
+        return True
 
     def _get_matches_summary(self) -> ComponentMatchSummary:
         """
@@ -162,29 +183,12 @@ class MatchSummary(ScanossBase):
         # Process each file and its results
         for file_name, results in scan_results.items():
             for result in results:
-                # Validate required fields - skip invalid results with debug messages
-                if not result.get('id'):
-                    self.print_debug(f'ERROR: No id found for file {file_name}')
+                # Skip non-matches
+                if result.get('id') == "none":
                     continue
-                if result.get('id') == "none":  # Skip non-matches
-                    continue
-                if not result.get('lines'):
-                    self.print_debug(f'ERROR: No lines found for file {file_name}')
-                    continue
-                if not result.get('purl'):
-                    self.print_debug(f'ERROR: No purl found for file {file_name}')
-                    continue
-                if not len(result.get('purl')) > 0:
-                    self.print_debug(f'ERROR: No purl found for file {file_name}')
-                    continue
-                if not result.get('licenses'):
-                    self.print_debug(f'ERROR: No licenses found for file {file_name}')
-                    continue
-                if not result.get('version'):
-                    self.print_debug(f'ERROR: No version found for file {file_name}')
-                    continue
-                if not result.get('matched'):
-                    self.print_debug(f'ERROR: No matched found for file {file_name}')
+
+                # Validate required fields
+                if not self._validate_result(file_name, result):
                     continue
 
                 # Create summary item and categorize by match type
@@ -207,50 +211,53 @@ class MatchSummary(ScanossBase):
         :param gitlab_matches_summary: Container with categorized file and snippet matches to format
         :return: Complete Markdown document with formatted match tables
         """
-        # Define table headers
-        headers = ['File', 'License', 'Similarity', 'PURL', 'Version', 'Lines']
 
+        if len(gitlab_matches_summary.files) == 0 and len(gitlab_matches_summary.snippet) == 0:
+            return ""
+
+        # Define table headers
+        file_match_headers = ['File', 'License', 'Similarity', 'PURL', 'Version']
+        snippet_match_headers = ['File', 'License', 'Similarity', 'PURL', 'Version', 'Lines']
         # Build file matches table
         file_match_rows = []
-        for file in gitlab_matches_summary.files:
+        for file_match in gitlab_matches_summary.files:
             row = [
-                file.file_url,
-                file.license,
-                file.similarity,
-                file.purl,
-                file.version,
-                file.lines
+                f"[{file_match.file}]({file_match.file_url})",
+                file_match.license,
+                file_match.similarity,
+                f"[{file_match.purl}]({file_match.purl_url})",
+                file_match.version,
             ]
             file_match_rows.append(row)
-        file_match_table = generate_table(headers, file_match_rows)
+        file_match_table = generate_table(file_match_headers, file_match_rows)
 
         # Build snippet matches table
         snippet_match_rows = []
-        for file in gitlab_matches_summary.snippet:
+        for snippet_match in gitlab_matches_summary.snippet:
             row = [
-                file.file_url,
-                file.license,
-                file.similarity,
-                file.purl,
-                file.version,
-                file.lines
+                f"[{snippet_match.file}]({snippet_match.file_url})",
+                snippet_match.license,
+                snippet_match.similarity,
+                f"[{snippet_match.purl}]({snippet_match.purl_url})",
+                snippet_match.version,
+                snippet_match.lines
             ]
             snippet_match_rows.append(row)
-        snippet_match_table = generate_table(headers, snippet_match_rows)
+        snippet_match_table = generate_table(snippet_match_headers, snippet_match_rows)
 
         # Assemble complete Markdown document
         markdown = ""
-        markdown += "### SCANOSS Matches Summary\n\n"
+        markdown += "### SCANOSS Match Summary\n\n"
 
         # File matches section (collapsible)
         markdown += "<details>\n"
-        markdown += "<summary>File Matches Summary</summary>\n\n"
+        markdown += "<summary>File Match Summary</summary>\n\n"
         markdown += file_match_table
         markdown += "\n</details>\n"
 
         # Snippet matches section (collapsible)
         markdown += "<details>\n"
-        markdown += "<summary>Snippet Matches Summary</summary>\n\n"
+        markdown += "<summary>Snippet Match Summary</summary>\n\n"
         markdown += snippet_match_table
         markdown += "\n</details>\n"
 
@@ -272,7 +279,9 @@ class MatchSummary(ScanossBase):
 
         # Format matches as GitLab-compatible Markdown
         matches_md = self._markdown(matches)
-
+        if matches_md == "":
+            self.print_stdout("No matches found.")
+            return
         # Output to file or stdout
         self.print_to_file_or_stdout(matches_md, self.output)
 
