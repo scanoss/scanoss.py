@@ -929,10 +929,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
 
     delta_sub = p_delta.add_subparsers(
-        title='Delta Commands',
-        dest='subparsercmd',
-        description='Delta sub-commands',
-        help='Delta sub-commands'
+        title='Delta Commands', dest='subparsercmd', description='Delta sub-commands', help='Delta sub-commands'
     )
 
     # Delta Sub-command: copy
@@ -1165,9 +1162,15 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_crypto_versions_in_range,
         c_licenses,
         e_dt,
-        p_copy
+        p_copy,
     ]:
-        p.add_argument('--debug', '-d', action='store_true', help='Enable debug messages')
+        p.add_argument(
+            '--debug',
+            '-d',
+            action='store_true',
+            default=os.environ.get('SCANOSS_DEBUG', '').lower() == 'true',
+            help='Enable debug messages (can also be set via environment variable SCANOSS_DEBUG)',
+        )
         p.add_argument('--trace', '-t', action='store_true', help='Enable trace messages, including API posts')
         p.add_argument('--quiet', '-q', action='store_true', help='Enable quiet mode')
 
@@ -1186,8 +1189,21 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         sys.exit(1)
     elif (
         args.subparser
-        in ('utils', 'ut', 'component', 'comp', 'inspect', 'insp', 'ins',
-            'crypto', 'cr', 'export', 'exp', 'delta', 'dl')
+        in (
+            'utils',
+            'ut',
+            'component',
+            'comp',
+            'inspect',
+            'insp',
+            'ins',
+            'crypto',
+            'cr',
+            'export',
+            'exp',
+            'delta',
+            'dl',
+        )
     ) and not args.subparsercmd:
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
@@ -2634,6 +2650,7 @@ def initialise_empty_file(filename: str):
             print_stderr(f'Error: Unable to create output file {filename}: {e}')
             sys.exit(1)
 
+
 def delta_copy(parser, args):
     """
     Handle delta copy command.
@@ -2661,8 +2678,15 @@ def delta_copy(parser, args):
         initialise_empty_file(args.output)
     try:
         # Create and configure delta copy command
-        delta = Delta(debug=args.debug, trace=args.trace, quiet=args.quiet, filepath=args.input, folder=args.folder,
-                      output=args.output, root_dir=args.root)
+        delta = Delta(
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+            filepath=args.input,
+            folder=args.folder,
+            output=args.output,
+            root_dir=args.root,
+        )
         # Execute copy and exit with appropriate status code
         status, _ = delta.copy()
         sys.exit(status)
@@ -2671,6 +2695,7 @@ def delta_copy(parser, args):
         if args.debug:
             traceback.print_exc()
         sys.exit(1)
+
 
 def main():
     """

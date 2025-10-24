@@ -130,6 +130,28 @@ pip3 install --upgrade https://github.com/pietrodn/grpcio-mac-arm-build/releases
 
 This command above will install `grpcio` `1.5.1` for Python `3.9`. To install for `3.10` simply replace the `cp39` with `cp310`.
 
+## Debug Mode
+The SCANOSS CLI supports debug mode to provide additional diagnostic information during command execution. This is useful for troubleshooting issues or understanding the internal operations of the CLI.
+
+There are two ways to enable debug mode:
+
+### Debug Mode via Environment Variable
+Set the `SCANOSS_DEBUG` environment variable to `true`:
+```bash
+export SCANOSS_DEBUG=true
+scanoss-py scan -o results.json src
+```
+
+This method is particularly useful when you want debug output enabled for multiple consecutive commands without having to add the flag each time.
+
+### Debug Mode via Command Line Flag
+Use the `-d` or `--debug` flag with any command:
+```bash
+scanoss-py scan -d -o results.json src
+```
+
+**Note:** The command line flag will override the environment variable setting if both are present.
+
 ## Command Execution
 There are multiple commands (and sub commands) available through `scanoss-py`.
 Detailed help is available for all directly from the CLI itself:

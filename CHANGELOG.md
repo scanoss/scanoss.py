@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.38.0] - 2025-10-24
+### Added
+- Add support for settings debug mode via `SCANOSS_DEBUG` environment variable
+
 ## [1.37.1] - 2025-10-21
 ### Added
 - Added source filtering to cyclonedx conversion
@@ -696,3 +700,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.36.0]: https://github.com/scanoss/scanoss.py/compare/v1.35.0...v1.36.0
 [1.37.0]: https://github.com/scanoss/scanoss.py/compare/v1.36.0...v1.37.0
 [1.37.1]: https://github.com/scanoss/scanoss.py/compare/v1.37.0...v1.37.1
+[1.38.0]: https://github.com/scanoss/scanoss.py/compare/v1.37.1...v1.38.0
