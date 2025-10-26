@@ -21,16 +21,57 @@ SPDX-License-Identifier: MIT
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 """
-
 import json
-from typing import Dict, Any
+from typing import Any
 
-from .raw_base import RawBase
 from ..policy_check import T
+from .raw_base import RawBase
 
 
 class ComponentSummary(RawBase):
 
+    def _json(self, data: dict[str,Any]) -> dict[str,Any]:
+        """
+        Format component summary data as JSON.
+
+        This method returns the component summary data in its original JSON structure
+        without any transformation. The data can be directly serialized to JSON format.
+
+        :param data: Dictionary containing component summary information including:
+                     - components: List of component-license pairs with status and metadata
+                     - totalComponents: Total number of unique components
+                     - undeclaredComponents: Number of components with 'pending' status
+                     - declaredComponents: Number of components with 'identified' status
+                     - totalFilesDetected: Total count of files where components were detected
+                     - totalFilesUndeclared: Count of files with undeclared components
+                     - totalFilesDeclared: Count of files with declared components
+        :return: The same data dictionary, ready for JSON serialization
+        """
+        return data
+
+    def _markdown(self, data: list[T]) -> dict[str, Any]:
+        """
+        Format component summary data as Markdown (not yet implemented).
+
+        This method is intended to convert component summary data into a human-readable
+        Markdown format with tables and formatted sections.
+
+        :param data: List of component summary items to format
+        :return: Dictionary containing formatted Markdown output
+        """
+        pass
+
+    def _jira_markdown(self, data: list[T]) -> dict[str, Any]:
+        """
+        Format component summary data as Jira-flavored Markdown (not yet implemented).
+
+        This method is intended to convert component summary data into Jira-compatible
+        Markdown format, which may include Jira-specific syntax for tables and formatting.
+
+        :param data: List of component summary items to format
+        :return: Dictionary containing Jira-formatted Markdown output
+        """
+        pass
 
     def _get_component_summary_from_components(self, scan_components: list)-> dict:
         """
@@ -88,10 +129,16 @@ class ComponentSummary(RawBase):
         self._get_components_data(self.results, components)
         return self._convert_components_to_list(components)
 
+    def _format(self, component_summary) -> str:
+        # TODO: Implement formatter to support dynamic outputs
+        json_data = self._json(component_summary)
+        return json.dumps(json_data, indent=2)
+
     def run(self):
         components = self._get_components()
         component_summary = self._get_component_summary_from_components(components)
-        self.print_to_file_or_stdout(json.dumps(component_summary, indent=2), self.output)
+        output = self._format(component_summary)
+        self.print_to_file_or_stdout(output, self.output)
         return component_summary
 #
 # End of ComponentSummary Class

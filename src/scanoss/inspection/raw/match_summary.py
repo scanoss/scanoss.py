@@ -90,7 +90,7 @@ class MatchSummary(ScanossBase):
         :param scanoss_results_path: Path to SCANOSS scan results file in JSON format
         :param output: Output file path for the generated Markdown report (default: stdout)
         """
-        super().__init__(debug, trace, quiet)
+        super().__init__(debug=debug, trace=trace, quiet=quiet)
         self.scanoss_results_path = scanoss_results_path
         self.line_range_prefix = line_range_prefix
         self.output = output
@@ -185,6 +185,7 @@ class MatchSummary(ScanossBase):
             for result in results:
                 # Skip non-matches
                 if result.get('id') == "none":
+                    self.print_debug(f'Skipping non-match for file {file_name}')
                     continue
 
                 # Validate required fields

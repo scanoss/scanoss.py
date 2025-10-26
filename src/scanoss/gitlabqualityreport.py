@@ -31,7 +31,6 @@ from .scanossbase import ScanossBase
 from .utils import scanoss_scan_results_utils
 
 
-
 @dataclass
 class Lines:
     begin: int
@@ -152,7 +151,7 @@ class GitLabQualityReport(ScanossBase):
 
     def _produce_from_str(self, json_str: str, output_file: str = None) -> bool:
         """
-        Produce Gitlab Code Quality Reportoutput from input JSON string
+        Produce Gitlab Code Quality Report output from input JSON string
         :param json_str: input JSON string
         :param output_file: Output file (optional)
         :return: True if successful, False otherwise

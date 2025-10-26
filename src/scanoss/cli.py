@@ -1272,7 +1272,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     ) and not args.subparsercmd:
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
-    elif (args.subparser in 'inspect') and (args.subparsercmd in ('raw', 'dt')) and (args.subparser_subcmd is None):
+    elif (
+        (args.subparser in 'inspect')
+        and (args.subparsercmd in ('raw', 'dt', 'glc', 'gitlab'))
+        and (args.subparser_subcmd is None)
+    ):
         parser.parse_args([args.subparser, args.subparsercmd, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
@@ -1695,9 +1699,9 @@ def convert(parser, args):
         success = csvo.produce_from_file(args.input)
     elif args.format == 'glc-codequality':
         if not args.quiet:
-            print_stderr('Producing Gitlab code quality report...')
-        glcCodeQuality = GitLabQualityReport(debug=args.debug, trace=args.trace, quiet=args.quiet)
-        success = glcCodeQuality.produce_from_file(args.input, output_file=args.output)
+            print_stderr('Producing GitLab code quality report...')
+        glc_code_quality = GitLabQualityReport(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        success = glc_code_quality.produce_from_file(args.input, output_file=args.output)
     else:
         print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
     if not success:
@@ -1971,9 +1975,9 @@ def inspect_dep_track_project_violations(parser, args):
         sys.exit(1)
 
 
-def inspect_gitlab_matches(parser, args):
+def inspect_gitlab_matches(parser,args):
     """
-    Handle GitLab matches summary inspection command.
+    Handle GitLab matches the summary inspection command.
 
     Analyzes SCANOSS scan results and generates a GitLab-compatible Markdown summary
     report of component matches. The report includes match details, file locations,
@@ -1983,6 +1987,8 @@ def inspect_gitlab_matches(parser, args):
 
     Parameters
     ----------
+    parser : ArgumentParser
+        Command line parser object for help display
     args : Namespace
         Parsed command line arguments containing:
         - input: Path to SCANOSS scan results file (JSON format) to analyze
@@ -1999,6 +2005,15 @@ def inspect_gitlab_matches(parser, args):
     - Line range prefix enables clickable file references in the report
     - If output is not specified, the report is written to stdout
     """
+
+    if args.input is None:
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+
+    if args.line_range_prefix is None:
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+
     # Initialize output file if specified (create/truncate)
     if args.output:
         initialise_empty_file(args.output)

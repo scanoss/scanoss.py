@@ -23,7 +23,9 @@ SPDX-License-Identifier: MIT
 """
 
 import json
+from typing import Any
 
+from ..policy_check import T
 from .raw_base import RawBase
 
 
@@ -35,6 +37,46 @@ class LicenseSummary(RawBase):
        This class processes component scan results to extract, validate, and aggregate license
        information, providing detailed summaries including copyleft analysis and license statistics.
        """
+
+    def _json(self, data: dict[str,Any]) -> dict[str, Any]:
+        """
+        Format license summary data as JSON.
+
+        This method is intended to return the license summary data in JSON structure
+        for serialization. The data should include license information with copyleft
+        analysis and license statistics.
+
+        :param data: List of license summary items to format
+        :return: Dictionary containing license summary information including:
+                 - licenses: List of detected licenses with SPDX IDs, URLs, and copyleft status
+                 - detectedLicenses: Total number of unique licenses
+                 - detectedLicensesWithCopyleft: Count of licenses marked as copyleft
+        """
+        return data
+
+    def _markdown(self, data: list[T]) -> dict[str, Any]:
+        """
+        Format license summary data as Markdown (not yet implemented).
+
+        This method is intended to convert license summary data into a human-readable
+        Markdown format with tables and formatted sections.
+
+        :param data: List of license summary items to format
+        :return: Dictionary containing formatted Markdown output
+        """
+        pass
+
+    def _jira_markdown(self, data: list[T]) -> dict[str, Any]:
+        """
+        Format license summary data as Jira-flavored Markdown (not yet implemented).
+
+        This method is intended to convert license summary data into Jira-compatible
+        Markdown format, which may include Jira-specific syntax for tables and formatting.
+
+        :param data: List of license summary items to format
+        :return: Dictionary containing Jira-formatted Markdown output
+        """
+        pass
 
     # Define required license fields as class constants
     REQUIRED_LICENSE_FIELDS = ['spdxid', 'url', 'copyleft', 'source']
@@ -131,10 +173,16 @@ class LicenseSummary(RawBase):
         self._get_dependencies_data(self.results, components)
         return self._convert_components_to_list(components)
 
+    def _format(self, license_summary) -> str:
+        # TODO: Implement formatter to support dynamic outputs
+        json_data = self._json(license_summary)
+        return json.dumps(json_data, indent=2)
+
     def run(self):
         components = self._get_components()
         license_summary = self._get_licenses_summary_from_components(components)
-        self.print_to_file_or_stdout(json.dumps(license_summary, indent=2), self.output)
+        output = self._format(license_summary)
+        self.print_to_file_or_stdout(output, self.output)
         return license_summary
 #
 # End of LicenseSummary Class
