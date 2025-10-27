@@ -158,6 +158,7 @@ class FolderHasher:
         filtered_files.sort()
 
         bar = Bar('Hashing files...', max=len(filtered_files))
+        full_file_path = ''
         for file_path in filtered_files:
             try:
                 file_path_obj = Path(file_path) if isinstance(file_path, str) else file_path

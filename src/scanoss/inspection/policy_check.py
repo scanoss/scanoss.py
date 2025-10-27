@@ -137,48 +137,6 @@ class PolicyCheck(ScanossBase, Generic[T]):
         """
         pass
 
-    def generate_table(self, headers, rows, centered_columns=None):
-        """
-        Generate a Markdown table.
-
-        :param headers: List of headers for the table.
-        :param rows: List of rows for the table.
-        :param centered_columns: List of column indices to be centered.
-        :return: A string representing the Markdown table.
-        """
-        col_sep = ' | '
-        centered_column_set = set(centered_columns or [])
-        if headers is None:
-            self.print_stderr('ERROR: Header are no set')
-            return None
-
-        # Decide which separator to use
-        def create_separator(index):
-            if centered_columns is None:
-                return '-'
-            return ':-:' if index in centered_column_set else '-'
-
-        # Build the row separator
-        row_separator = col_sep + col_sep.join(create_separator(index) for index, _ in enumerate(headers)) + col_sep
-        # build table rows
-        table_rows = [col_sep + col_sep.join(headers) + col_sep, row_separator]
-        table_rows.extend(col_sep + col_sep.join(row) + col_sep for row in rows)
-        return '\n'.join(table_rows)
-
-    def generate_jira_table(self, headers, rows, centered_columns=None):
-        col_sep = '*|*'
-        if headers is None:
-            self.print_stderr('ERROR: Header are no set')
-            return None
-
-        table_header = '|*' + col_sep.join(headers) + '*|\n'
-        table = table_header
-        for row in rows:
-            if len(headers) == len(row):
-                table += '|' + '|'.join(row) + '|\n'
-
-        return table
-
     def _get_formatter(self) -> Callable[[List[dict]], Dict[str, Any]] or None:
         """
         Get the appropriate formatter function based on the specified format.
