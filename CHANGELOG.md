@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
-## [1.39.0] - 2025-10-24
+## [1.39.0] - 2025-10-27
 ### Added
 - Added `glc-codequality` format to convert subcommand
 - Added `inspect gitlab matches` subcommand to generate GitLab-compatible Markdown match summary from SCANOSS scan results
