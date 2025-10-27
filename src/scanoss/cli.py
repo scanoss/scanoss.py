@@ -40,6 +40,7 @@ from scanoss.inspection.dependency_track.project_violation import (
 )
 from scanoss.inspection.raw.component_summary import ComponentSummary
 from scanoss.inspection.raw.license_summary import LicenseSummary
+from scanoss.inspection.raw.match_summary import MatchSummary
 from scanoss.scanners.container_scanner import (
     DEFAULT_SYFT_COMMAND,
     DEFAULT_SYFT_TIMEOUT,
@@ -73,6 +74,7 @@ from .constants import (
 from .csvoutput import CsvOutput
 from .cyclonedx import CycloneDx
 from .filecount import FileCount
+from .gitlabqualityreport import GitLabQualityReport
 from .inspection.raw.copyleft import Copyleft
 from .inspection.raw.undeclared_component import UndeclaredComponent
 from .results import Results
@@ -283,7 +285,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--format',
         '-f',
         type=str,
-        choices=['cyclonedx', 'spdxlite', 'csv'],
+        choices=['cyclonedx', 'spdxlite', 'csv', 'glc-codequality'],
         default='spdxlite',
         help='Output format (optional - default: spdxlite)',
     )
@@ -794,6 +796,66 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Timeout (in seconds) for API communication (optional - default 300 sec)',
     )
 
+
+    # ==============================================================================
+    # GitLab Integration Parser
+    # ==============================================================================
+    # Main parser for GitLab-specific inspection commands and report generation
+    p_gitlab_sub = p_inspect_sub.add_parser(
+        'gitlab',
+        aliases=['glc'],
+        description='Generate GitLab-compatible reports from SCANOSS scan results (Markdown summaries)',
+        help='Generate GitLab integration reports',
+    )
+
+    # GitLab sub-commands parser
+    # Provides access to different GitLab report formats and inspection tools
+    p_gitlab_sub_parser = p_gitlab_sub.add_subparsers(
+        title='GitLab Report Types',
+        dest='subparser_subcmd',
+        description='Available GitLab report formats for scan result analysis',
+        help='Select the type of GitLab report to generate',
+    )
+
+    # ==============================================================================
+    # GitLab Matches Summary Command
+    # ==============================================================================
+    # Analyzes scan results and generates a GitLab-compatible Markdown summary
+    p_gl_inspect_matches = p_gitlab_sub_parser.add_parser(
+        'matches',
+        aliases=['ms'],
+        description='Generate a Markdown summary report of scan matches for GitLab integration',
+        help='Generate Markdown summary report of scan matches',
+    )
+
+    # Input file argument - SCANOSS scan results in JSON format
+    p_gl_inspect_matches.add_argument(
+        '-i',
+        '--input',
+        required=True,
+        type=str,
+        help='Path to SCANOSS scan results file (JSON format) to analyze'
+    )
+
+    # Line range prefix for GitLab file navigation
+    # Enables clickable file references in the generated report that link to specific lines in GitLab
+    p_gl_inspect_matches.add_argument(
+        '-lpr',
+        '--line-range-prefix',
+        required=True,
+        type=str,
+        help='Base URL prefix for GitLab file links with line ranges (e.g., https://gitlab.com/org/project/-/blob/main)'
+    )
+
+    # Output file argument - where to save the generated Markdown report
+    p_gl_inspect_matches.add_argument(
+        '--output',
+        '-o',
+        required=False,
+        type=str,
+        help='Output file path for the generated Markdown report (default: stdout)'
+    )
+
     # TODO Move to the command call def location
     # RAW results
     p_inspect_raw_undeclared.set_defaults(func=inspect_undeclared)
@@ -807,6 +869,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_inspect_legacy_component_summary.set_defaults(func=inspect_component_summary)
     # Dependency Track
     p_inspect_dt_project_violation.set_defaults(func=inspect_dep_track_project_violations)
+    # GitLab
+    p_gl_inspect_matches.set_defaults(func=inspect_gitlab_matches)
 
     # =========================================================================
     # END INSPECT SUBCOMMAND CONFIGURATION
@@ -1153,6 +1217,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_inspect_legacy_license_summary,
         p_inspect_legacy_component_summary,
         p_inspect_dt_project_violation,
+        p_gl_inspect_matches,
         c_provenance,
         p_folder_scan,
         p_folder_hash,
@@ -1207,7 +1272,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     ) and not args.subparsercmd:
         parser.parse_args([args.subparser, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
-    elif (args.subparser in 'inspect') and (args.subparsercmd in ('raw', 'dt')) and (args.subparser_subcmd is None):
+    elif (
+        (args.subparser in 'inspect')
+        and (args.subparsercmd in ('raw', 'dt', 'glc', 'gitlab'))
+        and (args.subparser_subcmd is None)
+    ):
         parser.parse_args([args.subparser, args.subparsercmd, '--help'])  # Force utils helps to be displayed
         sys.exit(1)
     args.func(parser, args)  # Execute the function associated with the sub-command
@@ -1628,6 +1697,11 @@ def convert(parser, args):
             print_stderr('Producing CSV report...')
         csvo = CsvOutput(debug=args.debug, output_file=args.output)
         success = csvo.produce_from_file(args.input)
+    elif args.format == 'glc-codequality':
+        if not args.quiet:
+            print_stderr('Producing GitLab code quality report...')
+        glc_code_quality = GitLabQualityReport(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        success = glc_code_quality.produce_from_file(args.input, output_file=args.output)
     else:
         print_stderr(f'ERROR: Unknown output format (--format): {args.format}')
     if not success:
@@ -1900,6 +1974,69 @@ def inspect_dep_track_project_violations(parser, args):
             traceback.print_exc()
         sys.exit(1)
 
+
+def inspect_gitlab_matches(parser,args):
+    """
+    Handle GitLab matches the summary inspection command.
+
+    Analyzes SCANOSS scan results and generates a GitLab-compatible Markdown summary
+    report of component matches. The report includes match details, file locations,
+    and optionally clickable links to source files in GitLab repositories.
+
+    This command processes SCANOSS scan output and creates human-readable Markdown.
+
+    Parameters
+    ----------
+    parser : ArgumentParser
+        Command line parser object for help display
+    args : Namespace
+        Parsed command line arguments containing:
+        - input: Path to SCANOSS scan results file (JSON format) to analyze
+        - line_range_prefix: Base URL prefix for generating GitLab file links with line ranges
+                            (e.g., 'https://gitlab.com/org/project/-/blob/main')
+        - output: Optional output file path for the generated Markdown report (default: stdout)
+        - debug: Enable debug output for troubleshooting
+        - trace: Enable trace-level logging
+        - quiet: Suppress informational messages
+
+    Notes
+    -----
+    - The output is formatted in Markdown for optimal display in GitLab
+    - Line range prefix enables clickable file references in the report
+    - If output is not specified, the report is written to stdout
+    """
+
+    if args.input is None:
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+
+    if args.line_range_prefix is None:
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+
+    # Initialize output file if specified (create/truncate)
+    if args.output:
+        initialise_empty_file(args.output)
+
+    try:
+        # Create GitLab matches summary generator with configuration
+        match_summary = MatchSummary(
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+            scanoss_results_path=args.input,  # Path to SCANOSS JSON results
+            output=args.output,  # Output file path or None for stdout
+            line_range_prefix=args.line_range_prefix,  # GitLab URL prefix for file links
+        )
+
+        # Execute the summary generation
+        match_summary.run()
+    except Exception as e:
+        # Handle any errors during report generation
+        print_stderr(e)
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
 
 # =============================================================================
 # END INSPECT COMMAND HANDLERS

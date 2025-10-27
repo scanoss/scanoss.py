@@ -260,7 +260,7 @@ scanoss-py scan src -hdr "x-api-key:12345" -hdr "Authorization: Bearer <access_t
 ```
 
 ### Converting RAW results into other formats
-The following command provides the capability to convert the RAW scan results from a SCANOSS scan into multiple different formats, including CycloneDX, SPDX Lite, CSV, etc.
+The following command provides the capability to convert the RAW scan results from a SCANOSS scan into multiple different formats, including CycloneDX, SPDX Lite, CSV and GitLab Code Quality Report.
 For the full set of formats, please run:
 ```bash
 scanoss-py cnv --help
@@ -270,6 +270,12 @@ The following command converts `scan-results.json` to SPDX Lite:
 ```bash
 scanoss-py cnv --input scan-results.json --format spdxlite --output scan-results-spdxlite.json
 ```
+
+The following command converts `scan-results.json` to GitLab Code Quality Report:
+```bash
+scanoss-py cnv --input scan-results.json --format glc-codequality --output gl-code-quality-report.json
+```
+
 
 ### Component Commands
 The `component` command has a suite of sub-commands designed to operate on OSS components. For example:
@@ -432,6 +438,7 @@ For example:
 * License Summary (`license-summary`)
 * Component Summary (`component-summary`)
 * Dependency Track project violations (`dependency-track project-violations`)
+* GitLab Components Match Summary (`gitlab matches`)
 
 For the latest list of sub-commands, please run:
 ```bash
@@ -551,6 +558,11 @@ Example with project name and version:
 scanoss-py inspect dt project-violations  --dt-upload-token <dt-upload-token> --dt-url <dependency-track-url>  --dt-projectname <dependency-track-project-name>  --dt-projectversion <dependency-track-project-version> --dt-apikey <dependency-track-api-key> --format md --output project-violations.md
 ```
 
+#### Inspect GitLab Component Match Summary Markdown Output
+The following command can be used to generate a component match summary in Markdown format for GitLab:
+```bash
+scanoss-py inspect gitlab matches --input <scanoss-scan-results.json> -lpr <line-range-prefix> --output gitlab-component-match-summary.md
+```
 
 ### Folder-Scan a Project Folder
 

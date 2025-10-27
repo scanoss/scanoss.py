@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.39.0] - 2025-10-24
+### Added
+- Added `glc-codequality` format to convert subcommand
+- Added `inspect gitlab matches` subcommand to generate GitLab-compatible Markdown match summary from SCANOSS scan results
+- Added utility modules for shared functionality (`markdown_utils.py` and `file_utils.py`)
+### Changed
+- Refactored table generation utilities into shared `markdown_utils` module
+- Refactored JSON file loading into shared `file_utils` module
+
 ## [1.38.0] - 2025-10-24
 ### Added
 - Add support for settings debug mode via `SCANOSS_DEBUG` environment variable
@@ -701,3 +710,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.37.0]: https://github.com/scanoss/scanoss.py/compare/v1.36.0...v1.37.0
 [1.37.1]: https://github.com/scanoss/scanoss.py/compare/v1.37.0...v1.37.1
 [1.38.0]: https://github.com/scanoss/scanoss.py/compare/v1.37.1...v1.38.0
+[1.39.0]: https://github.com/scanoss/scanoss.py/compare/v1.38.0...v1.39.0
