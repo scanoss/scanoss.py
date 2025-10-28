@@ -426,21 +426,24 @@ class ScanossGrpc(ScanossBase):
             use_grpc=use_grpc,
         )
 
-    def folder_hash_scan(self, request: Dict) -> Optional[Dict]:
+    def folder_hash_scan(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
         """
         Client function to call the rpc for Folder Hashing Scan
 
         Args:
             request (Dict): Folder Hash Request
+            use_grpc (Optional[bool]): Whether to use gRPC or REST API
 
         Returns:
             Optional[Dict]: Folder Hash Response, or None if the request was not succesfull
         """
-        return self._call_rpc(
+        return self._call_api(
+            'scanning.FolderHashScan',
             self.scanning_stub.FolderHashScan,
             request,
             HFHRequest,
             'Sending folder hash scan data (rqId: {rqId})...',
+            use_grpc=use_grpc,
         )
 
     def _call_api(
