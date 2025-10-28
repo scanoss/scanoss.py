@@ -50,6 +50,13 @@ publish_test:  ## Publish the Python package to TestPyPI
 	@echo "Publishing package to TestPyPI..."
 	twine upload --repository testpypi dist/*
 
+linter: ## Run ruff linter with docker
+	docker run --rm -v $(PWD):/src -w /src ghcr.io/astral-sh/ruff:0.14.2 check $$(git diff --name-only --diff-filter=ACMR | grep '\.py$$' | xargs)
+
+fix-linter: ## Run ruff linter with docker
+	docker run --rm -v $(PWD):/src -w /src ghcr.io/astral-sh/ruff:0.14.2 check $$(git diff --name-only --diff-filter=ACMR | grep '\.py$$' | xargs) --fix
+
+
 publish:  ## Publish Python package to PyPI
 	@echo "Publishing package to PyPI..."
 	twine upload dist/*
