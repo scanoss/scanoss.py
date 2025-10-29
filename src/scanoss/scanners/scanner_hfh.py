@@ -63,6 +63,7 @@ class ScannerHFH:
         depth: int = DEFAULT_HFH_DEPTH,
         recursive_threshold: float = DEFAULT_HFH_RECURSIVE_THRESHOLD,
         min_accepted_score: float = DEFAULT_HFH_MIN_ACCEPTED_SCORE,
+        use_grpc: bool = False,
     ):
         """
         Initialize the ScannerHFH.
@@ -107,6 +108,7 @@ class ScannerHFH:
         self.rank_threshold = rank_threshold
         self.recursive_threshold = recursive_threshold
         self.min_accepted_score = min_accepted_score
+        self.use_grpc = use_grpc
 
     def scan(self) -> Optional[Dict]:
         """
@@ -134,7 +136,7 @@ class ScannerHFH:
         spinner_thread.start()
 
         try:
-            response = self.client.folder_hash_scan(hfh_request)
+            response = self.client.folder_hash_scan(hfh_request, self.use_grpc)
             if response:
                 self.scan_results = response
         finally:

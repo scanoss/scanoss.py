@@ -796,7 +796,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Timeout (in seconds) for API communication (optional - default 300 sec)',
     )
 
-
     # ==============================================================================
     # GitLab Integration Parser
     # ==============================================================================
@@ -830,11 +829,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
 
     # Input file argument - SCANOSS scan results in JSON format
     p_gl_inspect_matches.add_argument(
-        '-i',
-        '--input',
-        required=True,
-        type=str,
-        help='Path to SCANOSS scan results file (JSON format) to analyze'
+        '-i', '--input', required=True, type=str, help='Path to SCANOSS scan results file (JSON format) to analyze'
     )
 
     # Line range prefix for GitLab file navigation
@@ -844,7 +839,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--line-range-prefix',
         required=True,
         type=str,
-        help='Base URL prefix for GitLab file links with line ranges (e.g., https://gitlab.com/org/project/-/blob/main)'
+        help='Base URL prefix for GitLab file links with line ranges (e.g., https://gitlab.com/org/project/-/blob/main)',
     )
 
     # Output file argument - where to save the generated Markdown report
@@ -853,7 +848,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '-o',
         required=False,
         type=str,
-        help='Output file path for the generated Markdown report (default: stdout)'
+        help='Output file path for the generated Markdown report (default: stdout)',
     )
 
     # TODO Move to the command call def location
@@ -1189,6 +1184,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         c_search,
         c_versions,
         c_licenses,
+        p_folder_scan,
     ]:
         p.add_argument('--grpc', action='store_true', default=True, help='Use gRPC (default)')
         p.add_argument('--rest', action='store_true', dest='rest', help='Use REST instead of gRPC')
@@ -1975,7 +1971,7 @@ def inspect_dep_track_project_violations(parser, args):
         sys.exit(1)
 
 
-def inspect_gitlab_matches(parser,args):
+def inspect_gitlab_matches(parser, args):
     """
     Handle GitLab matches the summary inspection command.
 
@@ -2037,6 +2033,7 @@ def inspect_gitlab_matches(parser,args):
         if args.debug:
             traceback.print_exc()
         sys.exit(1)
+
 
 # =============================================================================
 # END INSPECT COMMAND HANDLERS
@@ -2673,6 +2670,7 @@ def folder_hashing_scan(parser, args):
             depth=args.depth,
             recursive_threshold=args.recursive_threshold,
             min_accepted_score=args.min_accepted_score,
+            use_grpc=args.grpc,
         )
 
         if scanner.scan():
