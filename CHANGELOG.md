@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.40.0] - 2025-10-29
+### Added
+- Add support for `--rest` to `folder-scan` command
+
 ## [1.39.0] - 2025-10-27
 ### Added
 - Added `glc-codequality` format to convert subcommand
@@ -711,3 +715,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.37.1]: https://github.com/scanoss/scanoss.py/compare/v1.37.0...v1.37.1
 [1.38.0]: https://github.com/scanoss/scanoss.py/compare/v1.37.1...v1.38.0
 [1.39.0]: https://github.com/scanoss/scanoss.py/compare/v1.38.0...v1.39.0
+[1.40.0]: https://github.com/scanoss/scanoss.py/compare/v1.39.0...v1.40.0
