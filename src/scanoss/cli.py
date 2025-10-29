@@ -35,12 +35,6 @@ import pypac
 from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
 from scanoss.delta import Delta
 from scanoss.export.dependency_track import DependencyTrackExporter
-from scanoss.inspection.dependency_track.project_violation import (
-    DependencyTrackProjectViolationPolicyCheck,
-)
-from scanoss.inspection.raw.component_summary import ComponentSummary
-from scanoss.inspection.raw.license_summary import LicenseSummary
-from scanoss.inspection.raw.match_summary import MatchSummary
 from scanoss.scanners.container_scanner import (
     DEFAULT_SYFT_COMMAND,
     DEFAULT_SYFT_TIMEOUT,
@@ -75,8 +69,14 @@ from .csvoutput import CsvOutput
 from .cyclonedx import CycloneDx
 from .filecount import FileCount
 from .gitlabqualityreport import GitLabQualityReport
-from .inspection.raw.copyleft import Copyleft
-from .inspection.raw.undeclared_component import UndeclaredComponent
+from .inspection.policy_check.dependency_track.project_violation import (
+    DependencyTrackProjectViolationPolicyCheck,
+)
+from .inspection.policy_check.scanoss.copyleft import Copyleft
+from .inspection.policy_check.scanoss.undeclared_component import UndeclaredComponent
+from .inspection.summary.component_summary import ComponentSummary
+from .inspection.summary.license_summary import LicenseSummary
+from .inspection.summary.match_summary import MatchSummary
 from .results import Results
 from .scancodedeps import ScancodeDeps
 from .scanner import FAST_WINNOWING, Scanner
@@ -1753,7 +1753,6 @@ def inspect_copyleft(parser, args):
             exclude=args.exclude,  # Licenses to ignore
             explicit=args.explicit,  # Explicit license list
         )
-
         # Execute inspection and exit with appropriate status code
         status, _ = i_copyleft.run()
         sys.exit(status)

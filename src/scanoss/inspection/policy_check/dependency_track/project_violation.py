@@ -26,9 +26,9 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TypedDict
 
-from ...services.dependency_track_service import DependencyTrackService
-from ..policy_check import PolicyCheck, PolicyStatus
-from ..utils.markdown_utils import generate_jira_table, generate_table
+from ....services.dependency_track_service import DependencyTrackService
+from ...utils.markdown_utils import generate_jira_table, generate_table
+from ..policy_check import PolicyCheck, PolicyOutput, PolicyStatus
 
 # Constants
 PROCESSING_RETRY_DELAY = 5  # seconds
@@ -171,7 +171,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         self.url = url.strip().rstrip('/') if url else None
         self.dep_track_service = DependencyTrackService(self.api_key, self.url, debug=debug, trace=trace, quiet=quiet)
 
-    def _json(self, project_violations: list[PolicyViolationDict]) -> Dict[str, Any]:
+    def _json(self, project_violations: list[PolicyViolationDict]) -> PolicyOutput:
         """
         Format project violations as JSON.
         
@@ -181,12 +181,12 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         Returns:
             Dictionary containing JSON formatted results and summary
         """
-        return {
-            "details": json.dumps(project_violations, indent=2),
-            "summary": f'{len(project_violations)} policy violations were found.\n',
-        }
+        return PolicyOutput(
+            details= json.dumps(project_violations, indent=2),
+            summary= f'{len(project_violations)} policy violations were found.\n',
+        )
 
-    def _markdown(self, project_violations: list[PolicyViolationDict]) -> Dict[str, Any]:
+    def _markdown(self, project_violations: list[PolicyViolationDict]) -> PolicyOutput:
         """
         Format Dependency Track violations to Markdown format.
         
@@ -198,7 +198,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         """
         return self._md_summary_generator(project_violations, generate_table)
 
-    def _jira_markdown(self, data: list[PolicyViolationDict]) -> Dict[str, Any]:
+    def _jira_markdown(self, data: list[PolicyViolationDict]) -> PolicyOutput:
         """
         Format project violations for Jira Markdown.
         
@@ -357,8 +357,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             self.print_stderr(f'Error: Failed to get project uuid from: {dt_project}')
             raise ValueError(f'Error: Project {self.project_name}@{self.project_version} does not have a valid UUID')
 
-    @staticmethod
-    def _sort_project_violations(violations: List[PolicyViolationDict]) -> List[PolicyViolationDict]:
+    def _sort_project_violations(self,violations: List[PolicyViolationDict]) -> List[PolicyViolationDict]:
         """
         Sort project violations by priority.
         
@@ -377,7 +376,7 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             key=lambda x: -type_priority.get(x.get('type', 'OTHER'), 1)
         )
 
-    def _md_summary_generator(self, project_violations: list[PolicyViolationDict], table_generator):
+    def _md_summary_generator(self, project_violations: list[PolicyViolationDict], table_generator) -> PolicyOutput:
         """
         Generates a Markdown summary of project policy violations.
 
@@ -396,10 +395,10 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
         """
         if project_violations is None:
             self.print_stderr('Warning: No project violations found. Returning empty results.')
-            return {
-                "details": "h3. Dependency Track Project Violations\n\nNo policy violations found.\n",
-                "summary": "0 policy violations were found.\n",
-            }
+            return PolicyOutput(
+                details= "h3. Dependency Track Project Violations\n\nNo policy violations found.\n",
+                summary= "0 policy violations were found.\n",
+            )
         headers = ['State', 'Risk Type', 'Policy Name', 'Component', 'Date']
         c_cols = [0, 1]
         rows: List[List[str]] = []
@@ -424,11 +423,11 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             ]
             rows.append(row)
         # End for loop
-        return {
-            "details": f'### Dependency Track Project Violations\n{table_generator(headers, rows, c_cols)}\n\n'
+        return PolicyOutput(
+            details= f'### Dependency Track Project Violations\n{table_generator(headers, rows, c_cols)}\n\n'
                        f'View project in Dependency Track [here]({self.url}/projects/{self.project_id}).\n',
-            "summary": f'{len(project_violations)} policy violations were found.\n'
-        }
+            summary= f'{len(project_violations)} policy violations were found.\n'
+        )
 
     def run(self) -> int:
         """
@@ -470,10 +469,11 @@ class DependencyTrackProjectViolationPolicyCheck(PolicyCheck[PolicyViolationDict
             self.print_stderr('Error: Invalid format specified.')
             return PolicyStatus.ERROR.value
         # Format and output data - handle empty results gracefully
-        data = formatter(self._sort_project_violations(dt_project_violations))
-        self.print_to_file_or_stdout(data['details'], self.output)
-        self.print_to_file_or_stderr(data['summary'], self.status)
+        policy_output = formatter(self._sort_project_violations(dt_project_violations))
+        self.print_to_file_or_stdout(policy_output.details, self.output)
+        self.print_to_file_or_stderr(policy_output.summary, self.status)
         # Return appropriate status based on violation count
         if len(dt_project_violations) > 0:
             return PolicyStatus.POLICY_FAIL.value
         return PolicyStatus.POLICY_SUCCESS.value
+

@@ -25,11 +25,12 @@ SPDX-License-Identifier: MIT
 import json
 from typing import Any
 
-from ..policy_check import T
-from .raw_base import RawBase
+from ...scanossbase import ScanossBase
+from ..policy_check.policy_check import T
+from ..utils.scan_result_processor import ScanResultProcessor
 
 
-class LicenseSummary(RawBase):
+class LicenseSummary(ScanossBase):
     """
        SCANOSS LicenseSummary class
        Inspects results and generates comprehensive license summaries from detected components.
@@ -37,6 +38,42 @@ class LicenseSummary(RawBase):
        This class processes component scan results to extract, validate, and aggregate license
        information, providing detailed summaries including copyleft analysis and license statistics.
        """
+
+    # Define required license fields as class constants
+    REQUIRED_LICENSE_FIELDS = ['spdxid', 'url', 'copyleft', 'source']
+
+    def __init__( # noqa: PLR0913
+        self,
+        debug: bool = False,
+        trace: bool = False,
+        quiet: bool = False,
+        filepath: str = None,
+        status: str = None,
+        output: str = None,
+        include: str = None,
+        exclude: str = None,
+        explicit: str = None,
+    ):
+        """
+        Initialize the LicenseSummary class.
+
+        :param debug: Enable debug mode
+        :param trace: Enable trace mode
+        :param quiet: Enable quiet mode
+        :param filepath: Path to the file containing component data
+        :param output: Path to save detailed output
+        :param include: Licenses to include in the analysis
+        :param exclude: Licenses to exclude from the analysis
+        :param explicit: Explicitly defined licenses
+        """
+        super().__init__(debug=debug, trace=trace, quiet=quiet)
+        self.results_processor = ScanResultProcessor(debug, trace, quiet, filepath, include, exclude, explicit)
+        self.filepath = filepath
+        self.output = output
+        self.status = status
+        self.include = include
+        self.exclude = exclude
+        self.explicit = explicit
 
     def _json(self, data: dict[str,Any]) -> dict[str, Any]:
         """
@@ -78,41 +115,6 @@ class LicenseSummary(RawBase):
         """
         pass
 
-    # Define required license fields as class constants
-    REQUIRED_LICENSE_FIELDS = ['spdxid', 'url', 'copyleft', 'source']
-
-    def __init__( # noqa: PLR0913
-        self,
-        debug: bool = False,
-        trace: bool = False,
-        quiet: bool = False,
-        filepath: str = None,
-        status: str = None,
-        output: str = None,
-        include: str = None,
-        exclude: str = None,
-        explicit: str = None,
-    ):
-        """
-        Initialize the LicenseSummary class.
-
-        :param debug: Enable debug mode
-        :param trace: Enable trace mode (default True)
-        :param quiet: Enable quiet mode
-        :param filepath: Path to the file containing component data
-        :param output: Path to save detailed output
-        :param include: Licenses to include in the analysis
-        :param exclude: Licenses to exclude from the analysis
-        :param explicit: Explicitly defined licenses
-        """
-        super().__init__(debug, trace, quiet, filepath = filepath, output=output)
-        self.license_util.init(include, exclude, explicit)
-        self.filepath = filepath
-        self.output = output
-        self.status = status
-        self.include = include
-        self.exclude = exclude
-        self.explicit = explicit
 
     def _get_licenses_summary_from_components(self, components: list)-> dict:
         """
@@ -122,7 +124,7 @@ class LicenseSummary(RawBase):
         :return: Dict with license summary information
         """
         # A component is considered unique by its combination of PURL (Package URL) and license
-        component_licenses = self._group_components_by_license(components)
+        component_licenses = self.results_processor.group_components_by_license(components)
         license_component_count = {}
         # Count license per component
         for lic in component_licenses:
@@ -164,14 +166,14 @@ class LicenseSummary(RawBase):
 
         :return: A list of processed components with license data, or `None` if `self.results` is not set.
         """
-        if self.results is None:
-            raise ValueError(f'Error: No results found in ${self.filepath}')
+        if self.results_processor.get_results() is None:
+            raise ValueError(f'Error: No results found in {self.filepath}')
 
         components: dict = {}
         # Extract component and license data from file and dependency results. Both helpers mutate `components`
-        self._get_components_data(self.results, components)
-        self._get_dependencies_data(self.results, components)
-        return self._convert_components_to_list(components)
+        self.results_processor.get_components_data(components)
+        self.results_processor.get_dependencies_data(components)
+        return self.results_processor.convert_components_to_list(components)
 
     def _format(self, license_summary) -> str:
         # TODO: Implement formatter to support dynamic outputs

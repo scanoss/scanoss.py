@@ -22,11 +22,10 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-from abc import abstractmethod
 from enum import Enum
 from typing import Any, Dict, TypeVar
 
-from ..policy_check import PolicyCheck
+from ...scanossbase import ScanossBase
 from ..utils.file_utils import load_json_file
 from ..utils.license_utils import LicenseUtil
 
@@ -51,12 +50,13 @@ class ComponentID(Enum):
 #
 
 T = TypeVar('T')
-class RawBase(PolicyCheck[T]):
+class ScanResultProcessor(ScanossBase):
     """
-    A base class to perform inspections over scan results.
+    A utility class for processing and transforming scan results.
 
-    This class provides a basic for scan results inspection, including methods for
-    processing scan results components and licenses.
+    This class provides functionality for processing scan results, including methods for
+    loading, parsing, extracting, and aggregating component and license data from scan results.
+    It serves as a shared data processing layer used by both policy checks and summary generators.
 
     Inherits from:
         ScanossBase: A base class providing common functionality for SCANOSS-related operations.
@@ -67,40 +67,19 @@ class RawBase(PolicyCheck[T]):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        format_type: str = None,
-        filepath: str = None,
-        output: str = None,
-        status: str = None,
-        name: str = None,
+        result_file_path: str = None,
+        include: str = None,
+        exclude: str = None,
+        explicit: str = None,
     ):
-        super().__init__(debug, trace, quiet, format_type,status, name, output)
+        super().__init__(debug, trace, quiet)
+        self.result_file_path = result_file_path
         self.license_util = LicenseUtil()
-        self.filepath = filepath
-        self.output = output
+        self.license_util.init(include, exclude, explicit)
         self.results = self._load_input_file()
 
-    @abstractmethod
-    def _get_components(self):
-        """
-        Retrieve and process components from the preloaded results.
-
-        This method performs the following steps:
-        1. Checks if the results have been previously loaded (self.results).
-        2. Extracts and processes components from the loaded results.
-
-        :return: A list of processed components, or None if an error occurred during any step.
-
-        Possible reasons for returning None include:
-        - Results not loaded (self.results is None)
-        - Failure to extract components from the results
-
-        Note:
-        - This method assumes that the results have been previously loaded and stored in self.results.
-        - Implementations must extract components (e.g. via `_get_components_data`,
-          `_get_dependencies_data`, or other helpers).
-        - If `self.results` is `None`, simply return `None`.
-        """
-    pass
+    def get_results(self) -> Dict[str, Any]:
+        return self.results
 
     def _append_component(self, components: Dict[str, Any], new_component: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -213,7 +192,7 @@ class RawBase(PolicyCheck[T]):
         else:
             component['undeclared'] += 1
 
-    def _get_components_data(self, results: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
+    def get_components_data(self, components: Dict[str, Any]) -> Dict[str, Any]:
         """
            Extract and process file and snippet components from results.
 
@@ -230,11 +209,11 @@ class RawBase(PolicyCheck[T]):
              which tracks the number of occurrences of each license
 
            Args:
-               results: A dictionary containing the raw results of a component scan
+               components: A dictionary containing the raw results of a component scan
            Returns:
                Updated components dictionary with file and snippet data
            """
-        for component in results.values():
+        for component in self.results.values():
             for c in component:
                 component_id = c.get('id')
                 if not component_id:
@@ -266,15 +245,13 @@ class RawBase(PolicyCheck[T]):
         # End components loop
         return components
 
-    def _get_dependencies_data(self, results: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
+    def get_dependencies_data(self,components: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract and process dependency components from results.
-
-        :param results: A dictionary containing the raw results of a component scan
         :param components: Existing components dictionary to update
         :return: Updated components dictionary with dependency data
         """
-        for component in results.values():
+        for component in self.results.values():
             for c in component:
                 component_id = c.get('id')
                 if not component_id:
@@ -313,12 +290,12 @@ class RawBase(PolicyCheck[T]):
               Dict[str, Any]: The parsed JSON data
         """
         try:
-            return load_json_file(self.filepath)
+            return load_json_file(self.result_file_path)
         except Exception as e:
                 self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')
                 return None
 
-    def _convert_components_to_list(self, components: dict):
+    def convert_components_to_list(self, components: dict):
         if components is None:
             self.print_debug(f'WARNING: Components is empty {self.results}')
             return None
@@ -372,7 +349,7 @@ class RawBase(PolicyCheck[T]):
         self.print_debug("No priority sources found, returning all licenses as list")
         return licenses_data
 
-    def _group_components_by_license(self,components):
+    def group_components_by_license(self,components):
         """
         Groups components by their unique component-license pairs.
 
@@ -425,5 +402,5 @@ class RawBase(PolicyCheck[T]):
 
 
 #
-# End of PolicyCheck Class
+# End of ScanResultProcessor Class
 #

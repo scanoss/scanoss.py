@@ -24,11 +24,36 @@ SPDX-License-Identifier: MIT
 import json
 from typing import Any
 
-from ..policy_check import T
-from .raw_base import RawBase
+from ...scanossbase import ScanossBase
+from ..policy_check.policy_check import T
+from ..utils.scan_result_processor import ScanResultProcessor
 
 
-class ComponentSummary(RawBase):
+class ComponentSummary(ScanossBase):
+
+    def __init__( # noqa: PLR0913
+        self,
+        debug: bool = False,
+        trace: bool = False,
+        quiet: bool = False,
+        filepath: str = None,
+        format_type: str = 'json',
+        output: str = None,
+    ):
+        """
+        Initialize the ComponentSummary class.
+
+        :param debug: Enable debug mode
+        :param trace: Enable trace mode
+        :param quiet: Enable quiet mode
+        :param filepath: Path to the file containing component data
+        :param format_type: Output format ('json' or 'md')
+        """
+        super().__init__(debug, trace, quiet)
+        self.filepath = filepath
+        self.output = output
+        self.results_processor = ScanResultProcessor(debug, trace, quiet, filepath)
+
 
     def _json(self, data: dict[str,Any]) -> dict[str,Any]:
         """
@@ -77,11 +102,11 @@ class ComponentSummary(RawBase):
         """
         Get a component summary from detected components.
 
-        :param components: List of all components
+        :param scan_components: List of all components
         :return: Dict with license summary information
         """
         # A component is considered unique by its combination of PURL (Package URL) and license
-        component_licenses = self._group_components_by_license(scan_components)
+        component_licenses = self.results_processor.group_components_by_license(scan_components)
         total_components = len(component_licenses)
         # Get undeclared components
         undeclared_components = len([c for c in component_licenses if c['status'] == 'pending'])
@@ -121,13 +146,13 @@ class ComponentSummary(RawBase):
 
         :return: A list of processed components with license data, or `None` if `self.results` is not set.
         """
-        if self.results is None:
-            raise ValueError(f'Error: No results found in ${self.filepath}')
+        if self.results_processor.get_results() is None:
+            raise ValueError(f'Error: No results found in {self.filepath}')
 
         components: dict = {}
         # Extract component and license data from file and dependency results. Both helpers mutate `components`
-        self._get_components_data(self.results, components)
-        return self._convert_components_to_list(components)
+        self.results_processor.get_components_data(components)
+        return self.results_processor.convert_components_to_list(components)
 
     def _format(self, component_summary) -> str:
         # TODO: Implement formatter to support dynamic outputs
