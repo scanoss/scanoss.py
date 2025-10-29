@@ -24,11 +24,11 @@ SPDX-License-Identifier: MIT
 
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Dict, List
 
-from ..policy_check import PolicyStatus
-from ..utils.markdown_utils import generate_jira_table, generate_table
-from .raw_base import RawBase
+from ...policy_check.policy_check import PolicyCheck, PolicyOutput, PolicyStatus
+from ...utils.markdown_utils import generate_jira_table, generate_table
+from ...utils.scan_result_processor import ScanResultProcessor
 
 
 @dataclass
@@ -45,7 +45,7 @@ class Component:
     licenses: List[License]
     status: str
 
-class Copyleft(RawBase[Component]):
+class Copyleft(PolicyCheck[Component]):
     """
     SCANOSS Copyleft class
     Inspects components for copyleft licenses
@@ -78,17 +78,23 @@ class Copyleft(RawBase[Component]):
         :param exclude: Licenses to exclude from the analysis
         :param explicit: Explicitly defined licenses
         """
-        super().__init__(debug, trace, quiet, format_type,filepath, output ,status, name='Copyleft Policy')
+        super().__init__(
+            debug, trace, quiet, format_type, status, name='Copyleft Policy', output=output
+        )
         self.license_util.init(include, exclude, explicit)
         self.filepath = filepath
-        self.format = format
         self.output = output
         self.status = status
-        self.include = include
-        self.exclude = exclude
-        self.explicit = explicit
+        self.results_processor = ScanResultProcessor(
+            self.debug,
+            self.trace,
+            self.quiet,
+            self.filepath,
+            include,
+            exclude,
+            explicit)
 
-    def _json(self, components: list[Component]) -> Dict[str, Any]:
+    def _json(self, components: list[Component]) -> PolicyOutput:
         """
         Format the components with copyleft licenses as JSON.
 
@@ -96,16 +102,16 @@ class Copyleft(RawBase[Component]):
         :return: Dictionary with formatted JSON details and summary
         """
         # A component is considered unique by its combination of PURL (Package URL) and license
-        component_licenses = self._group_components_by_license(components)
+        component_licenses = self.results_processor.group_components_by_license(components)
         details = {}
         if len(components) > 0:
             details = {'components': components}
-        return {
-            'details': f'{json.dumps(details, indent=2)}\n',
-            'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
-        }
+        return PolicyOutput(
+            details= f'{json.dumps(details, indent=2)}\n',
+            summary= f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
+        )
 
-    def _markdown(self, components: list[Component]) -> Dict[str, Any]:
+    def _markdown(self, components: list[Component]) -> PolicyOutput:
         """
         Format the components with copyleft licenses as Markdown.
 
@@ -114,7 +120,7 @@ class Copyleft(RawBase[Component]):
         """
         return self._md_summary_generator(components, generate_table)
 
-    def _jira_markdown(self, components: list[Component]) -> Dict[str, Any]:
+    def _jira_markdown(self, components: list[Component]) -> PolicyOutput:
         """
         Format the components with copyleft licenses as Markdown.
 
@@ -123,7 +129,7 @@ class Copyleft(RawBase[Component]):
         """
         return self._md_summary_generator(components, generate_jira_table)
 
-    def _md_summary_generator(self, components: list[Component], table_generator):
+    def _md_summary_generator(self, components: list[Component], table_generator) -> PolicyOutput:
         """
         Generates a Markdown summary for components with a focus on copyleft licenses.
 
@@ -138,15 +144,10 @@ class Copyleft(RawBase[Component]):
             A callable function to generate tabular data for components.
 
         Returns:
-        dict
-            A dictionary containing two keys:
-            - 'details': A detailed Markdown representation including a table of components
-              and associated copyleft license data.
-            - 'summary': A textual summary highlighting the total number of components
-              with copyleft licenses.
+            PolicyOutput
         """
         # A component is considered unique by its combination of PURL (Package URL) and license
-        component_licenses = self._group_components_by_license(components)
+        component_licenses = self.results_processor.group_components_by_license(components)
         headers = ['Component', 'License', 'URL', 'Copyleft']
         centered_columns = [1, 4]
         rows = []
@@ -160,10 +161,10 @@ class Copyleft(RawBase[Component]):
             rows.append(row)
         # End license loop
         # End component loop
-        return {
-            'details': f'### Copyleft Licenses\n{table_generator(headers, rows, centered_columns)}',
-            'summary': f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
-        }
+        return PolicyOutput(
+            details= f'### Copyleft Licenses\n{table_generator(headers, rows, centered_columns)}',
+            summary= f'{len(component_licenses)} component(s) with copyleft licenses were found.\n',
+        )
 
     def _get_components_with_copyleft_licenses(self, components: list) -> list[Dict]:
         """
@@ -202,14 +203,13 @@ class Copyleft(RawBase[Component]):
 
         :return: A list of processed components with license data, or `None` if `self.results` is not set.
         """
-        if self.results is None:
+        if self.results_processor.get_results() is None:
             return None
-
         components: dict = {}
         # Extract component and license data from file and dependency results. Both helpers mutate `components`
-        self._get_components_data(self.results, components)
-        self._get_dependencies_data(self.results, components)
-        return self._convert_components_to_list(components)
+        self.results_processor.get_components_data(components)
+        self.results_processor.get_dependencies_data(components)
+        return self.results_processor.convert_components_to_list(components)
 
     def run(self):
         """

@@ -22,12 +22,12 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, Generic, List, TypeVar
+from typing import Callable, Dict, Generic, List, NamedTuple, TypeVar
 
-from ..scanossbase import ScanossBase
-from .utils.license_utils import LicenseUtil
+from ...scanossbase import ScanossBase
+from ..utils.license_utils import LicenseUtil
 
 
 class PolicyStatus(Enum):
@@ -46,9 +46,13 @@ class PolicyStatus(Enum):
 # End of PolicyStatus Class
 #
 
+class PolicyOutput(NamedTuple):
+    details: str
+    summary: str
+
 T = TypeVar('T')
 
-class PolicyCheck(ScanossBase, Generic[T]):
+class PolicyCheck(ScanossBase, Generic[T], ABC):
     """
     A base class for implementing various software policy checks.
 
@@ -80,7 +84,7 @@ class PolicyCheck(ScanossBase, Generic[T]):
         self.output = output
 
     @abstractmethod
-    def run(self):
+    def run(self)-> tuple[int,PolicyOutput]:
         """
         Execute the policy check process.
 
@@ -91,14 +95,14 @@ class PolicyCheck(ScanossBase, Generic[T]):
         3. Formatting the results
         4. Saving the output to files if required
 
-        :return: A tuple containing:
+        :return: A named tuple containing two elements:
                  - First element: PolicyStatus enum value (SUCCESS, FAIL, or ERROR)
-                 - Second element: Dictionary containing the inspection results
+                 - Second element: PolicyOutput A tuple containing the policy results.
         """
         pass
 
     @abstractmethod
-    def _json(self, data: list[T]) -> Dict[str, Any]:
+    def _json(self, data: list[T]) -> PolicyOutput:
         """
         Format the policy checks results as JSON.
         This method should be implemented by subclasses to create a Markdown representation
@@ -112,7 +116,7 @@ class PolicyCheck(ScanossBase, Generic[T]):
         pass
 
     @abstractmethod
-    def _markdown(self, data: list[T]) -> Dict[str, Any]:
+    def _markdown(self, data: list[T]) -> PolicyOutput:
         """
         Generate Markdown output for the policy check results.
 
@@ -125,7 +129,7 @@ class PolicyCheck(ScanossBase, Generic[T]):
         pass
 
     @abstractmethod
-    def _jira_markdown(self, data: list[T]) -> Dict[str, Any]:
+    def _jira_markdown(self, data: list[T]) -> PolicyOutput:
         """
         Generate Markdown output for the policy check results.
 
@@ -137,7 +141,7 @@ class PolicyCheck(ScanossBase, Generic[T]):
         """
         pass
 
-    def _get_formatter(self) -> Callable[[List[dict]], Dict[str, Any]] or None:
+    def _get_formatter(self) -> Callable[[List[dict]], PolicyOutput]:
         """
         Get the appropriate formatter function based on the specified format.
 
@@ -145,7 +149,7 @@ class PolicyCheck(ScanossBase, Generic[T]):
         """
         valid_format = self._is_valid_format()
         if not valid_format:
-            return None
+            raise ValueError('Invalid format specified')
         # a map of which format function to return
         function_map = {
             'json': self._json,
@@ -205,14 +209,14 @@ class PolicyCheck(ScanossBase, Generic[T]):
         if formatter is None:
             return PolicyStatus.ERROR.value, {}
         # Format the results
-        data = formatter(components)
+        policy_output = formatter(components)
         ## Save outputs if required
-        self.print_to_file_or_stdout(data['details'], self.output)
-        self.print_to_file_or_stderr(data['summary'], self.status)
+        self.print_to_file_or_stdout(policy_output.details, self.output)
+        self.print_to_file_or_stderr(policy_output.summary, self.status)
         # Check to see if we have policy violations
         if len(components) > 0:
-            return PolicyStatus.POLICY_FAIL.value, data
-        return PolicyStatus.POLICY_SUCCESS.value, data
+            return PolicyStatus.POLICY_FAIL.value, policy_output
+        return PolicyStatus.POLICY_SUCCESS.value, policy_output
 #
 # End of PolicyCheck Class
 #

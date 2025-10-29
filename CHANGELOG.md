@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Upcoming changes...
 
+## [1.40.1] - 2025-10-29
+### Changed
+- Refactored inspect module structure for better organization
+  - Reorganized inspection modules into `policy_check` and `summary` subdirectories
+  - Moved copyleft and undeclared component checks to `policy_check/scanoss/`
+  - Moved component, license, and match summaries to `summary/`
+  - Moved Dependency Track policy checks to `policy_check/dependency_track/`
+  - Extracted common scan result processing logic into `ScanResultProcessor` utility class
+  - Improved type safety with `PolicyOutput` named tuple for policy check results
+  - Made `PolicyCheck` class explicitly abstract with ABC
+### Added
+- Added Makefile targets for running ruff linter  (`linter`, `linter-fix`, `linter-docker`, `linter-docker-fix`)
+
 ## [1.40.0] - 2025-10-29
 ### Added
 - Add support for `--rest` to `folder-scan` command
@@ -716,3 +729,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.38.0]: https://github.com/scanoss/scanoss.py/compare/v1.37.1...v1.38.0
 [1.39.0]: https://github.com/scanoss/scanoss.py/compare/v1.38.0...v1.39.0
 [1.40.0]: https://github.com/scanoss/scanoss.py/compare/v1.39.0...v1.40.0
+[1.40.1]: https://github.com/scanoss/scanoss.py/compare/v1.40.0...v1.40.1

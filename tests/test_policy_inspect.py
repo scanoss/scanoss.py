@@ -28,12 +28,14 @@ import re
 import unittest
 from unittest.mock import Mock, patch
 
-from src.scanoss.inspection.policy_check import PolicyStatus
-from src.scanoss.inspection.raw.component_summary import ComponentSummary
-from src.scanoss.inspection.raw.copyleft import Copyleft
-from src.scanoss.inspection.raw.license_summary import LicenseSummary
-from src.scanoss.inspection.raw.undeclared_component import UndeclaredComponent
-from src.scanoss.inspection.dependency_track.project_violation import DependencyTrackProjectViolationPolicyCheck
+from src.scanoss.inspection.policy_check.dependency_track.project_violation import (
+    DependencyTrackProjectViolationPolicyCheck,
+)
+from src.scanoss.inspection.policy_check.policy_check import PolicyStatus
+from src.scanoss.inspection.policy_check.scanoss.copyleft import Copyleft
+from src.scanoss.inspection.policy_check.scanoss.undeclared_component import UndeclaredComponent
+from src.scanoss.inspection.summary.component_summary import ComponentSummary
+from src.scanoss.inspection.summary.license_summary import LicenseSummary
 
 
 class MyTestCase(unittest.TestCase):
@@ -67,11 +69,11 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result-no-copyleft.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json')
-        status, data = copyleft.run()
-        details = json.loads(data['details'])
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
         self.assertEqual(status, PolicyStatus.POLICY_SUCCESS.value)
         self.assertEqual(details, {})
-        self.assertEqual(data['summary'], '0 component(s) with copyleft licenses were found.\n')
+        self.assertEqual(policy_output.summary, '0 component(s) with copyleft licenses were found.\n')
 
     """
     Inspect for copyleft licenses include
@@ -82,9 +84,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json', include='MIT')
-        status, data = copyleft.run()
+        status, policy_output = copyleft.run()
         has_mit_license = False
-        details = json.loads(data['details'])
+        details = json.loads(policy_output.details)
         for component in details['components']:
             for license in component['licenses']:
                 if license['spdxid'] == 'MIT':
@@ -103,8 +105,8 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json', exclude='GPL-2.0-only')
-        status, data = copyleft.run()
-        results = json.loads(data['details'])
+        status, policy_output = copyleft.run()
+        results = json.loads(policy_output.details)
         self.assertEqual(results, {})
         self.assertEqual(status, PolicyStatus.POLICY_SUCCESS.value)
 
@@ -117,8 +119,8 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json', explicit='MIT')
-        status, data = copyleft.run()
-        results = json.loads(data['details'])
+        status, policy_output = copyleft.run()
+        results = json.loads(policy_output.details)
         self.assertEqual(len(results['components']), 2)
         self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
 
@@ -131,8 +133,8 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='json', explicit='')
-        status, data = copyleft.run()
-        results = json.loads(data['details'])
+        status, policy_output = copyleft.run()
+        results = json.loads(policy_output.details)
         self.assertEqual(len(results['components']), 5)
         self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
 
@@ -145,7 +147,7 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='md', explicit='MIT')
-        status, data = copyleft.run()
+        status, policy_output = copyleft.run()
         expected_detail_output = (
             '### Copyleft Licenses \n  | Component | License | URL | Copyleft |\n'
             ' | - | :-: | - | - |\n'
@@ -154,10 +156,10 @@ class MyTestCase(unittest.TestCase):
         )
         expected_summary_output = '2 component(s) with copyleft licenses were found.\n'
         self.assertEqual(
-            re.sub(r'\s|\\(?!`)|\\(?=`)', '', data['details']),
+            re.sub(r'\s|\\(?!`)|\\(?=`)', '', policy_output.details),
             re.sub(r'\s|\\(?!`)|\\(?=`)', '', expected_detail_output),
         )
-        self.assertEqual(data['summary'], expected_summary_output)
+        self.assertEqual(policy_output.summary, expected_summary_output)
         self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
 
     ## Undeclared Components Policy Tests ##
@@ -180,9 +182,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format_type='json', sbom_format='legacy')
-        status, data = undeclared.run()
-        results = json.loads(data['details'])
-        summary = data['summary']
+        status, policy_output = undeclared.run()
+        results = json.loads(policy_output.details)
+        summary = policy_output.summary
         expected_summary_output = """3 undeclared component(s) were found.
         Add the following snippet into your `sbom.json` file 
         ```json 
@@ -215,9 +217,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md', sbom_format='legacy')
-        status, data = undeclared.run()
-        results = data['details']
-        summary = data['summary']
+        status, policy_output = undeclared.run()
+        results = policy_output.details
+        summary = policy_output.summary
         expected_details_output = """ ### Undeclared components
              | Component | License | 
              | - | - | 
@@ -259,9 +261,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format_type='md')
-        status, data = undeclared.run()
-        results = data['details']
-        summary = data['summary']
+        status, policy_output = undeclared.run()
+        results = policy_output.details
+        summary = policy_output.summary
         expected_details_output = """ ### Undeclared components
                | Component | License | 
                | - | - | 
@@ -306,9 +308,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name)
-        status, data = undeclared.run()
-        results = json.loads(data['details'])
-        summary = data['summary']
+        status, policy_output = undeclared.run()
+        results = json.loads(policy_output.details)
+        summary = policy_output.summary
         expected_summary_output = """3 undeclared component(s) were found.
                 Add the following snippet into your `scanoss.json` file
 
@@ -340,9 +342,9 @@ class MyTestCase(unittest.TestCase):
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         undeclared = UndeclaredComponent(filepath=input_file_name, format_type='jira_md')
-        status, data = undeclared.run()
-        details = data['details']
-        summary = data['summary']
+        status, policy_output = undeclared.run()
+        details = policy_output.details
+        summary = policy_output.summary
         expected_details_output = """|*Component*|*License*|
 |pkg:github/scanoss/jenkins-pipeline-example|unknown|
 |pkg:github/scanoss/scanner.c|GPL-2.0-only|
@@ -377,8 +379,8 @@ Add the following snippet into your `scanoss.json` file
         file_name = 'result.json'
         input_file_name = os.path.join(script_dir, 'data', file_name)
         copyleft = Copyleft(filepath=input_file_name, format_type='jira_md')
-        status, data = copyleft.run()
-        results = data['details']
+        status, policy_output = copyleft.run()
+        results = policy_output.details
         expected_details_output = """### Copyleft Licenses\n|*Component*|*License*|*URL*|*Copyleft*|
 |pkg:github/scanoss/scanner.c|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
 |pkg:github/scanoss/engine|GPL-2.0-only|https://spdx.org/licenses/GPL-2.0-only.html|YES|
@@ -436,7 +438,7 @@ Add the following snippet into your `scanoss.json` file
 
     ## Dependency Track Project Violation Policy Tests ##
 
-    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    @patch('src.scanoss.inspection.policy_check.dependency_track.project_violation.DependencyTrackService')
     def test_dependency_track_project_violation_json_formatter(self, mock_service):
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
@@ -464,14 +466,12 @@ Add the following snippet into your `scanoss.json` file
             }
         ]
         result = project_violation._json(test_violations)
-        self.assertIn('details', result)
-        self.assertIn('summary', result)
-        self.assertEqual(result['summary'], '1 policy violations were found.\n')
-        details = json.loads(result['details'])
+        self.assertEqual(result.summary, '1 policy violations were found.\n')
+        details = json.loads(result.details)
         self.assertEqual(len(details), 1)
         self.assertEqual(details[0]['type'], 'SECURITY')
 
-    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    @patch('src.scanoss.inspection.policy_check.dependency_track.project_violation.DependencyTrackService')
     def test_dependency_track_project_violation_markdown_formatter(self, mock_service):
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
@@ -499,16 +499,14 @@ Add the following snippet into your `scanoss.json` file
             }
         ]
         result = project_violation._markdown(test_violations)
-        self.assertIn('details', result)
-        self.assertIn('summary', result)
-        self.assertEqual(result['summary'], '1 policy violations were found.\n')
-        self.assertIn('State', result['details'])
-        self.assertIn('Risk Type', result['details'])
-        self.assertIn('Policy Name', result['details'])
-        self.assertIn('Component', result['details'])
-        self.assertIn('Date', result['details'])
+        self.assertEqual(result.summary, '1 policy violations were found.\n')
+        self.assertIn('State', result.details)
+        self.assertIn('Risk Type', result.details)
+        self.assertIn('Policy Name', result.details)
+        self.assertIn('Component', result.details)
+        self.assertIn('Date', result.details)
 
-    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    @patch('src.scanoss.inspection.policy_check.dependency_track.project_violation.DependencyTrackService')
     def test_dependency_track_project_violation_sort_violations(self, mock_service):
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
@@ -528,7 +526,7 @@ Add the following snippet into your `scanoss.json` file
         self.assertEqual(sorted_violations[2]['type'], 'LICENSE')
         self.assertEqual(sorted_violations[3]['type'], 'OTHER')
 
-    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    @patch('src.scanoss.inspection.policy_check.dependency_track.project_violation.DependencyTrackService')
     def test_dependency_track_project_violation_empty_violations(self, mock_service):
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
@@ -539,11 +537,11 @@ Add the following snippet into your `scanoss.json` file
         )
         empty_violations = []
         result = project_violation._json(empty_violations)
-        self.assertEqual(result['summary'], '0 policy violations were found.\n')
-        details = json.loads(result['details'])
+        self.assertEqual(result.summary, '0 policy violations were found.\n')
+        details = json.loads(result.details)
         self.assertEqual(len(details), 0)
 
-    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    @patch('src.scanoss.inspection.policy_check.dependency_track.project_violation.DependencyTrackService')
     def test_dependency_track_project_violation_markdown_empty(self, mock_service):
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
@@ -554,11 +552,11 @@ Add the following snippet into your `scanoss.json` file
         )
         empty_violations = []
         result = project_violation._markdown(empty_violations)
-        self.assertEqual(result['summary'], '0 policy violations were found.\n')
-        self.assertIn('State', result['details'])
-        self.assertIn('Risk Type', result['details'])
+        self.assertEqual(result.summary, '0 policy violations were found.\n')
+        self.assertIn('State', result.details)
+        self.assertIn('Risk Type', result.details)
 
-    @patch('src.scanoss.inspection.dependency_track.project_violation.DependencyTrackService')
+    @patch('src.scanoss.inspection.policy_check.dependency_track.project_violation.DependencyTrackService')
     def test_dependency_track_project_violation_multiple_types(self, mock_service):
         mock_service.return_value = Mock()
         project_violation = DependencyTrackProjectViolationPolicyCheck(
@@ -602,8 +600,8 @@ Add the following snippet into your `scanoss.json` file
             }
         ]
         result = project_violation._json(test_violations)
-        self.assertEqual(result['summary'], '2 policy violations were found.\n')
-        details = json.loads(result['details'])
+        self.assertEqual(result.summary, '2 policy violations were found.\n')
+        details = json.loads(result.details)
         self.assertEqual(len(details), 2)
 
 if __name__ == '__main__':

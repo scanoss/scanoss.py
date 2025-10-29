@@ -35,6 +35,9 @@ dev_setup: date_time_clean  ## Setup Python dev env for the current user
 	@echo "Setting up dev env for the current user..."
 	pip3 install -e .
 
+dev_install: ## Install dev dependencies
+	pip3 install -r requirements-dev.txt
+
 dev_uninstall:  ## Uninstall Python dev setup for the current user
 	@echo "Uninstalling dev env..."
 	pip3 uninstall -y scanoss
@@ -49,6 +52,18 @@ dist: clean dev_uninstall date_time  ## Prepare Python package into a distributi
 publish_test:  ## Publish the Python package to TestPyPI
 	@echo "Publishing package to TestPyPI..."
 	twine upload --repository testpypi dist/*
+
+lint-docker: ## Run ruff linter with docker
+	@./tools/linter.sh --docker
+
+lint-docker-fix: ## Run ruff linter with docker and auto-fix
+	@./tools/linter.sh --docker --fix
+
+lint: ## Run ruff linter locally
+	@./tools/linter.sh
+
+lint-fix: ## Run ruff linter locally with auto-fix
+	@./tools/linter.sh --fix
 
 publish:  ## Publish Python package to PyPI
 	@echo "Publishing package to PyPI..."

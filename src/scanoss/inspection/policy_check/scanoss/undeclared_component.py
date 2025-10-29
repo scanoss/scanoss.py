@@ -24,11 +24,11 @@ SPDX-License-Identifier: MIT
 
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import List
 
-from ..policy_check import PolicyStatus
-from ..utils.markdown_utils import generate_jira_table, generate_table
-from .raw_base import RawBase
+from ...policy_check.policy_check import PolicyCheck, PolicyOutput, PolicyStatus
+from ...utils.markdown_utils import generate_jira_table, generate_table
+from ...utils.scan_result_processor import ScanResultProcessor
 
 
 @dataclass
@@ -44,7 +44,7 @@ class Component:
     licenses: List[License]
     status: str
 
-class UndeclaredComponent(RawBase[Component]):
+class UndeclaredComponent(PolicyCheck[Component]):
     """
     SCANOSS UndeclaredComponent class
     Inspects for undeclared components
@@ -59,7 +59,7 @@ class UndeclaredComponent(RawBase[Component]):
         format_type: str = 'json',
         status: str = None,
         output: str = None,
-        sbom_format: str = 'settings',
+        sbom_format: str = 'settings'
     ):
         """
         Initialize the UndeclaredComponent class.
@@ -74,13 +74,14 @@ class UndeclaredComponent(RawBase[Component]):
         :param sbom_format: Sbom format for status output (default 'settings')
         """
         super().__init__(
-            debug, trace, quiet,format_type, filepath, output, status, name='Undeclared Components Policy'
+            debug, trace, quiet, format_type, status, name='Undeclared Components Policy', output=output
         )
         self.filepath = filepath
-        self.format = format
         self.output = output
         self.status = status
         self.sbom_format = sbom_format
+        self.results_processor = ScanResultProcessor(self.debug, self.trace, self.quiet, self.filepath)
+
 
     def _get_undeclared_components(self, components: list[Component]) -> list or None:
         """
@@ -163,7 +164,7 @@ class UndeclaredComponent(RawBase[Component]):
 
         return summary
 
-    def _json(self, components: list[Component]) -> Dict[str, Any]:
+    def _json(self, components: list[Component]) -> PolicyOutput:
         """
         Format the undeclared components as JSON.
 
@@ -171,16 +172,16 @@ class UndeclaredComponent(RawBase[Component]):
         :return: Dictionary with formatted JSON details and summary
         """
         # Use component grouped by licenses to generate the summary
-        component_licenses = self._group_components_by_license(components)
+        component_licenses = self.results_processor.group_components_by_license(components)
         details = {}
         if len(components) > 0:
             details = {'components': components}
-        return {
-            'details': f'{json.dumps(details, indent=2)}\n',
-            'summary': self._get_summary(component_licenses),
-        }
+        return PolicyOutput(
+            details=f'{json.dumps(details, indent=2)}\n',
+            summary=self._get_summary(component_licenses)
+        )
 
-    def _markdown(self, components: list[Component]) -> Dict[str, Any]:
+    def _markdown(self, components: list[Component]) -> PolicyOutput:
         """
         Format the undeclared components as Markdown.
 
@@ -190,15 +191,15 @@ class UndeclaredComponent(RawBase[Component]):
         headers = ['Component', 'License']
         rows = []
         # TODO look at using SpdxLite license name lookup method
-        component_licenses = self._group_components_by_license(components)
+        component_licenses = self.results_processor.group_components_by_license(components)
         for component in component_licenses:
             rows.append([component.get('purl'), component.get('spdxid')])
-        return {
-            'details': f'### Undeclared components\n{generate_table(headers, rows)}\n',
-            'summary': self._get_summary(component_licenses),
-        }
+        return PolicyOutput(
+            details= f'### Undeclared components\n{generate_table(headers, rows)}\n',
+            summary= self._get_summary(component_licenses),
+        )
 
-    def _jira_markdown(self, components: list) -> Dict[str, Any]:
+    def _jira_markdown(self, components: list) -> PolicyOutput:
         """
         Format the undeclared components as Markdown.
 
@@ -208,13 +209,13 @@ class UndeclaredComponent(RawBase[Component]):
         headers = ['Component', 'License']
         rows = []
         # TODO look at using SpdxLite license name lookup method
-        component_licenses = self._group_components_by_license(components)
+        component_licenses = self.results_processor.group_components_by_license(components)
         for component in component_licenses:
             rows.append([component.get('purl'), component.get('spdxid')])
-        return {
-            'details': f'{generate_jira_table(headers, rows)}',
-            'summary': self._get_jira_summary(component_licenses),
-        }
+        return PolicyOutput(
+            details= f'{generate_jira_table(headers, rows)}',
+            summary= self._get_jira_summary(component_licenses),
+        )
 
     def _get_unique_components(self, components: list) -> list:
         """
@@ -272,13 +273,13 @@ class UndeclaredComponent(RawBase[Component]):
 
         :return: A list of processed components with their licenses, or `None` if `self.results` is not set.
         """
-        if self.results is None:
+        if self.results_processor.get_results() is None:
             return None
         components: dict = {}
         # Extract file and snippet components
-        components = self._get_components_data(self.results, components)
+        components = self.results_processor.get_components_data(components)
         # Convert to list and process licenses
-        return self._convert_components_to_list(components)
+        return self.results_processor.convert_components_to_list(components)
 
     def run(self):
         """
