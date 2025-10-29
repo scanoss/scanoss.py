@@ -141,7 +141,7 @@ class GitLabQualityReport(ScanossBase):
                 file.close()
                 self.print_debug(f"Wrote output to file: {output_file}")
             else:
-                self.print_debug(f"Wrote output to 'stdout'")
+                self.print_debug("Wrote output to 'stdout'")
             return True
         except Exception as e:
             self.print_stderr(f'Error writing output: {str(e)}')
@@ -184,7 +184,7 @@ class GitLabQualityReport(ScanossBase):
         self.print_debug(f"Parsing JSON string of length: {len(json_str)}")
         try:
             data = json.loads(json_str)
-            self.print_debug(f"Successfully parsed JSON data")
+            self.print_debug("Successfully parsed JSON data")
             self.print_trace(f"Parsed data structure: {type(data)}")
         except Exception as e:
             self.print_stderr(f'ERROR: Problem parsing input JSON: {e}')

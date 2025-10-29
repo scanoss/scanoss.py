@@ -35,6 +35,9 @@ dev_setup: date_time_clean  ## Setup Python dev env for the current user
 	@echo "Setting up dev env for the current user..."
 	pip3 install -e .
 
+dev_install: ## Install dev dependencies
+	pip3 install -r requirements-dev.txt
+
 dev_uninstall:  ## Uninstall Python dev setup for the current user
 	@echo "Uninstalling dev env..."
 	pip3 uninstall -y scanoss
@@ -50,12 +53,17 @@ publish_test:  ## Publish the Python package to TestPyPI
 	@echo "Publishing package to TestPyPI..."
 	twine upload --repository testpypi dist/*
 
-linter: ## Run ruff linter with docker
-	docker run --rm -v $(PWD):/src -w /src ghcr.io/astral-sh/ruff:0.14.2 check $$(git diff --name-only --diff-filter=ACMR | grep '\.py$$' | xargs)
+lint-docker: ## Run ruff linter with docker
+	@./tools/linter.sh --docker
 
-fix-linter: ## Run ruff linter with docker
-	docker run --rm -v $(PWD):/src -w /src ghcr.io/astral-sh/ruff:0.14.2 check $$(git diff --name-only --diff-filter=ACMR | grep '\.py$$' | xargs) --fix
+lint-docker-fix: ## Run ruff linter with docker and auto-fix
+	@./tools/linter.sh --docker --fix
 
+lint: ## Run ruff linter locally
+	@./tools/linter.sh
+
+lint-fix: ## Run ruff linter locally with auto-fix
+	@./tools/linter.sh --fix
 
 publish:  ## Publish Python package to PyPI
 	@echo "Publishing package to PyPI..."

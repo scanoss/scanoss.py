@@ -216,7 +216,10 @@ class MatchSummary(ScanossBase):
                     gitlab_matches_summary.files.append(summary_item)
                     self.print_trace(f"Added file match for {file_name}")
 
-        self.print_debug(f"Match summary complete: {len(gitlab_matches_summary.files)} file matches, {len(gitlab_matches_summary.snippet)} snippet matches")
+        self.print_debug(
+            f"Match summary complete: {len(gitlab_matches_summary.files)} file matches, "
+            f"{len(gitlab_matches_summary.snippet)} snippet matches"
+        )
 
         return gitlab_matches_summary
 
@@ -237,7 +240,10 @@ class MatchSummary(ScanossBase):
             self.print_debug("No matches to format - returning empty string")
             return ""
 
-        self.print_trace(f"Formatting {len(gitlab_matches_summary.files)} file matches and {len(gitlab_matches_summary.snippet)} snippet matches")
+        self.print_trace(
+            f"Formatting {len(gitlab_matches_summary.files)} file matches and "
+            f"{len(gitlab_matches_summary.snippet)} snippet matches"
+        )
 
         # Define table headers
         file_match_headers = ['File', 'License', 'Similarity', 'PURL', 'Version']
@@ -304,7 +310,10 @@ class MatchSummary(ScanossBase):
         4. Outputs to file or stdout
         """
         self.print_debug("Starting match summary generation process")
-        self.print_trace(f"Configuration - Results path: {self.scanoss_results_path}, Output: {self.output}, Line range prefix: {self.line_range_prefix}")
+        self.print_trace(
+            f"Configuration - Results path: {self.scanoss_results_path}, Output: {self.output}, "
+            f"Line range prefix: {self.line_range_prefix}"
+        )
 
         # Load and process scan results into categorized matches
         self.print_trace("Loading and processing scan results")
