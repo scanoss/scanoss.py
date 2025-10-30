@@ -37,6 +37,7 @@ from typing import Tuple
 from binaryornot.check import is_binary
 from crc32c import crc32c
 
+from .line_filter import LineFilter
 from .scanossbase import ScanossBase
 
 # Winnowing configuration. DO NOT CHANGE.
@@ -172,6 +173,7 @@ class Winnowing(ScanossBase):
         strip_hpsm_ids=None,
         strip_snippet_ids=None,
         skip_md5_ids=None,
+        ignore_headers: bool = False,
     ):
         """
         Instantiate Winnowing class
@@ -198,7 +200,9 @@ class Winnowing(ScanossBase):
         self.strip_hpsm_ids = strip_hpsm_ids
         self.strip_snippet_ids = strip_snippet_ids
         self.hpsm = hpsm
+        self.ignore_headers = ignore_headers
         self.is_windows = platform.system() == 'Windows'
+        self.line_filter = LineFilter(debug=debug, trace=trace, quiet=quiet)
         if hpsm:
             self.crc8_maxim_dow_table = []
             self.crc8_generate_table()
@@ -440,15 +444,23 @@ class Winnowing(ScanossBase):
         # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
         if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
-        # Add HPSM
+
+        # Apply line filter to remove headers, comments, and imports from the beginning (if enabled)
+        line_offset = 0
+        if self.ignore_headers:
+            filtered_contents, line_offset = self.line_filter.filter(file, bin_file, contents)
+            contents = filtered_contents
+
+        # Add HPSM (calculated from original contents, not filtered)
         if self.hpsm:
             hpsm = self.__strip_hpsm(file, self.calc_hpsm(contents))
             if len(hpsm) > 0:
                 wfp += f'hpsm={hpsm}\n'
+
         # Initialize variables
         gram = ''
         window = []
-        line = 1
+        line = 1 + line_offset  # Start line counter from after filtered lines
         last_hash = MAX_CRC32
         last_line = 0
         output = ''
