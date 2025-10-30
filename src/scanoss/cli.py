@@ -1096,6 +1096,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument('--skip-md5', '-5', type=str, action='append', help='Skip files matching MD5.')
         p.add_argument('--strip-hpsm', '-G', type=str, action='append', help='Strip HPSM string from WFP.')
         p.add_argument('--strip-snippet', '-N', type=str, action='append', help='Strip Snippet ID string from WFP.')
+        p.add_argument(
+            '--ignore-headers',
+            action='store_true',
+            help='Ignore license headers, comments and imports at the beginning of files.',
+        )
 
     # Global Scan/GRPC options
     for p in [
@@ -1388,6 +1393,7 @@ def wfp(parser, args):
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
         scan_settings=scan_settings,
+        ignore_headers=args.ignore_headers,
     )
     if args.stdin:
         contents = sys.stdin.buffer.read()
@@ -1583,6 +1589,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         scan_settings=scan_settings,
         req_headers=process_req_headers(args.header),
         use_grpc=args.grpc,
+        ignore_headers=args.ignore_headers,
     )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
