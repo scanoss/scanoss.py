@@ -1,5 +1,6 @@
 import json
 import os
+from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Literal, Optional
@@ -157,38 +158,38 @@ class FolderHasher:
         # Sort the files by name to ensure the hash is the same for the same folder
         filtered_files.sort()
 
-        bar = Bar('Hashing files...', max=len(filtered_files))
-        full_file_path = ''
-        for file_path in filtered_files:
-            try:
-                file_path_obj = Path(file_path) if isinstance(file_path, str) else file_path
-                full_file_path = file_path_obj if file_path_obj.is_absolute() else root / file_path_obj
+        bar_ctx = Bar('Hashing files...', max=len(filtered_files))
 
-                self.base.print_debug(f'\nHashing file {str(full_file_path)}')
+        with bar_ctx as bar:
+            full_file_path = ''
+            for file_path in filtered_files:
+                try:
+                    file_path_obj = Path(file_path) if isinstance(file_path, str) else file_path
+                    full_file_path = file_path_obj if file_path_obj.is_absolute() else root / file_path_obj
 
-                file_bytes = full_file_path.read_bytes()
-                key = CRC64.get_hash_buff(file_bytes)
-                key_str = ''.join(f'{b:02x}' for b in key)
-                rel_path = str(full_file_path.relative_to(root))
+                    self.base.print_debug(f'\nHashing file {str(full_file_path)}')
 
-                file_item = DirectoryFile(rel_path, key, key_str)
+                    file_bytes = full_file_path.read_bytes()
+                    key = CRC64.get_hash_buff(file_bytes)
+                    key_str = ''.join(f'{b:02x}' for b in key)
+                    rel_path = str(full_file_path.relative_to(root))
 
-                current_node = root_node
-                for part in Path(rel_path).parent.parts:
-                    child_path = str(Path(current_node.path) / part)
-                    if child_path not in current_node.children:
-                        current_node.children[child_path] = DirectoryNode(child_path)
-                    current_node = current_node.children[child_path]
-                    current_node.files.append(file_item)
+                    file_item = DirectoryFile(rel_path, key, key_str)
 
-                root_node.files.append(file_item)
+                    current_node = root_node
+                    for part in Path(rel_path).parent.parts:
+                        child_path = str(Path(current_node.path) / part)
+                        if child_path not in current_node.children:
+                            current_node.children[child_path] = DirectoryNode(child_path)
+                        current_node = current_node.children[child_path]
+                        current_node.files.append(file_item)
 
-            except Exception as e:
-                self.base.print_debug(f'Skipping file {full_file_path}: {str(e)}')
+                    root_node.files.append(file_item)
 
-            bar.next()
+                except Exception as e:
+                    self.base.print_debug(f'Skipping file {full_file_path}: {str(e)}')
 
-        bar.finish()
+                bar.next()
         return root_node
 
     def _hash_calc_from_node(self, node: DirectoryNode, current_depth: int = 1) -> dict:

@@ -25,6 +25,7 @@ SPDX-License-Identifier: MIT
 import json
 import threading
 import time
+from contextlib import nullcontext
 from typing import Dict, Optional
 
 from progress.spinner import Spinner
@@ -110,6 +111,19 @@ class ScannerHFH:
         self.min_accepted_score = min_accepted_score
         self.use_grpc = use_grpc
 
+    def _execute_grpc_scan(self, hfh_request: Dict) -> None:
+        """
+        Execute folder hash scan.
+
+        Args:
+            hfh_request: Request dictionary for the gRPC call
+        """
+        try:
+            self.scan_results = self.client.folder_hash_scan(hfh_request, self.use_grpc)
+        except Exception as e:
+            self.base.print_stderr(f'Error during folder hash scan: {e}')
+            self.scan_results = None
+
     def scan(self) -> Optional[Dict]:
         """
         Scan the provided directory using the folder hashing algorithm.
@@ -124,25 +138,17 @@ class ScannerHFH:
             'min_accepted_score': self.min_accepted_score,
         }
 
-        spinner = Spinner('Scanning folder...')
-        stop_spinner = False
+        spinner_ctx = Spinner('Scanning folder...')
 
-        def spin():
-            while not stop_spinner:
+        with spinner_ctx as spinner:
+            grpc_thread = threading.Thread(target=self._execute_grpc_scan, args=(hfh_request,))
+            grpc_thread.start()
+
+            while grpc_thread.is_alive():
                 spinner.next()
                 time.sleep(0.1)
 
-        spinner_thread = threading.Thread(target=spin)
-        spinner_thread.start()
-
-        try:
-            response = self.client.folder_hash_scan(hfh_request, self.use_grpc)
-            if response:
-                self.scan_results = response
-        finally:
-            stop_spinner = True
-            spinner_thread.join()
-            spinner.finish()
+            grpc_thread.join()
 
         return self.scan_results
 
