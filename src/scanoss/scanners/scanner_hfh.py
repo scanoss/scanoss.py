@@ -25,7 +25,6 @@ SPDX-License-Identifier: MIT
 import json
 import threading
 import time
-from contextlib import nullcontext
 from typing import Dict, Optional
 
 from progress.spinner import Spinner
