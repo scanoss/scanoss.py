@@ -28,6 +28,7 @@ import re
 import unittest
 from unittest.mock import Mock, patch
 
+from scanoss.constants import DEFAULT_COPYLEFT_LICENSE_SOURCES, VALID_LICENSE_SOURCES
 from src.scanoss.inspection.policy_check.dependency_track.project_violation import (
     DependencyTrackProjectViolationPolicyCheck,
 )
@@ -388,6 +389,259 @@ Add the following snippet into your `scanoss.json` file
 """
         self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
         self.assertEqual(expected_details_output, results)
+
+    ## Copyleft License Source Filtering Tests ##
+
+    def test_copyleft_policy_default_license_sources(self):
+        """
+        Test default behavior: should use DEFAULT_COPYLEFT_LICENSE_SOURCES
+        (component_declared and license_file)
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(filepath=input_file_name, format_type='json')
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should find components with copyleft from component_declared or license_file
+        # Expected: 5 PURL@version entries (scanner.c x2, engine x2, wfp x1)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertEqual(len(details['components']), 5)
+
+        # Verify all components have licenses from default sources
+        for component in details['components']:
+            for license in component['licenses']:
+                self.assertIn(license['source'], DEFAULT_COPYLEFT_LICENSE_SOURCES)
+
+    def test_copyleft_policy_license_sources_none(self):
+        """
+        Test explicit None: should use DEFAULT_COPYLEFT_LICENSE_SOURCES
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(filepath=input_file_name, format_type='json', license_sources=None)
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should behave same as default
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertEqual(len(details['components']), 5)
+
+        # Verify all components have licenses from default sources
+        for component in details['components']:
+            for license in component['licenses']:
+                self.assertIn(license['source'], DEFAULT_COPYLEFT_LICENSE_SOURCES)
+
+
+    def test_copyleft_policy_license_sources_component_declared_only(self):
+        """
+        Test filtering to component_declared source only
+        Should find GPL-2.0-only from component_declared
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='json',
+            license_sources=['component_declared']
+        )
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should find 5 PURL@version entries from component_declared
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertEqual(len(details['components']), 5)
+
+        # All licenses should be from component_declared
+        for component in details['components']:
+            for license in component['licenses']:
+                self.assertEqual(license['source'], 'component_declared')
+
+    def test_copyleft_policy_license_sources_license_file_only(self):
+        """
+        Test filtering to license_file source only
+        Should find GPL-2.0-only from license_file (engine and wfp)
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='json',
+            license_sources=['license_file']
+        )
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should find engine and wfp (2 components with license_file)
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertEqual(len(details['components']), 2)
+
+        # Verify components are engine and wfp
+        purls = [comp['purl'] for comp in details['components']]
+        self.assertIn('pkg:github/scanoss/engine', purls)
+        self.assertIn('pkg:github/scanoss/wfp', purls)
+
+        # All licenses should be from license_file
+        for component in details['components']:
+            for license in component['licenses']:
+                self.assertEqual(license['source'], 'license_file')
+
+    def test_copyleft_policy_license_sources_file_header_only(self):
+        """
+        Test filtering to file_header source only
+        file_header only has BSD-2-Clause and Zlib (not copyleft)
+        Should find no copyleft licenses
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='json',
+            license_sources=['file_header']
+        )
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should find no copyleft (file_header only has BSD and Zlib)
+        self.assertEqual(status, PolicyStatus.POLICY_SUCCESS.value)
+        self.assertEqual(details, {})
+
+    def test_copyleft_policy_license_sources_multiple_sources(self):
+        """
+        Test using multiple license sources
+        Should find copyleft from component_declared and scancode
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='json',
+            license_sources=['component_declared', 'scancode']
+        )
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should find components from both sources
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertGreaterEqual(len(details['components']), 3)
+
+        # Verify licenses are from specified sources
+        for component in details['components']:
+            for license in component['licenses']:
+                self.assertIn(license['source'], ['component_declared', 'scancode'])
+
+    def test_copyleft_policy_license_sources_all_valid_sources(self):
+        """
+        Test using all valid license sources
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='json',
+            license_sources=VALID_LICENSE_SOURCES
+        )
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should find all copyleft licenses from any source
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertGreaterEqual(len(details['components']), 3)
+
+    def test_copyleft_policy_license_sources_with_markdown_output(self):
+        """
+        Test license source filtering works with markdown output
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='md',
+            license_sources=['license_file']
+        )
+        status, policy_output = copyleft.run()
+
+        # Should generate markdown table
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        self.assertIn('### Copyleft Licenses', policy_output.details)
+        self.assertIn('Component', policy_output.details)
+        self.assertIn('License', policy_output.details)
+        self.assertIn('2 component(s) with copyleft licenses were found', policy_output.summary)
+
+    def test_copyleft_policy_license_sources_with_include_filter(self):
+        """
+        Test license_sources works with include filter
+        Filter to scancode source and include only GPL-2.0-or-later
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='json',
+            license_sources=['scancode'],
+            include='GPL-2.0-or-later'
+        )
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should find only GPL-2.0-or-later from scancode
+        self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
+        if details:  # May be empty if no matches
+            for component in details.get('components', []):
+                for license in component['licenses']:
+                    self.assertEqual(license['spdxid'], 'GPL-2.0-or-later')
+                    self.assertEqual(license['source'], 'scancode')
+
+    def test_copyleft_policy_license_sources_with_exclude_filter(self):
+        """
+        Test license_sources works with exclude filter
+        Use component_declared but exclude GPL-2.0-only
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='json',
+            license_sources=['component_declared'],
+            exclude='GPL-2.0-only'
+        )
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should exclude GPL-2.0-only, leaving nothing (all component_declared are GPL-2.0-only)
+        self.assertEqual(status, PolicyStatus.POLICY_SUCCESS.value)
+        self.assertEqual(details, {})
+
+    def test_copyleft_policy_license_sources_no_copyleft_file(self):
+        """
+        Test license_sources with result-no-copyleft.json
+        Should return success even with license_sources specified
+        """
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = 'result-no-copyleft.json'
+        input_file_name = os.path.join(script_dir, 'data', file_name)
+        copyleft = Copyleft(
+            filepath=input_file_name,
+            format_type='json',
+            license_sources=['component_declared']
+        )
+        status, policy_output = copyleft.run()
+        details = json.loads(policy_output.details)
+
+        # Should find no copyleft
+        self.assertEqual(status, PolicyStatus.POLICY_SUCCESS.value)
+        self.assertEqual(details, {})
+        self.assertIn('0 component(s) with copyleft licenses were found', policy_output.summary)
 
     def test_inspect_license_summary(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
