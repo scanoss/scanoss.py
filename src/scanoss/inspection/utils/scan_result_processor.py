@@ -71,11 +71,13 @@ class ScanResultProcessor(ScanossBase):
         include: str = None,
         exclude: str = None,
         explicit: str = None,
+        license_sources: list = None,
     ):
         super().__init__(debug, trace, quiet)
         self.result_file_path = result_file_path
         self.license_util = LicenseUtil()
         self.license_util.init(include, exclude, explicit)
+        self.license_sources = license_sources
         self.results = self._load_input_file()
 
     def get_results(self) -> Dict[str, Any]:
@@ -162,9 +164,11 @@ class ScanResultProcessor(ScanossBase):
             self.print_debug(f'WARNING: Results missing licenses. Skipping: {new_component}')
             return
 
-        licenses_order_by_source_priority = self._get_licenses_order_by_source_priority(new_component['licenses'])
+        # Select licenses based on configuration (filtering or priority mode)
+        selected_licenses = self._select_licenses(new_component['licenses'])
+
         # Process licenses for this component
-        for license_item in licenses_order_by_source_priority:
+        for license_item in selected_licenses:
             if license_item.get('name'):
                 spdxid = license_item['name']
                 source = license_item.get('source')
@@ -309,19 +313,26 @@ class ScanResultProcessor(ScanossBase):
                 component['licenses'] = []
         return results_list
 
-    def _get_licenses_order_by_source_priority(self,licenses_data):
+    def _select_licenses(self, licenses_data):
         """
-        Select licenses based on source priority:
-        1. component_declared (highest priority)
-        2. license_file
-        3. file_header
-        4. scancode (lowest priority)
+        Select licenses based on configuration.
 
-        If any high-priority source is found, return only licenses from that source.
-        If none found, return all licenses.
+        Two modes:
+        - Filtering mode: If license_sources specified, filter to those sources
+        - Priority mode: Otherwise, use original priority-based selection
 
-        Returns: list with ordered licenses by source.
+        Args:
+            licenses_data: List of license dictionaries
+
+        Returns:
+            Filtered list of licenses based on configuration
         """
+        # Filtering mode, when license_sources is explicitly provided
+        if self.license_sources:
+            sources_to_include = set(self.license_sources) | {'unknown'}
+            return [lic for lic in licenses_data
+                    if lic.get('source') in sources_to_include or lic.get('source') is None]
+
         # Define priority order (highest to lowest)
         priority_sources = ['component_declared', 'license_file', 'file_header', 'scancode']
 

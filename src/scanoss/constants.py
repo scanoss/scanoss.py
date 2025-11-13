@@ -17,3 +17,6 @@ DEFAULT_HFH_RANK_THRESHOLD = 5
 DEFAULT_HFH_DEPTH = 1
 DEFAULT_HFH_RECURSIVE_THRESHOLD = 0.8
 DEFAULT_HFH_MIN_ACCEPTED_SCORE = 0.15
+
+VALID_LICENSE_SOURCES = ['component_declared', 'license_file', 'file_header', 'file_spdx_tag', 'scancode']
+DEFAULT_COPYLEFT_LICENSE_SOURCES = ['component_declared', 'license_file']
