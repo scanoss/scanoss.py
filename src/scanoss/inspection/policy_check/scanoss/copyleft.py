@@ -26,6 +26,8 @@ import json
 from dataclasses import dataclass
 from typing import Dict, List
 
+from scanoss.constants import DEFAULT_COPYLEFT_LICENSE_SOURCES
+
 from ...policy_check.policy_check import PolicyCheck, PolicyOutput, PolicyStatus
 from ...utils.markdown_utils import generate_jira_table, generate_table
 from ...utils.scan_result_processor import ScanResultProcessor
@@ -63,6 +65,7 @@ class Copyleft(PolicyCheck[Component]):
         include: str = None,
         exclude: str = None,
         explicit: str = None,
+        license_sources: list = None,
     ):
         """
         Initialise the Copyleft class.
@@ -77,6 +80,7 @@ class Copyleft(PolicyCheck[Component]):
         :param include: Licenses to include in the analysis
         :param exclude: Licenses to exclude from the analysis
         :param explicit: Explicitly defined licenses
+        :param license_sources: List of license sources to check
         """
         super().__init__(
             debug, trace, quiet, format_type, status, name='Copyleft Policy', output=output
@@ -85,6 +89,7 @@ class Copyleft(PolicyCheck[Component]):
         self.filepath = filepath
         self.output = output
         self.status = status
+        self.license_sources = license_sources or DEFAULT_COPYLEFT_LICENSE_SOURCES
         self.results_processor = ScanResultProcessor(
             self.debug,
             self.trace,
@@ -92,7 +97,8 @@ class Copyleft(PolicyCheck[Component]):
             self.filepath,
             include,
             exclude,
-            explicit)
+            explicit,
+            self.license_sources)
 
     def _json(self, components: list[Component]) -> PolicyOutput:
         """

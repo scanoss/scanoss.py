@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+- Added `--license-sources` (`-ls`) option to copyleft inspection
+  - Filter which license sources to check (component_declared, license_file, file_header, file_spdx_tag, scancode)
+  - Supports both `-ls source1 source2` and `-ls source1 -ls source2` syntax
+
+### Changed
+- Copyleft inspection now defaults to component-level licenses only (component_declared, license_file)
+  - Reduces noise from file-level license detections (file_header, scancode)
+  - Use `-ls` to override and check specific sources
+
 ### Fixed
 - Fixed terminal cursor disappearing after aborting scan with Ctrl+C
 

@@ -55,6 +55,7 @@ from . import __version__
 from .components import Components
 from .constants import (
     DEFAULT_API_TIMEOUT,
+    DEFAULT_COPYLEFT_LICENSE_SOURCES,
     DEFAULT_HFH_DEPTH,
     DEFAULT_HFH_MIN_ACCEPTED_SCORE,
     DEFAULT_HFH_RANK_THRESHOLD,
@@ -64,6 +65,7 @@ from .constants import (
     DEFAULT_TIMEOUT,
     MIN_TIMEOUT,
     PYTHON_MAJOR_VERSION,
+    VALID_LICENSE_SOURCES,
 )
 from .csvoutput import CsvOutput
 from .cyclonedx import CycloneDx
@@ -698,6 +700,17 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument('--include', help='Additional licenses to include in analysis (comma-separated list)')
         p.add_argument('--exclude', help='Licenses to exclude from analysis (comma-separated list)')
         p.add_argument('--explicit', help='Use only these specific licenses for analysis (comma-separated list)')
+
+    # License source filtering
+    for p in [p_inspect_raw_copyleft, p_inspect_legacy_copyleft]:
+        p.add_argument(
+            '-ls', '--license-sources',
+            action='extend',
+            nargs='+',
+            choices=VALID_LICENSE_SOURCES,
+            help=f'Specify which license sources to check for copyleft violations. Each license object in scan results '
+                 f'has a source field indicating its origin. Default: {", ".join(DEFAULT_COPYLEFT_LICENSE_SOURCES)}',
+        )
 
     # Common options for (legacy) copyleft and undeclared component inspection
     for p in [p_inspect_raw_copyleft, p_inspect_raw_undeclared, p_inspect_legacy_copyleft, p_inspect_legacy_undeclared]:
@@ -1752,6 +1765,7 @@ def inspect_copyleft(parser, args):
             include=args.include,  # Additional licenses to check
             exclude=args.exclude,  # Licenses to ignore
             explicit=args.explicit,  # Explicit license list
+            license_sources=args.license_sources,  # License sources to check (list)
         )
         # Execute inspection and exit with appropriate status code
         status, _ = i_copyleft.run()
