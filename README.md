@@ -135,3 +135,8 @@ Details of major changes to the library can be found in [CHANGELOG.md](CHANGELOG
 
 ## Background
 Details about the Winnowing algorithm used for scanning can be found [here](WINNOWING.md).
+
+## Dataset License Notice
+This application is licensed under the MIT License. However, it includes the OSADL copyleft license dataset ([osadl-copyleft.json](src/scanoss/data/osadl-copyleft.json)) which is licensed under the [Creative Commons Attribution 4.0 International license (CC-BY-4.0)](https://creativecommons.org/licenses/by/4.0/) by the [Open Source Automation Development Lab (OSADL) eG](https://www.osadl.org/).
+
+**Attribution:** A project by the Open Source Automation Development Lab (OSADL) eG. Original source: [https://www.osadl.org/fileadmin/checklists/copyleft.json](https://www.osadl.org/fileadmin/checklists/copyleft.json)

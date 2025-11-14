@@ -13,12 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Supports both `-ls source1 source2` and `-ls source1 -ls source2` syntax
 
 ### Changed
+- **Switched to OSADL authoritative copyleft license data**
+  - Copyleft detection now uses [OSADL (Open Source Automation Development Lab)](https://www.osadl.org/) checklist data
+  - Adds missing `-or-later` license variants (GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.1-or-later, etc.)
+  - Expands copyleft coverage from 21 to 32 licenses
+  - Custom include/exclude/explicit filters still use legacy behavior for backward compatibility
+  - Dataset attribution added to README (CC-BY-4.0 license)
+
 - Copyleft inspection now defaults to component-level licenses only (component_declared, license_file)
   - Reduces noise from file-level license detections (file_header, scancode)
   - Use `-ls` to override and check specific sources
 
 ### Fixed
-- Fixed terminal cursor disappearing after aborting scan with Ctrl+C
+- Fixed the terminal cursor disappearing after aborting scan with Ctrl+C
 
 ## [1.40.1] - 2025-10-29
 ### Changed
