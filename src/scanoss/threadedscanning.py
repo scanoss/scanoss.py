@@ -22,6 +22,7 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import atexit
 import os
 import queue
 import sys
@@ -77,6 +78,8 @@ class ThreadedScanning(ScanossBase):
         if nb_threads > MAX_ALLOWED_THREADS:
             self.print_msg(f'Warning: Requested threads too large: {nb_threads}. Reducing to {MAX_ALLOWED_THREADS}')
             self.nb_threads = MAX_ALLOWED_THREADS
+        # Register cleanup to ensure progress bar is finished on exit
+        atexit.register(self.complete_bar)
 
     @staticmethod
     def __count_files_in_wfp(wfp: str):
@@ -100,6 +103,13 @@ class ThreadedScanning(ScanossBase):
     def complete_bar(self):
         if self.bar:
             self.bar.finish()
+
+    def __del__(self):
+        """Ensure progress bar is cleaned up when object is destroyed"""
+        try:
+            self.complete_bar()
+        except Exception:
+            pass  # Ignore errors during cleanup
 
     def set_bar(self, bar: Bar) -> None:
         """
