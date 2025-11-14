@@ -106,7 +106,7 @@ class FileCount(ScanossBase):
         """
         success = True
         if not scan_dir:
-            raise Exception(f'ERROR: Please specify a folder to scan')
+            raise Exception('ERROR: Please specify a folder to scan')
         if not os.path.exists(scan_dir) or not os.path.isdir(scan_dir):
             raise Exception(f'ERROR: Specified folder does not exist or is not a folder: {scan_dir}')
 
