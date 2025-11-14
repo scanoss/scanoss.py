@@ -58,7 +58,6 @@ class LicenseUtil(ScanossBase):
     """
 
     BASE_SPDX_ORG_URL = 'https://spdx.org/licenses'
-    BASE_OSADL_URL = 'https://www.osadl.org/fileadmin/checklists/unreflicenses'
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False):
         super().__init__(debug, trace, quiet)
@@ -122,14 +121,6 @@ class LicenseUtil(ScanossBase):
         """
         return f'{self.BASE_SPDX_ORG_URL}/{spdxid}.html'
 
-    def get_osadl_url(self, spdxid: str) -> str:
-        """
-        Generate the URL for the OSADL (Open Source Automation Development Lab) page of a license.
-
-        :param spdxid: The SPDX identifier of the license
-        :return: The URL of the OSADL page for the given license
-        """
-        return f'{self.BASE_OSADL_URL}/{spdxid}.txt'
 
 
 #
