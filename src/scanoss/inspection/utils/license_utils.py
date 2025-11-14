@@ -22,8 +22,9 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-from ...scanossbase import ScanossBase
 from scanoss.osadl_copyleft import OsadlCopyleft
+
+from ...scanossbase import ScanossBase
 
 
 class LicenseUtil(ScanossBase):
