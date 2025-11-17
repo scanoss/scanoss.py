@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Upcoming changes...
 
+## [1.41.0] - 2025-11-17
 ### Added
 - Added `--license-sources` (`-ls`) option to copyleft inspection
   - Filter which license sources to check (component_declared, license_file, file_header, file_spdx_tag, scancode)
@@ -748,3 +750,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.39.0]: https://github.com/scanoss/scanoss.py/compare/v1.38.0...v1.39.0
 [1.40.0]: https://github.com/scanoss/scanoss.py/compare/v1.39.0...v1.40.0
 [1.40.1]: https://github.com/scanoss/scanoss.py/compare/v1.40.0...v1.40.1
+[1.41.0]: https://github.com/scanoss/scanoss.py/compare/v1.40.1...v1.41.0
