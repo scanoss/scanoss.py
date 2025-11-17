@@ -579,7 +579,7 @@ Add the following snippet into your `scanoss.json` file
     def test_copyleft_policy_license_sources_with_include_filter(self):
         """
         Test license_sources works with include filter
-        Filter to scancode source and include only GPL-2.0-or-later
+        Filter to scancode source and include MIT (normally not copyleft)
         """
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_name = 'result.json'
@@ -588,18 +588,19 @@ Add the following snippet into your `scanoss.json` file
             filepath=input_file_name,
             format_type='json',
             license_sources=['scancode'],
-            include='GPL-2.0-or-later'
+            include='MIT'
         )
         status, policy_output = copyleft.run()
         details = json.loads(policy_output.details)
 
-        # Should find only GPL-2.0-or-later from scancode
+        # Should find MIT (added via include) and any OSADL copyleft licenses
         self.assertEqual(status, PolicyStatus.POLICY_FAIL.value)
-        if details:  # May be empty if no matches
-            for component in details.get('components', []):
-                for license in component['licenses']:
-                    self.assertEqual(license['spdxid'], 'GPL-2.0-or-later')
-                    self.assertEqual(license['source'], 'scancode')
+        self.assertGreater(len(details.get('components', [])), 0)
+
+        # Verify all licenses are from scancode or unknown (always included)
+        for component in details.get('components', []):
+            for license in component['licenses']:
+                self.assertIn(license['source'], ['scancode', 'unknown'])
 
     def test_copyleft_policy_license_sources_with_exclude_filter(self):
         """
