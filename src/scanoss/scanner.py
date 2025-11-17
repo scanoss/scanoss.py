@@ -394,8 +394,8 @@ class Scanner(ScanossBase):
                 file_count += 1
                 if self.threaded_scan:
                     wfp_size = len(wfp.encode('utf-8'))
-                    # If the WFP is bigger than the max post size and we already have something stored in the scan block,
-                    # add it to the queue
+                    # If the WFP is bigger than the max post size and we already have something
+                    # stored in the scan block, add it to the queue
                     if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
                         self.threaded_scan.queue_add(scan_block)
                         queue_size += 1
@@ -404,7 +404,8 @@ class Scanner(ScanossBase):
                     scan_block += wfp
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
-                    # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue  # noqa: E501
+                    # If the scan request block (group of WFPs) is larger than the POST size
+                    # or we have reached the file limit, add it to the queue
                     if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
                         self.threaded_scan.queue_add(scan_block)
                         queue_size += 1
@@ -413,7 +414,10 @@ class Scanner(ScanossBase):
                     if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
-                            self.print_stderr('Warning: Some errors encounted while scanning. Results might be incomplete.')
+                            self.print_stderr(
+                                'Warning: Some errors encountered while scanning. '
+                                'Results might be incomplete.'
+                            )
                             success = False
             # End for loop
             if self.threaded_scan and scan_block != '':
@@ -659,7 +663,8 @@ class Scanner(ScanossBase):
                 file_count += 1
                 if self.threaded_scan:
                     wfp_size = len(wfp.encode('utf-8'))
-                    # If the WFP is bigger than the max post size and we already have something stored in the scan block, add it to the queue  # noqa: E501
+                    # If the WFP is bigger than the max post size and we already have something
+                    # stored in the scan block, add it to the queue
                     if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
                         self.threaded_scan.queue_add(scan_block)
                         queue_size += 1
@@ -668,7 +673,8 @@ class Scanner(ScanossBase):
                     scan_block += wfp
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
-                    # If the scan request block (group of WFPs) or larger than the POST size or we have reached the file limit, add it to the queue  # noqa: E501
+                    # If the scan request block (group of WFPs) is larger than the POST size
+                    # or we have reached the file limit, add it to the queue
                     if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
                         self.threaded_scan.queue_add(scan_block)
                         queue_size += 1
@@ -678,7 +684,8 @@ class Scanner(ScanossBase):
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
                             self.print_stderr(
-                                'Warning: Some errors encounted while scanning. Results might be incomplete.'
+                                'Warning: Some errors encountered while scanning. '
+                                'Results might be incomplete.'
                             )
                             success = False
 
@@ -799,7 +806,9 @@ class Scanner(ScanossBase):
                             f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.'
                         )
                         if self.debug and cur_size > self.max_post_size:
-                            Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
+                            Scanner.print_stderr(
+                                f'Warning: Post size {cur_size} greater than limit {self.max_post_size}'
+                            )
                         scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
                         if bar:
                             bar.next(batch_files)
