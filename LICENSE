@@ -19,3 +19,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+===============================================================================
+
+In addition, this repository includes an unmodified copy of the OSADL copyleft
+license checklist data (src/scanoss/data/osadl-copyleft.json), which is
+licensed under the Creative Commons Attribution 4.0 International license
+(CC-BY-4.0) by the Open Source Automation Development Lab (OSADL) eG.
+
+The OSADL data file contains its own license header with full attribution
+information.

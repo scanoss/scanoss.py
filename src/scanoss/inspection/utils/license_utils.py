@@ -22,96 +22,89 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-from ...scanossbase import ScanossBase
+from scanoss.osadl import Osadl
 
-DEFAULT_COPYLEFT_LICENSES = {
-    'agpl-3.0-only',
-    'artistic-1.0',
-    'artistic-2.0',
-    'cc-by-sa-4.0',
-    'cddl-1.0',
-    'cddl-1.1',
-    'cecill-2.1',
-    'epl-1.0',
-    'epl-2.0',
-    'gfdl-1.1-only',
-    'gfdl-1.2-only',
-    'gfdl-1.3-only',
-    'gpl-1.0-only',
-    'gpl-2.0-only',
-    'gpl-3.0-only',
-    'lgpl-2.1-only',
-    'lgpl-3.0-only',
-    'mpl-1.1',
-    'mpl-2.0',
-    'sleepycat',
-    'watcom-1.0',
-}
+from ...scanossbase import ScanossBase
 
 
 class LicenseUtil(ScanossBase):
     """
     A utility class for handling software licenses, particularly copyleft licenses.
 
-    This class provides functionality to initialize, manage, and query a set of
-    copyleft licenses. It also offers a method to generate URLs for license information.
+    Uses OSADL (Open Source Automation Development Lab) authoritative copyleft data
+    with optional include/exclude/explicit filters.
     """
 
     BASE_SPDX_ORG_URL = 'https://spdx.org/licenses'
-    BASE_OSADL_URL = 'https://www.osadl.org/fileadmin/checklists/unreflicenses'
 
     def __init__(self, debug: bool = False, trace: bool = True, quiet: bool = False):
         super().__init__(debug, trace, quiet)
-        self.default_copyleft_licenses = set(DEFAULT_COPYLEFT_LICENSES)
-        self.copyleft_licenses = set()
+        self.osadl = Osadl(debug=debug)
+        self.include_licenses = set()
+        self.exclude_licenses = set()
+        self.explicit_licenses = set()
 
     def init(self, include: str = None, exclude: str = None, explicit: str = None):
         """
-        Initialize the set of copyleft licenses based on user input.
+        Initialize copyleft license filters.
 
-        This method allows for customization of the copyleft license set by:
-        - Setting an explicit list of licenses
-        - Including additional licenses to the default set
-        - Excluding specific licenses from the default set
-
-        :param include: Comma-separated string of licenses to include
-        :param exclude: Comma-separated string of licenses to exclude
-        :param explicit: Comma-separated string of licenses to use exclusively
+        :param include: Comma-separated licenses to mark as copyleft (in addition to OSADL)
+        :param exclude: Comma-separated licenses to mark as NOT copyleft (override OSADL)
+        :param explicit: Comma-separated licenses to use exclusively (ignore OSADL)
         """
-        if self.debug:
-            self.print_stderr(f'Include Copyleft licenses: ${include}')
-            self.print_stderr(f'Exclude Copyleft licenses: ${exclude}')
-            self.print_stderr(f'Explicit Copyleft licenses: ${explicit}')
+        # Reset previous filters so init() can be safely called multiple times
+        self.include_licenses.clear()
+        self.exclude_licenses.clear()
+        self.explicit_licenses.clear()
+
+        # Parse explicit list (if provided, ignore OSADL completely)
         if explicit:
-            explicit = explicit.strip()
-        if explicit:
-            exp = [item.strip().lower() for item in explicit.split(',')]
-            self.copyleft_licenses = set(exp)
-            self.print_debug(f'Copyleft licenses: ${self.copyleft_licenses}')
+            self.explicit_licenses = {lic.strip().lower() for lic in explicit.split(',') if lic.strip()}
+            self.print_debug(f'Explicit copyleft licenses: {self.explicit_licenses}')
             return
-        # If no explicit licenses were set, set default ones
-        self.copyleft_licenses = self.default_copyleft_licenses.copy()
+
+        # Parse include list (mark these as copyleft in addition to OSADL)
         if include:
-            include = include.strip()
-        if include:
-            inc = [item.strip().lower() for item in include.split(',')]
-            self.copyleft_licenses.update(inc)
+            self.include_licenses = {lic.strip().lower() for lic in include.split(',') if lic.strip()}
+            self.print_debug(f'Include licenses: {self.include_licenses}')
+
+        # Parse exclude list (mark these as NOT copyleft, overriding OSADL)
         if exclude:
-            exclude = exclude.strip()
-        if exclude:
-            inc = [item.strip().lower() for item in exclude.split(',')]
-            for lic in inc:
-                self.copyleft_licenses.discard(lic)
-        self.print_debug(f'Copyleft licenses: ${self.copyleft_licenses}')
+            self.exclude_licenses = {lic.strip().lower() for lic in exclude.split(',') if lic.strip()}
+            self.print_debug(f'Exclude licenses: {self.exclude_licenses}')
 
     def is_copyleft(self, spdxid: str) -> bool:
         """
-        Check if a given license is considered copyleft.
+        Check if a license is copyleft.
 
-        :param spdxid: The SPDX identifier of the license to check
-        :return: True if the license is copyleft, False otherwise
+        Logic:
+        1. If explicit list provided → check if license in explicit list
+        2. If license in include list → return True
+        3. If license in exclude list → return False
+        4. Otherwise → use OSADL authoritative data
+
+        :param spdxid: SPDX license identifier
+        :return: True if copyleft, False otherwise
         """
-        return spdxid.lower() in self.copyleft_licenses
+        if not spdxid:
+            return False
+
+        spdxid_lc = spdxid.lower()
+
+        # Explicit mode: use only the explicit list
+        if self.explicit_licenses:
+            return spdxid_lc in self.explicit_licenses
+
+        # Include filter: if license in include list, force copyleft=True
+        if spdxid_lc in self.include_licenses:
+            return True
+
+        # Exclude filter: if license in exclude list, force copyleft=False
+        if spdxid_lc in self.exclude_licenses:
+            return False
+
+        # No filters matched, use OSADL authoritative data
+        return self.osadl.is_copyleft(spdxid)
 
     def get_spdx_url(self, spdxid: str) -> str:
         """
@@ -122,14 +115,6 @@ class LicenseUtil(ScanossBase):
         """
         return f'{self.BASE_SPDX_ORG_URL}/{spdxid}.html'
 
-    def get_osadl_url(self, spdxid: str) -> str:
-        """
-        Generate the URL for the OSADL (Open Source Automation Development Lab) page of a license.
-
-        :param spdxid: The SPDX identifier of the license
-        :return: The URL of the OSADL page for the given license
-        """
-        return f'{self.BASE_OSADL_URL}/{spdxid}.txt'
 
 
 #
