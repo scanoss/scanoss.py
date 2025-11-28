@@ -13,6 +13,10 @@ DEFAULT_URL2 = 'https://api.scanoss.com'  # default premium service URL
 
 DEFAULT_API_TIMEOUT = 600
 
+# Batch scanning constants
+DEFAULT_POLL_TIMEOUT = 300  # Maximum time to wait for batch scan completion (seconds)
+DEFAULT_POLL_INTERVALS = [1, 2, 5]  # Progressive backoff intervals for polling (seconds)
+
 DEFAULT_HFH_RANK_THRESHOLD = 5
 DEFAULT_HFH_DEPTH = 1
 DEFAULT_HFH_RECURSIVE_THRESHOLD = 0.8

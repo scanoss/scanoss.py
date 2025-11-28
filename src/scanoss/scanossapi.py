@@ -37,7 +37,7 @@ from pypac.parser import PACFile
 from urllib3.exceptions import InsecureRequestWarning
 
 from . import __version__
-from .constants import DEFAULT_TIMEOUT, MIN_TIMEOUT
+from .constants import DEFAULT_POLL_INTERVALS, DEFAULT_POLL_TIMEOUT, DEFAULT_TIMEOUT, MIN_TIMEOUT
 from .scanossbase import ScanossBase
 
 DEFAULT_URL = 'https://api.osskb.org/scan/direct'  # default free service URL
@@ -242,6 +242,214 @@ class ScanossApi(ScanossBase):
                     f'Warning: Issue writing bad json file - {bad_json_file} ({ee.__class__.__name__}): {ee}'
                 )
             return None
+
+    def scan_batch(  # noqa: PLR0912, PLR0915
+        self, wfp: str, session_id: str, is_final_chunk: bool = False, context: str = None, scan_id: int = None
+    ):
+        """
+        Send a WFP chunk to the batch scanning endpoint
+        :param wfp: WFP chunk to scan
+        :param session_id: Session ID for the batch scan
+        :param is_final_chunk: Whether this is the final chunk (triggers scan execution)
+        :param context: Context to help with identification
+        :param scan_id: ID of the scan being run (usually thread id)
+        :return: True if successful, raises exception on error
+        """
+        request_id = str(uuid.uuid4())
+        form_data = {}
+        if self.sbom:
+            form_data['type'] = self.sbom.get('scan_type')
+            form_data['assets'] = self.sbom.get('assets')
+        if self.scan_format:
+            form_data['format'] = self.scan_format
+        if self.flags:
+            form_data['flags'] = self.flags
+        if context:
+            form_data['context'] = context
+
+        scan_files = {'file': ('%s.wfp' % request_id, wfp)}
+
+        # Build batch URL - replace /scan/direct with /scan/batch, or append if not present
+        if '/scan/direct' in self.url:
+            batch_url = self.url.replace('/scan/direct', '/scan/batch')
+        else:
+            # URL doesn't have /scan/direct, append /scan/batch to base URL
+            base_url = self.url.rstrip('/')
+            batch_url = f'{base_url}/scan/batch'
+
+        # Prepare headers with session ID
+        headers = self.headers.copy()
+        headers['x-request-id'] = request_id
+        headers['x-session-id'] = session_id
+        if is_final_chunk:
+            headers['x-final-chunk'] = 'true'
+
+        r = None
+        retry = 0
+        while retry <= self.retry_limit:
+            retry += 1
+            try:
+                r = None
+                r = self.session.post(
+                    batch_url, files=scan_files, data=form_data, headers=headers, timeout=self.timeout
+                )
+            except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
+                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) POSTing batch data - {e}.')
+                raise Exception(f'ERROR: The SCANOSS batch API request failed for {batch_url}') from e
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if retry > self.retry_limit:
+                    self.print_stderr(f'ERROR: {e.__class__.__name__} POSTing batch data ({request_id}) - {e}')
+                    raise Exception(
+                        f'ERROR: The SCANOSS batch API request timed out ({e.__class__.__name__}) for {batch_url}'
+                    ) from e
+                else:
+                    self.print_stderr(f'Warning: {e.__class__.__name__} communicating with {batch_url}. Retrying...')
+                    time.sleep(5)
+            except Exception as e:
+                self.print_stderr(
+                    f'ERROR: Exception ({e.__class__.__name__}) POSTing batch data ({request_id}) - {e}'
+                )
+                raise Exception(f'ERROR: The SCANOSS batch API request failed for {batch_url}') from e
+            else:
+                if r is None:
+                    if retry > self.retry_limit:
+                        self.save_bad_req_wfp(scan_files, request_id, scan_id)
+                        raise Exception(
+                            f'ERROR: The SCANOSS batch API request ({request_id}) response object is empty for {batch_url}'
+                        )
+                    else:
+                        self.print_stderr(f'Warning: No response received from {batch_url}. Retrying...')
+                        time.sleep(5)
+                elif r.status_code == requests.codes.service_unavailable:
+                    self.print_stderr(
+                        f'ERROR: SCANOSS batch API rejected the scan request ({request_id}) due to '
+                        f'service limits being exceeded'
+                    )
+                    self.print_stderr(f'ERROR: Details: {r.text.strip()}')
+                    raise Exception(
+                        f'ERROR: {r.status_code} - The SCANOSS batch API request ({request_id}) rejected '
+                        f'for {batch_url} due to service limits being exceeded.'
+                    )
+                elif r.status_code >= requests.codes.bad_request:
+                    if retry > self.retry_limit:
+                        self.save_bad_req_wfp(scan_files, request_id, scan_id)
+                        raise Exception(
+                            f'ERROR: The SCANOSS batch API returned the following error: HTTP {r.status_code}, '
+                            f'{r.text.strip()}'
+                        )
+                    else:
+                        self.save_bad_req_wfp(scan_files, request_id, scan_id)
+                        self.print_stderr(
+                            f'Warning: Error response code {r.status_code} ({r.text.strip()}) from '
+                            f'{batch_url}. Retrying...'
+                        )
+                        time.sleep(5)
+                else:
+                    break  # Valid response, break out of the retry loop
+        # End of while loop
+        if r is None:
+            self.save_bad_req_wfp(scan_files, request_id, scan_id)
+            raise Exception(f'ERROR: The SCANOSS batch API request response object is empty for {batch_url}')
+
+        self.print_trace(f'Batch chunk submitted successfully (session: {session_id}, final: {is_final_chunk})')
+        return True
+
+    def poll_scan_status(self, session_id: str, timeout: int = DEFAULT_POLL_TIMEOUT):
+        """
+        Poll the batch scanning endpoint for results
+        :param session_id: Session ID to poll for
+        :param timeout: Maximum time to wait for completion (seconds)
+        :return: JSON result object when status is 'completed'
+        :raises Exception: If status is 'failed' or timeout is exceeded
+        """
+        # Build status URL - replace /scan/direct with /scan/<session_id>, or append if not present
+        if '/scan/direct' in self.url:
+            base_url = self.url.replace('/scan/direct', '/scan')
+        else:
+            # URL doesn't have /scan/direct, append /scan to base URL
+            base_url = f'{self.url.rstrip("/")}/scan'
+        status_url = f'{base_url}/{session_id}'
+
+        headers = self.headers.copy()
+        start_time = time.time()
+        poll_count = 0
+        interval_index = 0
+
+        self.print_debug(f'Polling for batch scan results (session: {session_id})...')
+
+        while True:
+            # Check if we've exceeded the timeout
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
+                raise Exception(
+                    f'ERROR: Batch scan polling timed out after {timeout} seconds for session {session_id}'
+                )
+
+            # Determine polling interval with backoff
+            if interval_index < len(DEFAULT_POLL_INTERVALS):
+                interval = DEFAULT_POLL_INTERVALS[interval_index]
+                if poll_count > 0:  # Don't sleep on first poll
+                    time.sleep(interval)
+                # Progress through intervals, but stay at the last one
+                if poll_count >= 1:
+                    interval_index = min(interval_index + 1, len(DEFAULT_POLL_INTERVALS) - 1)
+            else:
+                # Use last interval if we've gone through all of them
+                time.sleep(DEFAULT_POLL_INTERVALS[-1])
+
+            poll_count += 1
+
+            try:
+                r = self.session.get(status_url, headers=headers, timeout=self.timeout)
+            except (requests.exceptions.SSLError, requests.exceptions.ProxyError) as e:
+                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) polling batch status - {e}.')
+                raise Exception(f'ERROR: The SCANOSS batch status request failed for {status_url}') from e
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                self.print_stderr(
+                    f'Warning: {e.__class__.__name__} polling batch status for {status_url}. Retrying...'
+                )
+                continue  # Retry on timeout/connection errors
+            except Exception as e:
+                self.print_stderr(f'ERROR: Exception ({e.__class__.__name__}) polling batch status - {e}.')
+                raise Exception(f'ERROR: The SCANOSS batch status request failed for {status_url}') from e
+
+            if r.status_code >= requests.codes.bad_request:
+                self.print_stderr(
+                    f'ERROR: Batch status request returned error: HTTP {r.status_code}, {r.text.strip()}'
+                )
+                raise Exception(
+                    f'ERROR: The SCANOSS batch status API returned error: HTTP {r.status_code}, {r.text.strip()}'
+                )
+
+            try:
+                response = r.json()
+            except JSONDecodeError as e:
+                self.print_stderr(f'ERROR: Invalid JSON response from batch status API: {e}')
+                self.print_stderr(f'Response text: {r.text}')
+                raise Exception(f'ERROR: Invalid JSON response from batch status API for session {session_id}') from e
+
+            # Check status field
+            status = response.get('status')
+            if not status:
+                self.print_stderr(f'Warning: No status field in response: {response}')
+                continue
+
+            self.print_trace(f'Batch scan status: {status} (poll #{poll_count}, elapsed: {elapsed:.1f}s)')
+
+            if status == 'completed':
+                self.print_debug(f'Batch scan completed after {elapsed:.1f}s ({poll_count} polls)')
+                # Return the results from the response
+                return response.get('results', response)
+            elif status == 'failed':
+                error_msg = response.get('error', 'Unknown error')
+                self.print_stderr(f'ERROR: Batch scan failed: {error_msg}')
+                raise Exception(f'ERROR: Batch scan failed for session {session_id}: {error_msg}')
+            elif status == 'pending':
+                # Continue polling
+                continue
+            else:
+                self.print_stderr(f'Warning: Unknown status "{status}" for session {session_id}')
+                continue
 
     def save_bad_req_wfp(self, scan_files, request_id, scan_id):
         """

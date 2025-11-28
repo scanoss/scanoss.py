@@ -28,6 +28,7 @@ import queue
 import sys
 import threading
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Dict, List
 
@@ -75,6 +76,11 @@ class ThreadedScanning(ScanossBase):
         self._stop_event = threading.Event()  # Control when scanning threads should terminate
         self._stop_scanning = threading.Event()  # Control if the parent process should abort scanning
         self._threads = []
+        # Batch scanning session management
+        self._session_id = None
+        self._total_chunks = 0
+        self._processed_chunks = 0
+        self._final_chunk = None  # WFP chunk reserved for sequential final submission
         if nb_threads > MAX_ALLOWED_THREADS:
             self.print_msg(f'Warning: Requested threads too large: {nb_threads}. Reducing to {MAX_ALLOWED_THREADS}')
             self.nb_threads = MAX_ALLOWED_THREADS
@@ -170,7 +176,36 @@ class ThreadedScanning(ScanossBase):
         Initiate the threads and process all pending requests
         :return: True if successful, False if error encountered
         """
+        # Generate session ID for batch scanning
+        self._session_id = str(uuid.uuid4())
         qsize = self.inputs.qsize()
+        self._total_chunks = qsize
+        self.print_debug(f'Batch scan session ID: {self._session_id}')
+
+        # Extract the last chunk to submit separately (eliminates race condition)
+        self._final_chunk = None
+        if qsize > 0:
+            # Temporarily extract all items to get the last one
+            temp_chunks = []
+            while not self.inputs.empty():
+                temp_chunks.append(self.inputs.get())
+
+            # Mark all extracted items as done - we're taking over their management
+            for _ in temp_chunks:
+                self.inputs.task_done()
+
+            # Hold back the last chunk for sequential submission
+            self._final_chunk = temp_chunks.pop() if temp_chunks else None
+
+            # Re-queue all other chunks for worker threads (creates new tasks)
+            for chunk in temp_chunks:
+                self.inputs.put(chunk)
+
+            # Update counts: workers process N-1 chunks
+            qsize = len(temp_chunks)
+            self._total_chunks = qsize
+            self.print_debug(f'Reserved final chunk. Workers will process {qsize} chunks.')
+
         if qsize < self.nb_threads:
             self.print_debug(
                 f'Input queue ({qsize}) smaller than requested threads: {self.nb_threads}. Reducing to queue size.'
@@ -194,7 +229,23 @@ class ThreadedScanning(ScanossBase):
         """
         Wait for input queue to complete processing and complete the worker threads
         """
-        self.inputs.join()
+        self.inputs.join()  # Wait for all worker chunks to be processed
+
+        # Now submit the final chunk sequentially (eliminates race condition)
+        if self._final_chunk and not self._errors:
+            try:
+                self.print_debug('Submitting final chunk with is_final_chunk=True...')
+                self.scanapi.scan_batch(
+                    self._final_chunk, session_id=self._session_id, is_final_chunk=True
+                )
+                # Update progress bar for final chunk
+                count = self.__count_files_in_wfp(self._final_chunk)
+                self.update_bar(count)
+                self.print_debug('Final chunk submitted successfully.')
+            except Exception as e:
+                self.print_stderr(f'ERROR: Failed to submit final chunk: {e}')
+                self._errors = True
+
         self._stop_event.set()  # Tell the worker threads to stop
         try:
             for t in self._threads:  # Complete the threads
@@ -202,7 +253,29 @@ class ThreadedScanning(ScanossBase):
         except Exception as e:
             self.print_stderr(f'WARNING: Issue encountered terminating scanning worker threads: {e}')
             self._errors = True
+
+        # After all chunks are submitted, poll for results
+        if not self._errors and self._session_id:
+            self._poll_for_results()
+
         return False if self._errors else True
+
+    def _poll_for_results(self) -> None:
+        """
+        Poll the batch scanning API for results and add them to the output queue
+        """
+        try:
+            self.print_debug(f'Polling for batch scan results (session: {self._session_id})...')
+            results = self.scanapi.poll_scan_status(self._session_id)
+            if results:
+                # Put the batch results into the output queue
+                self.output.put(results)
+                self.print_debug('Batch scan results received and queued.')
+            else:
+                self.print_stderr('Warning: No results returned from batch scan.')
+        except Exception as e:
+            self.print_stderr(f'ERROR: Failed to poll batch scan results: {e}')
+            self._errors = True
 
     def worker_post(self) -> None:
         """
@@ -224,12 +297,22 @@ class ThreadedScanning(ScanossBase):
                         count = self.__count_files_in_wfp(wfp)
                         if wfp is None or wfp == '':
                             self.print_stderr(f'Warning: Empty WFP in request input: {wfp}')
-                        resp = self.scanapi.scan(wfp, scan_id=current_thread)
-                        if resp:
-                            self.output.put(resp)  # Store the output response to later collection
+
+                        # Track progress atomically (for debugging)
+                        with self._lock:
+                            self._processed_chunks += 1
+                            chunk_num = self._processed_chunks
+
+                        # Send WFP chunk to batch API (workers never send final chunk)
+                        self.scanapi.scan_batch(
+                            wfp, session_id=self._session_id, is_final_chunk=False, scan_id=current_thread
+                        )
+
                         self.update_bar(count)
                         self.inputs.task_done()
-                        self.print_trace(f'Request complete ({current_thread}).')
+                        self.print_trace(
+                            f'Batch chunk submitted ({current_thread}, chunk {chunk_num}/{self._total_chunks}).'
+                        )
                 except queue.Empty:
                     self.print_stderr(f'No message available to process ({current_thread}). Checking again...')
                 except Exception as e:
