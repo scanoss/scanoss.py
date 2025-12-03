@@ -174,6 +174,7 @@ class Winnowing(ScanossBase):
         strip_snippet_ids=None,
         skip_md5_ids=None,
         ignore_headers: bool = False,
+        ignore_headers2: bool = False,
     ):
         """
         Instantiate Winnowing class
@@ -201,6 +202,7 @@ class Winnowing(ScanossBase):
         self.strip_snippet_ids = strip_snippet_ids
         self.hpsm = hpsm
         self.ignore_headers = ignore_headers
+        self.ignore_headers2 = ignore_headers2
         self.is_windows = platform.system() == 'Windows'
         self.line_filter = LineFilter(debug=debug, trace=trace, quiet=quiet)
         if hpsm:
@@ -357,6 +359,44 @@ class Winnowing(ScanossBase):
             self.print_debug(f'Stripped snippet ids from {file}')
         return wfp
 
+    def __strip_lines_until_offset(self, file: str, wfp: str, line_offset: int) -> str:
+        """
+        Strip lines from the WFP up to and including the line_offset
+
+        :param file: name of fingerprinted file
+        :param wfp: WFP to clean
+        :param line_offset: line number offset to strip up to
+        :return: updated WFP
+        """
+        if line_offset <= 0:
+            return wfp
+
+        wfp_len = len(wfp)
+        lines = wfp.split('\n')
+        filtered_lines = []
+
+        for line in lines:
+            # Check if line contains snippet data (format: line_number=hash,hash,...)
+            if '=' in line and line[0].isdigit():
+                try:
+                    line_num = int(line.split('=')[0])
+                    # Keep lines that are after the offset
+                    if line_num > line_offset:
+                        filtered_lines.append(line)
+                except (ValueError, IndexError):
+                    # Keep non-snippet lines (like file=, hpsm=, etc.)
+                    filtered_lines.append(line)
+            else:
+                # Keep non-snippet lines (like file=, hpsm=, etc.)
+                filtered_lines.append(line)
+
+        wfp = '\n'.join(filtered_lines)
+
+        if wfp_len > len(wfp):
+            self.print_debug(f'Stripped lines up to offset {line_offset} from {file}')
+
+        return wfp
+
     def __detect_line_endings(self, contents: bytes) -> Tuple[bool, bool, bool]:
         """Detect the types of line endings present in file contents.
 
@@ -447,9 +487,12 @@ class Winnowing(ScanossBase):
 
         # Apply line filter to remove headers, comments, and imports from the beginning (if enabled)
         line_offset = 0
+        line_offset2 = 0
         if self.ignore_headers:
             filtered_contents, line_offset = self.line_filter.filter(file, bin_file, contents)
             contents = filtered_contents
+        if self.ignore_headers2:
+            _, line_offset2 = self.line_filter.filter(file, bin_file, contents)
 
         # Add HPSM (calculated from original contents, not filtered)
         if self.hpsm:
@@ -520,6 +563,10 @@ class Winnowing(ScanossBase):
             self.print_stderr(f'Warning: No WFP content data for {file}')
         elif self.strip_snippet_ids:
             wfp = self.__strip_snippets(file, wfp)
+
+        # Apply line offset filter to remove snippets from filtered lines (if ignore_headers2 is enabled)
+        if self.ignore_headers2 and line_offset2 > 0:
+            wfp = self.__strip_lines_until_offset(file, wfp, line_offset2)
 
         return wfp
 
