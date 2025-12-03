@@ -1101,6 +1101,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             action='store_true',
             help='Ignore license headers, comments and imports at the beginning of files.',
         )
+        p.add_argument(
+            '--ignore-headers2',
+            action='store_true',
+            help='Ignore license headers, comments and imports at the beginning of files (test parameter).',
+        )
 
     # Global Scan/GRPC options
     for p in [
@@ -1394,6 +1399,7 @@ def wfp(parser, args):
         strip_snippet_ids=args.strip_snippet,
         scan_settings=scan_settings,
         ignore_headers=args.ignore_headers,
+        ignore_headers2=args.ignore_headers2,
     )
     if args.stdin:
         contents = sys.stdin.buffer.read()
@@ -1590,6 +1596,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         req_headers=process_req_headers(args.header),
         use_grpc=args.grpc,
         ignore_headers=args.ignore_headers,
+        ignore_headers2=args.ignore_headers2,
     )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
