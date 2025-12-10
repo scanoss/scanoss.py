@@ -33,10 +33,9 @@ SPDX-License-Identifier: MIT
 """
 
 import re
-from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 from .scanossbase import ScanossBase
 
@@ -51,13 +50,6 @@ class LineType(Enum):
     IMPLEMENTATION = "implementation"
 
 
-@dataclass
-class LineInfo:
-    """Information about a code line"""
-    line_number: int  # 1-indexed
-    line_type: LineType
-    content: str
-    stripped_content: str
 
 
 class LanguagePatterns:
@@ -272,11 +264,8 @@ class LineFilter(ScanossBase):
         total_lines = len(lines)
         self.print_debug(f'Analyzing {total_lines} lines for file: {file}')
 
-        # Analyze lines
-        line_infos = self.analyze_lines(lines, language)
-
-        # Find first implementation line
-        implementation_start = self._find_implementation_start(line_infos)
+        # Find first implementation line (optimized - stops at first match)
+        implementation_start = self.find_first_implementation_line(lines, language)
 
         # If no implementation, return empty
         if implementation_start is None or implementation_start > len(lines):
@@ -303,29 +292,6 @@ class LineFilter(ScanossBase):
         filtered_content = ''.join(filtered_lines)
         return filtered_content.encode('utf-8'), line_offset
 
-    def _find_implementation_start(self, line_infos: List[LineInfo]) -> Optional[int]:
-        """
-        Find first implementation line
-
-        :param line_infos: List of analyzed line information
-        :return: Line number where implementation starts (1-indexed), or None if not found
-        """
-        # Count line types for debug logging
-        license_count = sum(1 for info in line_infos if info.line_type == LineType.LICENSE_HEADER)
-        comment_count = sum(1 for info in line_infos if info.line_type == LineType.COMMENT)
-        import_count = sum(1 for info in line_infos if info.line_type == LineType.IMPORT)
-
-        if license_count > 0:
-            self.print_debug(f'Found {license_count} license header lines')
-        if comment_count > 0:
-            self.print_debug(f'Found {comment_count} comment lines')
-        if import_count > 0:
-            self.print_debug(f'Found {import_count} import lines')
-
-        for info in line_infos:
-            if info.line_type == LineType.IMPLEMENTATION:
-                return info.line_number
-        return None
 
     def detect_language(self, file_path: str) -> Optional[str]:
         """Detect language based on file extension"""
@@ -466,14 +432,19 @@ class LineFilter(ScanossBase):
         patterns = self.patterns.IMPORT_PATTERNS[language]
         return any(re.match(pattern, line) for pattern in patterns)
 
-    def analyze_lines(self, lines: List[str], language: str) -> List[LineInfo]:
-        """Analyze all lines and classify them"""
-        line_infos = []
+    def find_first_implementation_line(self, lines: list[str], language: str) -> Optional[int]:
+        """
+        Find the line number where implementation begins (optimized version).
+        Returns as soon as the first implementation line is found.
+
+        :param lines: List of code lines
+        :param language: Programming language
+        :return: Line number (1-indexed) where implementation starts, or None if not found
+        """
         in_multiline_comment = False
         in_license_section = False
         in_import_block = False  # To handle import blocks in Go
         consecutive_imports_count = 0
-        first_implementation_found = False
 
         for i, line in enumerate(lines):
             line_number = i + 1
@@ -482,12 +453,10 @@ class LineFilter(ScanossBase):
             # Shebang (only first line)
             if i == 0 and self.is_shebang(line):
                 self.print_debug(f'Line {line_number}: Detected shebang')
-                line_infos.append(LineInfo(line_number, LineType.SHEBANG, line, stripped))
                 continue
 
             # Blank line
             if self.is_blank_line(line):
-                line_infos.append(LineInfo(line_number, LineType.BLANK, line, stripped))
                 # Blank lines don't break import sequences
                 continue
 
@@ -500,16 +469,14 @@ class LineFilter(ScanossBase):
                     if not in_license_section:
                         self.print_debug(f'Line {line_number}: Detected license header section')
                     in_license_section = True
-                    line_infos.append(LineInfo(line_number, LineType.LICENSE_HEADER, line, stripped))
                 else:
                     # If still in license section (first lines)
                     if in_license_section and line_number < 50:
-                        line_infos.append(LineInfo(line_number, LineType.LICENSE_HEADER, line, stripped))
+                        pass  # Still in license section
                     else:
                         if in_license_section:
                             self.print_debug(f'Line {line_number}: End of license header section')
                         in_license_section = False
-                        line_infos.append(LineInfo(line_number, LineType.COMMENT, line, stripped))
                 continue
 
             # If not a comment but we find a non-empty line, end license section
@@ -521,94 +488,31 @@ class LineFilter(ScanossBase):
                 if stripped.startswith('import ('):
                     self.print_debug(f'Line {line_number}: Detected Go import block start')
                     in_import_block = True
-                    line_infos.append(LineInfo(line_number, LineType.IMPORT, line, stripped))
                     continue
                 elif in_import_block:
                     if stripped == ')':
                         self.print_debug(f'Line {line_number}: Detected Go import block end')
                         in_import_block = False
-                        line_infos.append(LineInfo(line_number, LineType.IMPORT, line, stripped))
                         continue
                     elif stripped.startswith('"') or stripped.startswith('_'):
                         # It's part of the import block
-                        line_infos.append(LineInfo(line_number, LineType.IMPORT, line, stripped))
                         continue
 
             # Check if it's an import
             if self.is_import(line, language):
                 if consecutive_imports_count == 0:
                     self.print_debug(f'Line {line_number}: Detected import section')
-                line_infos.append(LineInfo(line_number, LineType.IMPORT, line, stripped))
                 consecutive_imports_count += 1
                 continue
 
             # Reset consecutive imports counter when we find real code
             consecutive_imports_count = 0
 
-            # If we get here, it's implementation code
-            if not first_implementation_found:
-                self.print_debug(f'Line {line_number}: First implementation line detected')
-                first_implementation_found = True
-            line_infos.append(LineInfo(line_number, LineType.IMPLEMENTATION, line, stripped))
+            # If we get here, it's implementation code - return immediately!
+            self.print_debug(f'Line {line_number}: First implementation line detected')
+            return line_number
 
-        return line_infos
-
-    def find_implementation_start(self, file_path: str, max_lines_to_analyze: Optional[int] = None) -> Dict:
-        """
-        Find where real code implementation begins
-
-        :param file_path: Path to source code file
-        :param max_lines_to_analyze: Maximum number of lines to analyze (None = all)
-        :return: Dict with analysis information
-        """
-        # Read file
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            if max_lines_to_analyze:
-                lines = []
-                for _ in range(max_lines_to_analyze):
-                    line = f.readline()
-                    if not line:
-                        break
-                    lines.append(line)
-            else:
-                lines = f.readlines()
-
-        # Detect language
-        language = self.detect_language(file_path)
-        if not language:
-            # Unsupported language, return line 1
-            return {
-                'implementation_start_line': 1,
-                'total_lines_analyzed': len(lines),
-                'language': None,
-                'line_types': {},
-                'lines_detail': []
-            }
-
-        # Analyze lines
-        line_infos = self.analyze_lines(lines, language)
-
-        # Find first implementation line
-        implementation_start = self._find_implementation_start(line_infos)
-
-        # If no implementation line was found
-        if implementation_start is None:
-            implementation_start = len(lines) + 1
-
-        # Count line types
-        line_types_count = {}
-        for line_type in LineType:
-            count = sum(1 for info in line_infos if info.line_type == line_type)
-            if count > 0:
-                line_types_count[line_type.value] = count
-
-        return {
-            'implementation_start_line': implementation_start,
-            'total_lines_analyzed': len(lines),
-            'language': language,
-            'line_types': line_types_count,
-            'lines_detail': line_infos
-        }
+        return None
 
 
 #
