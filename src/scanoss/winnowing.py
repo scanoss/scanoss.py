@@ -173,8 +173,7 @@ class Winnowing(ScanossBase):
         strip_hpsm_ids=None,
         strip_snippet_ids=None,
         skip_md5_ids=None,
-        ignore_headers: bool = False,
-        ignore_headers2: bool = False,
+        skip_headers: bool = False,
     ):
         """
         Instantiate Winnowing class
@@ -201,8 +200,7 @@ class Winnowing(ScanossBase):
         self.strip_hpsm_ids = strip_hpsm_ids
         self.strip_snippet_ids = strip_snippet_ids
         self.hpsm = hpsm
-        self.ignore_headers = ignore_headers
-        self.ignore_headers2 = ignore_headers2
+        self.skip_headers = skip_headers
         self.is_windows = platform.system() == 'Windows'
         self.line_filter = LineFilter(debug=debug, trace=trace, quiet=quiet)
         if hpsm:
@@ -374,6 +372,7 @@ class Winnowing(ScanossBase):
         wfp_len = len(wfp)
         lines = wfp.split('\n')
         filtered_lines = []
+        start_line_added = False
 
         for line in lines:
             # Check if line contains snippet data (format: line_number=hash,hash,...)
@@ -382,6 +381,10 @@ class Winnowing(ScanossBase):
                     line_num = int(line.split('=')[0])
                     # Keep lines that are after the offset
                     if line_num > line_offset:
+                        # Add start_line tag before the first snippet line
+                        if not start_line_added:
+                            filtered_lines.append(f'start_line={line_offset}')
+                            start_line_added = True
                         filtered_lines.append(line)
                 except (ValueError, IndexError):
                     # Keep non-snippet lines (like file=, hpsm=, etc.)
@@ -485,15 +488,6 @@ class Winnowing(ScanossBase):
         if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
 
-        # Apply line filter to remove headers, comments, and imports from the beginning (if enabled)
-        line_offset = 0
-        line_offset2 = 0
-        if self.ignore_headers:
-            filtered_contents, line_offset = self.line_filter.filter(file, bin_file, contents)
-            contents = filtered_contents
-        if self.ignore_headers2:
-            _, line_offset2 = self.line_filter.filter(file, bin_file, contents)
-
         # Add HPSM (calculated from original contents, not filtered)
         if self.hpsm:
             hpsm = self.__strip_hpsm(file, self.calc_hpsm(contents))
@@ -503,7 +497,7 @@ class Winnowing(ScanossBase):
         # Initialize variables
         gram = ''
         window = []
-        line = 1 + line_offset  # Start line counter from after filtered lines
+        line = 1  # Start line counter from after filtered lines
         last_hash = MAX_CRC32
         last_line = 0
         output = ''
@@ -564,9 +558,11 @@ class Winnowing(ScanossBase):
         elif self.strip_snippet_ids:
             wfp = self.__strip_snippets(file, wfp)
 
-        # Apply line offset filter to remove snippets from filtered lines (if ignore_headers2 is enabled)
-        if self.ignore_headers2 and line_offset2 > 0:
-            wfp = self.__strip_lines_until_offset(file, wfp, line_offset2)
+        # Apply line filter to remove headers, comments, and imports from the beginning (if enabled)
+        if self.skip_headers:
+            _, line_offset = self.line_filter.filter(file, bin_file, contents)
+            if line_offset > 0:
+                wfp = self.__strip_lines_until_offset(file, wfp, line_offset)
 
         return wfp
 

@@ -388,6 +388,187 @@ class MyTestCase(unittest.TestCase):
         # Should generate fh2 (has line endings)
         self.assertIn('fh2=', wfp)
 
+    def test_skip_headers_flag(self):
+        """Test skip_headers flag functionality."""
+        # Sample Python file with headers, imports, and implementation
+        test_content = b"""# Copyright 2024 SCANOSS
+# Licensed under MIT License
+# All rights reserved
+
+import os
+import sys
+import json
+from pathlib import Path
+
+def function1():
+    data = {"key": "value"}
+    return json.dumps(data)
+
+def function2():
+    path = Path("/tmp")
+    return str(path)
+
+class MyClass:
+    def __init__(self):
+        self.data = []
+
+    def add_item(self, item):
+        self.data.append(item)
+"""
+
+        # Test WITHOUT skip_headers
+        winnowing_no_skip = Winnowing(debug=False, skip_headers=False)
+        wfp_no_skip = winnowing_no_skip.wfp_for_contents('test.py', False, test_content)
+
+        # Test WITH skip_headers
+        winnowing_skip = Winnowing(debug=False, skip_headers=True)
+        wfp_skip = winnowing_skip.wfp_for_contents('test.py', False, test_content)
+
+        print(f'WFP without skip_headers:\n{wfp_no_skip}')
+        print(f'\nWFP with skip_headers:\n{wfp_skip}')
+
+        # Both should have file= line
+        self.assertIn('file=', wfp_no_skip)
+        self.assertIn('file=', wfp_skip)
+
+        # Extract snippet line numbers from both WFPs
+        def extract_line_numbers(wfp):
+            lines = wfp.split('\n')
+            line_numbers = []
+            for line in lines:
+                if '=' in line and line.split('=')[0].isdigit():
+                    line_numbers.append(int(line.split('=')[0]))
+            return line_numbers
+
+        lines_no_skip = extract_line_numbers(wfp_no_skip)
+        lines_skip = extract_line_numbers(wfp_skip)
+
+        # Both should have snippet lines
+        self.assertGreater(len(lines_no_skip), 0, "Should have snippets without skip_headers")
+        self.assertGreater(len(lines_skip), 0, "Should have snippets with skip_headers")
+
+        # First line number with skip_headers should be HIGHER (skipped headers/imports)
+        # Line 10 in the content is "def function1():" which is where real code starts
+        min_line_no_skip = min(lines_no_skip)
+        min_line_skip = min(lines_skip)
+
+        print(f'First snippet line without skip_headers: {min_line_no_skip}')
+        print(f'First snippet line with skip_headers: {min_line_skip}')
+
+        # With skip_headers, first line should be after imports (around line 10+)
+        # Without skip_headers, first line should be earlier (around line 5-8)
+        self.assertGreater(
+            min_line_skip,
+            min_line_no_skip,
+            "skip_headers should result in higher starting line number"
+        )
+
+        # Verify line 10+ (implementation) appears in skip_headers output
+        self.assertGreaterEqual(
+            min_line_skip,
+            10,
+            "With skip_headers, snippets should start at implementation (line 10+)"
+        )
+
+        # Verify start_line tag is present in skip_headers output
+        self.assertIn('start_line=', wfp_skip, "start_line tag should be present with skip_headers")
+        self.assertNotIn('start_line=', wfp_no_skip, "start_line tag should NOT be present without skip_headers")
+
+        # Extract and validate start_line value
+        start_line_value = None
+        for line in wfp_skip.split('\n'):
+            if line.startswith('start_line='):
+                start_line_value = int(line.split('=')[1])
+                break
+
+        self.assertIsNotNone(start_line_value, "start_line value should be found")
+        self.assertGreater(start_line_value, 0, "start_line should indicate skipped lines")
+        print(f'start_line tag value: {start_line_value}')
+
+    def test_skip_headers_with_different_languages(self):
+        """Test skip_headers with different programming languages."""
+
+        # JavaScript test
+        js_content = b"""/*
+ * Copyright 2024
+ * Licensed under MIT
+ */
+
+import React from 'react';
+import { Component } from 'react';
+
+class App extends Component {
+    render() {
+        return <div>Hello</div>;
+    }
+}
+"""
+        winnowing_js = Winnowing(debug=False, skip_headers=True)
+        wfp_js = winnowing_js.wfp_for_contents('test.js', False, js_content)
+
+        print(f'JavaScript WFP with skip_headers:\n{wfp_js}')
+
+        # Should have snippets starting from class definition (not imports)
+        self.assertIn('file=', wfp_js)
+
+        # Go test
+        go_content = b"""// Copyright 2024
+// Licensed under MIT
+
+package main
+
+import (
+    "fmt"
+    "os"
+)
+
+func main() {
+    fmt.Println("Hello")
+}
+"""
+        winnowing_go = Winnowing(debug=False, skip_headers=True)
+        wfp_go = winnowing_go.wfp_for_contents('test.go', False, go_content)
+
+        print(f'Go WFP with skip_headers:\n{wfp_go}')
+
+        # Should have snippets starting from func main (not package/imports)
+        self.assertIn('file=', wfp_go)
+
+    def test_skip_headers_binary_file(self):
+        """Test that skip_headers doesn't affect binary files."""
+        winnowing_skip = Winnowing(debug=False, skip_headers=True)
+        binary_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR'
+
+        wfp = winnowing_skip.wfp_for_contents('test.png', True, binary_content)
+
+        print(f'Binary file WFP with skip_headers:\n{wfp}')
+
+        # Should still generate WFP for binary files
+        self.assertIn('file=', wfp)
+        # Binary files are not processed for snippets
+        self.assertNotIn('\n1=', wfp)
+
+    def test_skip_headers_empty_implementation(self):
+        """Test skip_headers when file has only headers/imports."""
+        test_content = b"""# Copyright 2024
+# MIT License
+
+import os
+import sys
+"""
+
+        winnowing_skip = Winnowing(debug=False, skip_headers=True)
+        wfp = winnowing_skip.wfp_for_contents('test.py', False, test_content)
+
+        print(f'WFP for file with only headers:\n{wfp}')
+
+        # Should still have file= line
+        self.assertIn('file=', wfp)
+        # But no snippets (no implementation)
+        lines = wfp.split('\n')
+        snippet_lines = [line for line in lines if '=' in line and line.split('=')[0].isdigit()]
+        self.assertEqual(len(snippet_lines), 0, "No snippets expected for header-only file")
+
 
 if __name__ == '__main__':
     unittest.main()
