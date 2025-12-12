@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Upcoming changes...
+## [1.40.2] - 2025-12-12
+### Added
+- Added flag `--skip-headers` to fingerprint and scan commands. 
 
 ## [1.41.1] - 2025-11-17
 - Use `components` instead of `purls` for vulnerability detection when converting to CycloneDX format in Folder Scan
