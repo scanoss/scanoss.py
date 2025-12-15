@@ -37,7 +37,7 @@ from typing import Tuple
 from binaryornot.check import is_binary
 from crc32c import crc32c
 
-from .line_filter import LineFilter
+from .header_filter import HeaderFilter
 from .scanossbase import ScanossBase
 
 # Winnowing configuration. DO NOT CHANGE.
@@ -202,7 +202,7 @@ class Winnowing(ScanossBase):
         self.hpsm = hpsm
         self.skip_headers = skip_headers
         self.is_windows = platform.system() == 'Windows'
-        self.line_filter = LineFilter(debug=debug, trace=trace, quiet=quiet)
+        self.header_filter = HeaderFilter(debug=debug, trace=trace, quiet=quiet)
         if hpsm:
             self.crc8_maxim_dow_table = []
             self.crc8_generate_table()
@@ -560,7 +560,7 @@ class Winnowing(ScanossBase):
 
         # Apply line filter to remove headers, comments, and imports from the beginning (if enabled)
         if self.skip_headers:
-            _, line_offset = self.line_filter.filter(file, bin_file, contents)
+            _, line_offset = self.header_filter.filter(file, bin_file, contents)
             if line_offset > 0:
                 wfp = self.__strip_lines_until_offset(file, wfp, line_offset)
 
