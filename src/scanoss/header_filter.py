@@ -202,7 +202,7 @@ class LanguagePatterns:
     ]
 
 
-class LineFilter(ScanossBase):
+class HeaderFilter(ScanossBase):
     """
     Source code file analyzer that filters headers, comments and imports.
 
@@ -212,7 +212,7 @@ class LineFilter(ScanossBase):
 
     def __init__(self, max_lines: Optional[int] = None, debug: bool = False, trace: bool = False, quiet: bool = False):
         """
-        Initialize LineFilter
+        Initialize HeaderFilter
         Parameters
         ----------
             max_lines: int
@@ -236,19 +236,11 @@ class LineFilter(ScanossBase):
             - filtered_content: Filtered content from where implementation code begins
             - line_offset: Number of lines skipped from the beginning (0 if no filtering)
         """
-        self.print_debug(f'LineFilter processing file: {file}')
+        self.print_debug(f'HeaderFilter processing file: {file}')
 
         # If binary file, return without processing
         if bin_file:
             self.print_debug(f'Skipping line filter for binary file: {file}')
-            return contents, 0
-
-        try:
-            # Decode content to UTF-8
-            text_content = contents.decode('utf-8')
-        except UnicodeDecodeError:
-            # If decoding fails, return original content
-            self.print_debug(f'Skipping line filter due to UTF-8 decode error: {file}')
             return contents, 0
 
         # Detect language
@@ -257,6 +249,14 @@ class LineFilter(ScanossBase):
         # If language is not supported, return original content
         if not language:
             self.print_debug(f'Skipping line filter for unsupported language: {file}')
+            return contents, 0
+        
+        try:
+            # Decode content to UTF-8
+            text_content = contents.decode('utf-8')
+        except UnicodeDecodeError:
+            # If decoding fails, return original content
+            self.print_debug(f'Skipping line filter due to UTF-8 decode error: {file}')
             return contents, 0
 
         # Split into lines keeping line endings
@@ -516,5 +516,5 @@ class LineFilter(ScanossBase):
 
 
 #
-# End of LineFilter Class
+# End of HeaderFilter Class
 #
