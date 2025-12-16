@@ -139,6 +139,124 @@
               }
             }
           }
+        },
+        "proxy": {
+          "type": "object",
+          "description": "Proxy configuration for API requests",
+          "properties": {
+            "host": {
+              "type": "string",
+              "description": "Proxy host URL"
+            }
+          }
+        },
+        "http_config": {
+          "type": "object",
+          "description": "HTTP configuration for API requests",
+          "properties": {
+            "base_uri": {
+              "type": "string",
+              "description": "Base URI for API requests"
+            },
+            "ignore_cert_errors": {
+              "type": "boolean",
+              "description": "Whether to ignore certificate errors"
+            }
+          }
+        },
+        "file_snippet": {
+          "type": "object",
+          "description": "File snippet scanning configuration",
+          "properties": {
+            "proxy": {
+              "type": "object",
+              "description": "Proxy configuration for file snippet requests",
+              "properties": {
+                "host": {
+                  "type": "string",
+                  "description": "Proxy host URL"
+                }
+              }
+            },
+            "http_config": {
+              "type": "object",
+              "description": "HTTP configuration for file snippet requests",
+              "properties": {
+                "base_uri": {
+                  "type": "string",
+                  "description": "Base URI for file snippet API requests"
+                },
+                "ignore_cert_errors": {
+                  "type": "boolean",
+                  "description": "Whether to ignore certificate errors"
+                }
+              }
+            },
+            "ranking_enabled": {
+              "type": ["boolean", "null"],
+              "description": "Enable/disable ranking",
+              "default": null
+            },
+            "ranking_threshold": {
+              "type": ["integer", "null"],
+              "description": "Ranking threshold value. A value of -1 defers to server configuration",
+              "minimum": -1,
+              "maximum": 99,
+              "default": 0
+            },
+            "min_snippet_hits": {
+              "type": "integer",
+              "description": "Minimum snippet hits required",
+              "minimum": 0,
+              "default": 0
+            },
+            "min_snippet_lines": {
+              "type": "integer",
+              "description": "Minimum snippet lines required",
+              "minimum": 0,
+              "default": 0
+            },
+            "honour_file_exts": {
+              "type": ["boolean", "null"],
+              "description": "Ignores file extensions. When not set, defers to server configuration.",
+              "default": true
+            },
+            "dependency_analysis": {
+              "type": "boolean",
+              "description": "Enable dependency analysis"
+            },
+            "skip_headers": {
+              "type": "boolean",
+              "description": "Skip license headers, comments and imports at the beginning of files",
+              "default": false
+            },
+            "skip_headers_limit": {
+              "type": "integer",
+              "description": "Maximum number of lines to skip when filtering headers",
+              "default": 0
+            }
+          }
+        },
+        "hpfm": {
+          "type": "object",
+          "description": "HPFM (High Precision Folder Matching) configuration",
+          "properties": {
+            "ranking_enabled": {
+              "type": "boolean",
+              "description": "Enable ranking for HPFM"
+            },
+            "ranking_threshold": {
+              "type": ["integer", "null"],
+              "description": "Ranking threshold value. A value of -1 defers to server configuration",
+              "minimum": -1,
+              "maximum": 99,
+              "default": 0
+            }
+          }
+        },
+        "container": {
+          "type": "object",
+          "description": "Container scanning configuration"
         }
       }
     },
