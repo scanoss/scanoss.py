@@ -331,7 +331,9 @@ class HeaderFilter(ScanossBase):
             '.cljs': 'clojure',
             '.m': 'cpp',  # Objective-C
             '.mm': 'cpp',  # Objective-C++
-            '.sh': 'python',  # Shell scripts use # for comments
+            # Shell scripts share Python's # comment style, but lack dedicated
+            # import patterns (source/. commands won't be filtered)
+            '.sh': 'python',
             '.bash': 'python',
             '.zsh': 'python',
             '.fish': 'python',
@@ -496,9 +498,6 @@ class HeaderFilter(ScanossBase):
                     self.print_debug(f'Line {line_number}: Detected import section')
                 consecutive_imports_count += 1
                 continue
-
-            # Reset consecutive imports counter when we find real code
-            consecutive_imports_count = 0
 
             # If we get here, it's implementation code - return immediately!
             self.print_debug(f'Line {line_number}: First implementation line detected')
