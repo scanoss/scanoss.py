@@ -366,27 +366,27 @@ class Winnowing(ScanossBase):
         :param line_offset: line number offset to strip up to
         :return: updated WFP
         """
+        # No offset specified, return original WFP
         if line_offset <= 0:
             return wfp
-
-        wfp_len = len(wfp)
         lines = wfp.split('\n')
         filtered_lines = []
         start_line_added = False
-
         for line in lines:
-            # Check if line contains snippet data (format: line_number=hash,hash,...)
-            if '=' in line and line[0].isdigit():
+            # Check if a line contains snippet data (format: line_number=hash,hash,...)
+            line_details = line.split('=')
+            if line_details[0].isdigit():
                 try:
-                    line_num = int(line.split('=')[0])
+                    line_num = int(line_details[0])
                     # Keep lines that are after the offset
-                    if line_num > line_offset:
-                        # Add start_line tag before the first snippet line
+                    if line_num > line_offset:  # TODO should it be > or >= ?
+                        # Add the start_line tag before the first snippet line
                         if not start_line_added:
                             filtered_lines.append(f'start_line={line_offset}')
                             start_line_added = True
                         filtered_lines.append(line)
-                except (ValueError, IndexError):
+                except (ValueError, IndexError) as e:
+                    self.print_stderr(f'Error decoding line number from line {line} in {file}: {e}')
                     # Keep non-snippet lines (like file=, hpsm=, etc.)
                     filtered_lines.append(line)
             else:
@@ -394,7 +394,7 @@ class Winnowing(ScanossBase):
                 filtered_lines.append(line)
         # End for loop comment
         wfp = '\n'.join(filtered_lines)
-        if wfp_len > len(wfp):
+        if start_line_added:
             self.print_debug(f'Stripped lines up to offset {line_offset} from {file}')
         return wfp
 
@@ -407,13 +407,14 @@ class Winnowing(ScanossBase):
         Returns:
             Tuple of (has_crlf, has_lf_only, has_cr_only, has_mixed) indicating which line ending types are present.
         """
+        if not contents:
+            self.print_debug('Warning: No file contents provided')
         has_crlf = b'\r\n' in contents
         # For LF detection, we need to find LF that's not part of CRLF
         content_without_crlf = contents.replace(b'\r\n', b'')
         has_standalone_lf = b'\n' in content_without_crlf
         # For CR detection, we need to find CR that's not part of CRLF
         has_standalone_cr = b'\r' in content_without_crlf
-
         return has_crlf, has_standalone_lf, has_standalone_cr
 
     def __calculate_opposite_line_ending_hash(self, contents: bytes):
@@ -429,13 +430,11 @@ class Winnowing(ScanossBase):
             Hash with opposite line endings as hex string, or None if no line endings detected.
         """
         has_crlf, has_standalone_lf, has_standalone_cr = self.__detect_line_endings(contents)
-
         if not has_crlf and not has_standalone_lf and not has_standalone_cr:
+            self.print_debug('No line endings detected in file contents')
             return None
-
-        # Normalize all line endings to LF first
+        # Normalise all line endings to LF first
         normalized = contents.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
-
         # Determine the dominant line ending type
         if has_crlf and not has_standalone_lf and not has_standalone_cr:
             # File is Windows (CRLF) - produce Unix (LF) hash
@@ -443,7 +442,7 @@ class Winnowing(ScanossBase):
         else:
             # File is Unix (LF/CR) or mixed - produce Windows (CRLF) hash
             opposite_contents = normalized.replace(b'\n', b'\r\n')
-
+        # Return the MD5 hash of the opposite contents
         return hashlib.md5(opposite_contents).hexdigest()
 
     def wfp_for_contents(self, file: str, bin_file: bool, contents: bytes) -> str:  # noqa: PLR0912, PLR0915
@@ -465,25 +464,24 @@ class Winnowing(ScanossBase):
         # Print file line
         content_length = len(contents)
         original_filename = file
-
         if self.is_windows:
             original_filename = file.replace('\\', '/')
         wfp_filename = repr(original_filename).strip("'")  # return a utf-8 compatible version of the filename
-        if self.obfuscate:  # hide the real size of the file and its name, but keep the suffix
+        # hide the real size of the file and its name but keep the suffix
+        if self.obfuscate:
             wfp_filename = f'{self.ob_count}{pathlib.Path(original_filename).suffix}'
             self.ob_count = self.ob_count + 1
             self.file_map[wfp_filename] = original_filename  # Save the file name map for later (reverse lookup)
-
+        # Construct the WFP header
         wfp = 'file={0},{1},{2}\n'.format(file_md5, content_length, wfp_filename)
-
-        # Add opposite line ending hash based on line ending analysis
+        # Add the opposite line ending hash based on line ending analysis
         if not bin_file:
             opposite_hash = self.__calculate_opposite_line_ending_hash(contents)
             if opposite_hash is not None:
                 wfp += f'fh2={opposite_hash}\n'
-
         # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
-        if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
+        decoded_contents = contents.decode('utf-8', 'ignore')
+        if bin_file or self.skip_snippets or self.__skip_snippets(file, decoded_contents):
             return wfp
         # Add HPSM (calculated from original contents, not filtered)
         if self.hpsm:
@@ -548,18 +546,19 @@ class Winnowing(ScanossBase):
                 wfp += output + '\n'
             else:
                 self.print_debug(f'Warning: skipping output in WFP for {file} - "{output}"')
-
+        # Warn if we don't have any WFP content
         if wfp is None or wfp == '':
             self.print_stderr(f'Warning: No WFP content data for {file}')
-        elif self.strip_snippet_ids:
-            wfp = self.__strip_snippets(file, wfp)
-
-        # Apply line filter to remove headers, comments, and imports from the beginning (if enabled)
-        if self.skip_headers:
-            line_offset = self.header_filter.filter(file, bin_file, contents)
-            if line_offset > 0:
-                wfp = self.__strip_lines_until_offset(file, wfp, line_offset)
-
+        else:
+            # Apply line filter to remove headers, comments, and imports from the beginning (if enabled)
+            if self.skip_headers:
+                line_offset = self.header_filter.filter(file, decoded_contents)
+                if line_offset > 0:
+                    wfp = self.__strip_lines_until_offset(file, wfp, line_offset)
+            # Strip snippet IDs from the WFP (if enabled)
+            if self.strip_snippet_ids:
+                wfp = self.__strip_snippets(file, wfp)
+        # Return the WFP contents
         return wfp
 
     def calc_hpsm(self, content):

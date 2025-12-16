@@ -1098,6 +1098,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p.add_argument('--strip-snippet', '-N', type=str, action='append', help='Strip Snippet ID string from WFP.')
         p.add_argument(
             '--skip-headers',
+            '-skh',
             action='store_true',
             help='Skip license headers, comments and imports at the beginning of files.',
         )
