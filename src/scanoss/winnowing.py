@@ -493,7 +493,7 @@ class Winnowing(ScanossBase):
         # Initialize variables
         gram = ''
         window = []
-        line = 1  # Start line counter from after filtered lines
+        line = 1  # Line counter for WFP generation
         last_hash = MAX_CRC32
         last_line = 0
         output = ''
