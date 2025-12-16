@@ -335,3 +335,107 @@ class ScanossSettings(ScanossBase):
             List: Min and max sizes to skip
         """
         return self.data.get('settings', {}).get('skip', {}).get('sizes', {}).get(operation_type, [])
+
+    def get_file_snippet_settings(self) -> dict:
+        """
+        Get the file_snippet settings section
+        Returns:
+            dict: File snippet settings
+        """
+        return self.data.get('settings', {}).get('file_snippet', {})
+
+    def get_min_snippet_hits(self) -> Optional[int]:
+        """
+        Get the minimum snippet hits required
+        Returns:
+            int or None: Minimum snippet hits, or None if not set
+        """
+        return self.get_file_snippet_settings().get('min_snippet_hits')
+
+    def get_min_snippet_lines(self) -> Optional[int]:
+        """
+        Get the minimum snippet lines required
+        Returns:
+            int or None: Minimum snippet lines, or None if not set
+        """
+        return self.get_file_snippet_settings().get('min_snippet_lines')
+
+    def get_snippet_range_tolerance(self) -> Optional[int]:
+        """
+        Get the snippet range tolerance
+        Returns:
+            int or None: Snippet range tolerance, or None if not set
+        """
+        return self.get_file_snippet_settings().get('snippet_range_tolerance')
+
+    def get_ranking_enabled(self) -> Optional[bool]:
+        """
+        Get whether ranking is enabled
+        Returns:
+            bool or None: True if enabled, False if disabled, None if not set
+        """
+        return self.get_file_snippet_settings().get('ranking_enabled')
+
+    def get_ranking_threshold(self) -> Optional[int]:
+        """
+        Get the ranking threshold value
+        Returns:
+            int or None: Ranking threshold, or None if not set
+        """
+        return self.get_file_snippet_settings().get('ranking_threshold')
+
+    def get_honour_file_exts(self) -> Optional[bool]:
+        """
+        Get whether to honour file extensions
+        Returns:
+            bool or None: True to honour, False to ignore, None if not set
+        """
+        return self.get_file_snippet_settings().get('honour_file_exts')
+
+    def get_skip_headers_limit(self) -> int:
+        """
+        Get the skip headers limit value
+        Returns:
+            int: Skip headers limit, or 0 if not set
+        """
+        return self.get_file_snippet_settings().get('skip_headers_limit', 0)
+
+    def get_skip_headers(self) -> bool:
+        """
+        Get whether to skip headers
+        Returns:
+            bool: True to skip headers, False otherwise (default)
+        """
+        return self.get_file_snippet_settings().get('skip_headers', False)
+
+    def get_proxy(self) -> Optional[dict]:
+        """
+        Get the root-level proxy configuration
+        Returns:
+            dict or None: Proxy configuration with 'host' key, or None if not set
+        """
+        return self.data.get('settings', {}).get('proxy')
+
+    def get_http_config(self) -> Optional[dict]:
+        """
+        Get the root-level http_config configuration
+        Returns:
+            dict or None: HTTP config with 'base_uri' and 'ignore_cert_errors' keys, or None if not set
+        """
+        return self.data.get('settings', {}).get('http_config')
+
+    def get_file_snippet_proxy(self) -> Optional[dict]:
+        """
+        Get the file_snippet-level proxy configuration (takes priority over root)
+        Returns:
+            dict or None: Proxy configuration with 'host' key, or None if not set
+        """
+        return self.get_file_snippet_settings().get('proxy')
+
+    def get_file_snippet_http_config(self) -> Optional[dict]:
+        """
+        Get the file_snippet-level http_config configuration (takes priority over root)
+        Returns:
+            dict or None: HTTP config with 'base_uri' and 'ignore_cert_errors' keys, or None if not set
+        """
+        return self.get_file_snippet_settings().get('http_config')

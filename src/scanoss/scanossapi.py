@@ -22,7 +22,9 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import base64
 import http.client as http_client
+import json
 import logging
 import os
 import sys
@@ -30,6 +32,7 @@ import time
 import uuid
 from json.decoder import JSONDecodeError
 from urllib.parse import urlparse, urlunparse
+from typing import Optional, Union
 
 import requests
 import urllib3
@@ -98,6 +101,11 @@ class ScanossApi(ScanossBase):
         pac: PACFile = None,
         retry: int = 5,
         req_headers: dict = None,
+        min_snippet_hits: int = None,
+        min_snippet_lines: int = None,
+        honour_file_exts: Union[bool, str, None] = 'unset',
+        ranking: Union[bool, str, None] = 'unset',
+        ranking_threshold: int = None,
     ):
         """
         Initialise the SCANOSS API
@@ -108,6 +116,11 @@ class ScanossApi(ScanossBase):
         :param debug: Enable debug (default False)
         :param trace: Enable trace (default False)
         :param quiet: Enable quiet mode (default False)
+        :param min_snippet_hits: Minimum snippet hits required (default None)
+        :param min_snippet_lines: Minimum snippet lines required (default None)
+        :param honour_file_exts: Whether to honour file extensions (default 'unset')
+        :param ranking: Enable/disable ranking (default 'unset')
+        :param ranking_threshold: Ranking threshold value (default None)
 
         To set a custom certificate use:
             REQUESTS_CA_BUNDLE=/path/to/cert.pem
@@ -117,6 +130,12 @@ class ScanossApi(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         self.sbom = None
+        # Scan tuning parameters
+        self.min_snippet_hits = min_snippet_hits
+        self.min_snippet_lines = min_snippet_lines
+        self.honour_file_exts = honour_file_exts
+        self.ranking = ranking
+        self.ranking_threshold = ranking_threshold
         self.scan_format = scan_format if scan_format else 'plain'
         self.flags = flags
         self.timeout = timeout if timeout > MIN_TIMEOUT else DEFAULT_TIMEOUT
@@ -127,8 +146,7 @@ class ScanossApi(ScanossBase):
         base_url = url if url else SCANOSS_SCAN_URL
         self.api_key = api_key if api_key else SCANOSS_API_KEY
         if self.api_key and not url and not os.environ.get('SCANOSS_SCAN_URL'):
-            base_url = DEFAULT_URL2
-        self.url = self.normalize_api_url(base_url)
+            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
         if ver_details:
             self.headers['x-scanoss-client'] = ver_details
         if self.api_key:
@@ -183,6 +201,10 @@ class ScanossApi(ScanossBase):
         scan_files = {'file': ('%s.wfp' % request_id, wfp)}
         headers = self.headers
         headers['x-request-id'] = request_id  # send a unique request id for each post
+        # Add scan settings header if any settings are configured
+        scan_settings_header = self._build_scan_settings_header()
+        if scan_settings_header:
+            headers['scanoss-settings'] = scan_settings_header
         r = None
         retry = 0  # Add some retry logic to cater for timeouts, etc.
         while retry <= self.retry_limit:
@@ -295,6 +317,41 @@ class ScanossApi(ScanossBase):
     def set_sbom(self, sbom):
         self.sbom = sbom
         return self
+
+    def _build_scan_settings_header(self) -> Optional[str]:
+        """
+        Build base64-encoded JSON for x-scanoss-scan-settings header.
+        Only includes parameters that have meaningful (non-"unset") values.
+        Returns:
+            Base64-encoded JSON string, or None if no settings to send
+        """
+        settings = {}
+
+        # min_snippet_hits: 0 = unset, don't send
+        if self.min_snippet_hits is not None and self.min_snippet_hits != 0:
+            settings['min_snippet_hits'] = self.min_snippet_hits
+
+        # min_snippet_lines: 0 = unset, don't send
+        if self.min_snippet_lines is not None and self.min_snippet_lines != 0:
+            settings['min_snippet_lines'] = self.min_snippet_lines
+
+        # honour_file_exts: None = unset, don't send
+        if self.honour_file_exts is not None and self.honour_file_exts != 'unset':
+            settings['honour_file_exts'] = self.honour_file_exts
+
+        # ranking: None = unset, don't send
+        if self.ranking is not None and self.ranking != 'unset':
+            settings['ranking_enabled'] = self.ranking
+
+        # ranking_threshold: -1 = unset, don't send
+        if self.ranking_threshold is not None and self.ranking_threshold != -1:
+            settings['ranking_threshold'] = self.ranking_threshold
+
+        if settings:
+            json_str = json.dumps(settings)
+            self.print_debug(f'Scan settings: {json_str}')
+            return base64.b64encode(json_str.encode()).decode()
+        return None
 
     def load_generic_headers(self, url):
         """

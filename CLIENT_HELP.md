@@ -259,6 +259,60 @@ Multiple Headers: You can specify any number of custom headers by repeating the 
 scanoss-py scan src -hdr "x-api-key:12345" -hdr "Authorization: Bearer <access_token>"
 ```
 
+### Scan with Snippet Tuning Options
+The following flags allow you to fine-tune snippet matching behavior during scanning:
+
+#### Set minimum snippet hits
+Require at least 5 snippet hits for a match. A value of 0 defers to server configuration:
+```bash
+scanoss-py scan -o scan-results.json --min-snippet-hits 5 src
+```
+
+#### Set minimum snippet lines
+Require at least 3 snippet lines for a match. A value of 0 defers to server configuration:
+```bash
+scanoss-py scan -o scan-results.json --min-snippet-lines 3 src
+```
+
+#### Set snippet range tolerance
+Set the snippet range tolerance. A value of 0 defers to server configuration:
+```bash
+scanoss-py scan -o scan-results.json --snippet-range-tolerance 5 src
+```
+Short form:
+```bash
+scanoss-py scan -o scan-results.json -srt 5 src
+```
+
+#### Enable or disable ranking
+Enable ranking to prioritize results:
+```bash
+scanoss-py scan -o scan-results.json --ranking true src
+```
+Disable ranking:
+```bash
+scanoss-py scan -o scan-results.json --ranking false src
+```
+
+#### Set ranking threshold
+Set the ranking threshold to 5 (valid range: -1-10). A value of -1 defers to server configuration:
+```bash
+scanoss-py scan -o scan-results.json --ranking-threshold=5 src
+```
+Note: Use `=` syntax for negative values: `--ranking-threshold=-1`
+
+#### Honour file extensions
+Control whether file extensions are considered during matching:
+```bash
+scanoss-py scan -o scan-results.json --honour-file-exts true src
+```
+
+#### Combine multiple tuning options
+You can combine multiple tuning options in a single scan:
+```bash
+scanoss-py scan -o scan-results.json --min-snippet-hits 5 --min-snippet-lines 3 --ranking true --ranking-threshold=75 src
+```
+
 ### Converting RAW results into other formats
 The following command provides the capability to convert the RAW scan results from a SCANOSS scan into multiple different formats, including CycloneDX, SPDX Lite, CSV and GitLab Code Quality Report.
 For the full set of formats, please run:

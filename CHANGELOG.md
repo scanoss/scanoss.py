@@ -6,7 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Upcoming changes...
+### Added
+- Added scan engine tuning parameters for snippet matching:
+  - `--min-snippet-hits` - Minimum snippet hits required (0 defers to server config)
+  - `--min-snippet-lines` - Minimum snippet lines required (0 defers to server config)
+  - `--ranking` - Enable/disable result ranking (unset/true/false)
+  - `--ranking-threshold` - Ranking threshold value (-1 to 99, -1 defers to server config)
+  - `--honour-file-exts` - Honour file extensions during matching (unset/true/false)
+- Added `file_snippet` section to scanoss.json settings schema for configuring tuning parameters
+- Added `ScanSettingsBuilder` class for merging CLI and settings file configurations with priority: CLI > file_snippet > root settings
 
 ## [1.44.0] - 2026-01-22
 ### Changed

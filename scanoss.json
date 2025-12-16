@@ -18,8 +18,12 @@
       },
       {
         "purl": "pkg:pypi/scanoss"
+      },
+      {
+        "purl": "pkg:github/scanoss/scanoss-winnowing.py"
       }
     ],
     "remove": []
   }
 }
+
