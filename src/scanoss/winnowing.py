@@ -392,12 +392,10 @@ class Winnowing(ScanossBase):
             else:
                 # Keep non-snippet lines (like file=, hpsm=, etc.)
                 filtered_lines.append(line)
-
+        # End for loop comment
         wfp = '\n'.join(filtered_lines)
-
         if wfp_len > len(wfp):
             self.print_debug(f'Stripped lines up to offset {line_offset} from {file}')
-
         return wfp
 
     def __detect_line_endings(self, contents: bytes) -> Tuple[bool, bool, bool]:
@@ -487,13 +485,11 @@ class Winnowing(ScanossBase):
         # We don't process snippets for binaries, or other uninteresting files, or if we're requested to skip
         if bin_file or self.skip_snippets or self.__skip_snippets(file, contents.decode('utf-8', 'ignore')):
             return wfp
-
         # Add HPSM (calculated from original contents, not filtered)
         if self.hpsm:
             hpsm = self.__strip_hpsm(file, self.calc_hpsm(contents))
             if len(hpsm) > 0:
                 wfp += f'hpsm={hpsm}\n'
-
         # Initialize variables
         gram = ''
         window = []
@@ -560,7 +556,7 @@ class Winnowing(ScanossBase):
 
         # Apply line filter to remove headers, comments, and imports from the beginning (if enabled)
         if self.skip_headers:
-            _, line_offset = self.header_filter.filter(file, bin_file, contents)
+            line_offset = self.header_filter.filter(file, bin_file, contents)
             if line_offset > 0:
                 wfp = self.__strip_lines_until_offset(file, wfp, line_offset)
 
