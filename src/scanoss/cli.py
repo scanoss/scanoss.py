@@ -187,6 +187,46 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
     p_scan.add_argument('--dep-scope-inc', '-dsi', type=str, help='Include dependencies with declared scopes')
     p_scan.add_argument('--dep-scope-exc', '-dse', type=str, help='Exclude dependencies with declared scopes')
+    # Snippet tuning options
+    p_scan.add_argument(
+        '--min-snippet-hits',
+        type=int,
+        default=None,
+        help='Minimum snippet hits required. A value of 0 defers to server configuration (optional)',
+    )
+    p_scan.add_argument(
+        '--min-snippet-lines',
+        type=int,
+        default=None,
+        help='Minimum snippet lines required. A value of 0 defers to server configuration (optional)',
+    )
+    p_scan.add_argument(
+        '-srt',
+        '--snippet-range-tolerance',
+        type=int,
+        default=None,
+        help='Snippet range tolerance. A value of 0 defers to server configuration (optional)',
+    )
+    p_scan.add_argument(
+        '--ranking',
+        type=str,
+        choices=['unset' ,'true', 'false'],
+        default='unset',
+        help='Enable or disable ranking (optional - default: server configuration)',
+    )
+    p_scan.add_argument(
+        '--ranking-threshold',
+        type=int,
+        default=None,
+        help='Ranking threshold value. Valid range: -1 to 99. A value of -1 defers to server configuration (optional)',
+    )
+    p_scan.add_argument(
+        '--honour-file-exts',
+        type=str,
+        choices=['unset','true', 'false'],
+        default='unset',
+        help='Honour file extensions during scanning. When not set, defers to server configuration (optional)',
+    )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser(
@@ -1374,11 +1414,11 @@ def wfp(parser, args):
         initialise_empty_file(args.output)
 
     # Load scan settings
-    scan_settings = None
+    scanoss_settings = None
     if not args.skip_settings_file:
-        scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
         try:
-            scan_settings.load_json_file(args.settings, args.scan_dir)
+            scanoss_settings.load_json_file(args.settings, args.scan_dir)
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
             sys.exit(1)
@@ -1400,7 +1440,7 @@ def wfp(parser, args):
         skip_md5_ids=args.skip_md5,
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
-        scan_settings=scan_settings,
+        scanoss_settings=scanoss_settings,
         skip_headers=args.skip_headers,
         skip_headers_limit=args.skip_headers_limit,
     )
@@ -1482,20 +1522,20 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
         sys.exit(1)
     # Figure out which settings (if any) to load before processing
-    scan_settings = None
+    scanoss_settings = None
     if not args.skip_settings_file:
-        scan_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
         try:
             if args.identify:
-                scan_settings.load_json_file(args.identify, args.scan_dir).set_file_type('legacy').set_scan_type(
+                scanoss_settings.load_json_file(args.identify, args.scan_dir).set_file_type('legacy').set_scan_type(
                     'identify'
                 )
             elif args.ignore:
-                scan_settings.load_json_file(args.ignore, args.scan_dir).set_file_type('legacy').set_scan_type(
+                scanoss_settings.load_json_file(args.ignore, args.scan_dir).set_file_type('legacy').set_scan_type(
                     'blacklist'
                 )
             else:
-                scan_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new')
+                scanoss_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new')
 
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
@@ -1595,9 +1635,15 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         skip_md5_ids=args.skip_md5,
         strip_hpsm_ids=args.strip_hpsm,
         strip_snippet_ids=args.strip_snippet,
-        scan_settings=scan_settings,
+        scanoss_settings=scanoss_settings,
         req_headers=process_req_headers(args.header),
         use_grpc=args.grpc,
+        min_snippet_hits=args.min_snippet_hits,
+        min_snippet_lines=args.min_snippet_lines,
+        snippet_range_tolerance=args.snippet_range_tolerance,
+        ranking=args.ranking,
+        ranking_threshold=args.ranking_threshold,
+        honour_file_exts=args.honour_file_exts,
         skip_headers=args.skip_headers,
         skip_headers_limit=args.skip_headers_limit,
     )
