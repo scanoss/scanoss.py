@@ -216,6 +216,12 @@
               "minimum": 0,
               "default": 0
             },
+            "snippet_range_tolerance": {
+              "type": "integer",
+              "description": "Snippet range tolerance",
+              "minimum": 0,
+              "default": 0
+            },
             "honour_file_exts": {
               "type": ["boolean", "null"],
               "description": "Ignores file extensions. When not set, defers to server configuration.",
