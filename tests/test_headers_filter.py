@@ -52,7 +52,8 @@ def main():
 if __name__ == '__main__':
     main()
 """
-        line_offset = self.line_filter.filter('test.py', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.py', test_string)
 
         msg = "Should skip 8 lines (3 license + 1 blank + 3 imports + 1 blank)"
         self.assertEqual(line_offset, 8, msg)
@@ -75,7 +76,8 @@ class App extends Component {
 
 export default App;
 """
-        line_offset = self.line_filter.filter('test.js', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.js', test_string)
 
         self.assertEqual(line_offset, 8, "Should skip multiline comment, blank line and imports")
 
@@ -96,7 +98,8 @@ func main() {
     fmt.Println("Hello")
 }
 """
-        line_offset = self.line_filter.filter('test.go', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.go', test_string)
 
         self.assertEqual(line_offset, 11, "Should skip license, package, import block and blank line")
 
@@ -120,7 +123,8 @@ public:
 
 #endif
 """
-        line_offset = self.line_filter.filter('test.cpp', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.cpp', test_string)
 
         self.assertGreater(line_offset, 0, "Should skip some header lines")
 
@@ -145,7 +149,8 @@ public class MyClass {
     }
 }
 """
-        line_offset = self.line_filter.filter('test.java', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.java', test_string)
 
         self.assertGreater(line_offset, 0, "Should skip license, package and imports")
 
@@ -168,7 +173,8 @@ class UserComponent extends Component<Props> {
     }
 }
 """
-        line_offset = self.line_filter.filter('test.ts', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.ts', test_string)
 
         self.assertGreater(line_offset, 0, "Should skip license and imports")
 
@@ -189,7 +195,8 @@ fn another_function() {
     // Implementation
 }
 """
-        line_offset = self.line_filter.filter('test.rs', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.rs', test_string)
 
         self.assertGreater(line_offset, 0, "Should skip license and use statements")
 
@@ -204,17 +211,10 @@ import sys
 def main():
     pass
 """
-        line_offset = self.line_filter.filter('test.py', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.py', test_string)
 
         self.assertGreater(line_offset, 0, "Should skip shebang, encoding, license and imports")
-
-    def test_binary_file_no_filtering(self):
-        """Test that binary files are not filtered"""
-        test_content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
-
-        line_offset = self.line_filter.filter('test.png', True, test_content)
-
-        self.assertEqual(line_offset, 0, "Binary files should not be filtered")
 
     def test_unsupported_language_no_filtering(self):
         """Test that unsupported file extensions return original content"""
@@ -222,8 +222,8 @@ def main():
 in an unknown format
 that should not be filtered
 """
-
-        line_offset = self.line_filter.filter('test.unknown', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.unknown', test_string)
 
         self.assertEqual(line_offset, 0, "Unsupported files should not be filtered")
 
@@ -235,8 +235,8 @@ that should not be filtered
 # This is just a license file
 # with no actual code
 """
-
-        line_offset = self.line_filter.filter('test.py', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.py', test_string)
 
         self.assertEqual(line_offset, 0, "Line offset should be 0 when no implementation found")
 
@@ -261,7 +261,8 @@ def func2():
     pass
 """
         line_filter_limited = HeaderFilter(max_lines=5, debug=False, quiet=True)
-        line_offset = line_filter_limited.filter('test.py', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = line_filter_limited.filter('test.py', test_string)
 
         # Without max_lines, this would be around line 12 (after all imports)
         # With max_lines=5, it should be capped at 5
@@ -285,7 +286,8 @@ class UserController {
     }
 }
 """
-        line_offset = self.line_filter.filter('test.php', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.php', test_string)
 
         self.assertGreater(line_offset, 0, "Should skip license, namespace and use statements")
 
@@ -303,7 +305,8 @@ class MyClass
   end
 end
 """
-        line_offset = self.line_filter.filter('test.rb', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.rb', test_string)
 
         self.assertGreater(line_offset, 0, "Should skip license and require statements")
 
@@ -325,7 +328,8 @@ object Main {
   }
 }
 """
-        line_offset = self.line_filter.filter('test.scala', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.scala', test_string)
 
         self.assertGreater(line_offset, 0, "Should skip license, package and imports")
 
@@ -346,8 +350,8 @@ object Main {
     def test_empty_file(self):
         """Test handling of empty file"""
         test_content = b""
-
-        line_offset = self.line_filter.filter('test.py', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.py', test_string)
 
         self.assertEqual(line_offset, 0, "Empty file should have 0 offset")
 
@@ -355,8 +359,8 @@ object Main {
         """Test handling of files that cannot be decoded as UTF-8"""
         # Create content with invalid UTF-8 sequences
         test_content = b"\xff\xfe" + b"some content"
-
-        line_offset = self.line_filter.filter('test.py', False, test_content)
+        test_string = test_content.decode('utf-8', 'ignore')
+        line_offset = self.line_filter.filter('test.py', test_string)
 
         # Should return 0 offset when UTF-8 decode fails
         self.assertEqual(line_offset, 0, "Should return 0 offset on decode error")
