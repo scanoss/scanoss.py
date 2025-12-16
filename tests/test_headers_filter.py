@@ -243,25 +243,29 @@ that should not be filtered
     def test_max_lines_limit(self):
         """Test that max_lines parameter limits output"""
         test_content = b"""# Copyright 2024
+# Licensed under MIT
+# All rights reserved
 
 import os
+import sys
+from pathlib import Path
+
+# More imports to push implementation beyond line 5
+import json
+import asyncio
 
 def func1():
     pass
 
 def func2():
     pass
-
-def func3():
-    pass
-
-def func4():
-    pass
 """
         line_filter_limited = HeaderFilter(max_lines=5, debug=False, quiet=True)
         line_offset = line_filter_limited.filter('test.py', False, test_content)
 
-        self.assertLessEqual(line_offset, 5, "Should respect max_lines limit and cap at 5")
+        # Without max_lines, this would be around line 12 (after all imports)
+        # With max_lines=5, it should be capped at 5
+        self.assertEqual(line_offset, 5, "Should cap line_offset at max_lines when implementation starts beyond limit")
 
     def test_php_namespace_and_use(self):
         """Test PHP file with namespace and use statements"""
