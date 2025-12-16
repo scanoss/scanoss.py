@@ -33,21 +33,10 @@ SPDX-License-Identifier: MIT
 """
 
 import re
-from enum import Enum
 from pathlib import Path
 from typing import Optional, Tuple
 
 from .scanossbase import ScanossBase
-
-
-class LineType(Enum):
-    """Line types that are not real implementation"""
-    LICENSE_HEADER = "license_header"
-    COMMENT = "comment"
-    IMPORT = "import"
-    BLANK = "blank"
-    SHEBANG = "shebang"
-    IMPLEMENTATION = "implementation"
 
 
 class LanguagePatterns:
@@ -227,7 +216,9 @@ class HeaderFilter(ScanossBase):
         Parameters
         ----------
             max_lines: int
-                Maximum number of lines to return (None = unlimited by default)
+                Maximum line number to analyze. If implementation is found
+                beyond this line, will cap at max_lines.
+                (None = unlimited by default)
         """
         super().__init__(debug, trace, quiet)
         self.patterns = LanguagePatterns()
@@ -282,19 +273,17 @@ class HeaderFilter(ScanossBase):
 
         # Calculate how many lines were filtered out (line_offset)
         line_offset = implementation_start - 1
+
+        # Apply max_lines limit if configured
+        if self.max_lines is not None and line_offset > self.max_lines:
+            self.print_debug(
+                f'Line offset {line_offset} exceeds max_lines {self.max_lines}, '
+                f'capping at {self.max_lines} for: {file}'
+            )
+            line_offset = self.max_lines
+
         if line_offset > 0:
             self.print_debug(f'Filtered out {line_offset} lines from beginning of {file} (language: {language})')
-
-        # Get lines from implementation (0-indexed)
-        start_idx = implementation_start - 1
-        filtered_lines = lines[start_idx:]
-
-        # Apply line limit if configured
-        if self.max_lines is not None:
-            original_count = len(filtered_lines)
-            filtered_lines = filtered_lines[:self.max_lines]
-            if original_count > self.max_lines:
-                self.print_debug(f'Truncating to {self.max_lines} lines for: {file}')
 
         return line_offset
 
@@ -342,7 +331,7 @@ class HeaderFilter(ScanossBase):
             '.cljs': 'clojure',
             '.m': 'cpp',  # Objective-C
             '.mm': 'cpp',  # Objective-C++
-            '.sh': 'python',  # Shell scripts usan # como comentario
+            '.sh': 'python',  # Shell scripts use # for comments
             '.bash': 'python',
             '.zsh': 'python',
             '.fish': 'python',
@@ -380,7 +369,7 @@ class HeaderFilter(ScanossBase):
             return 'lua_style'
         return 'c_style'  # Default
 
-    def is_comment(self, line: str, language: str, in_multiline: bool) -> Tuple[bool, bool]:
+    def is_comment(self, line: str, language: str, in_multiline: bool) -> Tuple[bool, bool]:  # noqa: PLR0911
         """
         Check if a line is a comment
 
@@ -435,7 +424,7 @@ class HeaderFilter(ScanossBase):
         patterns = self.patterns.IMPORT_PATTERNS[language]
         return any(re.match(pattern, line) for pattern in patterns)
 
-    def find_first_implementation_line(self, lines: list[str], language: str) -> Optional[int]:
+    def find_first_implementation_line(self, lines: list[str], language: str) -> Optional[int]:  # noqa: PLR0912
         """
         Find the line number where implementation begins (optimized version).
         Returns as soon as the first implementation line is found.
@@ -472,14 +461,13 @@ class HeaderFilter(ScanossBase):
                     if not in_license_section:
                         self.print_debug(f'Line {line_number}: Detected license header section')
                     in_license_section = True
+                # If still in license section (first lines)
+                elif in_license_section and line_number < LICENSE_HEADER_MAX_LINES:
+                    pass  # Still in license section
                 else:
-                    # If still in license section (first lines)
-                    if in_license_section and line_number < LICENSE_HEADER_MAX_LINES:
-                        pass  # Still in license section
-                    else:
-                        if in_license_section:
-                            self.print_debug(f'Line {line_number}: End of license header section')
-                        in_license_section = False
+                    if in_license_section:
+                        self.print_debug(f'Line {line_number}: End of license header section')
+                    in_license_section = False
                 continue
 
             # If not a comment but we find a non-empty line, end license section
