@@ -295,20 +295,20 @@ class HeaderFilter(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        max_skipped_lines: Optional[int] = None
+        skip_limit: Optional[int] = None
     ):
         """
         Initialise HeaderFilter
         Parameters
         ----------
-            max_lines: int
-                Maximum line number to analyse. If the implementation is found
-                beyond this line, will cap at max_lines.
-                (None = unlimited by default)
+            skip_limit: int
+                Maximum number of lines to skip when analysing a file.
+                If set, then stop stripping data after this number of lines.
+                (None/0 = unlimited by default)
         """
         super().__init__(debug, trace, quiet)
         self.patterns = LanguagePatterns()
-        self.max_lines = max_skipped_lines
+        self.max_lines = skip_limit
 
     def filter(self, file: str, decoded_contents: str) -> int:
         """
@@ -348,7 +348,7 @@ class HeaderFilter(ScanossBase):
         # Calculate how many lines were filtered out (line_offset)
         line_offset = implementation_start - 1
         # Apply max_lines limit if configured
-        if self.max_lines is not None and line_offset > self.max_lines:
+        if self.max_lines is not None and 0 < self.max_lines < line_offset:
             self.print_trace(
                 f'Line offset {line_offset} exceeds max_lines {self.max_lines}, '
                 f'capping at {self.max_lines} for: {file}'
