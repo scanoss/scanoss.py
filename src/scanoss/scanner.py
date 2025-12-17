@@ -110,6 +110,7 @@ class Scanner(ScanossBase):
         req_headers: dict = None,
         use_grpc: bool = False,
         skip_headers: bool = False,
+        skip_headers_max_lines: int = 0,
     ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
@@ -148,6 +149,7 @@ class Scanner(ScanossBase):
             strip_snippet_ids=strip_snippet_ids,
             skip_md5_ids=skip_md5_ids,
             skip_headers=skip_headers,
+            skip_headers_max_lines=skip_headers_max_lines,
         )
         self.scanoss_api = ScanossApi(
             debug=debug,
