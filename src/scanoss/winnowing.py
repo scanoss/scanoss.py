@@ -379,7 +379,8 @@ class Winnowing(ScanossBase):
                 try:
                     line_num = int(line_details[0])
                     # Keep lines that are after the offset
-                    if line_num > line_offset:  # TODO should it be > or >= ?
+                    # (line_offset is the last line previous to real code)
+                    if line_num > line_offset:
                         # Add the start_line tag before the first snippet line
                         if not start_line_added:
                             filtered_lines.append(f'start_line={line_offset}')

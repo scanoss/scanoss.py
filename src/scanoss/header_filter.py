@@ -437,7 +437,7 @@ class HeaderFilter(ScanossBase):
         :return: Tuple of (is_comment, still_in_multiline)
         """
         if not patterns:
-            self.print_msg(f'No comment patterns defined, skipping comment check')
+            self.print_msg('No comment patterns defined, skipping comment check')
             return False, in_multiline
         # If we're in a multiline comment
         if in_multiline:
@@ -484,7 +484,7 @@ class HeaderFilter(ScanossBase):
             otherwise False.
         """
         if not patterns:
-            self.print_debug(f'No import patterns defined, skipping import check')
+            self.print_debug('No import patterns defined, skipping import check')
         return any(re.match(pattern, line) for pattern in patterns)
 
     def find_first_implementation_line(self, lines: list[str], language: str) -> Optional[int]:  # noqa: PLR0912
