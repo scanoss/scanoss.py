@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Upcoming changes...
+
 ## [1.42.0] - 2025-12-12
 ### Added
 - Added flag `--skip-headers` to fingerprint and scan commands. 
+- Added flag `--skip-headers-max-lines` to fingerprint and scan commands. 
 
 ## [1.41.0] - 2025-11-17
 ### Added
@@ -754,3 +756,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.40.0]: https://github.com/scanoss/scanoss.py/compare/v1.39.0...v1.40.0
 [1.40.1]: https://github.com/scanoss/scanoss.py/compare/v1.40.0...v1.40.1
 [1.41.0]: https://github.com/scanoss/scanoss.py/compare/v1.40.1...v1.41.0
+[1.42.0]: https://github.com/scanoss/scanoss.py/compare/v1.41.0...v1.42.0
