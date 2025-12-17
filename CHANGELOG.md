@@ -8,10 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Upcoming changes...
 
-## [1.42.0] - 2025-12-12
+## [1.42.0] - 2025-12-17
 ### Added
-- Added flag `--skip-headers` to fingerprint and scan commands. 
-- Added flag `--skip-headers-max-lines` to fingerprint and scan commands. 
+- Added support for filtering uninteresting data from the beginning of source files.
+  - When using `--skip-headers` it will skip over copyright notices, import statements, comments, etc.
+  - The `--skip-headers-limit` option specifies the maximum number of lines to skip if required.
 
 ## [1.41.0] - 2025-11-17
 ### Added
