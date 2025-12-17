@@ -260,7 +260,7 @@ def func1():
 def func2():
     pass
 """
-        line_filter_limited = HeaderFilter(max_lines=5, debug=False, quiet=True)
+        line_filter_limited = HeaderFilter(max_skipped_lines=5, debug=False, quiet=True)
         test_string = test_content.decode('utf-8', 'ignore')
         line_offset = line_filter_limited.filter('test.py', test_string)
 

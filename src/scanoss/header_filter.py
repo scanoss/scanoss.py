@@ -295,7 +295,7 @@ class HeaderFilter(ScanossBase):
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
-        max_lines: Optional[int] = None
+        max_skipped_lines: Optional[int] = None
     ):
         """
         Initialise HeaderFilter
@@ -308,7 +308,7 @@ class HeaderFilter(ScanossBase):
         """
         super().__init__(debug, trace, quiet)
         self.patterns = LanguagePatterns()
-        self.max_lines = max_lines
+        self.max_lines = max_skipped_lines
 
     def filter(self, file: str, decoded_contents: str) -> int:
         """
@@ -444,7 +444,7 @@ class HeaderFilter(ScanossBase):
             # Check if the comment ends
             if 'multi_end' in patterns and re.search(patterns['multi_end'], line):
                 return True, False
-            if 'doc_string_end' in patterns and '"""' in line:
+            if 'doc_string_end' in patterns and re.search(patterns['doc_string_end'], line):
                 return True, False
             return True, True
         # Single-line comment

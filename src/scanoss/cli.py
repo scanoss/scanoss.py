@@ -1102,6 +1102,13 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             action='store_true',
             help='Skip license headers, comments and imports at the beginning of files.',
         )
+        p.add_argument(
+            '--skip-headers-max-lines',
+            '-skhml',
+            type=int,
+            default=0,
+            help='Maximum number of lines to skip when filtering headers (default: 0 = no limit).',
+        )
 
     # Global Scan/GRPC options
     for p in [
@@ -1395,6 +1402,7 @@ def wfp(parser, args):
         strip_snippet_ids=args.strip_snippet,
         scan_settings=scan_settings,
         skip_headers=args.skip_headers,
+        skip_headers_max_lines=args.skip_headers_max_lines,
     )
     if args.stdin:
         contents = sys.stdin.buffer.read()
@@ -1591,6 +1599,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         req_headers=process_req_headers(args.header),
         use_grpc=args.grpc,
         skip_headers=args.skip_headers,
+        skip_headers_max_lines=args.skip_headers_max_lines,
     )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
