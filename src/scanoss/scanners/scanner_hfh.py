@@ -218,7 +218,7 @@ class ScannerHFHPresenter(AbstractPresenter):
             }
 
             get_vulnerabilities_json_request = {
-                'purls': [{'purl': purl, 'requirement': best_match_version['version']}],
+                'components': [{'purl': purl, 'requirement': best_match_version['version']}],
             }
 
             decorated_scan_results = self.scanner.client.get_dependencies(get_dependencies_json_request)
