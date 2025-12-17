@@ -203,8 +203,9 @@ class Winnowing(ScanossBase):
         self.hpsm = hpsm
         self.skip_headers = skip_headers
         self.is_windows = platform.system() == 'Windows'
-        max_skipped_lines = None if skip_headers_max_lines == 0 else skip_headers_max_lines
-        self.header_filter = HeaderFilter(debug=debug, trace=trace, quiet=quiet, max_skipped_lines=max_skipped_lines)
+        self.header_filter = HeaderFilter(
+            debug=debug, trace=trace, quiet=quiet, max_skipped_lines=skip_headers_max_lines or None
+        )
         if hpsm:
             self.crc8_maxim_dow_table = []
             self.crc8_generate_table()
