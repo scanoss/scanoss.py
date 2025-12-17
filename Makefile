@@ -53,6 +53,10 @@ publish_test:  ## Publish the Python package to TestPyPI
 	@echo "Publishing package to TestPyPI..."
 	twine upload --repository testpypi dist/*
 
+unit_test:  ## Run unit tests
+	@echo "Running unit tests..."
+	@python -m unittest
+
 lint-docker:  ## Run ruff linter with docker
 	@./tools/linter.sh --docker
 
