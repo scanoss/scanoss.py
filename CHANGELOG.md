@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Upcoming changes...
 
+## [1.41.1] - 2025-11-17
+- Use `components` instead of `purls` for vulnerability detection when converting to CycloneDX format in Folder Scan
+
 ## [1.41.0] - 2025-11-17
 ### Added
 - Added `--license-sources` (`-ls`) option to copyleft inspection
@@ -751,3 +754,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.40.0]: https://github.com/scanoss/scanoss.py/compare/v1.39.0...v1.40.0
 [1.40.1]: https://github.com/scanoss/scanoss.py/compare/v1.40.0...v1.40.1
 [1.41.0]: https://github.com/scanoss/scanoss.py/compare/v1.40.1...v1.41.0
+[1.41.1]: https://github.com/scanoss/scanoss.py/compare/v1.41.0...v1.41.1
