@@ -15,6 +15,9 @@
     "include": [
       {
         "purl": "pkg:github/scanoss/scanoss.py"
+      },
+      {
+        "purl": "pkg:github/scanoss/scanoss-winnowing.py"
       }
     ],
     "remove": []
