@@ -53,17 +53,27 @@ publish_test:  ## Publish the Python package to TestPyPI
 	@echo "Publishing package to TestPyPI..."
 	twine upload --repository testpypi dist/*
 
-lint-docker: ## Run ruff linter with docker
+unit_test:  ## Run unit tests
+	@echo "Running unit tests..."
+	@python -m unittest
+
+lint-docker:  ## Run ruff linter with docker
 	@./tools/linter.sh --docker
 
-lint-docker-fix: ## Run ruff linter with docker and auto-fix
+lint-docker-fix:  ## Run ruff linter with docker and auto-fix
 	@./tools/linter.sh --docker --fix
 
-lint: ## Run ruff linter locally
+lint:  ## Run ruff linter locally
 	@./tools/linter.sh
 
-lint-fix: ## Run ruff linter locally with auto-fix
+lint-fix:  ## Run ruff linter locally with auto-fix
 	@./tools/linter.sh --fix
+
+lint-all:  ## Run ruff linter locally for all files
+	@./tools/linter.sh --all
+
+lint-fix-all:  ## Run ruff linter locally with auto-fix for all files
+	@./tools/linter.sh --fix --all
 
 publish:  ## Publish Python package to PyPI
 	@echo "Publishing package to PyPI..."

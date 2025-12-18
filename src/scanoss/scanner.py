@@ -109,6 +109,8 @@ class Scanner(ScanossBase):
         scan_settings: 'ScanossSettings | None' = None,
         req_headers: dict = None,
         use_grpc: bool = False,
+        skip_headers: bool = False,
+        skip_headers_limit: int = 0,
     ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
@@ -137,6 +139,7 @@ class Scanner(ScanossBase):
 
         self.winnowing = Winnowing(
             debug=debug,
+            trace=trace,
             quiet=quiet,
             skip_snippets=self._skip_snippets,
             all_extensions=all_extensions,
@@ -145,6 +148,8 @@ class Scanner(ScanossBase):
             strip_hpsm_ids=strip_hpsm_ids,
             strip_snippet_ids=strip_snippet_ids,
             skip_md5_ids=skip_md5_ids,
+            skip_headers=skip_headers,
+            skip_headers_limit=skip_headers_limit,
         )
         self.scanoss_api = ScanossApi(
             debug=debug,

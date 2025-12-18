@@ -98,4 +98,10 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
-
+          docker run -v "$(pwd)":"/scanoss" ${{ env.IMAGE_NAME }} wfp --skip-headers -o fingers.wfp tests
+          wfp_count=$(cat fingers.wfp | grep 'file=' | wc -l)
+          echo "WFP Count: $wfp_count"
+          if [[ $wfp_count -lt 1 ]]; then
+            echo "Error: WFP test did not produce any results. Failing"
+            exit 1
+          fi
