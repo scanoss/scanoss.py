@@ -35,6 +35,10 @@ jobs:
           pip install dist/scanoss-*-py3-none-any.whl
           which scanoss-py
 
+      - name: Run Unit Tests
+        run: |
+          make unit_test
+
       - name: Run Local Tests
         run: |
           which scanoss-py
@@ -45,6 +49,13 @@ jobs:
           echo "ID Count: $id_count"
           if [[ $id_count -lt 1 ]]; then
             echo "Error: Scan test did not produce any results. Failing"
+            exit 1
+          fi
+          scanoss-py wfp --skip-headers tests > fingers.wfp
+          wfp_count=$(cat fingers.wfp | grep 'file=' | wc -l)
+          echo "WFP Count: $wfp_count"
+          if [[ $wfp_count -lt 1 ]]; then
+            echo "Error: WFP test did not produce any results. Failing"
             exit 1
           fi
           pip uninstall -y scanoss
@@ -102,6 +113,13 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
+          scanoss-py wfp --skip-headers tests > fingers.wfp
+          wfp_count=$(cat fingers.wfp | grep 'file=' | wc -l)
+          echo "WFP Count: $wfp_count"
+          if [[ $wfp_count -lt 1 ]]; then
+            echo "Error: WFP test did not produce any results. Failing"
+            exit 1
+          fi
 
       - name: Run Tests (fast winnowing)
         run: |
@@ -114,6 +132,13 @@ jobs:
           echo "ID Count: $id_count"
           if [[ $id_count -lt 1 ]]; then
             echo "Error: Scan test did not produce any results. Failing"
+            exit 1
+          fi
+          scanoss-py wfp --skip-headers tests > fingers.wfp
+          wfp_count=$(cat fingers.wfp | grep 'file=' | wc -l)
+          echo "WFP Count: $wfp_count"
+          if [[ $wfp_count -lt 1 ]]; then
+            echo "Error: WFP test did not produce any results. Failing"
             exit 1
           fi
 

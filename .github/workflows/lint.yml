@@ -24,35 +24,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff
 
-      - name: Get changed Python files
-        id: changed_files
-        run: |
-          # Find the merge base between the main branch and the current HEAD.
-          merge_base=$(git merge-base origin/main HEAD)
-          # List all changed Python files since the merge base.
-          files=$(git diff --name-only "$merge_base" HEAD | grep '\.py$' || true)
-
-          # Filter out files that match exclude patterns from pyproject.toml 
-          # this is a temporary workaround until we fix all the lint errors
-          filtered_files=$(echo "$files" | grep -v -E 'tests/|test_.*\.py|src/protoc_gen_swagger/|src/scanoss/api/' || true)
-
-          # Use the multi-line syntax for outputs.
-          echo "files<<EOF" >> "$GITHUB_OUTPUT"
-          echo "${filtered_files}" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-          echo "Changed files before filtering: ${files}"
-          echo "Changed files after filtering: ${filtered_files}"
-
       - name: Run Ruff on changed files
         run: |
-          if [ -z "${{ steps.changed_files.outputs.files }}" ]; then
-            echo "No Python files changed. Exiting."
-            exit 0
-          else
-            echo "Linting the following files:"
-            echo "${{ steps.changed_files.outputs.files }}"
-            # Pass the list of changed files to Ruff.
-            echo "${{ steps.changed_files.outputs.files }}" | xargs ruff check
-          fi
-
+          make lint

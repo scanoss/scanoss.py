@@ -50,7 +50,7 @@ class ScanossBase:
 
     def print_msg(self, *args, **kwargs):
         """
-        Print message if quite mode is not enabled
+        Print message if quiet mode is not enabled
         """
         if not self.quiet:
             self.print_stderr(*args, **kwargs)

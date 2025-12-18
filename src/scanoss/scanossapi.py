@@ -78,7 +78,7 @@ class ScanossApi(ScanossBase):
         :param api_key: API Key (default None)
         :param debug: Enable debug (default False)
         :param trace: Enable trace (default False)
-        :param quiet: Enable quite mode (default False)
+        :param quiet: Enable quiet mode (default False)
 
         To set a custom certificate use:
             REQUESTS_CA_BUNDLE=/path/to/cert.pem
