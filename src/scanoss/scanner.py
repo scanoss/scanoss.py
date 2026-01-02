@@ -31,7 +31,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import importlib_resources
-from progress.bar import Bar
 from progress.spinner import Spinner
 from pypac.parser import PACFile
 
@@ -72,7 +71,6 @@ class Scanner(ScanossBase):
 
     def __init__( # noqa: PLR0913, PLR0915
         self,
-        wfp: str = None,
         scan_output: str = None,
         output_format: str = 'plain',
         debug: bool = False,
@@ -84,7 +82,6 @@ class Scanner(ScanossBase):
         nb_threads: int = 5,
         post_size: int = 32,
         timeout: int = 180,
-        no_wfp_file: bool = False,
         all_extensions: bool = False,
         all_folders: bool = False,
         hidden_files_folders: bool = False,
@@ -120,10 +117,8 @@ class Scanner(ScanossBase):
             skip_folders = []
         if skip_extensions is None:
             skip_extensions = []
-        self.wfp = wfp if wfp else 'scanner_output.wfp'
         self.scan_output = scan_output
         self.output_format = output_format
-        self.no_wfp_file = no_wfp_file
         self.isatty = sys.stderr.isatty()
         self.all_extensions = all_extensions
         self.all_folders = all_folders
@@ -372,8 +367,6 @@ class Scanner(ScanossBase):
         spinner_ctx = Spinner('Fingerprinting ') if (not self.quiet and self.isatty) else nullcontext()
 
         with spinner_ctx as spinner:
-            save_wfps_for_print = not self.no_wfp_file or not self.threaded_scan
-            wfp_list = []
             scan_block = ''
             scan_size = 0
             queue_size = 0
@@ -394,8 +387,6 @@ class Scanner(ScanossBase):
                 if wfp is None or wfp == '':
                     self.print_debug(f'No WFP returned for {to_scan_file}. Skipping.')
                     continue
-                if save_wfps_for_print:
-                    wfp_list.append(wfp)
                 file_count += 1
                 if self.threaded_scan:
                     wfp_size = len(wfp.encode('utf-8'))
@@ -429,12 +420,6 @@ class Scanner(ScanossBase):
                 self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
 
         if file_count > 0:
-            if save_wfps_for_print:  # Write a WFP file if no threading is requested
-                self.print_debug(f'Writing fingerprints to {self.wfp}')
-                with open(self.wfp, 'w') as f:
-                    f.write(''.join(wfp_list))
-            else:
-                self.print_debug(f'Skipping writing WFP file {self.wfp}')
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
         else:
@@ -642,8 +627,6 @@ class Scanner(ScanossBase):
         spinner_ctx = Spinner('Fingerprinting ') if (not self.quiet and self.isatty) else nullcontext()
 
         with spinner_ctx as spinner:
-            save_wfps_for_print = not self.no_wfp_file or not self.threaded_scan
-            wfp_list = []
             scan_block = ''
             scan_size = 0
             queue_size = 0
@@ -663,8 +646,6 @@ class Scanner(ScanossBase):
                 if wfp is None or wfp == '':
                     self.print_debug(f'No WFP returned for {file}. Skipping.')
                     continue
-                if save_wfps_for_print:
-                    wfp_list.append(wfp)
                 file_count += 1
                 if self.threaded_scan:
                     wfp_size = len(wfp.encode('utf-8'))
@@ -699,12 +680,6 @@ class Scanner(ScanossBase):
                 self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
 
         if file_count > 0:
-            if save_wfps_for_print:  # Write a WFP file if no threading is requested
-                self.print_debug(f'Writing fingerprints to {self.wfp}')
-                with open(self.wfp, 'w') as f:
-                    f.write(''.join(wfp_list))
-            else:
-                self.print_debug(f'Skipping writing WFP file {self.wfp}')
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
         else:
@@ -767,126 +742,22 @@ class Scanner(ScanossBase):
                 success = False
         return success
 
-    def scan_wfp_file(self, file: str = None) -> bool:  # noqa: PLR0912, PLR0915
-        """
-        Scan the contents of the specified WFP file (in the current process)
-        :param file: Scan the contents of the specified WFP file (in the current process)
-        :return: True if successful, False otherwise
-        """
-        success = True
-        wfp_file = file if file else self.wfp  # If a WFP file is specified, use it, otherwise us the default
-        if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
-            raise Exception(f'ERROR: Specified WFP file does not exist or is not a file: {wfp_file}')
-        file_count = Scanner.__count_files_in_wfp_file(wfp_file)
-        cur_files = 0
-        cur_size = 0
-        batch_files = 0
-        wfp = ''
-        max_component = {'name': '', 'hits': 0}
-        components = {}
-        self.print_debug(f'Found {file_count} files to process.')
-        raw_output = '{\n'
-        file_print = ''
-        bar_ctx = Bar('Scanning', max=file_count) if (not self.quiet and self.isatty) else nullcontext()
-
-        with bar_ctx as bar:
-            if bar:
-                bar.next(0)
-            with open(wfp_file) as f:
-                for line in f:
-                    if line.startswith(WFP_FILE_START):
-                        if file_print:
-                            wfp += file_print  # Store the WFP for the current file
-                            cur_size = len(wfp.encode('utf-8'))
-                        file_print = line  # Start storing the next file
-                        cur_files += 1
-                        batch_files += 1
-                    else:
-                        file_print += line  # Store the rest of the WFP for this file
-                    l_size = cur_size + len(file_print.encode('utf-8'))
-                    # Hit the max post size, so sending the current batch and continue processing
-                    if l_size >= self.max_post_size and wfp:
-                        self.print_debug(
-                            f'Sending {batch_files} ({cur_files}) of'
-                            f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.'
-                        )
-                        if self.debug and cur_size > self.max_post_size:
-                            Scanner.print_stderr(
-                                f'Warning: Post size {cur_size} greater than limit {self.max_post_size}'
-                            )
-                        scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
-                        if bar:
-                            bar.next(batch_files)
-                        if scan_resp is not None:
-                            for key, value in scan_resp.items():
-                                raw_output += '  "%s":%s,' % (key, json.dumps(value, indent=2))
-                                for v in value:
-                                    if hasattr(v, 'get'):
-                                        if v.get('id') != 'none':
-                                            vcv = '%s:%s:%s' % (v.get('vendor'), v.get('component'), v.get('version'))
-                                            components[vcv] = components[vcv] + 1 if vcv in components else 1
-                                            if max_component['hits'] < components[vcv]:
-                                                max_component['name'] = v.get('component')
-                                                max_component['hits'] = components[vcv]
-                                    else:
-                                        Scanner.print_stderr(f'Warning: Unknown value: {v}')
-                        else:
-                            success = False
-                        batch_files = 0
-                        wfp = ''
-            if file_print:
-                wfp += file_print  # Store the WFP for the current file
-            if wfp:
-                self.print_debug(
-                    f'Sending {batch_files} ({cur_files}) of'
-                    f' {file_count} ({len(wfp.encode("utf-8"))} bytes) files to the ScanOSS API.'
-                )
-                scan_resp = self.scanoss_api.scan(wfp, max_component['name'])  # Scan current WFP and store
-                if bar:
-                    bar.next(batch_files)
-                first = True
-                if scan_resp is not None:
-                    for key, value in scan_resp.items():
-                        if first:
-                            raw_output += '  "%s":%s' % (key, json.dumps(value, indent=2))
-                            first = False
-                        else:
-                            raw_output += ',\n  "%s":%s' % (key, json.dumps(value, indent=2))
-                else:
-                    success = False
-        raw_output += '\n}'
-        if self.output_format == 'plain':
-            self.__log_result(raw_output)
-        elif self.output_format == 'cyclonedx':
-            cdx = CycloneDx(self.debug, self.scan_output)
-            cdx.produce_from_str(raw_output)
-        elif self.output_format == 'spdxlite':
-            spdxlite = SpdxLite(self.debug, self.scan_output)
-            success = spdxlite.produce_from_str(raw_output)
-        elif self.output_format == 'csv':
-            csvo = CsvOutput(self.debug, self.scan_output)
-            csvo.produce_from_str(raw_output)
-        else:
-            self.print_stderr(f'ERROR: Unknown output format: {self.output_format}')
-            success = False
-
-        return success
-
-    def scan_wfp_with_options(self, wfp: str, deps_file: str, file_map: dict = None) -> bool:
+    def scan_wfp_with_options(self, wfp_file: str, deps_file: str, file_map: dict = None) -> bool:
         """
         Scan the given WFP file for whatever scaning options that have been configured
-        :param wfp: WFP file to scan
+        :param wfp_file: WFP file to scan
         :param deps_file: pre-parsed dependency file to decorate
         :param file_map: mapping of obfuscated files back into originals
         :return: True if successful, False otherwise
         """
         success = True
-        wfp_file = wfp if wfp else self.wfp  # If a WFP file is specified, use it, otherwise us the default
+        if not wfp_file:
+            raise Exception('ERROR: Please specify a WFP file to scan')
         if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
             raise Exception(f'ERROR: Specified WFP file does not exist or is not a file: {wfp_file}')
 
         if not self.is_file_or_snippet_scan() and not self.is_dependency_scan():
-            raise Exception(f'ERROR: No scan options defined to scan WFP: {wfp}')
+            raise Exception(f'ERROR: No scan options defined to scan WFP: {wfp_file}')
 
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
@@ -901,14 +772,15 @@ class Scanner(ScanossBase):
                 success = False
         return success
 
-    def scan_wfp_file_threaded(self, file: str = None) -> bool:
+    def scan_wfp_file_threaded(self, wfp_file: str) -> bool:  # noqa: PLR0912
         """
         Scan the contents of the specified WFP file (threaded)
-        :param file: WFP file to scan (optional)
+        :param wfp_file: WFP file to scan
         return: True if successful, False otherwise
         """
         success = True
-        wfp_file = file if file else self.wfp  # If a WFP file is specified, use it, otherwise us the default
+        if not wfp_file:
+            raise Exception('ERROR: Please specify a WFP file to scan')
         if not os.path.exists(wfp_file) or not os.path.isfile(wfp_file):
             raise Exception(f'ERROR: Specified WFP file does not exist or is not a file: {wfp_file}')
         cur_size = 0
