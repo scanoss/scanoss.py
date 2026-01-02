@@ -170,7 +170,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         default=DEFAULT_RETRY,
         help='Retry limit for API communication (optional - default 5)',
     )
-    p_scan.add_argument('--no-wfp-output', action='store_true', help='Skip WFP file generation')
     p_scan.add_argument('--dependencies', '-D', action='store_true', help='Add Dependency scanning')
     p_scan.add_argument('--dependencies-only', action='store_true', help='Run Dependency scanning only')
     p_scan.add_argument(
@@ -1552,9 +1551,6 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         if args.retry < 0:
             print_stderr(f'POST retry (--retry) too small: {args.retry}. Reverting to default.')
 
-    if not os.access(os.getcwd(), os.W_OK):  # Make sure the current directory is writable. If not disable saving WFP
-        print_stderr(f'Warning: Current directory is not writable: {os.getcwd()}')
-        args.no_wfp_output = True
     if args.ca_cert and not os.path.exists(args.ca_cert):
         print_stderr(f'Error: Certificate file does not exist: {args.ca_cert}.')
         sys.exit(1)
@@ -1573,7 +1569,6 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         nb_threads=args.threads,
         post_size=args.post_size,
         timeout=args.timeout,
-        no_wfp_file=args.no_wfp_output,
         all_extensions=args.all_extensions,
         all_folders=args.all_folders,
         hidden_files_folders=args.all_hidden,
