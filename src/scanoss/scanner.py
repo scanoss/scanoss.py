@@ -772,7 +772,7 @@ class Scanner(ScanossBase):
                 success = False
         return success
 
-    def scan_wfp_file_threaded(self, wfp_file: str) -> bool:
+    def scan_wfp_file_threaded(self, wfp_file: str) -> bool:  # noqa: PLR0912
         """
         Scan the contents of the specified WFP file (threaded)
         :param wfp_file: WFP file to scan
