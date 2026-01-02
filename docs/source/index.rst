@@ -90,8 +90,6 @@ Scans a directory or file (source code or ``.wfp`` fingerprint file) and shows r
      - Number of kilobytes to limit the post to while scanning (optional - default 64)
    * - --timeout <TIMEOUT>, -M <TIMEOUT>
      - Timeout (in seconds) for API communication (optional - default 120)
-   * - --no-wfp-output
-     - Skip WFP file generation
    * - --all folders
      - Scan all folders
    * - --all-extensions
