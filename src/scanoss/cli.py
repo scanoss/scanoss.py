@@ -186,6 +186,10 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
     p_scan.add_argument('--dep-scope-inc', '-dsi', type=str, help='Include dependencies with declared scopes')
     p_scan.add_argument('--dep-scope-exc', '-dse', type=str, help='Exclude dependencies with declared scopes')
+    p_scan.add_argument(
+        '--no-wfp-output', action='store_true',
+        help='DEPRECATED: Scans no longer generate scanner_output.wfp. Use "fingerprint -o" to create WFP files.'
+    )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser(
@@ -1470,6 +1474,8 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         )
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
+    if args.no_wfp_output:
+        print_stderr('Warning: --no-wfp-output is deprecated and has no effect. It will be removed in a future version')
     if args.pac and args.proxy:
         print_stderr('Please specify one of --proxy or --pac, not both')
         parser.parse_args([args.subparser, '-h'])
