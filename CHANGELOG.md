@@ -8,10 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Upcoming changes...
 
+## [1.43.1] - 2026-01-05
+### Changed
+- Restored `--no-wfp-output` flag for backwards compatibility (deprecated, no effect)
+
 ## [1.43.0] - 2026-01-02
 ### Changed
-  - Scan command no longer generates `scanner_output.wfp` file
-  - Removed `--no-wfp-output` flag (no longer needed)
+- Scan command no longer generates `scanner_output.wfp` file
+- Removed `--no-wfp-output` flag (no longer needed)
 
 ## [1.42.0] - 2025-12-17
 ### Added
@@ -768,3 +772,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.41.1]: https://github.com/scanoss/scanoss.py/compare/v1.41.0...v1.41.1
 [1.42.0]: https://github.com/scanoss/scanoss.py/compare/v1.41.1...v1.42.0
 [1.43.0]: https://github.com/scanoss/scanoss.py/compare/v1.42.0...v1.43.0
+[1.43.1]: https://github.com/scanoss/scanoss.py/compare/v1.43.0...v1.43.1
