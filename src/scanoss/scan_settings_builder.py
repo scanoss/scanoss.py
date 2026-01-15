@@ -29,6 +29,8 @@ from .scanossbase import ScanossBase
 if TYPE_CHECKING:
     from .scanoss_settings import ScanossSettings
 
+MAX_RANKING_THRESHOLD = 10
+
 
 class ScanSettingsBuilder(ScanossBase):
     """Builder class for merging CLI arguments with scanoss.json settings file values.
@@ -227,12 +229,12 @@ class ScanSettingsBuilder(ScanossBase):
             self._get_file_snippet_setting('ranking_threshold')
         )
         if self.ranking_threshold is not None:
-            if self.ranking_threshold > 10:
+            if self.ranking_threshold > MAX_RANKING_THRESHOLD:
                 self.print_msg(
-                    f'WARNING: ranking-threshold value {self.ranking_threshold} exceeds maximum allowed (10). '
-                    f'Setting to 10.'
+                    f'WARNING: ranking-threshold value {self.ranking_threshold} exceeds maximum allowed '
+                    f'({MAX_RANKING_THRESHOLD}). Setting to {MAX_RANKING_THRESHOLD}.'
                 )
-                self.ranking_threshold = 10
+                self.ranking_threshold = MAX_RANKING_THRESHOLD
             elif self.ranking_threshold < -1:
                 self.print_msg(
                     f'WARNING: ranking-threshold value {self.ranking_threshold} is below minimum allowed (-1). '
