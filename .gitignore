@@ -32,3 +32,4 @@ docs/build
 !scanoss-settings-schema.json
 .DS_Store
 !scanoss.json
+examples/output/
