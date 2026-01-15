@@ -140,30 +140,6 @@
             }
           }
         },
-        "proxy": {
-          "type": "object",
-          "description": "Proxy configuration for API requests",
-          "properties": {
-            "host": {
-              "type": "string",
-              "description": "Proxy host URL"
-            }
-          }
-        },
-        "http_config": {
-          "type": "object",
-          "description": "HTTP configuration for API requests",
-          "properties": {
-            "base_uri": {
-              "type": "string",
-              "description": "Base URI for API requests"
-            },
-            "ignore_cert_errors": {
-              "type": "boolean",
-              "description": "Whether to ignore certificate errors"
-            }
-          }
-        },
         "file_snippet": {
           "type": "object",
           "description": "File snippet scanning configuration",
@@ -213,12 +189,6 @@
             "min_snippet_lines": {
               "type": "integer",
               "description": "Minimum snippet lines required",
-              "minimum": 0,
-              "default": 0
-            },
-            "snippet_range_tolerance": {
-              "type": "integer",
-              "description": "Snippet range tolerance",
               "minimum": 0,
               "default": 0
             },

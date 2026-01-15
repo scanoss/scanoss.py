@@ -236,27 +236,6 @@
               "default": 0
             }
           }
-        },
-        "hpfm": {
-          "type": "object",
-          "description": "HPFM (High Precision Folder Matching) configuration",
-          "properties": {
-            "ranking_enabled": {
-              "type": "boolean",
-              "description": "Enable ranking for HPFM"
-            },
-            "ranking_threshold": {
-              "type": ["integer", "null"],
-              "description": "Ranking threshold value. A value of -1 defers to server configuration",
-              "minimum": -1,
-              "maximum": 99,
-              "default": 0
-            }
-          }
-        },
-        "container": {
-          "type": "object",
-          "description": "Container scanning configuration"
         }
       }
     },

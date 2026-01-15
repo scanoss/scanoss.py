@@ -360,14 +360,6 @@ class ScanossSettings(ScanossBase):
         """
         return self.get_file_snippet_settings().get('min_snippet_lines')
 
-    def get_snippet_range_tolerance(self) -> Optional[int]:
-        """
-        Get the snippet range tolerance
-        Returns:
-            int or None: Snippet range tolerance, or None if not set
-        """
-        return self.get_file_snippet_settings().get('snippet_range_tolerance')
-
     def get_ranking_enabled(self) -> Optional[bool]:
         """
         Get whether ranking is enabled

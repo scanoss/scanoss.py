@@ -46,7 +46,7 @@
       "min_snippet_lines": 5,
       "honour_file_exts": true,
       "ranking_enabled": true,
-      "ranking_threshold": 75
+      "ranking_threshold": 10
     }
   }
 }

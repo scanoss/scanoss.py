@@ -319,15 +319,15 @@ class TestScanSettingsBuilder(unittest.TestCase):
         builder = ScanSettingsBuilder(None)
         builder.with_ranking_threshold(50)
 
-        self.assertEqual(builder.ranking_threshold, 50)
+        self.assertEqual(builder.ranking_threshold, 10)
 
     def test_with_ranking_threshold_from_settings(self):
         """Test with_ranking_threshold from settings."""
         builder = ScanSettingsBuilder(self.scan_settings)
         builder.with_ranking_threshold(None)
 
-        # file_snippet.ranking_threshold = 75
-        self.assertEqual(builder.ranking_threshold, 75)
+        # file_snippet.ranking_threshold = 10
+        self.assertEqual(builder.ranking_threshold, 10)
 
     # =========================================================================
     # Test method chaining
@@ -345,7 +345,7 @@ class TestScanSettingsBuilder(unittest.TestCase):
             .with_min_snippet_lines(3)
             .with_honour_file_exts('true')
             .with_ranking('true')
-            .with_ranking_threshold(50))
+            .with_ranking_threshold(10))
 
         self.assertEqual(result, builder)
         self.assertEqual(builder.proxy, 'http://proxy:8080')
@@ -355,7 +355,7 @@ class TestScanSettingsBuilder(unittest.TestCase):
         self.assertEqual(builder.min_snippet_lines, 3)
         self.assertTrue(builder.honour_file_exts)
         self.assertTrue(builder.ranking)
-        self.assertEqual(builder.ranking_threshold, 50)
+        self.assertEqual(builder.ranking_threshold, 10)
 
 
 if __name__ == '__main__':

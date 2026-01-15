@@ -228,10 +228,6 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         default='unset',
         help='Honour file extensions during scanning. When not set, defers to server configuration (optional)',
     )
-    p_scan.add_argument(
-        '--wfp-output', type=str, metavar='FILE',
-        help='Save fingerprints to specified file during scan'
-    )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser(
