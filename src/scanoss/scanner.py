@@ -108,6 +108,7 @@ class Scanner(ScanossBase):
         use_grpc: bool = False,
         skip_headers: bool = False,
         skip_headers_limit: int = 0,
+        wfp_output: str = None,
     ):
         """
         Initialise scanning class, including Winnowing, ScanossApi, ThreadedScanning
@@ -119,6 +120,7 @@ class Scanner(ScanossBase):
             skip_extensions = []
         self.scan_output = scan_output
         self.output_format = output_format
+        self.wfp_output = wfp_output
         self.isatty = sys.stderr.isatty()
         self.all_extensions = all_extensions
         self.all_folders = all_folders
@@ -373,6 +375,7 @@ class Scanner(ScanossBase):
             file_count = 0  # count all files fingerprinted
             wfp_file_count = 0  # count number of files in each queue post
             scan_started = False
+            wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
 
             to_scan_files = file_filters.get_filtered_files_from_folder(scan_dir)
             for to_scan_file in to_scan_files:
@@ -387,6 +390,8 @@ class Scanner(ScanossBase):
                 if wfp is None or wfp == '':
                     self.print_debug(f'No WFP returned for {to_scan_file}. Skipping.')
                     continue
+                if wfp_list is not None:
+                    wfp_list.append(wfp)
                 file_count += 1
                 if self.threaded_scan:
                     wfp_size = len(wfp.encode('utf-8'))
@@ -420,6 +425,10 @@ class Scanner(ScanossBase):
                 self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
 
         if file_count > 0:
+            if wfp_list is not None:
+                self.print_debug(f'Writing fingerprints to {self.wfp_output}')
+                with open(self.wfp_output, 'w') as f:
+                    f.write(''.join(wfp_list))
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
         else:
@@ -633,6 +642,7 @@ class Scanner(ScanossBase):
             file_count = 0  # count all files fingerprinted
             wfp_file_count = 0  # count number of files in each queue post
             scan_started = False
+            wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
 
             to_scan_files = file_filters.get_filtered_files_from_files(files)
             for file in to_scan_files:
@@ -646,6 +656,8 @@ class Scanner(ScanossBase):
                 if wfp is None or wfp == '':
                     self.print_debug(f'No WFP returned for {file}. Skipping.')
                     continue
+                if wfp_list is not None:
+                    wfp_list.append(wfp)
                 file_count += 1
                 if self.threaded_scan:
                     wfp_size = len(wfp.encode('utf-8'))
@@ -680,6 +692,10 @@ class Scanner(ScanossBase):
                 self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
 
         if file_count > 0:
+            if wfp_list is not None:
+                self.print_debug(f'Writing fingerprints to {self.wfp_output}')
+                with open(self.wfp_output, 'w') as f:
+                    f.write(''.join(wfp_list))
             if self.threaded_scan:
                 success = self.__run_scan_threaded(scan_started, file_count)
         else:
