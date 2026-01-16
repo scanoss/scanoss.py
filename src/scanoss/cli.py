@@ -190,6 +190,10 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--no-wfp-output', action='store_true',
         help='DEPRECATED: Scans no longer generate scanner_output.wfp. Use "fingerprint -o" to create WFP files.'
     )
+    p_scan.add_argument(
+        '--wfp-output', type=str, metavar='FILE',
+        help='Save fingerprints to specified file during scan'
+    )
 
     # Sub-command: fingerprint
     p_wfp = subparsers.add_parser(
@@ -1601,6 +1605,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         use_grpc=args.grpc,
         skip_headers=args.skip_headers,
         skip_headers_limit=args.skip_headers_limit,
+        wfp_output=args.wfp_output,
     )
     if args.wfp:
         if not scanner.is_file_or_snippet_scan():
