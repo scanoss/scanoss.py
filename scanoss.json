@@ -15,9 +15,11 @@
     "include": [
       {
         "purl": "pkg:github/scanoss/scanoss.py"
+      },
+      {
+        "purl": "pkg:pypi/scanoss"
       }
     ],
     "remove": []
   }
 }
-
