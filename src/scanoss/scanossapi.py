@@ -31,8 +31,8 @@ import sys
 import time
 import uuid
 from json.decoder import JSONDecodeError
-from urllib.parse import urlparse, urlunparse
 from typing import Optional, Union
+from urllib.parse import urlparse, urlunparse
 
 import requests
 import urllib3
@@ -146,7 +146,8 @@ class ScanossApi(ScanossBase):
         base_url = url if url else SCANOSS_SCAN_URL
         self.api_key = api_key if api_key else SCANOSS_API_KEY
         if self.api_key and not url and not os.environ.get('SCANOSS_SCAN_URL'):
-            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+            base_url = DEFAULT_URL2
+        self.url = self.normalize_api_url(base_url)
         if ver_details:
             self.headers['x-scanoss-client'] = ver_details
         if self.api_key:
