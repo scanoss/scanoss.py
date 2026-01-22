@@ -25,6 +25,29 @@
         "replace_with": "pkg:github/scanoss/only_purl_match_replaced.py"
       }
     ]
+  },
+  "settings": {
+    "proxy": {
+      "host": "http://root-proxy:8080"
+    },
+    "http_config": {
+      "base_uri": "https://root-api.scanoss.com",
+      "ignore_cert_errors": false
+    },
+    "file_snippet": {
+      "proxy": {
+        "host": "http://file-snippet-proxy:8080"
+      },
+      "http_config": {
+        "base_uri": "https://file-snippet-api.scanoss.com",
+        "ignore_cert_errors": true
+      },
+      "min_snippet_hits": 10,
+      "min_snippet_lines": 5,
+      "honour_file_exts": true,
+      "ranking_enabled": true,
+      "ranking_threshold": 10
+    }
   }
 }
 

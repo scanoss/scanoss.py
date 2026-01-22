@@ -39,6 +39,7 @@ from scanoss.file_filters import FileFilters
 from . import __version__
 from .csvoutput import CsvOutput
 from .cyclonedx import CycloneDx
+from .scan_settings_builder import ScanSettingsBuilder
 from .scancodedeps import ScancodeDeps
 from .scanoss_settings import ScanossSettings
 from .scanossapi import ScanossApi
@@ -103,9 +104,14 @@ class Scanner(ScanossBase):
         strip_hpsm_ids=None,
         strip_snippet_ids=None,
         skip_md5_ids=None,
-        scan_settings: 'ScanossSettings | None' = None,
+        scanoss_settings: 'ScanossSettings | None' = None,
         req_headers: dict = None,
         use_grpc: bool = False,
+        min_snippet_hits: int = None,
+        min_snippet_lines: int = None,
+        ranking: str = None,
+        ranking_threshold: int = None,
+        honour_file_exts: str = None,
         skip_headers: bool = False,
         skip_headers_limit: int = 0,
         wfp_output: str = None,
@@ -132,7 +138,19 @@ class Scanner(ScanossBase):
         self.skip_size = skip_size
         self.skip_extensions = skip_extensions
         self.req_headers = req_headers
+        self.scanoss_settings = scanoss_settings
         ver_details = Scanner.version_details()
+
+        # Get settings values for skip_headers options
+        file_snippet_settings = scanoss_settings.get_file_snippet_settings() if scanoss_settings else {}
+        settings_skip_headers = file_snippet_settings.get('skip_headers')
+        settings_skip_headers_limit = file_snippet_settings.get('skip_headers_limit')
+
+        # Merge CLI values with settings (scanoss.json takes priority over CLI)
+        skip_headers = Scanner._merge_cli_with_settings(skip_headers, settings_skip_headers)
+        skip_headers_limit = Scanner._merge_cli_with_settings(
+            skip_headers_limit, settings_skip_headers_limit)
+        self.print_debug(f'Skip headers {skip_headers} with limit: {skip_headers_limit}')
 
         self.winnowing = Winnowing(
             debug=debug,
@@ -148,21 +166,40 @@ class Scanner(ScanossBase):
             skip_headers=skip_headers,
             skip_headers_limit=skip_headers_limit,
         )
+
+        # Build merged settings using builder pattern
+        scan_settings = (ScanSettingsBuilder(scanoss_settings, debug=debug, trace=trace, quiet=quiet)
+            .with_proxy(proxy)
+            .with_url(url)
+            .with_ignore_cert_errors(ignore_cert_errors)
+            .with_min_snippet_hits(min_snippet_hits)
+            .with_min_snippet_lines(min_snippet_lines)
+            .with_honour_file_exts(honour_file_exts)
+            .with_ranking(ranking)
+            .with_ranking_threshold(ranking_threshold))
+
+        self.print_debug(f'Scan settings:  {scan_settings}')
+
         self.scanoss_api = ScanossApi(
             debug=debug,
             trace=trace,
             quiet=quiet,
             api_key=api_key,
-            url=url,
+            url=scan_settings.url,
             flags=flags,
             timeout=timeout,
             ver_details=ver_details,
-            ignore_cert_errors=ignore_cert_errors,
-            proxy=proxy,
+            ignore_cert_errors=scan_settings.ignore_cert_errors,
+            proxy=scan_settings.proxy,
             ca_cert=ca_cert,
             pac=pac,
             retry=retry,
-            req_headers= self.req_headers,
+            req_headers=self.req_headers,
+            min_snippet_hits=scan_settings.min_snippet_hits,
+            min_snippet_lines=scan_settings.min_snippet_lines,
+            honour_file_exts=scan_settings.honour_file_exts,
+            ranking=scan_settings.ranking,
+            ranking_threshold=scan_settings.ranking_threshold,
         )
         sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
         grpc_api = ScanossGrpc(
@@ -193,18 +230,31 @@ class Scanner(ScanossBase):
         if self._skip_snippets:
             self.max_post_size = 8 * 1024  # 8k Max post size if we're skipping snippets
 
-        self.scan_settings = scan_settings
         self.post_processor = (
-            ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
+            ScanPostProcessor(scanoss_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
         )
         self._maybe_set_api_sbom()
 
     def _maybe_set_api_sbom(self):
-        if not self.scan_settings:
+        if not self.scanoss_settings:
             return
-        sbom = self.scan_settings.get_sbom()
+        sbom = self.scanoss_settings.get_sbom()
         if sbom:
             self.scanoss_api.set_sbom(sbom)
+
+    @staticmethod
+    def _merge_cli_with_settings(cli_value, settings_value):
+        """Merge CLI value with settings value (two-level priority: settings > cli).
+
+        Args:
+            cli_value: Value from CLI argument
+            settings_value: Value from scanoss.json file_snippet settings
+        Returns:
+            Merged value with CLI taking priority over settings
+        """
+        if settings_value is not None:
+            return settings_value
+        return cli_value
 
     @staticmethod
     def __count_files_in_wfp_file(wfp_file: str):
@@ -288,7 +338,8 @@ class Scanner(ScanossBase):
         """
         if self.scan_options & ScanType.SCAN_DEPENDENCIES.value:
             return True
-        return False
+        file_snippet_settings = self.scanoss_settings.get_file_snippet_settings() if self.scanoss_settings else {}
+        return file_snippet_settings.get('dependency_analysis', False)
 
     def scan_folder_with_options(  # noqa: PLR0913
         self,
@@ -356,7 +407,7 @@ class Scanner(ScanossBase):
             debug=self.debug,
             trace=self.trace,
             quiet=self.quiet,
-            scanoss_settings=self.scan_settings,
+            scanoss_settings=self.scanoss_settings,
             all_extensions=self.all_extensions,
             all_folders=self.all_folders,
             hidden_files_folders=self.hidden_files_folders,
@@ -624,7 +675,7 @@ class Scanner(ScanossBase):
             debug=self.debug,
             trace=self.trace,
             quiet=self.quiet,
-            scanoss_settings=self.scan_settings,
+            scanoss_settings=self.scanoss_settings,
             all_extensions=self.all_extensions,
             all_folders=self.all_folders,
             hidden_files_folders=self.hidden_files_folders,
@@ -939,7 +990,7 @@ class Scanner(ScanossBase):
             debug=self.debug,
             trace=self.trace,
             quiet=self.quiet,
-            scanoss_settings=self.scan_settings,
+            scanoss_settings=self.scanoss_settings,
             all_extensions=self.all_extensions,
             all_folders=self.all_folders,
             hidden_files_folders=self.hidden_files_folders,

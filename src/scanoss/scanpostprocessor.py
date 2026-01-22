@@ -80,7 +80,7 @@ class ScanPostProcessor(ScanossBase):
 
     def __init__(
         self,
-        scan_settings: ScanossSettings,
+        scanoss_settings: ScanossSettings,
         debug: bool = False,
         trace: bool = False,
         quiet: bool = False,
@@ -88,14 +88,14 @@ class ScanPostProcessor(ScanossBase):
     ):
         """
         Args:
-            scan_settings (ScanossSettings): Scan settings object
+            scanoss_settings (ScanossSettings): Scanoss settings object
             debug (bool, optional): Debug mode. Defaults to False.
             trace (bool, optional): Traces. Defaults to False.
             quiet (bool, optional): Quiet mode. Defaults to False.
             results (dict | str, optional): Results to be processed. Defaults to None.
         """
         super().__init__(debug, trace, quiet)
-        self.scan_settings = scan_settings
+        self.scanoss_settings = scanoss_settings
         self.results: dict = results
         self.component_info_map: dict = {}
 
@@ -114,10 +114,10 @@ class ScanPostProcessor(ScanossBase):
         if not self.results:
             return
         for _, result in self.results.items():
-            result = result[0] if isinstance(result, list) else result
-            purls = result.get('purl', [])
+            entry = result[0] if isinstance(result, list) else result
+            purls = entry.get('purl', [])
             for purl in purls:
-                self.component_info_map[purl] = result
+                self.component_info_map[purl] = entry
 
     def post_process(self):
         """
@@ -126,7 +126,7 @@ class ScanPostProcessor(ScanossBase):
         Returns:
             dict: Processed results
         """
-        if self.scan_settings.is_legacy():
+        if self.scanoss_settings.is_legacy():
             self.print_stderr(
                 'Legacy settings file detected. Post-processing is not supported for legacy settings file.'
             )
@@ -139,7 +139,7 @@ class ScanPostProcessor(ScanossBase):
         """
         Remove entries from the results based on files and/or purls specified in the SCANOSS settings file
         """
-        to_remove_entries = self.scan_settings.get_bom_remove()
+        to_remove_entries = self.scanoss_settings.get_bom_remove()
         if not to_remove_entries:
             return
         self.results = {
@@ -152,15 +152,15 @@ class ScanPostProcessor(ScanossBase):
         """
         Replace purls in the results based on the SCANOSS settings file
         """
-        to_replace_entries = self.scan_settings.get_bom_replace()
+        to_replace_entries = self.scanoss_settings.get_bom_replace()
         if not to_replace_entries:
             return
 
         for result_path, result in self.results.items():
-            result = result[0] if isinstance(result, list) else result
-            should_replace, to_replace_with_purl = self._should_replace_result(result_path, result, to_replace_entries)
+            entry = result[0] if isinstance(result, list) else result
+            should_replace, to_replace_with_purl = self._should_replace_result(result_path, entry, to_replace_entries)
             if should_replace:
-                self.results[result_path] = [self._update_replaced_result(result, to_replace_with_purl)]
+                self.results[result_path] = [self._update_replaced_result(entry, to_replace_with_purl)]
 
     def _update_replaced_result(self, result: dict, to_replace_with_purl: str) -> dict:
         """
