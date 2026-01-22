@@ -80,7 +80,7 @@ class ScanossApi(ScanossBase):
             print(
                 f"Warning: URL '{url}' contains path '{parsed.path}'. "
                 f"Using base URL only: '{parsed.scheme}://{parsed.netloc}'",
-                file=sys.stderr
+                file=sys.stderr,
             )
             # Reconstruct base URL without path
             base_url = urlunparse((parsed.scheme, parsed.netloc, '', '', '', ''))
@@ -89,7 +89,7 @@ class ScanossApi(ScanossBase):
             base_url = url.rstrip('/')
 
         # Append the scan endpoint
-        return f"{base_url}{SCAN_ENDPOINT}"
+        return f'{base_url}{SCAN_ENDPOINT}'
 
     def __init__(  # noqa: PLR0912, PLR0913, PLR0915
         self,
@@ -139,7 +139,8 @@ class ScanossApi(ScanossBase):
         base_url = url if url else SCANOSS_SCAN_URL
         self.api_key = api_key if api_key else SCANOSS_API_KEY
         if self.api_key and not url and not os.environ.get('SCANOSS_SCAN_URL'):
-            base_url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+            # API key specific and no alternative URL, so use the default premium
+            base_url = DEFAULT_URL2
         # Apply normalization to ensure base URL + endpoint format
         self.url = self.normalize_api_url(base_url)
         if ver_details:
@@ -311,18 +312,20 @@ class ScanossApi(ScanossBase):
 
     def load_generic_headers(self, url):
         """
-         Adds custom headers from req_headers to the headers collection.
+        Adds custom headers from req_headers to the headers collection.
 
-         If x-api-key is present and no URL is configured (directly or via
-         environment), sets URL to the premium endpoint (DEFAULT_URL2).
-         """
+        If x-api-key is present and no URL is configured (directly or via
+        environment), sets URL to the premium endpoint (DEFAULT_URL2).
+        """
         if self.req_headers:  # Load generic headers
             for key, value in self.req_headers.items():
-                if key == 'x-api-key': # Set premium URL if x-api-key header is set
+                if key == 'x-api-key':  # Set premium URL if x-api-key header is set
                     if not url and not os.environ.get('SCANOSS_SCAN_URL'):
-                        self.url = self.normalize_api_url(DEFAULT_URL2)  # API key specific and no alternative URL, so use the default premium
+                        # API key specific and no alternative URL, so use the default premium
+                        self.url = self.normalize_api_url(DEFAULT_URL2)
                     self.api_key = value
                 self.headers[key] = value
+
 
 #
 # End of ScanossApi Class
