@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Upcoming changes...
+
+## [1.45.0] - 2026-02-02
 ### Added
 - Added scan engine tuning parameters for snippet matching:
   - `--min-snippet-hits` - Minimum snippet hits required (0 defers to server config)
@@ -792,3 +795,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.43.0]: https://github.com/scanoss/scanoss.py/compare/v1.42.0...v1.43.0
 [1.43.1]: https://github.com/scanoss/scanoss.py/compare/v1.43.0...v1.43.1
 [1.44.0]: https://github.com/scanoss/scanoss.py/compare/v1.43.1...v1.44.0
+[1.45.0]: https://github.com/scanoss/scanoss.py/compare/v1.44.0...v1.45.0
