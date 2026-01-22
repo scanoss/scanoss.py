@@ -54,8 +54,7 @@ class ScanossApi(ScanossBase):
     Currently support posting scan requests to the SCANOSS streaming API
     """
 
-    @staticmethod
-    def normalize_api_url(url: str) -> str:
+    def normalize_api_url(self, url: str) -> str:
         """
         Normalize API URL to ensure it's a base URL with the scan endpoint appended.
 
@@ -68,27 +67,18 @@ class ScanossApi(ScanossBase):
         if not url:
             return url
 
-        # Strip whitespace
         url = url.strip()
-
-        # Parse the URL using urllib.parse for robust handling
         parsed = urlparse(url)
 
-        # Check if there's a path component
         if parsed.path and parsed.path != '/':
-            # Emit warning about path in URL
-            print(
+            self.print_stderr(
                 f"Warning: URL '{url}' contains path '{parsed.path}'. "
-                f"Using base URL only: '{parsed.scheme}://{parsed.netloc}'",
-                file=sys.stderr,
+                f"Using base URL only: '{parsed.scheme}://{parsed.netloc}'"
             )
-            # Reconstruct base URL without path
             base_url = urlunparse((parsed.scheme, parsed.netloc, '', '', '', ''))
         else:
-            # Use the URL as-is (it's already a base URL)
             base_url = url.rstrip('/')
 
-        # Append the scan endpoint
         return f'{base_url}{SCAN_ENDPOINT}'
 
     def __init__(  # noqa: PLR0912, PLR0913, PLR0915
@@ -134,14 +124,10 @@ class ScanossApi(ScanossBase):
         self.ignore_cert_errors = ignore_cert_errors
         self.req_headers = req_headers if req_headers else {}
         self.headers = {}
-        # Set the correct URL/API key combination
-        # Normalize all URLs to base URLs with scan endpoint appended
         base_url = url if url else SCANOSS_SCAN_URL
         self.api_key = api_key if api_key else SCANOSS_API_KEY
         if self.api_key and not url and not os.environ.get('SCANOSS_SCAN_URL'):
-            # API key specific and no alternative URL, so use the default premium
             base_url = DEFAULT_URL2
-        # Apply normalization to ensure base URL + endpoint format
         self.url = self.normalize_api_url(base_url)
         if ver_details:
             self.headers['x-scanoss-client'] = ver_details
@@ -156,7 +142,7 @@ class ScanossApi(ScanossBase):
         if self.trace:
             logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
             http_client.HTTPConnection.debuglevel = 1
-        if pac and not proxy:  # Setup PAC session if requested (and no proxy has been explicitly set)
+        if pac and not proxy:
             self.print_debug('Setting up PAC session...')
             self.session = PACSession(pac=pac)
         else:
