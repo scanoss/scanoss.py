@@ -1080,7 +1080,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     # Global Scan command options
     for p in [p_scan, p_cs]:
         p.add_argument(
-            '--apiurl', type=str, help='SCANOSS API URL (optional - default: https://api.osskb.org/scan/direct)'
+            '--apiurl', type=str, help='SCANOSS API base URL (optional - default: https://api.osskb.org)'
         )
 
     # Global Scan/Fingerprint filter options

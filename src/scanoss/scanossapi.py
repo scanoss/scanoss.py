@@ -29,6 +29,7 @@ import sys
 import time
 import uuid
 from json.decoder import JSONDecodeError
+from urllib.parse import urlparse, urlunparse
 
 import requests
 import urllib3
@@ -40,8 +41,9 @@ from . import __version__
 from .constants import DEFAULT_TIMEOUT, MIN_TIMEOUT
 from .scanossbase import ScanossBase
 
-DEFAULT_URL = 'https://api.osskb.org/scan/direct'  # default free service URL
-DEFAULT_URL2 = 'https://api.scanoss.com/scan/direct'  # default premium service URL
+DEFAULT_URL = 'https://api.osskb.org'  # default free service base URL
+DEFAULT_URL2 = 'https://api.scanoss.com'  # default premium service base URL
+SCAN_ENDPOINT = '/scan/direct'  # scan endpoint path
 SCANOSS_SCAN_URL = os.environ.get('SCANOSS_SCAN_URL') if os.environ.get('SCANOSS_SCAN_URL') else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_API_KEY') else ''
 
@@ -51,6 +53,43 @@ class ScanossApi(ScanossBase):
     ScanOSS REST API client class
     Currently support posting scan requests to the SCANOSS streaming API
     """
+
+    @staticmethod
+    def normalize_api_url(url: str) -> str:
+        """
+        Normalize API URL to ensure it's a base URL with the scan endpoint appended.
+
+        If the URL contains a path component (e.g., /scan/direct), a warning is emitted
+        and the path is stripped to use only the base URL.
+
+        :param url: Input URL (can be base URL or full endpoint URL)
+        :return: Normalized URL with /scan/direct endpoint
+        """
+        if not url:
+            return url
+
+        # Strip whitespace
+        url = url.strip()
+
+        # Parse the URL using urllib.parse for robust handling
+        parsed = urlparse(url)
+
+        # Check if there's a path component
+        if parsed.path and parsed.path != '/':
+            # Emit warning about path in URL
+            print(
+                f"Warning: URL '{url}' contains path '{parsed.path}'. "
+                f"Using base URL only: '{parsed.scheme}://{parsed.netloc}'",
+                file=sys.stderr
+            )
+            # Reconstruct base URL without path
+            base_url = urlunparse((parsed.scheme, parsed.netloc, '', '', '', ''))
+        else:
+            # Use the URL as-is (it's already a base URL)
+            base_url = url.rstrip('/')
+
+        # Append the scan endpoint
+        return f"{base_url}{SCAN_ENDPOINT}"
 
     def __init__(  # noqa: PLR0912, PLR0913, PLR0915
         self,
@@ -74,7 +113,7 @@ class ScanossApi(ScanossBase):
         Initialise the SCANOSS API
         :param scan_format: Scan format (default plain)
         :param flags: Scanning flags (default None)
-        :param url: API URL (default https://api.osskb.org/scan/direct)
+        :param url: API base URL (default https://api.osskb.org). The /scan/direct endpoint is automatically appended.
         :param api_key: API Key (default None)
         :param debug: Enable debug (default False)
         :param trace: Enable trace (default False)
@@ -96,10 +135,13 @@ class ScanossApi(ScanossBase):
         self.req_headers = req_headers if req_headers else {}
         self.headers = {}
         # Set the correct URL/API key combination
-        self.url = url if url else SCANOSS_SCAN_URL
+        # Normalize all URLs to base URLs with scan endpoint appended
+        base_url = url if url else SCANOSS_SCAN_URL
         self.api_key = api_key if api_key else SCANOSS_API_KEY
         if self.api_key and not url and not os.environ.get('SCANOSS_SCAN_URL'):
-            self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+            base_url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+        # Apply normalization to ensure base URL + endpoint format
+        self.url = self.normalize_api_url(base_url)
         if ver_details:
             self.headers['x-scanoss-client'] = ver_details
         if self.api_key:
@@ -278,7 +320,7 @@ class ScanossApi(ScanossBase):
             for key, value in self.req_headers.items():
                 if key == 'x-api-key': # Set premium URL if x-api-key header is set
                     if not url and not os.environ.get('SCANOSS_SCAN_URL'):
-                        self.url = DEFAULT_URL2  # API key specific and no alternative URL, so use the default premium
+                        self.url = self.normalize_api_url(DEFAULT_URL2)  # API key specific and no alternative URL, so use the default premium
                     self.api_key = value
                 self.headers[key] = value
 
