@@ -27,7 +27,7 @@ from typing import List, Tuple
 from packageurl import PackageURL
 from packageurl.contrib import purl2url
 
-from .scanoss_settings import BomEntry, ScanossSettings, find_best_match
+from .scanoss_settings import BomEntry, ReplaceRule, ScanossSettings, find_best_match
 from .scanossbase import ScanossBase
 
 
@@ -43,11 +43,11 @@ def _get_match_type_message(result_path: str, bom_entry: BomEntry, action: str) 
     Returns:
         str: The message to be printed
     """
-    entry_path = bom_entry.get('path', '')
-    if entry_path and bom_entry.get('purl'):
+    entry_path = bom_entry.path or ''
+    if entry_path and bom_entry.purl:
         match_kind = 'folder' if entry_path.endswith('/') else 'file'
         message = f"{action} '{result_path}'. Full match found ({match_kind} + purl)."
-    elif bom_entry.get('purl'):
+    elif bom_entry.purl:
         message = f"{action} '{result_path}'. Found PURL match."
     else:
         message = f"{action} '{result_path}'. Found path match."
@@ -189,7 +189,7 @@ class ScanPostProcessor(ScanossBase):
         return result
 
     def _should_replace_result(
-        self, result_path: str, result: dict, to_replace_entries: List[BomEntry]
+        self, result_path: str, result: dict, to_replace_entries: List[ReplaceRule]
     ) -> Tuple[bool, str]:
         """
         Check if a result should be replaced based on the SCANOSS settings.
@@ -198,7 +198,7 @@ class ScanPostProcessor(ScanossBase):
         Args:
             result_path (str): Path of the result data
             result (dict): Result to check
-            to_replace_entries (List[BomEntry]): BOM entries to replace from the settings file
+            to_replace_entries (List[ReplaceRule]): Replace rules from the settings file
 
         Returns:
             bool: True if the result should be replaced, False otherwise
@@ -206,9 +206,9 @@ class ScanPostProcessor(ScanossBase):
         """
         result_purls = result.get('purl', [])
         match = find_best_match(result_path, result_purls, to_replace_entries)
-        if match and match.get('replace_with'):
+        if match and isinstance(match, ReplaceRule) and match.replace_with:
             self._print_message(result_path, result_purls, match, 'Replacing')
-            return True, match.get('replace_with')
+            return True, match.replace_with
         return False, None
 
     def _should_remove_result(self, result_path: str, result: dict, to_remove_entries: List[BomEntry]) -> bool:
@@ -248,8 +248,8 @@ class ScanPostProcessor(ScanossBase):
             f'  - PURLs: {", ".join(result_purls)}\n'
             f"  - Path: '{result_path}'\n"
         )
-        if action == 'Replacing':
-            message += f" - {action} with '{bom_entry.get('replace_with')}'"
+        if action == 'Replacing' and isinstance(bom_entry, ReplaceRule):
+            message += f" - {action} with '{bom_entry.replace_with}'"
         self.print_debug(message)
 
 
