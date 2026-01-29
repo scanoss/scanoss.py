@@ -24,9 +24,13 @@ SPDX-License-Identifier: MIT
 
 import json
 import os
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock
 
+from scanoss.scanner import Scanner
 from scanoss.scanoss_settings import (
     BomEntry,
     ReplaceRule,
@@ -516,6 +520,220 @@ class TestExtractFilePathsFromWfp(unittest.TestCase):
         from scanoss.scanner import Scanner
         paths = Scanner._extract_file_paths_from_wfp('')
         self.assertEqual(paths, [])
+
+
+class TestScannerSbomPayload(unittest.TestCase):
+    """End-to-end tests: verify Scanner sends the correct SBOM payload in HTTP POST requests"""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def _create_files(self, file_paths):
+        """Create test files in self.test_dir with enough content for WFP generation."""
+        for rel_path in file_paths:
+            abs_path = os.path.join(self.test_dir, rel_path)
+            os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+            with open(abs_path, 'w') as f:
+                f.write('/* generated test content */\n' * 20)
+
+    def _make_settings(self, settings_data):
+        """Create ScanossSettings from a dict without file I/O."""
+        settings = ScanossSettings()
+        settings.data = settings_data
+        settings.settings_file_type = 'new'
+        return settings
+
+    def _create_scanner(self, settings=None):
+        """Create a Scanner with mocked session.post.
+
+        Returns:
+            (scanner, mock_post) tuple
+        """
+        scanner = Scanner(
+            scan_settings=settings,
+            nb_threads=1,
+            quiet=True,
+            scan_options=3,  # FILES + SNIPPETS, no deps
+        )
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.ok = True
+        mock_response.json.return_value = {}
+        mock_response.text = '{}'
+
+        mock_post = MagicMock(return_value=mock_response)
+        scanner.scanoss_api.session.post = mock_post
+
+        return scanner, mock_post
+
+    def _extract_payloads(self, mock_post):
+        """Extract form_data dicts from all session.post calls."""
+        payloads = []
+        for call in mock_post.call_args_list:
+            form_data = call.kwargs.get('data', {})
+            payloads.append(form_data)
+        return payloads
+
+    # -- Global SBOM tests (no path-scoped entries) --
+
+    def test_global_sbom_include_sent_in_post(self):
+        """When purl-only include entries exist, every POST should contain
+        type='identify' and the correct purls in assets."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/vue@2.6.12'},
+                    {'purl': 'pkg:npm/react@17.0.0'},
+                ],
+            }
+        })
+        self._create_files(['src/main.c', 'src/lib.c'])
+        scanner, mock_post = self._create_scanner(settings)
+
+        scanner.scan_folder_with_options(self.test_dir)
+
+        self.assertTrue(mock_post.called, 'Expected at least one POST call')
+        payloads = self._extract_payloads(mock_post)
+        for payload in payloads:
+            self.assertEqual(payload.get('type'), 'identify')
+            assets = json.loads(payload.get('assets'))
+            purls = {c['purl'] for c in assets['components']}
+            self.assertIn('pkg:npm/vue@2.6.12', purls)
+            self.assertIn('pkg:npm/react@17.0.0', purls)
+
+    def test_global_sbom_exclude_sent_as_blacklist(self):
+        """When purl-only exclude entries exist, every POST should contain
+        type='blacklist' and the correct purls in assets."""
+        settings = self._make_settings({
+            'bom': {
+                'exclude': [
+                    {'purl': 'pkg:npm/unwanted@1.0.0'},
+                ],
+            }
+        })
+        self._create_files(['src/main.c'])
+        scanner, mock_post = self._create_scanner(settings)
+
+        scanner.scan_folder_with_options(self.test_dir)
+
+        self.assertTrue(mock_post.called, 'Expected at least one POST call')
+        payloads = self._extract_payloads(mock_post)
+        for payload in payloads:
+            self.assertEqual(payload.get('type'), 'blacklist')
+            assets = json.loads(payload.get('assets'))
+            purls = {c['purl'] for c in assets['components']}
+            self.assertIn('pkg:npm/unwanted@1.0.0', purls)
+
+    def test_no_bom_entries_sends_empty_assets(self):
+        """When settings have empty BOM lists, POST assets should be an empty list
+        and type should be None (no scan type resolved)."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [],
+                'exclude': [],
+            }
+        })
+        self._create_files(['src/main.c'])
+        scanner, mock_post = self._create_scanner(settings)
+
+        scanner.scan_folder_with_options(self.test_dir)
+
+        self.assertTrue(mock_post.called, 'Expected at least one POST call')
+        payloads = self._extract_payloads(mock_post)
+        for payload in payloads:
+            self.assertIsNone(payload.get('type'))
+            assets = json.loads(payload.get('assets'))
+            self.assertEqual(assets, [])
+
+    # -- Per-batch SBOM tests (path-scoped entries) --
+
+    def test_per_batch_sbom_path_scoped_include(self):
+        """Path-scoped include: batch with matching files should include
+        both global and scoped purls."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/global-lib'},
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor-lib'},
+                ],
+            }
+        })
+        self._create_files(['src/vendor/lib.c', 'src/main.c'])
+        scanner, mock_post = self._create_scanner(settings)
+
+        scanner.scan_folder_with_options(self.test_dir)
+
+        self.assertTrue(mock_post.called, 'Expected at least one POST call')
+        payloads = self._extract_payloads(mock_post)
+        # With both files in one batch, vendor/lib.c triggers the scoped entry
+        for payload in payloads:
+            self.assertEqual(payload.get('type'), 'identify')
+            assets = json.loads(payload.get('assets'))
+            purls = {c['purl'] for c in assets['components']}
+            self.assertIn('pkg:npm/global-lib', purls)
+            self.assertIn('pkg:npm/vendor-lib', purls)
+
+    def test_per_batch_sbom_no_matching_paths(self):
+        """Path-scoped include with no matching files: POST should have no type/assets."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'vendor/', 'purl': 'pkg:npm/vendor-only'},
+                ],
+            }
+        })
+        # Files are NOT under vendor/
+        self._create_files(['src/main.c'])
+        scanner, mock_post = self._create_scanner(settings)
+
+        scanner.scan_folder_with_options(self.test_dir)
+
+        self.assertTrue(mock_post.called, 'Expected at least one POST call')
+        payloads = self._extract_payloads(mock_post)
+        for payload in payloads:
+            self.assertNotIn('type', payload)
+            self.assertNotIn('assets', payload)
+
+    def test_per_batch_sbom_exclude_path_scoped(self):
+        """Path-scoped exclude: matching batch should contain type='blacklist'."""
+        settings = self._make_settings({
+            'bom': {
+                'exclude': [
+                    {'path': 'src/', 'purl': 'pkg:npm/blocked'},
+                ],
+            }
+        })
+        self._create_files(['src/main.c'])
+        scanner, mock_post = self._create_scanner(settings)
+
+        scanner.scan_folder_with_options(self.test_dir)
+
+        self.assertTrue(mock_post.called, 'Expected at least one POST call')
+        payloads = self._extract_payloads(mock_post)
+        for payload in payloads:
+            self.assertEqual(payload.get('type'), 'blacklist')
+            assets = json.loads(payload.get('assets'))
+            purls = {c['purl'] for c in assets['components']}
+            self.assertIn('pkg:npm/blocked', purls)
+
+    # -- No settings test --
+
+    def test_no_settings_no_sbom_in_payload(self):
+        """When Scanner has no scan_settings, POST should have no type/assets."""
+        self._create_files(['src/main.c'])
+        scanner, mock_post = self._create_scanner(settings=None)
+
+        scanner.scan_folder_with_options(self.test_dir)
+
+        self.assertTrue(mock_post.called, 'Expected at least one POST call')
+        payloads = self._extract_payloads(mock_post)
+        for payload in payloads:
+            self.assertNotIn('type', payload)
+            self.assertNotIn('assets', payload)
 
 
 if __name__ == '__main__':
