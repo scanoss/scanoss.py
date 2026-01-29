@@ -23,6 +23,7 @@ SPDX-License-Identifier: MIT
 """
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, TypedDict
 
@@ -39,12 +40,35 @@ from .utils.file import (
 DEFAULT_SCANOSS_JSON_FILE = Path('scanoss.json')
 
 
-class BomEntry(TypedDict, total=False):
-    purl: str
-    path: str
-    replace_with: str
-    comment: str
-    license: str
+@dataclass
+class BomEntry:
+    purl: Optional[str] = None
+    path: Optional[str] = None
+    comment: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'BomEntry':
+        return cls(
+            purl=data.get('purl'),
+            path=data.get('path'),
+            comment=data.get('comment'),
+        )
+
+
+@dataclass
+class ReplaceRule(BomEntry):
+    replace_with: Optional[str] = None
+    license: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'ReplaceRule':
+        return cls(
+            purl=data.get('purl'),
+            path=data.get('path'),
+            comment=data.get('comment'),
+            replace_with=data.get('replace_with'),
+            license=data.get('license'),
+        )
 
 
 def matches_path(entry_path: str, result_path: str) -> bool:
@@ -81,8 +105,8 @@ def entry_priority(entry: BomEntry) -> int:
     Returns:
         Priority score
     """
-    has_path = bool(entry.get('path'))
-    has_purl = bool(entry.get('purl'))
+    has_path = bool(entry.path)
+    has_purl = bool(entry.purl)
     if has_path and has_purl:
         return 4
     if has_purl:
@@ -110,8 +134,8 @@ def find_best_match(result_path: str, result_purls: List[str], entries: List[Bom
     best_path_len = -1
 
     for entry in entries:
-        entry_path = entry.get('path', '')
-        entry_purl = entry.get('purl', '')
+        entry_path = entry.path or ''
+        entry_purl = entry.purl or ''
 
         if not entry_path and not entry_purl:
             continue
@@ -279,9 +303,10 @@ class ScanossSettings(ScanossBase):
             list: List of components to include in the scan
         """
         if self.settings_file_type == 'legacy':
-            return self._get_bom()
-        return self._get_bom().get('include', [])
-
+            raw = self._get_bom()
+        else:
+            raw = self._get_bom().get('include', [])
+        return [BomEntry.from_dict(entry) for entry in raw]
 
     def get_bom_exclude(self) -> List[BomEntry]:
         """
@@ -290,8 +315,10 @@ class ScanossSettings(ScanossBase):
             list: List of components to exclude from the scan
         """
         if self.settings_file_type == 'legacy':
-            return self._get_bom()
-        return self._get_bom().get('exclude', [])
+            raw = self._get_bom()
+        else:
+            raw = self._get_bom().get('exclude', [])
+        return [BomEntry.from_dict(entry) for entry in raw]
 
     def get_bom_remove(self) -> List[BomEntry]:
         """
@@ -300,18 +327,21 @@ class ScanossSettings(ScanossBase):
             list: List of components to remove from the scan
         """
         if self.settings_file_type == 'legacy':
-            return self._get_bom()
-        return self._get_bom().get('remove', [])
+            raw = self._get_bom()
+        else:
+            raw = self._get_bom().get('remove', [])
+        return [BomEntry.from_dict(entry) for entry in raw]
 
-    def get_bom_replace(self) -> List[BomEntry]:
+    def get_bom_replace(self) -> List[ReplaceRule]:
         """
         Get the list of components to replace in the scan
         Returns:
-            list: List of components to replace in the scan
+            list: List of replace rules
         """
         if self.settings_file_type == 'legacy':
             return []
-        return self._get_bom().get('replace', [])
+        raw = self._get_bom().get('replace', [])
+        return [ReplaceRule.from_dict(entry) for entry in raw]
 
     def get_sbom(self):
         """
@@ -372,7 +402,7 @@ class ScanossSettings(ScanossBase):
             True if any include/exclude entry has a path field
         """
         for entry in self.get_bom_include() + self.get_bom_exclude():
-            if entry.get('path'):
+            if entry.path:
                 return True
         return False
 
@@ -405,8 +435,8 @@ class ScanossSettings(ScanossBase):
 
         filtered_purls = set()
         for entry in bom_entries:
-            entry_path = entry.get('path', '')
-            entry_purl = entry.get('purl', '')
+            entry_path = entry.path or ''
+            entry_purl = entry.purl or ''
             if not entry_purl:
                 continue
             if not entry_path:
@@ -427,32 +457,32 @@ class ScanossSettings(ScanossBase):
         }
 
     @staticmethod
-    def normalize_bom_entries(bom_entries) -> List[BomEntry]:
+    def normalize_bom_entries(bom_entries: List[BomEntry]) -> list:
         """
         Normalize the BOM entries by extracting only the purl field.
 
         Args:
-            bom_entries (List[Dict]): List of BOM entries
+            bom_entries: List of BOM entries
         Returns:
-            List: Normalized BOM entries
+            List of dicts with only the purl field (for API payload)
         """
         normalized_bom_entries = []
         for entry in bom_entries:
             normalized_bom_entries.append(
                 {
-                    'purl': entry.get('purl', ''),
+                    'purl': entry.purl or '',
                 }
             )
         return normalized_bom_entries
 
     @staticmethod
-    def _remove_duplicates(bom_entries: List[BomEntry]) -> List[BomEntry]:
+    def _remove_duplicates(bom_entries: list) -> list:
         """
-        Remove duplicate BOM entries
+        Remove duplicate BOM entries based on purl field.
         Args:
-            bom_entries (List[Dict]): List of BOM entries
+            bom_entries: List of normalized BOM entry dicts
         Returns:
-            List: List of unique BOM entries
+            List of unique BOM entries
         """
         already_added = set()
         unique_entries = []
