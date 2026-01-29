@@ -392,20 +392,6 @@ class ScanossSettings(ScanossBase):
 
         return self.normalize_bom_entries(self.get_bom_remove())
 
-    def has_path_scoped_bom_entries(self) -> bool:
-        """
-        Check if any include or exclude BOM entries have path-scoped rules.
-        When path-scoped entries exist, the SBOM context must be resolved per-batch
-        instead of sent globally with every request.
-
-        Returns:
-            True if any include/exclude entry has a path field
-        """
-        for entry in self.get_bom_include() + self.get_bom_exclude():
-            if entry.path:
-                return True
-        return False
-
     def get_sbom_for_batch(self, batch_file_paths: List[str]) -> Optional[dict]:
         """
         Get the SBOM context filtered for a specific batch of files.
