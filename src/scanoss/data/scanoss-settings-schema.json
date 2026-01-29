@@ -248,12 +248,8 @@
             "properties": {
               "path": {
                 "type": "string",
-                "description": "File path",
-                "examples": ["/path/to/file", "/path/to/another/file"],
-                "items": {
-                  "type": "string"
-                },
-                "uniqueItems": true
+                "description": "File or folder path. Paths ending with '/' are treated as folder rules and match all files under that directory.",
+                "examples": ["src/main.c", "src/vendor/"]
               },
               "purl": {
                 "type": "string",
@@ -280,8 +276,8 @@
             "properties": {
               "path": {
                 "type": "string",
-                "description": "File path",
-                "examples": ["/path/to/file", "/path/to/another/file"]
+                "description": "File or folder path. Paths ending with '/' are treated as folder rules and match all files under that directory.",
+                "examples": ["src/main.c", "src/vendor/"]
               },
               "purl": {
                 "type": "string",
@@ -296,8 +292,11 @@
                 "description": "Additional notes or comments"
               }
             },
-            "uniqueItems": true,
-            "required": ["purl"]
+            "anyOf": [
+              {"required": ["purl"]},
+              {"required": ["path"]}
+            ],
+            "uniqueItems": true
           }
         },
         "replace": {
@@ -308,8 +307,8 @@
             "properties": {
               "path": {
                 "type": "string",
-                "description": "File path",
-                "examples": ["/path/to/file", "/path/to/another/file"]
+                "description": "File or folder path. Paths ending with '/' are treated as folder rules and match all files under that directory.",
+                "examples": ["src/main.c", "src/vendor/"]
               },
               "purl": {
                 "type": "string",
