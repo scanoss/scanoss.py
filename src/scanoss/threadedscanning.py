@@ -138,15 +138,16 @@ class ThreadedScanning(ScanossBase):
         except Exception as e:
             self.print_debug(f'Warning: Update status bar lock failed: {e}. Ignoring.')
 
-    def queue_add(self, wfp: str) -> None:
+    def queue_add(self, wfp: str, sbom: dict = None) -> None:
         """
         Add requests to the queue
         :param wfp: WFP to add to queue
+        :param sbom: Per-request SBOM context (optional, overrides global SBOM)
         """
         if wfp is None or wfp == '':
             self.print_stderr('Warning: empty WFP. Skipping from scan...')
         else:
-            self.inputs.put(wfp)
+            self.inputs.put((wfp, sbom))
 
     def get_queue_size(self) -> int:
         return self.inputs.qsize()
@@ -216,7 +217,7 @@ class ThreadedScanning(ScanossBase):
             wfp = None
             if not self.inputs.empty():  # Only try to get a message if there is one on the queue
                 try:
-                    wfp = self.inputs.get(timeout=5)
+                    wfp, sbom = self.inputs.get(timeout=5)
                     if api_error:  # API error encountered, so stop processing anymore requests
                         self.inputs.task_done()  # remove request from the queue
                     else:
@@ -224,7 +225,7 @@ class ThreadedScanning(ScanossBase):
                         count = self.__count_files_in_wfp(wfp)
                         if wfp is None or wfp == '':
                             self.print_stderr(f'Warning: Empty WFP in request input: {wfp}')
-                        resp = self.scanapi.scan(wfp, scan_id=current_thread)
+                        resp = self.scanapi.scan(wfp, scan_id=current_thread, sbom=sbom)
                         if resp:
                             self.output.put(resp)  # Store the output response to later collection
                         self.update_bar(count)
