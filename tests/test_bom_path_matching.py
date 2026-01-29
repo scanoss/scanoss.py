@@ -28,6 +28,8 @@ import unittest
 from pathlib import Path
 
 from scanoss.scanoss_settings import (
+    BomEntry,
+    ReplaceRule,
     ScanossSettings,
     entry_priority,
     find_best_match,
@@ -70,19 +72,19 @@ class TestEntryPriority(unittest.TestCase):
     """Unit tests for the entry_priority helper function"""
 
     def test_path_and_purl(self):
-        self.assertEqual(entry_priority({'path': 'src/main.c', 'purl': 'pkg:npm/vue'}), 4)
+        self.assertEqual(entry_priority(BomEntry(path='src/main.c', purl='pkg:npm/vue')), 4)
 
     def test_purl_only(self):
-        self.assertEqual(entry_priority({'purl': 'pkg:npm/vue'}), 2)
+        self.assertEqual(entry_priority(BomEntry(purl='pkg:npm/vue')), 2)
 
     def test_path_only(self):
-        self.assertEqual(entry_priority({'path': 'src/vendor/'}), 1)
+        self.assertEqual(entry_priority(BomEntry(path='src/vendor/')), 1)
 
     def test_empty_entry(self):
-        self.assertEqual(entry_priority({}), 0)
+        self.assertEqual(entry_priority(BomEntry()), 0)
 
     def test_empty_strings(self):
-        self.assertEqual(entry_priority({'path': '', 'purl': ''}), 0)
+        self.assertEqual(entry_priority(BomEntry(path='', purl='')), 0)
 
 
 class TestFindBestMatch(unittest.TestCase):
@@ -93,74 +95,74 @@ class TestFindBestMatch(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_purl_only_match(self):
-        entries = [{'purl': 'pkg:npm/vue'}]
+        entries = [BomEntry(purl='pkg:npm/vue')]
         result = find_best_match('src/main.c', ['pkg:npm/vue'], entries)
         self.assertEqual(result, entries[0])
 
     def test_path_only_match(self):
-        entries = [{'path': 'src/vendor/'}]
+        entries = [BomEntry(path='src/vendor/')]
         result = find_best_match('src/vendor/lib.c', ['pkg:npm/vue'], entries)
         self.assertEqual(result, entries[0])
 
     def test_full_match_beats_purl_only(self):
         entries = [
-            {'purl': 'pkg:npm/vue'},
-            {'path': 'src/main.c', 'purl': 'pkg:npm/vue'},
+            BomEntry(purl='pkg:npm/vue'),
+            BomEntry(path='src/main.c', purl='pkg:npm/vue'),
         ]
         result = find_best_match('src/main.c', ['pkg:npm/vue'], entries)
         self.assertEqual(result, entries[1])
 
     def test_full_match_beats_path_only(self):
         entries = [
-            {'path': 'src/'},
-            {'path': 'src/main.c', 'purl': 'pkg:npm/vue'},
+            BomEntry(path='src/'),
+            BomEntry(path='src/main.c', purl='pkg:npm/vue'),
         ]
         result = find_best_match('src/main.c', ['pkg:npm/vue'], entries)
         self.assertEqual(result, entries[1])
 
     def test_longer_path_wins_on_tie(self):
         entries = [
-            {'path': 'src/', 'purl': 'pkg:npm/vue'},
-            {'path': 'src/vendor/', 'purl': 'pkg:npm/vue'},
+            BomEntry(path='src/', purl='pkg:npm/vue'),
+            BomEntry(path='src/vendor/', purl='pkg:npm/vue'),
         ]
         result = find_best_match('src/vendor/lib.c', ['pkg:npm/vue'], entries)
         self.assertEqual(result, entries[1])
 
     def test_no_match_when_purl_not_in_result(self):
-        entries = [{'purl': 'pkg:npm/react'}]
+        entries = [BomEntry(purl='pkg:npm/react')]
         result = find_best_match('src/main.c', ['pkg:npm/vue'], entries)
         self.assertIsNone(result)
 
     def test_no_match_when_path_does_not_match(self):
-        entries = [{'path': 'lib/', 'purl': 'pkg:npm/vue'}]
+        entries = [BomEntry(path='lib/', purl='pkg:npm/vue')]
         result = find_best_match('src/main.c', ['pkg:npm/vue'], entries)
         self.assertIsNone(result)
 
     def test_path_only_entry_matches_without_purl(self):
         """Path-only remove entries should match regardless of result purls"""
-        entries = [{'path': 'src/vendor/'}]
+        entries = [BomEntry(path='src/vendor/')]
         result = find_best_match('src/vendor/lib.c', [], entries)
         self.assertEqual(result, entries[0])
 
     def test_skip_entries_with_no_path_and_no_purl(self):
-        entries = [{'comment': 'just a comment'}]
+        entries = [BomEntry(comment='just a comment')]
         result = find_best_match('src/main.c', ['pkg:npm/vue'], entries)
         self.assertIsNone(result)
 
     def test_order_independent(self):
         """Best match should be found regardless of entry order"""
         entries_a = [
-            {'purl': 'pkg:npm/vue'},
-            {'path': 'src/main.c', 'purl': 'pkg:npm/vue'},
+            BomEntry(purl='pkg:npm/vue'),
+            BomEntry(path='src/main.c', purl='pkg:npm/vue'),
         ]
         entries_b = [
-            {'path': 'src/main.c', 'purl': 'pkg:npm/vue'},
-            {'purl': 'pkg:npm/vue'},
+            BomEntry(path='src/main.c', purl='pkg:npm/vue'),
+            BomEntry(purl='pkg:npm/vue'),
         ]
         result_a = find_best_match('src/main.c', ['pkg:npm/vue'], entries_a)
         result_b = find_best_match('src/main.c', ['pkg:npm/vue'], entries_b)
-        self.assertEqual(result_a['path'], 'src/main.c')
-        self.assertEqual(result_b['path'], 'src/main.c')
+        self.assertEqual(result_a.path, 'src/main.c')
+        self.assertEqual(result_b.path, 'src/main.c')
 
 
 class TestPostProcessorFolderMatching(unittest.TestCase):
