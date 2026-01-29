@@ -197,32 +197,19 @@ class Scanner(ScanossBase):
         self.post_processor = (
             ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
         )
-        self._per_batch_sbom = (
-            scan_settings is not None and scan_settings.has_path_scoped_bom_entries()
-        )
-        self._maybe_set_api_sbom()
-
-    def _maybe_set_api_sbom(self):
-        if not self.scan_settings:
-            return
-        if self._per_batch_sbom:
-            self.print_debug('Path-scoped BOM entries detected. SBOM context will be resolved per-batch.')
-            return
-        sbom = self.scan_settings.get_sbom()
-        if sbom:
-            self.scanoss_api.set_sbom(sbom)
 
     def _get_batch_sbom(self, batch_file_paths: List[str]) -> 'dict | None':
         """
         Compute SBOM context for a specific batch of files.
-        Returns None if no per-batch resolution is needed.
+        Purl-only entries are always included; path-scoped entries
+        are included only when a batch file matches.
 
         Args:
             batch_file_paths: List of file paths in the current batch
         Returns:
             SBOM payload dict or None
         """
-        if not self._per_batch_sbom:
+        if not self.scan_settings:
             return None
         return self.scan_settings.get_sbom_for_batch(batch_file_paths)
 
