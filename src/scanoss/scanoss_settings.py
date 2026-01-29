@@ -392,6 +392,38 @@ class ScanossSettings(ScanossBase):
 
         return self.normalize_bom_entries(self.get_bom_remove())
 
+    def get_matching_purls(self, file_path: str) -> frozenset:
+        """
+        Get the set of purls that match a specific file path.
+        Purl-only entries (no path) are always included.
+        Path-scoped entries are included only if the file matches.
+
+        Args:
+            file_path: File path to check
+
+        Returns:
+            frozenset of matching purl strings (empty if no BOM data)
+        """
+        if not self.data:
+            return frozenset()
+
+        include_entries = self.get_bom_include()
+        exclude_entries = self.get_bom_exclude()
+        bom_entries = include_entries or exclude_entries
+
+        if not bom_entries:
+            return frozenset()
+
+        purls = set()
+        for entry in bom_entries:
+            entry_purl = entry.purl or ''
+            if not entry_purl:
+                continue
+            entry_path = entry.path or ''
+            if not entry_path or matches_path(entry_path, file_path):
+                purls.add(entry_purl)
+        return frozenset(purls)
+
     def get_sbom_for_batch(self, batch_file_paths: List[str]) -> Optional[dict]:
         """
         Get the SBOM context filtered for a specific batch of files.
