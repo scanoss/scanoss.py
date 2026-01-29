@@ -42,6 +42,92 @@ DEFAULT_SCANOSS_JSON_FILE = Path('scanoss.json')
 class BomEntry(TypedDict, total=False):
     purl: str
     path: str
+    replace_with: str
+    comment: str
+    license: str
+
+
+def matches_path(entry_path: str, result_path: str) -> bool:
+    """
+    Check if a BOM entry path matches a result path.
+    Folder paths (ending with '/') use prefix matching; file paths use exact matching.
+
+    Args:
+        entry_path: Path from the BOM entry
+        result_path: Path from the scan result
+
+    Returns:
+        True if the entry path matches the result path
+    """
+    if not entry_path:
+        return True
+    if entry_path.endswith('/'):
+        return result_path.startswith(entry_path)
+    return entry_path == result_path
+
+
+def entry_priority(entry: BomEntry) -> int:
+    """
+    Calculate the priority score for a BOM entry.
+    Higher score means higher priority (more specific).
+
+    Score 4: both path and purl (most specific)
+    Score 2: purl only
+    Score 1: path only (remove only, no purl)
+
+    Args:
+        entry: BOM entry to evaluate
+
+    Returns:
+        Priority score
+    """
+    has_path = bool(entry.get('path'))
+    has_purl = bool(entry.get('purl'))
+    if has_path and has_purl:
+        return 4
+    if has_purl:
+        return 2
+    if has_path:
+        return 1
+    return 0
+
+
+def find_best_match(result_path: str, result_purls: List[str], entries: List[BomEntry]) -> Optional[BomEntry]:
+    """
+    Find the highest-priority BOM entry that matches a result.
+    When scores are equal, the longer path wins (more specific).
+
+    Args:
+        result_path: Path from the scan result
+        result_purls: List of purls from the scan result
+        entries: List of BOM entries to check
+
+    Returns:
+        The best matching BOM entry, or None if no match
+    """
+    best_entry = None
+    best_score = -1
+    best_path_len = -1
+
+    for entry in entries:
+        entry_path = entry.get('path', '')
+        entry_purl = entry.get('purl', '')
+
+        if not entry_path and not entry_purl:
+            continue
+        if entry_path and not matches_path(entry_path, result_path):
+            continue
+        if entry_purl and (not result_purls or entry_purl not in result_purls):
+            continue
+
+        score = entry_priority(entry)
+        path_len = len(entry_path)
+        if score > best_score or (score == best_score and path_len > best_path_len):
+            best_entry = entry
+            best_score = score
+            best_path_len = path_len
+
+    return best_entry
 
 
 class SizeFilter(TypedDict, total=False):
@@ -276,10 +362,75 @@ class ScanossSettings(ScanossBase):
 
         return self.normalize_bom_entries(self.get_bom_remove())
 
+    def has_path_scoped_bom_entries(self) -> bool:
+        """
+        Check if any include or exclude BOM entries have path-scoped rules.
+        When path-scoped entries exist, the SBOM context must be resolved per-batch
+        instead of sent globally with every request.
+
+        Returns:
+            True if any include/exclude entry has a path field
+        """
+        for entry in self.get_bom_include() + self.get_bom_exclude():
+            if entry.get('path'):
+                return True
+        return False
+
+    def get_sbom_for_batch(self, batch_file_paths: List[str]) -> Optional[dict]:
+        """
+        Get the SBOM context filtered for a specific batch of files.
+        Only includes purls from entries whose path matches files in the batch.
+
+        Purl-only entries (no path) are always included.
+        File entries are included only if the exact file is in the batch.
+        Folder entries are included only if any file in the batch is under that folder.
+
+        Args:
+            batch_file_paths: List of file paths in the current WFP batch
+
+        Returns:
+            SBOM payload dict with 'assets' and 'scan_type', or None
+        """
+        if not self.data:
+            return None
+
+        include_entries = self.get_bom_include()
+        exclude_entries = self.get_bom_exclude()
+
+        if not include_entries and not exclude_entries:
+            return None
+
+        bom_entries = include_entries or exclude_entries
+        scan_type = 'identify' if include_entries else 'blacklist'
+
+        filtered_purls = set()
+        for entry in bom_entries:
+            entry_path = entry.get('path', '')
+            entry_purl = entry.get('purl', '')
+            if not entry_purl:
+                continue
+            if not entry_path:
+                filtered_purls.add(entry_purl)
+                continue
+            for file_path in batch_file_paths:
+                if matches_path(entry_path, file_path):
+                    filtered_purls.add(entry_purl)
+                    break
+
+        if not filtered_purls:
+            return None
+
+        components = [{'purl': p} for p in sorted(filtered_purls)]
+        return {
+            'assets': json.dumps({'components': components}),
+            'scan_type': scan_type,
+        }
+
     @staticmethod
     def normalize_bom_entries(bom_entries) -> List[BomEntry]:
         """
-        Normalize the BOM entries
+        Normalize the BOM entries by extracting only the purl field.
+
         Args:
             bom_entries (List[Dict]): List of BOM entries
         Returns:
