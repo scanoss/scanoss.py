@@ -464,6 +464,42 @@ class TestSbomForBatch(unittest.TestCase):
         purls = [c['purl'] for c in assets['components']]
         self.assertEqual(purls.count('pkg:npm/vue'), 1)
 
+    def test_get_matching_purls_purl_only(self):
+        """Purl-only entries should match any file path"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/global'},
+                    {'purl': 'pkg:npm/other'},
+                ],
+            }
+        })
+        result = settings.get_matching_purls('anything/file.c')
+        self.assertEqual(result, frozenset({'pkg:npm/global', 'pkg:npm/other'}))
+
+    def test_get_matching_purls_folder_scoped(self):
+        """Folder-scoped entries should only match files under that folder"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/global'},
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor-lib'},
+                ],
+            }
+        })
+        # File under vendor/ gets both purls
+        result_vendor = settings.get_matching_purls('src/vendor/lib.c')
+        self.assertEqual(result_vendor, frozenset({'pkg:npm/global', 'pkg:npm/vendor-lib'}))
+        # File outside vendor/ gets only global
+        result_other = settings.get_matching_purls('src/core/main.c')
+        self.assertEqual(result_other, frozenset({'pkg:npm/global'}))
+
+    def test_get_matching_purls_no_data(self):
+        """Should return empty frozenset when no data"""
+        settings = self._make_settings({})
+        result = settings.get_matching_purls('src/main.c')
+        self.assertEqual(result, frozenset())
+
 
 class TestExtractFilePathsFromWfp(unittest.TestCase):
     """Test WFP file path extraction"""
@@ -617,8 +653,8 @@ class TestScannerSbomPayload(unittest.TestCase):
     # -- SBOM tests: path-scoped entries --
 
     def test_sbom_path_scoped_include(self):
-        """Path-scoped include: batch with matching files should include
-        both purl-only and scoped purls."""
+        """Path-scoped include: files with different contexts should be
+        sent in separate batches with the correct purls each."""
         settings = self._make_settings({
             'bom': {
                 'include': [
@@ -634,13 +670,21 @@ class TestScannerSbomPayload(unittest.TestCase):
 
         self.assertTrue(mock_post.called, 'Expected at least one POST call')
         payloads = self._extract_payloads(mock_post)
-        # With both files in one batch, vendor/lib.c triggers the scoped entry
+        # Context-change flush splits into 2 batches:
+        # - vendor batch: {global-lib, vendor-lib}
+        # - non-vendor batch: {global-lib} only
+        self.assertEqual(len(payloads), 2,
+            f'Expected 2 POST calls (different contexts), got {len(payloads)}')
+
+        purl_sets = []
         for payload in payloads:
             self.assertEqual(payload.get('type'), 'identify')
             assets = json.loads(payload.get('assets'))
-            purls = {c['purl'] for c in assets['components']}
-            self.assertIn('pkg:npm/global-lib', purls)
-            self.assertIn('pkg:npm/vendor-lib', purls)
+            purls = frozenset(c['purl'] for c in assets['components'])
+            purl_sets.append(purls)
+
+        self.assertIn(frozenset({'pkg:npm/global-lib', 'pkg:npm/vendor-lib'}), purl_sets)
+        self.assertIn(frozenset({'pkg:npm/global-lib'}), purl_sets)
 
     def test_sbom_no_matching_paths(self):
         """Path-scoped include with no matching files: POST should have no type/assets."""
@@ -684,6 +728,52 @@ class TestScannerSbomPayload(unittest.TestCase):
             assets = json.loads(payload.get('assets'))
             purls = {c['purl'] for c in assets['components']}
             self.assertIn('pkg:npm/blocked', purls)
+
+    # -- Context-change flush tests --
+
+    def test_context_change_flushes_batch(self):
+        """Files in folders with different path-scoped purls should be
+        sent in separate POST requests with only their matching purls."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/global-lib'},
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor-lib'},
+                    {'path': 'src/core/', 'purl': 'pkg:npm/core-lib'},
+                ],
+            }
+        })
+        self._create_files([
+            'src/vendor/a.c',
+            'src/core/b.c',
+        ])
+        scanner, mock_post = self._create_scanner(settings)
+
+        scanner.scan_folder_with_options(self.test_dir)
+
+        self.assertTrue(mock_post.called, 'Expected at least one POST call')
+        payloads = self._extract_payloads(mock_post)
+
+        # Should have exactly 2 POST requests (one per folder context)
+        self.assertEqual(len(payloads), 2,
+            f'Expected exactly 2 POST calls (one per folder context), got {len(payloads)}')
+
+        # Collect the purl sets from each payload
+        purl_sets = []
+        for payload in payloads:
+            self.assertEqual(payload.get('type'), 'identify')
+            assets = json.loads(payload.get('assets'))
+            purls = frozenset(c['purl'] for c in assets['components'])
+            purl_sets.append(purls)
+
+        # One payload should have {global, vendor}, the other {global, core}
+        expected_vendor = frozenset({'pkg:npm/global-lib', 'pkg:npm/vendor-lib'})
+        expected_core = frozenset({'pkg:npm/global-lib', 'pkg:npm/core-lib'})
+
+        self.assertIn(expected_vendor, purl_sets,
+            f'Expected vendor payload with {expected_vendor}, got {purl_sets}')
+        self.assertIn(expected_core, purl_sets,
+            f'Expected core payload with {expected_core}, got {purl_sets}')
 
     # -- No settings test --
 
