@@ -468,6 +468,7 @@ class Scanner(ScanossBase):
             scan_started = False
             wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
             batch_file_paths = []  # Track file paths for per-batch SBOM resolution
+            batch_purls = None  # Track purl context for the current batch
 
             to_scan_files = file_filters.get_filtered_files_from_folder(scan_dir)
             for to_scan_file in to_scan_files:
@@ -495,8 +496,18 @@ class Scanner(ScanossBase):
                         scan_block = ''
                         wfp_file_count = 0
                         batch_file_paths = []
+                        batch_purls = None
+                    # Flush if the SBOM context changes (different purl set for this file)
+                    file_purls = self.scan_settings.get_matching_purls(to_scan_file) if self.scan_settings else frozenset()
+                    if batch_purls is not None and file_purls != batch_purls and scan_block != '':
+                        self.threaded_scan.queue_add(scan_block, sbom=self._get_batch_sbom(batch_file_paths))
+                        queue_size += 1
+                        scan_block = ''
+                        wfp_file_count = 0
+                        batch_file_paths = []
                     scan_block += wfp
                     batch_file_paths.append(to_scan_file)
+                    batch_purls = file_purls
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
                     # If the scan request block (group of WFPs) is larger than the POST size
@@ -507,6 +518,7 @@ class Scanner(ScanossBase):
                         scan_block = ''
                         wfp_file_count = 0
                         batch_file_paths = []
+                        batch_purls = None
                     if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
@@ -741,6 +753,7 @@ class Scanner(ScanossBase):
             scan_started = False
             wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
             batch_file_paths = []  # Track file paths for per-batch SBOM resolution
+            batch_purls = None  # Track purl context for the current batch
 
             to_scan_files = file_filters.get_filtered_files_from_files(files)
             for file in to_scan_files:
@@ -767,8 +780,18 @@ class Scanner(ScanossBase):
                         scan_block = ''
                         wfp_file_count = 0
                         batch_file_paths = []
+                        batch_purls = None
+                    # Flush if the SBOM context changes (different purl set for this file)
+                    file_purls = self.scan_settings.get_matching_purls(file) if self.scan_settings else frozenset()
+                    if batch_purls is not None and file_purls != batch_purls and scan_block != '':
+                        self.threaded_scan.queue_add(scan_block, sbom=self._get_batch_sbom(batch_file_paths))
+                        queue_size += 1
+                        scan_block = ''
+                        wfp_file_count = 0
+                        batch_file_paths = []
                     scan_block += wfp
                     batch_file_paths.append(file)
+                    batch_purls = file_purls
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
                     # If the scan request block (group of WFPs) is larger than the POST size
@@ -779,6 +802,7 @@ class Scanner(ScanossBase):
                         scan_block = ''
                         wfp_file_count = 0
                         batch_file_paths = []
+                        batch_purls = None
                     if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
