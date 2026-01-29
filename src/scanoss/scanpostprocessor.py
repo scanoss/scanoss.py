@@ -27,7 +27,7 @@ from typing import List, Tuple
 from packageurl import PackageURL
 from packageurl.contrib import purl2url
 
-from .scanoss_settings import BomEntry, ScanossSettings
+from .scanoss_settings import BomEntry, ScanossSettings, find_best_match
 from .scanossbase import ScanossBase
 
 
@@ -43,34 +43,15 @@ def _get_match_type_message(result_path: str, bom_entry: BomEntry, action: str) 
     Returns:
         str: The message to be printed
     """
-    if bom_entry.get('path') and bom_entry.get('purl'):
-        message = f"{action} '{result_path}'. Full match found."
+    entry_path = bom_entry.get('path', '')
+    if entry_path and bom_entry.get('purl'):
+        match_kind = 'folder' if entry_path.endswith('/') else 'file'
+        message = f"{action} '{result_path}'. Full match found ({match_kind} + purl)."
     elif bom_entry.get('purl'):
         message = f"{action} '{result_path}'. Found PURL match."
     else:
         message = f"{action} '{result_path}'. Found path match."
     return message
-
-
-def _is_full_match(result_path: str, result_purls: List[str], bom_entry: BomEntry) -> bool:
-    """
-    Check if path and purl matches fully with the bom entry
-
-    Args:
-        result_path (str): Scan result path
-        result_purls (List[str]): Scan result purls
-        bom_entry (BomEntry): BOM entry to compare with
-
-    Returns:
-        bool: True if the path and purl match, False otherwise
-    """
-    if not result_purls:
-        return False
-    return bool(
-        (bom_entry.get('purl') and bom_entry.get('path'))
-        and (bom_entry.get('path') == result_path)
-        and (bom_entry.get('purl') in result_purls)
-    )
 
 
 class ScanPostProcessor(ScanossBase):
@@ -211,7 +192,8 @@ class ScanPostProcessor(ScanossBase):
         self, result_path: str, result: dict, to_replace_entries: List[BomEntry]
     ) -> Tuple[bool, str]:
         """
-        Check if a result should be replaced based on the SCANOSS settings
+        Check if a result should be replaced based on the SCANOSS settings.
+        Uses priority-based matching: most specific rule wins.
 
         Args:
             result_path (str): Path of the result data
@@ -223,60 +205,42 @@ class ScanPostProcessor(ScanossBase):
             str: The purl to replace with
         """
         result_purls = result.get('purl', [])
-        for to_replace_entry in to_replace_entries:
-            to_replace_path = to_replace_entry.get('path')
-            to_replace_purl = to_replace_entry.get('purl')
-            to_replace_with = to_replace_entry.get('replace_with')
-
-            if not to_replace_path and not to_replace_purl or not to_replace_with:
-                continue
-            if (
-                _is_full_match(result_path, result_purls, to_replace_entry)
-                or (not to_replace_path and to_replace_purl in result_purls)
-                or (not to_replace_purl and to_replace_path == result_path)
-            ):
-                self._print_message(result_path, result_purls, to_replace_entry, 'Replacing')
-                return True, to_replace_with
-
+        match = find_best_match(result_path, result_purls, to_replace_entries)
+        if match and match.get('replace_with'):
+            self._print_message(result_path, result_purls, match, 'Replacing')
+            return True, match.get('replace_with')
         return False, None
 
     def _should_remove_result(self, result_path: str, result: dict, to_remove_entries: List[BomEntry]) -> bool:
         """
-        Check if a result should be removed based on the SCANOSS settings
+        Check if a result should be removed based on the SCANOSS settings.
+        Uses priority-based matching: most specific rule wins.
 
-        :param result_path: path of the result data
-        :param result: result to check
-        :param to_remove_entries: BOM entries to remove from the result
-        :return:
+        Args:
+            result_path (str): Path of the result data
+            result (dict): Result to check
+            to_remove_entries (List[BomEntry]): BOM entries to remove from the result
+
+        Returns:
+            True if the result should be removed
         """
         result = result[0] if isinstance(result, list) else result
         result_purls = result.get('purl', [])
-
-        for to_remove_entry in to_remove_entries:
-            to_remove_path = to_remove_entry.get('path')
-            to_remove_purl = to_remove_entry.get('purl')
-
-            if not to_remove_path and not to_remove_purl:
-                continue
-            if (
-                _is_full_match(result_path, result_purls, to_remove_entry)
-                or (not to_remove_path and to_remove_purl in result_purls)
-                or (not to_remove_purl and to_remove_path == result_path)
-            ):
-                self._print_message(result_path, result_purls, to_remove_entry, 'Removing')
-                return True
-
+        match = find_best_match(result_path, result_purls, to_remove_entries)
+        if match:
+            self._print_message(result_path, result_purls, match, 'Removing')
+            return True
         return False
 
     def _print_message(self, result_path: str, result_purls: List[str], bom_entry: BomEntry, action: str) -> None:
         """
         Print a message about replacing or removing a result
 
-        :param result_path:
-        :param result_purls:
-        :param bom_entry:
-        :param action:
-        :return:
+        Args:
+            result_path (str): Path of the scan result
+            result_purls (List[str]): Purls from the scan result
+            bom_entry (BomEntry): Matched BOM entry
+            action (str): Action being performed
         """
         message = (
             f'{_get_match_type_message(result_path, bom_entry, action)} \n'
