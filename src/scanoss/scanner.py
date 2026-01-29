@@ -197,14 +197,53 @@ class Scanner(ScanossBase):
         self.post_processor = (
             ScanPostProcessor(scan_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
         )
+        self._per_batch_sbom = (
+            scan_settings is not None and scan_settings.has_path_scoped_bom_entries()
+        )
         self._maybe_set_api_sbom()
 
     def _maybe_set_api_sbom(self):
         if not self.scan_settings:
             return
+        if self._per_batch_sbom:
+            self.print_debug('Path-scoped BOM entries detected. SBOM context will be resolved per-batch.')
+            return
         sbom = self.scan_settings.get_sbom()
         if sbom:
             self.scanoss_api.set_sbom(sbom)
+
+    def _get_batch_sbom(self, batch_file_paths: List[str]) -> 'dict | None':
+        """
+        Compute SBOM context for a specific batch of files.
+        Returns None if no per-batch resolution is needed.
+
+        Args:
+            batch_file_paths: List of file paths in the current batch
+        Returns:
+            SBOM payload dict or None
+        """
+        if not self._per_batch_sbom:
+            return None
+        return self.scan_settings.get_sbom_for_batch(batch_file_paths)
+
+    @staticmethod
+    def _extract_file_paths_from_wfp(wfp: str) -> List[str]:
+        """
+        Extract file paths from a WFP string.
+        WFP file lines have the format: file=<hash>,<size>,<path>
+
+        Args:
+            wfp: WFP string
+        Returns:
+            List of file paths
+        """
+        paths = []
+        for line in wfp.split('\n'):
+            if line.startswith(WFP_FILE_START):
+                parts = line[len(WFP_FILE_START):].split(',', 2)
+                if len(parts) >= 3:
+                    paths.append(parts[2].strip())
+        return paths
 
     @staticmethod
     def __count_files_in_wfp_file(wfp_file: str):
@@ -376,6 +415,7 @@ class Scanner(ScanossBase):
             wfp_file_count = 0  # count number of files in each queue post
             scan_started = False
             wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
+            batch_file_paths = []  # Track file paths for per-batch SBOM resolution
 
             to_scan_files = file_filters.get_filtered_files_from_folder(scan_dir)
             for to_scan_file in to_scan_files:
@@ -398,20 +438,23 @@ class Scanner(ScanossBase):
                     # If the WFP is bigger than the max post size and we already have something
                     # stored in the scan block, add it to the queue
                     if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
-                        self.threaded_scan.queue_add(scan_block)
+                        self.threaded_scan.queue_add(scan_block, sbom=self._get_batch_sbom(batch_file_paths))
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
+                        batch_file_paths = []
                     scan_block += wfp
+                    batch_file_paths.append(to_scan_file)
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
                     # If the scan request block (group of WFPs) is larger than the POST size
                     # or we have reached the file limit, add it to the queue
                     if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
-                        self.threaded_scan.queue_add(scan_block)
+                        self.threaded_scan.queue_add(scan_block, sbom=self._get_batch_sbom(batch_file_paths))
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
+                        batch_file_paths = []
                     if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
@@ -422,7 +465,9 @@ class Scanner(ScanossBase):
                             success = False
             # End for loop
             if self.threaded_scan and scan_block != '':
-                self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
+                self.threaded_scan.queue_add(
+                    scan_block, sbom=self._get_batch_sbom(batch_file_paths)
+                )  # Make sure all files have been submitted
 
         if file_count > 0:
             if wfp_list is not None:
@@ -600,7 +645,7 @@ class Scanner(ScanossBase):
         wfp = self.winnowing.wfp_for_file(file, file)
         if wfp is not None and wfp != '':
             if self.threaded_scan:
-                self.threaded_scan.queue_add(wfp)  # Submit the WFP for scanning
+                self.threaded_scan.queue_add(wfp, sbom=self._get_batch_sbom([file]))  # Submit the WFP for scanning
             self.print_debug(f'Scanning {file}...')
             if self.threaded_scan:
                 success = self.__run_scan_threaded(False, 1)
@@ -643,6 +688,7 @@ class Scanner(ScanossBase):
             wfp_file_count = 0  # count number of files in each queue post
             scan_started = False
             wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
+            batch_file_paths = []  # Track file paths for per-batch SBOM resolution
 
             to_scan_files = file_filters.get_filtered_files_from_files(files)
             for file in to_scan_files:
@@ -664,20 +710,23 @@ class Scanner(ScanossBase):
                     # If the WFP is bigger than the max post size and we already have something
                     # stored in the scan block, add it to the queue
                     if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
-                        self.threaded_scan.queue_add(scan_block)
+                        self.threaded_scan.queue_add(scan_block, sbom=self._get_batch_sbom(batch_file_paths))
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
+                        batch_file_paths = []
                     scan_block += wfp
+                    batch_file_paths.append(file)
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
                     # If the scan request block (group of WFPs) is larger than the POST size
                     # or we have reached the file limit, add it to the queue
                     if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
-                        self.threaded_scan.queue_add(scan_block)
+                        self.threaded_scan.queue_add(scan_block, sbom=self._get_batch_sbom(batch_file_paths))
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
+                        batch_file_paths = []
                     if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
@@ -689,7 +738,9 @@ class Scanner(ScanossBase):
 
             # End for loop
             if self.threaded_scan and scan_block != '':
-                self.threaded_scan.queue_add(scan_block)  # Make sure all files have been submitted
+                self.threaded_scan.queue_add(
+                    scan_block, sbom=self._get_batch_sbom(batch_file_paths)
+                )  # Make sure all files have been submitted
 
         if file_count > 0:
             if wfp_list is not None:
@@ -747,7 +798,9 @@ class Scanner(ScanossBase):
         wfp = self.winnowing.wfp_for_contents(filename, False, contents)
         if wfp is not None and wfp != '':
             if self.threaded_scan:
-                self.threaded_scan.queue_add(wfp)  # Submit the WFP for scanning
+                self.threaded_scan.queue_add(
+                    wfp, sbom=self._get_batch_sbom([filename])
+                )  # Submit the WFP for scanning
             self.print_debug(f'Scanning {filename}...')
             if self.threaded_scan:
                 success = self.__run_scan_threaded(False, 1)
@@ -822,7 +875,9 @@ class Scanner(ScanossBase):
                 if (wfp_file_count > self.post_file_count or l_size >= self.max_post_size) and wfp:
                     if self.debug and cur_size > self.max_post_size:
                         Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
-                    self.threaded_scan.queue_add(wfp)
+                    self.threaded_scan.queue_add(
+                        wfp, sbom=self._get_batch_sbom(self._extract_file_paths_from_wfp(wfp))
+                    )
                     queue_size += 1
                     wfp = ''
                     wfp_file_count = 0
@@ -837,7 +892,9 @@ class Scanner(ScanossBase):
         if scan_block:
             wfp += scan_block  # Store the WFP for the current file
         if wfp:
-            self.threaded_scan.queue_add(wfp)
+            self.threaded_scan.queue_add(
+                wfp, sbom=self._get_batch_sbom(self._extract_file_paths_from_wfp(wfp))
+            )
             queue_size += 1
 
         if not self.__run_scan_threaded(scan_started, file_count):
@@ -856,7 +913,8 @@ class Scanner(ScanossBase):
         if not wfp:
             raise Exception('ERROR: Please specify a WFP to scan')
         raw_output = '{\n'
-        scan_resp = self.scanoss_api.scan(wfp)
+        sbom = self._get_batch_sbom(self._extract_file_paths_from_wfp(wfp))
+        scan_resp = self.scanoss_api.scan(wfp, sbom=sbom)
         if scan_resp is not None:
             for key, value in scan_resp.items():
                 raw_output += '  "%s":%s' % (key, json.dumps(value, indent=2))
