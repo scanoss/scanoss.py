@@ -448,39 +448,6 @@ class TestSbomForBatch(unittest.TestCase):
         result = settings.get_sbom_for_batch(['src/main.c'])
         self.assertIsNone(result)
 
-    def test_has_path_scoped_bom_entries_true(self):
-        """Should detect path-scoped include entries"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'path': 'src/', 'purl': 'pkg:npm/vue'},
-                ],
-            }
-        })
-        self.assertTrue(settings.has_path_scoped_bom_entries())
-
-    def test_has_path_scoped_bom_entries_false(self):
-        """Should return False when no path-scoped entries exist"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'purl': 'pkg:npm/vue'},
-                ],
-            }
-        })
-        self.assertFalse(settings.has_path_scoped_bom_entries())
-
-    def test_has_path_scoped_bom_entries_exclude(self):
-        """Should detect path-scoped exclude entries"""
-        settings = self._make_settings({
-            'bom': {
-                'exclude': [
-                    {'path': 'lib/', 'purl': 'pkg:npm/excluded'},
-                ],
-            }
-        })
-        self.assertTrue(settings.has_path_scoped_bom_entries())
-
     def test_deduplicates_purls(self):
         """Should not duplicate purls when multiple entries match"""
         settings = self._make_settings({
@@ -578,9 +545,9 @@ class TestScannerSbomPayload(unittest.TestCase):
             payloads.append(form_data)
         return payloads
 
-    # -- Global SBOM tests (no path-scoped entries) --
+    # -- SBOM tests: purl-only entries --
 
-    def test_global_sbom_include_sent_in_post(self):
+    def test_sbom_include_sent_in_post(self):
         """When purl-only include entries exist, every POST should contain
         type='identify' and the correct purls in assets."""
         settings = self._make_settings({
@@ -605,7 +572,7 @@ class TestScannerSbomPayload(unittest.TestCase):
             self.assertIn('pkg:npm/vue@2.6.12', purls)
             self.assertIn('pkg:npm/react@17.0.0', purls)
 
-    def test_global_sbom_exclude_sent_as_blacklist(self):
+    def test_sbom_exclude_sent_as_blacklist(self):
         """When purl-only exclude entries exist, every POST should contain
         type='blacklist' and the correct purls in assets."""
         settings = self._make_settings({
@@ -628,9 +595,8 @@ class TestScannerSbomPayload(unittest.TestCase):
             purls = {c['purl'] for c in assets['components']}
             self.assertIn('pkg:npm/unwanted@1.0.0', purls)
 
-    def test_no_bom_entries_sends_empty_assets(self):
-        """When settings have empty BOM lists, POST assets should be an empty list
-        and type should be None (no scan type resolved)."""
+    def test_no_bom_entries_no_sbom_in_payload(self):
+        """When settings have empty BOM lists, POST should have no type/assets."""
         settings = self._make_settings({
             'bom': {
                 'include': [],
@@ -645,15 +611,14 @@ class TestScannerSbomPayload(unittest.TestCase):
         self.assertTrue(mock_post.called, 'Expected at least one POST call')
         payloads = self._extract_payloads(mock_post)
         for payload in payloads:
-            self.assertIsNone(payload.get('type'))
-            assets = json.loads(payload.get('assets'))
-            self.assertEqual(assets, [])
+            self.assertNotIn('type', payload)
+            self.assertNotIn('assets', payload)
 
-    # -- Per-batch SBOM tests (path-scoped entries) --
+    # -- SBOM tests: path-scoped entries --
 
-    def test_per_batch_sbom_path_scoped_include(self):
+    def test_sbom_path_scoped_include(self):
         """Path-scoped include: batch with matching files should include
-        both global and scoped purls."""
+        both purl-only and scoped purls."""
         settings = self._make_settings({
             'bom': {
                 'include': [
@@ -677,7 +642,7 @@ class TestScannerSbomPayload(unittest.TestCase):
             self.assertIn('pkg:npm/global-lib', purls)
             self.assertIn('pkg:npm/vendor-lib', purls)
 
-    def test_per_batch_sbom_no_matching_paths(self):
+    def test_sbom_no_matching_paths(self):
         """Path-scoped include with no matching files: POST should have no type/assets."""
         settings = self._make_settings({
             'bom': {
@@ -698,7 +663,7 @@ class TestScannerSbomPayload(unittest.TestCase):
             self.assertNotIn('type', payload)
             self.assertNotIn('assets', payload)
 
-    def test_per_batch_sbom_exclude_path_scoped(self):
+    def test_sbom_exclude_path_scoped(self):
         """Path-scoped exclude: matching batch should contain type='blacklist'."""
         settings = self._make_settings({
             'bom': {
