@@ -251,16 +251,17 @@ class Scanner(ScanossBase):
     def _get_batch_sbom(self, batch_file_paths: List[str]) -> 'dict | None':
         """
         Compute SBOM context for a specific batch of files.
-        Returns None if no per-batch resolution is needed.
+        Purl-only entries are always included; path-scoped entries
+        are included only when a batch file matches.
 
         Args:
             batch_file_paths: List of file paths in the current batch
         Returns:
             SBOM payload dict or None
         """
-        if not self._per_batch_sbom:
+        if not self.scanoss_settings:
             return None
-        return self.scan_settings.get_sbom_for_batch(batch_file_paths)
+        return self.scanoss_settings.get_sbom_for_batch(batch_file_paths)
 
     @staticmethod
     def _extract_file_paths_from_wfp(wfp: str) -> List[str]:
