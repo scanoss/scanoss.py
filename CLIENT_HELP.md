@@ -259,6 +259,150 @@ Multiple Headers: You can specify any number of custom headers by repeating the 
 scanoss-py scan src -hdr "x-api-key:12345" -hdr "Authorization: Bearer <access_token>"
 ```
 
+### Scan with Snippet Tuning Options
+The following flags allow you to fine-tune snippet matching behavior during scanning. These options can be set via command line flags or in the `scanoss.json` configuration file under `settings.file_snippet`.
+
+#### Set minimum snippet hits
+Require at least 5 snippet hits for a match. A value of 0 defers to server configuration:
+```bash
+scanoss-py scan -o scan-results.json --min-snippet-hits 5 src
+```
+**scanoss.json configuration:**
+```json
+{
+  "settings": {
+    "file_snippet": {
+      "min_snippet_hits": 5
+    }
+  }
+}
+```
+
+#### Set minimum snippet lines
+Require at least 3 snippet lines for a match. A value of 0 defers to server configuration:
+```bash
+scanoss-py scan -o scan-results.json --min-snippet-lines 3 src
+```
+**scanoss.json configuration:**
+```json
+{
+  "settings": {
+    "file_snippet": {
+      "min_snippet_lines": 3
+    }
+  }
+}
+```
+
+#### Enable or disable ranking
+Enable ranking to prioritize results:
+```bash
+scanoss-py scan -o scan-results.json --ranking true src
+```
+Disable ranking:
+```bash
+scanoss-py scan -o scan-results.json --ranking false src
+```
+**scanoss.json configuration:**
+```json
+{
+  "settings": {
+    "file_snippet": {
+      "ranking_enabled": true
+    }
+  }
+}
+```
+
+#### Set ranking threshold
+Set the ranking threshold to 5 (valid range: -1 to 10). A value of -1 defers to server configuration:
+```bash
+scanoss-py scan -o scan-results.json --ranking-threshold=5 src
+```
+Note: Use `=` syntax for negative values: `--ranking-threshold=-1`
+
+**scanoss.json configuration:**
+```json
+{
+  "settings": {
+    "file_snippet": {
+      "ranking_threshold": 5
+    }
+  }
+}
+```
+
+#### Honour file extensions
+Control whether file extensions are considered during matching:
+```bash
+scanoss-py scan -o scan-results.json --honour-file-exts true src
+```
+**scanoss.json configuration:**
+```json
+{
+  "settings": {
+    "file_snippet": {
+      "honour_file_exts": true
+    }
+  }
+}
+```
+
+#### Skip headers
+Skip license headers, comments and imports at the beginning of files during snippet scanning:
+```bash
+scanoss-py scan -o scan-results.json --skip-headers src
+```
+**scanoss.json configuration:**
+```json
+{
+  "settings": {
+    "file_snippet": {
+      "skip_headers": true
+    }
+  }
+}
+```
+
+#### Skip headers limit
+Set the maximum number of lines to skip when filtering headers (requires `--skip-headers`):
+```bash
+scanoss-py scan -o scan-results.json --skip-headers --skip-headers-limit 50 src
+```
+**scanoss.json configuration:**
+```json
+{
+  "settings": {
+    "file_snippet": {
+      "skip_headers": true,
+      "skip_headers_limit": 50
+    }
+  }
+}
+```
+
+#### Combine multiple tuning options
+You can combine multiple tuning options in a single scan:
+```bash
+scanoss-py scan -o scan-results.json --min-snippet-hits 5 --min-snippet-lines 3 --ranking true --ranking-threshold=5 src
+```
+**scanoss.json configuration:**
+```json
+{
+  "settings": {
+    "file_snippet": {
+      "min_snippet_hits": 5,
+      "min_snippet_lines": 3,
+      "ranking_enabled": true,
+      "ranking_threshold": 5,
+      "honour_file_exts": true,
+      "skip_headers": true,
+      "skip_headers_limit": 50
+    }
+  }
+}
+```
+
 ### Converting RAW results into other formats
 The following command provides the capability to convert the RAW scan results from a SCANOSS scan into multiple different formats, including CycloneDX, SPDX Lite, CSV and GitLab Code Quality Report.
 For the full set of formats, please run:
@@ -295,7 +439,6 @@ All component sub-commands support custom headers using the `-hdr` option:
 scanoss-py comp search "jquery" -hdr "x-api-key:12345"
 scanoss-py comp vulns "jquery@3.6.0" -hdr "x-api-key:12345" -hdr "custom-header:value"
 scanoss-py comp crypto --purl "pkg:github/madler/pigz" -header "x-api-key:12345"
-
 
 #### Component Vulnerabilities
 The following command provides the capability to search the SCANOSS KB for component vulnerabilities:
