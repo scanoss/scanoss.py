@@ -177,7 +177,7 @@
               "type": ["integer", "null"],
               "description": "Ranking threshold value. A value of -1 defers to server configuration",
               "minimum": -1,
-              "maximum": 99,
+              "maximum": 10,
               "default": 0
             },
             "min_snippet_hits": {
@@ -345,4 +345,3 @@
     }
   }
 }
-
