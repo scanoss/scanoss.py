@@ -110,6 +110,44 @@ class ReplaceRule(BomEntry):
         )
 
 
+@dataclass(frozen=True)
+class SbomContext:
+    """SBOM context for a file or batch of files."""
+
+    purls: tuple  # Use tuple for hashability (frozen dataclass)
+    scan_type: Optional[str]
+
+    def to_payload(self) -> Optional[dict]:
+        """Convert to API payload dict."""
+        if not self.purls or not self.scan_type:
+            return None
+        components = [{'purl': p} for p in self.purls]
+        return {
+            'assets': json.dumps({'components': components}),
+            'scan_type': self.scan_type,
+        }
+
+    @classmethod
+    def empty(cls) -> 'SbomContext':
+        """Return empty context (no purls, no scan_type)."""
+        return cls(purls=(), scan_type=None)
+
+    @classmethod
+    def union(cls, contexts: list) -> 'SbomContext':
+        """Merge multiple contexts: union of purls, first non-None scan_type wins."""
+        all_purls = []
+        scan_type = None
+        seen = set()
+        for ctx in contexts:
+            if scan_type is None and ctx.scan_type:
+                scan_type = ctx.scan_type
+            for p in ctx.purls:
+                if p not in seen:
+                    seen.add(p)
+                    all_purls.append(p)
+        return cls(purls=tuple(all_purls), scan_type=scan_type)
+
+
 def find_best_match(result_path: str, result_purls: List[str], entries: List[BomEntry]) -> Optional[BomEntry]:
     """
     Find the highest-priority BOM entry that matches a result.
@@ -386,9 +424,9 @@ class ScanossSettings(ScanossBase):
 
         return self.normalize_bom_entries(self.get_bom_remove())
 
-    def get_matching_purls(self, file_path: str) -> list:
+    def _get_purls_for_path(self, file_path: str, entries: List[BomEntry]) -> list:
         """
-        Get purls matching a file path, ordered by specificity (most specific first).
+        Extract matching purls from entries for a given file path.
 
         Purl-only entries (no path) are always included.
         Path-scoped entries are included only if the file matches.
@@ -396,22 +434,16 @@ class ScanossSettings(ScanossBase):
 
         Args:
             file_path: File path to check
+            entries: List of BomEntry to check against
 
         Returns:
             List of purl strings ordered by specificity (most specific first)
         """
-        if not self.data:
-            return []
-
-        include_entries = self.get_bom_include()
-        exclude_entries = self.get_bom_exclude()
-        bom_entries = include_entries or exclude_entries
-
-        if not bom_entries:
+        if not entries:
             return []
 
         purl_scores = {}
-        for entry in bom_entries:
+        for entry in entries:
             entry_purl = entry.purl or ''
             if not entry_purl:
                 continue
@@ -425,27 +457,35 @@ class ScanossSettings(ScanossBase):
         # Sort by score descending (most specific first)
         return sorted(purl_scores.keys(), key=lambda p: -purl_scores[p])
 
-    def build_sbom_payload(self, purls: list) -> Optional[dict]:
+    def get_sbom_context(self, file_path: str) -> SbomContext:
         """
-        Build the SBOM payload dict from an ordered list of purls.
+        Get SBOM context matching a file path.
+
+        Logic:
+        1. Try include rules first - if any match, return SbomContext with 'identify'
+        2. Fall back to exclude rules - if any match, return SbomContext with 'blacklist'
+        3. If nothing matches, return empty SbomContext
 
         Args:
-            purls: List of purl strings (order is preserved)
+            file_path: File path to check
 
         Returns:
-            SBOM payload dict with 'assets' and 'scan_type', or None if no purls
+            SbomContext with purls ordered by specificity
         """
-        if not purls:
-            return None
+        if not self.data:
+            return SbomContext.empty()
 
-        include_entries = self.get_bom_include()
-        scan_type = 'identify' if include_entries else 'blacklist'
+        # Try include first
+        include_purls = self._get_purls_for_path(file_path, self.get_bom_include())
+        if include_purls:
+            return SbomContext(purls=tuple(include_purls), scan_type='identify')
 
-        components = [{'purl': p} for p in purls]  # preserve order
-        return {
-            'assets': json.dumps({'components': components}),
-            'scan_type': scan_type,
-        }
+        # Fall back to exclude
+        exclude_purls = self._get_purls_for_path(file_path, self.get_bom_exclude())
+        if exclude_purls:
+            return SbomContext(purls=tuple(exclude_purls), scan_type='blacklist')
+
+        return SbomContext.empty()
 
     @staticmethod
     def normalize_bom_entries(bom_entries: List[BomEntry]) -> list:

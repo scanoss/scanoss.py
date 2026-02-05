@@ -34,6 +34,7 @@ from scanoss.scanner import Scanner
 from scanoss.scanoss_settings import (
     BomEntry,
     ReplaceRule,
+    SbomContext,
     ScanossSettings,
     find_best_match,
 )
@@ -323,9 +324,9 @@ class TestSbomForBatch(unittest.TestCase):
         settings.data = settings_data
         return settings
 
-    # -- get_matching_purls tests --
+    # -- get_sbom_context tests --
 
-    def test_get_matching_purls_purl_only(self):
+    def test_get_sbom_context_purl_only(self):
         """Purl-only entries should match any file path"""
         settings = self._make_settings({
             'bom': {
@@ -335,11 +336,12 @@ class TestSbomForBatch(unittest.TestCase):
                 ],
             }
         })
-        result = settings.get_matching_purls('anything/file.c')
-        self.assertIsInstance(result, list)
-        self.assertEqual(set(result), {'pkg:npm/global', 'pkg:npm/other'})
+        context = settings.get_sbom_context('anything/file.c')
+        self.assertIsInstance(context, SbomContext)
+        self.assertEqual(set(context.purls), {'pkg:npm/global', 'pkg:npm/other'})
+        self.assertEqual(context.scan_type, 'identify')
 
-    def test_get_matching_purls_folder_scoped(self):
+    def test_get_sbom_context_folder_scoped(self):
         """Folder-scoped entries should only match files under that folder"""
         settings = self._make_settings({
             'bom': {
@@ -350,30 +352,33 @@ class TestSbomForBatch(unittest.TestCase):
             }
         })
         # File under vendor/ gets both purls
-        result_vendor = settings.get_matching_purls('src/vendor/lib.c')
-        self.assertEqual(set(result_vendor), {'pkg:npm/global', 'pkg:npm/vendor-lib'})
+        context_vendor = settings.get_sbom_context('src/vendor/lib.c')
+        self.assertEqual(set(context_vendor.purls), {'pkg:npm/global', 'pkg:npm/vendor-lib'})
+        self.assertEqual(context_vendor.scan_type, 'identify')
         # File outside vendor/ gets only global
-        result_other = settings.get_matching_purls('src/core/main.c')
-        self.assertEqual(result_other, ['pkg:npm/global'])
+        context_other = settings.get_sbom_context('src/core/main.c')
+        self.assertEqual(context_other.purls, ('pkg:npm/global',))
 
-    def test_get_matching_purls_no_data(self):
-        """Should return empty list when no data"""
+    def test_get_sbom_context_no_data(self):
+        """Should return empty SbomContext when no data"""
         settings = self._make_settings({})
-        result = settings.get_matching_purls('src/main.c')
-        self.assertEqual(result, [])
+        context = settings.get_sbom_context('src/main.c')
+        self.assertEqual(context.purls, ())
+        self.assertIsNone(context.scan_type)
 
-    def test_get_matching_purls_no_entries(self):
-        """Should return empty list when no include/exclude entries"""
+    def test_get_sbom_context_no_entries(self):
+        """Should return empty SbomContext when no include/exclude entries"""
         settings = self._make_settings({
             'bom': {
                 'include': [],
                 'exclude': [],
             }
         })
-        result = settings.get_matching_purls('src/main.c')
-        self.assertEqual(result, [])
+        context = settings.get_sbom_context('src/main.c')
+        self.assertEqual(context.purls, ())
+        self.assertIsNone(context.scan_type)
 
-    def test_get_matching_purls_deduplicates(self):
+    def test_get_sbom_context_deduplicates(self):
         """Should not duplicate purls when multiple entries match same purl"""
         settings = self._make_settings({
             'bom': {
@@ -383,10 +388,10 @@ class TestSbomForBatch(unittest.TestCase):
                 ],
             }
         })
-        result = settings.get_matching_purls('src/main.c')
-        self.assertEqual(result.count('pkg:npm/vue'), 1)
+        context = settings.get_sbom_context('src/main.c')
+        self.assertEqual(context.purls.count('pkg:npm/vue'), 1)
 
-    def test_get_matching_purls_ordered_by_specificity(self):
+    def test_get_sbom_context_ordered_by_specificity(self):
         """Should return purls ordered by specificity (most specific first)"""
         settings = self._make_settings({
             'bom': {
@@ -397,11 +402,11 @@ class TestSbomForBatch(unittest.TestCase):
                 ],
             }
         })
-        result = settings.get_matching_purls('src/vendor/lib.c')
+        context = settings.get_sbom_context('src/vendor/lib.c')
         # Most specific first: vendor-lib (15), src-lib (8), global (2)
-        self.assertEqual(result, ['pkg:npm/vendor-lib', 'pkg:npm/src-lib', 'pkg:npm/global'])
+        self.assertEqual(context.purls, ('pkg:npm/vendor-lib', 'pkg:npm/src-lib', 'pkg:npm/global'))
 
-    def test_get_matching_purls_file_path_most_specific(self):
+    def test_get_sbom_context_file_path_most_specific(self):
         """File path should be more specific than folder path"""
         settings = self._make_settings({
             'bom': {
@@ -411,60 +416,102 @@ class TestSbomForBatch(unittest.TestCase):
                 ],
             }
         })
-        result = settings.get_matching_purls('src/main.c')
+        context = settings.get_sbom_context('src/main.c')
         # File path (10 chars) more specific than folder path (4 chars)
-        self.assertEqual(result[0], 'pkg:npm/file-lib')
+        self.assertEqual(context.purls[0], 'pkg:npm/file-lib')
 
-    # -- build_sbom_payload tests --
+    # -- SbomContext.to_payload tests --
 
-    def test_build_sbom_payload_identify(self):
-        """Should return identify scan type for include entries"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [{'purl': 'pkg:npm/vue'}],
-            }
-        })
-        result = settings.build_sbom_payload(['pkg:npm/vue', 'pkg:npm/react'])
+    def test_sbom_context_to_payload_identify(self):
+        """Should return identify scan type when scan_type is 'identify'"""
+        context = SbomContext(purls=('pkg:npm/vue', 'pkg:npm/react'), scan_type='identify')
+        result = context.to_payload()
         self.assertIsNotNone(result)
         self.assertEqual(result['scan_type'], 'identify')
         assets = json.loads(result['assets'])
         # Order should be preserved
         self.assertEqual(assets['components'], [{'purl': 'pkg:npm/vue'}, {'purl': 'pkg:npm/react'}])
 
-    def test_build_sbom_payload_blacklist(self):
-        """Should return blacklist scan type for exclude entries"""
-        settings = self._make_settings({
-            'bom': {
-                'exclude': [{'purl': 'pkg:npm/excluded'}],
-            }
-        })
-        result = settings.build_sbom_payload(['pkg:npm/excluded'])
+    def test_sbom_context_to_payload_blacklist(self):
+        """Should return blacklist scan type when scan_type is 'blacklist'"""
+        context = SbomContext(purls=('pkg:npm/excluded',), scan_type='blacklist')
+        result = context.to_payload()
         self.assertIsNotNone(result)
         self.assertEqual(result['scan_type'], 'blacklist')
 
-    def test_build_sbom_payload_empty_purls(self):
-        """Should return None for empty purls list"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [{'purl': 'pkg:npm/vue'}],
-            }
-        })
-        result = settings.build_sbom_payload([])
+    def test_sbom_context_to_payload_empty_purls(self):
+        """Should return None for empty purls tuple"""
+        context = SbomContext(purls=(), scan_type='identify')
+        result = context.to_payload()
         self.assertIsNone(result)
 
-    def test_build_sbom_payload_preserves_order(self):
-        """Should preserve the order of purls in the payload"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [{'purl': 'pkg:npm/a'}],
-            }
-        })
-        purls = ['pkg:npm/c', 'pkg:npm/a', 'pkg:npm/b']
-        result = settings.build_sbom_payload(purls)
-        assets = json.loads(result['assets'])
-        self.assertEqual([c['purl'] for c in assets['components']], purls)
+    def test_sbom_context_to_payload_none_scan_type(self):
+        """Should return None when scan_type is None"""
+        context = SbomContext(purls=('pkg:npm/vue',), scan_type=None)
+        result = context.to_payload()
+        self.assertIsNone(result)
 
-    # -- Integration tests (get_matching_purls + build_sbom_payload) --
+    def test_sbom_context_to_payload_preserves_order(self):
+        """Should preserve the order of purls in the payload"""
+        purls = ('pkg:npm/c', 'pkg:npm/a', 'pkg:npm/b')
+        context = SbomContext(purls=purls, scan_type='identify')
+        result = context.to_payload()
+        assets = json.loads(result['assets'])
+        self.assertEqual([c['purl'] for c in assets['components']], list(purls))
+
+    def test_sbom_context_empty(self):
+        """SbomContext.empty() should return empty context"""
+        context = SbomContext.empty()
+        self.assertEqual(context.purls, ())
+        self.assertIsNone(context.scan_type)
+        self.assertIsNone(context.to_payload())
+
+    # -- SbomContext.union tests --
+
+    def test_sbom_context_union_empty_list(self):
+        """Union of empty list should return empty context"""
+        result = SbomContext.union([])
+        self.assertEqual(result.purls, ())
+        self.assertIsNone(result.scan_type)
+
+    def test_sbom_context_union_single(self):
+        """Union of single context should return equivalent context"""
+        ctx = SbomContext(purls=('pkg:npm/a',), scan_type='identify')
+        result = SbomContext.union([ctx])
+        self.assertEqual(result.purls, ('pkg:npm/a',))
+        self.assertEqual(result.scan_type, 'identify')
+
+    def test_sbom_context_union_multiple_same_type(self):
+        """Union of multiple contexts with same scan_type"""
+        ctx1 = SbomContext(purls=('pkg:npm/a',), scan_type='identify')
+        ctx2 = SbomContext(purls=('pkg:npm/b',), scan_type='identify')
+        result = SbomContext.union([ctx1, ctx2])
+        self.assertEqual(result.purls, ('pkg:npm/a', 'pkg:npm/b'))
+        self.assertEqual(result.scan_type, 'identify')
+
+    def test_sbom_context_union_mixed_types_first_wins(self):
+        """Union of mixed scan_types: first non-None wins"""
+        ctx1 = SbomContext(purls=('pkg:npm/a',), scan_type='identify')
+        ctx2 = SbomContext(purls=('pkg:npm/b',), scan_type='blacklist')
+        result = SbomContext.union([ctx1, ctx2])
+        self.assertEqual(result.purls, ('pkg:npm/a', 'pkg:npm/b'))
+        self.assertEqual(result.scan_type, 'identify')
+
+    def test_sbom_context_union_deduplicates_purls(self):
+        """Union should deduplicate purls while preserving order"""
+        ctx1 = SbomContext(purls=('pkg:npm/a', 'pkg:npm/b'), scan_type='identify')
+        ctx2 = SbomContext(purls=('pkg:npm/b', 'pkg:npm/c'), scan_type='identify')
+        result = SbomContext.union([ctx1, ctx2])
+        self.assertEqual(result.purls, ('pkg:npm/a', 'pkg:npm/b', 'pkg:npm/c'))
+
+    def test_sbom_context_union_skips_none_scan_type(self):
+        """Union should skip None scan_types and use first non-None"""
+        ctx1 = SbomContext(purls=('pkg:npm/a',), scan_type=None)
+        ctx2 = SbomContext(purls=('pkg:npm/b',), scan_type='blacklist')
+        result = SbomContext.union([ctx1, ctx2])
+        self.assertEqual(result.scan_type, 'blacklist')
+
+    # -- Integration tests (get_sbom_context + to_payload) --
 
     def test_folder_scoped_entry_included_when_matching(self):
         """Folder-scoped entry should be included when file matches"""
@@ -475,8 +522,8 @@ class TestSbomForBatch(unittest.TestCase):
                 ],
             }
         })
-        purls = settings.get_matching_purls('src/vendor/lib.c')
-        result = settings.build_sbom_payload(purls)
+        context = settings.get_sbom_context('src/vendor/lib.c')
+        result = context.to_payload()
         self.assertIsNotNone(result)
         assets = json.loads(result['assets'])
         self.assertEqual([c['purl'] for c in assets['components']], ['pkg:npm/vue'])
@@ -490,8 +537,8 @@ class TestSbomForBatch(unittest.TestCase):
                 ],
             }
         })
-        purls = settings.get_matching_purls('lib/other.c')
-        result = settings.build_sbom_payload(purls)
+        context = settings.get_sbom_context('lib/other.c')
+        result = context.to_payload()
         self.assertIsNone(result)
 
     def test_mixed_purl_only_and_scoped(self):
@@ -505,10 +552,31 @@ class TestSbomForBatch(unittest.TestCase):
                 ],
             }
         })
-        purls = settings.get_matching_purls('src/vendor/file.c')
-        self.assertIn('pkg:npm/global-lib', purls)
-        self.assertIn('pkg:npm/vendor-lib', purls)
-        self.assertNotIn('pkg:npm/lib-only', purls)
+        context = settings.get_sbom_context('src/vendor/file.c')
+        self.assertIn('pkg:npm/global-lib', context.purls)
+        self.assertIn('pkg:npm/vendor-lib', context.purls)
+        self.assertNotIn('pkg:npm/lib-only', context.purls)
+
+    def test_include_no_match_falls_back_to_exclude(self):
+        """When include rules exist but don't match, should fall back to exclude rules"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'vendor/', 'purl': 'pkg:npm/react'},
+                ],
+                'exclude': [
+                    {'purl': 'pkg:npm/lodash'},
+                ],
+            }
+        })
+        # File in vendor/ should use include rules
+        context_vendor = settings.get_sbom_context('vendor/lib.c')
+        self.assertEqual(context_vendor.purls, ('pkg:npm/react',))
+        self.assertEqual(context_vendor.scan_type, 'identify')
+        # File outside vendor/ should fall back to exclude rules
+        context_other = settings.get_sbom_context('src/app.js')
+        self.assertEqual(context_other.purls, ('pkg:npm/lodash',))
+        self.assertEqual(context_other.scan_type, 'blacklist')
 
 
 class TestExtractFilePathsFromWfp(unittest.TestCase):
