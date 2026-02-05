@@ -392,83 +392,62 @@ class ScanossSettings(ScanossBase):
 
         return self.normalize_bom_entries(self.get_bom_remove())
 
-    def get_matching_purls(self, file_path: str) -> frozenset:
+    def get_matching_purls(self, file_path: str) -> list:
         """
-        Get the set of purls that match a specific file path.
+        Get purls matching a file path, ordered by specificity (most specific first).
+
         Purl-only entries (no path) are always included.
         Path-scoped entries are included only if the file matches.
+        When multiple rules match the same purl, the highest specificity is used.
 
         Args:
             file_path: File path to check
 
         Returns:
-            frozenset of matching purl strings (empty if no BOM data)
+            List of purl strings ordered by specificity (most specific first)
         """
         if not self.data:
-            return frozenset()
+            return []
 
         include_entries = self.get_bom_include()
         exclude_entries = self.get_bom_exclude()
         bom_entries = include_entries or exclude_entries
 
         if not bom_entries:
-            return frozenset()
+            return []
 
-        purls = set()
+        purl_scores = {}
         for entry in bom_entries:
             entry_purl = entry.purl or ''
             if not entry_purl:
                 continue
             entry_path = entry.path or ''
             if not entry_path or matches_path(entry_path, file_path):
-                purls.add(entry_purl)
-        return frozenset(purls)
+                # Score: priority (0-4) + path length (longer = more specific)
+                score = entry_priority(entry) + len(entry_path)
+                if entry_purl not in purl_scores or score > purl_scores[entry_purl]:
+                    purl_scores[entry_purl] = score
 
-    def get_sbom_for_batch(self, batch_file_paths: List[str]) -> Optional[dict]:
+        # Sort by score descending (most specific first)
+        return sorted(purl_scores.keys(), key=lambda p: -purl_scores[p])
+
+    def build_sbom_payload(self, purls: list) -> Optional[dict]:
         """
-        Get the SBOM context filtered for a specific batch of files.
-        Only includes purls from entries whose path matches files in the batch.
-
-        Purl-only entries (no path) are always included.
-        File entries are included only if the exact file is in the batch.
-        Folder entries are included only if any file in the batch is under that folder.
+        Build the SBOM payload dict from an ordered list of purls.
 
         Args:
-            batch_file_paths: List of file paths in the current WFP batch
+            purls: List of purl strings (order is preserved)
 
         Returns:
-            SBOM payload dict with 'assets' and 'scan_type', or None
+            SBOM payload dict with 'assets' and 'scan_type', or None if no purls
         """
-        if not self.data:
+        if not purls:
             return None
 
         include_entries = self.get_bom_include()
-        exclude_entries = self.get_bom_exclude()
-
-        if not include_entries and not exclude_entries:
-            return None
-
-        bom_entries = include_entries or exclude_entries
         scan_type = 'identify' if include_entries else 'blacklist'
 
-        filtered_purls = set()
-        for entry in bom_entries:
-            entry_path = entry.path or ''
-            entry_purl = entry.purl or ''
-            if not entry_purl:
-                continue
-            if not entry_path:
-                filtered_purls.add(entry_purl)
-                continue
-            for file_path in batch_file_paths:
-                if matches_path(entry_path, file_path):
-                    filtered_purls.add(entry_purl)
-                    break
-
-        if not filtered_purls:
-            return None
-
-        components = [{'purl': p} for p in sorted(filtered_purls)]
+        components = [{'purl': p} for p in purls]  # preserve order
         return {
             'assets': json.dumps({'components': components}),
             'scan_type': scan_type,
