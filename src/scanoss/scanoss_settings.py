@@ -54,6 +54,45 @@ class BomEntry:
             comment=data.get('comment'),
         )
 
+    def matches_path(self, result_path: str) -> bool:
+        """
+        Check if this entry's path matches a result path.
+        Folder paths (ending with '/') use prefix matching; file paths use exact matching.
+
+        Args:
+            result_path: Path from the scan result
+
+        Returns:
+            True if this entry's path matches the result path
+        """
+        if not self.path:
+            return True
+        if self.path.endswith('/'):
+            return result_path.startswith(self.path)
+        return self.path == result_path
+
+    @property
+    def priority(self) -> int:
+        """
+        Priority score for this BOM entry. Higher score means higher priority (more specific).
+
+        Score 4: both path and purl (most specific)
+        Score 2: purl only
+        Score 1: path only (remove only, no purl)
+
+        Returns:
+            Priority score
+        """
+        has_path = bool(self.path)
+        has_purl = bool(self.purl)
+        if has_path and has_purl:
+            return 4
+        if has_purl:
+            return 2
+        if has_path:
+            return 1
+        return 0
+
 
 @dataclass
 class ReplaceRule(BomEntry):
@@ -69,51 +108,6 @@ class ReplaceRule(BomEntry):
             replace_with=data.get('replace_with'),
             license=data.get('license'),
         )
-
-
-def matches_path(entry_path: str, result_path: str) -> bool:
-    """
-    Check if a BOM entry path matches a result path.
-    Folder paths (ending with '/') use prefix matching; file paths use exact matching.
-
-    Args:
-        entry_path: Path from the BOM entry
-        result_path: Path from the scan result
-
-    Returns:
-        True if the entry path matches the result path
-    """
-    if not entry_path:
-        return True
-    if entry_path.endswith('/'):
-        return result_path.startswith(entry_path)
-    return entry_path == result_path
-
-
-def entry_priority(entry: BomEntry) -> int:
-    """
-    Calculate the priority score for a BOM entry.
-    Higher score means higher priority (more specific).
-
-    Score 4: both path and purl (most specific)
-    Score 2: purl only
-    Score 1: path only (remove only, no purl)
-
-    Args:
-        entry: BOM entry to evaluate
-
-    Returns:
-        Priority score
-    """
-    has_path = bool(entry.path)
-    has_purl = bool(entry.purl)
-    if has_path and has_purl:
-        return 4
-    if has_purl:
-        return 2
-    if has_path:
-        return 1
-    return 0
 
 
 def find_best_match(result_path: str, result_purls: List[str], entries: List[BomEntry]) -> Optional[BomEntry]:
@@ -139,12 +133,12 @@ def find_best_match(result_path: str, result_purls: List[str], entries: List[Bom
 
         if not entry_path and not entry_purl:
             continue
-        if entry_path and not matches_path(entry_path, result_path):
+        if entry_path and not entry.matches_path(result_path):
             continue
         if entry_purl and (not result_purls or entry_purl not in result_purls):
             continue
 
-        score = entry_priority(entry)
+        score = entry.priority
         path_len = len(entry_path)
         if score > best_score or (score == best_score and path_len > best_path_len):
             best_entry = entry
@@ -422,9 +416,9 @@ class ScanossSettings(ScanossBase):
             if not entry_purl:
                 continue
             entry_path = entry.path or ''
-            if not entry_path or matches_path(entry_path, file_path):
+            if not entry_path or entry.matches_path(file_path):
                 # Score: priority (0-4) + path length (longer = more specific)
-                score = entry_priority(entry) + len(entry_path)
+                score = entry.priority + len(entry_path)
                 if entry_purl not in purl_scores or score > purl_scores[entry_purl]:
                     purl_scores[entry_purl] = score
 
