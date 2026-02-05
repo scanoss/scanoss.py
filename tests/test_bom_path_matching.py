@@ -801,6 +801,129 @@ class TestScannerSbomPayload(unittest.TestCase):
             self.assertNotIn('type', payload)
             self.assertNotIn('assets', payload)
 
+    # -- Corner case tests: priority ordering --
+
+    def test_payload_preserves_specificity_order(self):
+        """Purls in payload should be ordered by specificity (most specific first)."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/global'},                        # score: 2
+                    {'path': 'src/', 'purl': 'pkg:npm/src-lib'},       # score: 4 + 4 = 8
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor'}, # score: 4 + 11 = 15
+                ],
+            }
+        })
+        self._create_files(['src/vendor/lib.c'])
+        scanner, mock_post = self._create_scanner(settings)
+        scanner.scan_folder_with_options(self.test_dir)
+
+        payloads = self._extract_payloads(mock_post)
+        self.assertEqual(len(payloads), 1)
+        assets = json.loads(payloads[0]['assets'])
+        purl_order = [c['purl'] for c in assets['components']]
+        # Most specific first
+        self.assertEqual(purl_order, ['pkg:npm/vendor', 'pkg:npm/src-lib', 'pkg:npm/global'])
+
+    def test_same_context_batches_together(self):
+        """Files with identical purl context should batch into single POST."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/global'},
+                    {'path': 'src/', 'purl': 'pkg:npm/src-lib'},
+                ],
+            }
+        })
+        # All files under src/ → same context
+        self._create_files(['src/a.c', 'src/b.c', 'src/c.c'])
+        scanner, mock_post = self._create_scanner(settings)
+        scanner.scan_folder_with_options(self.test_dir)
+
+        payloads = self._extract_payloads(mock_post)
+        self.assertEqual(len(payloads), 1, 'Expected single POST for same context')
+
+    def test_nested_folder_deeper_wins(self):
+        """Deeper folder rule should produce higher-priority purl in payload."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'src/', 'purl': 'pkg:npm/shallow'},
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/deep'},
+                ],
+            }
+        })
+        self._create_files(['src/vendor/lib.c'])
+        scanner, mock_post = self._create_scanner(settings)
+        scanner.scan_folder_with_options(self.test_dir)
+
+        payloads = self._extract_payloads(mock_post)
+        self.assertEqual(len(payloads), 1)
+        assets = json.loads(payloads[0]['assets'])
+        purl_order = [c['purl'] for c in assets['components']]
+        # deep (score 15) before shallow (score 8)
+        self.assertEqual(purl_order[0], 'pkg:npm/deep')
+
+    def test_file_path_beats_folder_path_ordering(self):
+        """File-specific rule should appear before folder rule for ordering."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'src/', 'purl': 'pkg:npm/folder-lib'},          # score: 8
+                    {'path': 'src/main.c', 'purl': 'pkg:npm/file-lib'},      # score: 14
+                ],
+            }
+        })
+        self._create_files(['src/main.c'])
+        scanner, mock_post = self._create_scanner(settings)
+        scanner.scan_folder_with_options(self.test_dir)
+
+        payloads = self._extract_payloads(mock_post)
+        self.assertEqual(len(payloads), 1)
+        assets = json.loads(payloads[0]['assets'])
+        purl_order = [c['purl'] for c in assets['components']]
+        self.assertEqual(purl_order[0], 'pkg:npm/file-lib')
+
+    def test_three_contexts_three_posts(self):
+        """Files in 3 different folder contexts should result in 3 POSTs."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'vendor/', 'purl': 'pkg:npm/vendor'},
+                    {'path': 'core/', 'purl': 'pkg:npm/core'},
+                    {'path': 'lib/', 'purl': 'pkg:npm/lib'},
+                ],
+            }
+        })
+        self._create_files(['vendor/a.c', 'core/b.c', 'lib/c.c'])
+        scanner, mock_post = self._create_scanner(settings)
+        scanner.scan_folder_with_options(self.test_dir)
+
+        payloads = self._extract_payloads(mock_post)
+        self.assertEqual(len(payloads), 3)
+
+    def test_mixed_matching_and_non_matching(self):
+        """Files outside all path rules should have no SBOM, inside should have SBOM."""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'vendor/', 'purl': 'pkg:npm/vendor-lib'},
+                ],
+            }
+        })
+        self._create_files(['vendor/lib.c', 'src/main.c'])
+        scanner, mock_post = self._create_scanner(settings)
+        scanner.scan_folder_with_options(self.test_dir)
+
+        payloads = self._extract_payloads(mock_post)
+        # 2 batches: one with SBOM (vendor/), one without (src/)
+        self.assertEqual(len(payloads), 2)
+
+        has_sbom = [p for p in payloads if 'type' in p]
+        no_sbom = [p for p in payloads if 'type' not in p]
+        self.assertEqual(len(has_sbom), 1)
+        self.assertEqual(len(no_sbom), 1)
+
 
 if __name__ == '__main__':
     unittest.main()
