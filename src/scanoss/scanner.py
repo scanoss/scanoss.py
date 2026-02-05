@@ -40,7 +40,7 @@ from . import __version__
 from .csvoutput import CsvOutput
 from .cyclonedx import CycloneDx
 from .scancodedeps import ScancodeDeps
-from .scanoss_settings import ScanossSettings
+from .scanoss_settings import SbomContext, ScanossSettings
 from .scanossapi import ScanossApi
 from .scanossbase import ScanossBase
 from .scanossgrpc import ScanossGrpc
@@ -387,7 +387,7 @@ class Scanner(ScanossBase):
             wfp_file_count = 0  # count number of files in each queue post
             scan_started = False
             wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
-            batch_purls = None  # Track purl context for the current batch (ordered list)
+            batch_context = None  # Track SBOM context (purls, scan_type) for the current batch
 
             to_scan_files = file_filters.get_filtered_files_from_folder(scan_dir)
             for to_scan_file in to_scan_files:
@@ -409,40 +409,40 @@ class Scanner(ScanossBase):
                     wfp_size = len(wfp.encode('utf-8'))
 
                     # Compute SBOM context for this file
-                    file_purls = self.scan_settings.get_matching_purls(to_scan_file) if self.scan_settings else []
+                    file_context = self.scan_settings.get_sbom_context(to_scan_file) if self.scan_settings else SbomContext.empty()
 
-                    # FLUSH: Context changed (different purl list for this file)
-                    if scan_block != '' and batch_purls is not None and file_purls != batch_purls:
-                        sbom = self.scan_settings.build_sbom_payload(batch_purls) if self.scan_settings else None
+                    # FLUSH: Context changed (different purls or scan_type)
+                    if scan_block != '' and batch_context is not None and file_context != batch_context:
+                        sbom = batch_context.to_payload() if batch_context else None
                         self.threaded_scan.queue_add(scan_block, sbom=sbom)
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
-                        batch_purls = None
+                        batch_context = None
 
                     # FLUSH: Current file won't fit in batch (size limit)
                     if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
-                        sbom = self.scan_settings.build_sbom_payload(batch_purls) if self.scan_settings else None
+                        sbom = batch_context.to_payload() if batch_context else None
                         self.threaded_scan.queue_add(scan_block, sbom=sbom)
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
-                        batch_purls = None
+                        batch_context = None
 
                     # ADD current file to batch
                     scan_block += wfp
-                    batch_purls = file_purls
+                    batch_context = file_context
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
 
                     # FLUSH: Batch is full (file count or size limit)
                     if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
-                        sbom = self.scan_settings.build_sbom_payload(batch_purls) if self.scan_settings else None
+                        sbom = batch_context.to_payload() if batch_context else None
                         self.threaded_scan.queue_add(scan_block, sbom=sbom)
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
-                        batch_purls = None
+                        batch_context = None
                     if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
@@ -453,7 +453,7 @@ class Scanner(ScanossBase):
                             success = False
             # End for loop
             if self.threaded_scan and scan_block != '':
-                sbom = self.scan_settings.build_sbom_payload(batch_purls) if self.scan_settings else None
+                sbom = batch_context.to_payload() if batch_context else None
                 self.threaded_scan.queue_add(scan_block, sbom=sbom)  # Make sure all files have been submitted
 
         if file_count > 0:
@@ -632,8 +632,8 @@ class Scanner(ScanossBase):
         wfp = self.winnowing.wfp_for_file(file, file)
         if wfp is not None and wfp != '':
             if self.threaded_scan:
-                purls = self.scan_settings.get_matching_purls(file) if self.scan_settings else []
-                sbom = self.scan_settings.build_sbom_payload(purls) if self.scan_settings else None
+                file_context = self.scan_settings.get_sbom_context(file) if self.scan_settings else SbomContext.empty()
+                sbom = file_context.to_payload()
                 self.threaded_scan.queue_add(wfp, sbom=sbom)  # Submit the WFP for scanning
             self.print_debug(f'Scanning {file}...')
             if self.threaded_scan:
@@ -677,7 +677,7 @@ class Scanner(ScanossBase):
             wfp_file_count = 0  # count number of files in each queue post
             scan_started = False
             wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
-            batch_purls = None  # Track purl context for the current batch (ordered list)
+            batch_context = None  # Track SBOM context (purls, scan_type) for the current batch
 
             to_scan_files = file_filters.get_filtered_files_from_files(files)
             for file in to_scan_files:
@@ -698,40 +698,40 @@ class Scanner(ScanossBase):
                     wfp_size = len(wfp.encode('utf-8'))
 
                     # Compute SBOM context for this file
-                    file_purls = self.scan_settings.get_matching_purls(file) if self.scan_settings else []
+                    file_context = self.scan_settings.get_sbom_context(file) if self.scan_settings else SbomContext.empty()
 
-                    # FLUSH: Context changed (different purl list for this file)
-                    if batch_purls is not None and file_purls != batch_purls and scan_block != '':
-                        sbom = self.scan_settings.build_sbom_payload(batch_purls) if self.scan_settings else None
+                    # FLUSH: Context changed (different purls or scan_type)
+                    if batch_context is not None and file_context != batch_context and scan_block != '':
+                        sbom = batch_context.to_payload() if batch_context else None
                         self.threaded_scan.queue_add(scan_block, sbom=sbom)
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
-                        batch_purls = None
+                        batch_context = None
 
                     # FLUSH: Current file won't fit in batch (size limit)
                     if scan_block != '' and (wfp_size + scan_size) >= self.max_post_size:
-                        sbom = self.scan_settings.build_sbom_payload(batch_purls) if self.scan_settings else None
+                        sbom = batch_context.to_payload() if batch_context else None
                         self.threaded_scan.queue_add(scan_block, sbom=sbom)
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
-                        batch_purls = None
+                        batch_context = None
 
                     # ADD current file to batch
                     scan_block += wfp
-                    batch_purls = file_purls
+                    batch_context = file_context
                     scan_size = len(scan_block.encode('utf-8'))
                     wfp_file_count += 1
 
                     # FLUSH: Batch is full (file count or size limit)
                     if wfp_file_count > self.post_file_count or scan_size >= self.max_post_size:
-                        sbom = self.scan_settings.build_sbom_payload(batch_purls) if self.scan_settings else None
+                        sbom = batch_context.to_payload() if batch_context else None
                         self.threaded_scan.queue_add(scan_block, sbom=sbom)
                         queue_size += 1
                         scan_block = ''
                         wfp_file_count = 0
-                        batch_purls = None
+                        batch_context = None
                     if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
@@ -743,7 +743,7 @@ class Scanner(ScanossBase):
 
             # End for loop
             if self.threaded_scan and scan_block != '':
-                sbom = self.scan_settings.build_sbom_payload(batch_purls) if self.scan_settings else None
+                sbom = batch_context.to_payload() if batch_context else None
                 self.threaded_scan.queue_add(scan_block, sbom=sbom)  # Make sure all files have been submitted
 
         if file_count > 0:
@@ -802,8 +802,8 @@ class Scanner(ScanossBase):
         wfp = self.winnowing.wfp_for_contents(filename, False, contents)
         if wfp is not None and wfp != '':
             if self.threaded_scan:
-                purls = self.scan_settings.get_matching_purls(filename) if self.scan_settings else []
-                sbom = self.scan_settings.build_sbom_payload(purls) if self.scan_settings else None
+                file_context = self.scan_settings.get_sbom_context(filename) if self.scan_settings else SbomContext.empty()
+                sbom = file_context.to_payload()
                 self.threaded_scan.queue_add(wfp, sbom=sbom)  # Submit the WFP for scanning
             self.print_debug(f'Scanning {filename}...')
             if self.threaded_scan:
@@ -880,15 +880,8 @@ class Scanner(ScanossBase):
                     if self.debug and cur_size > self.max_post_size:
                         Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
                     file_paths = self._extract_file_paths_from_wfp(wfp)
-                    all_purls = []
-                    if self.scan_settings and file_paths:
-                        seen = set()
-                        for fp in file_paths:
-                            for p in self.scan_settings.get_matching_purls(fp):
-                                if p not in seen:
-                                    seen.add(p)
-                                    all_purls.append(p)
-                    sbom = self.scan_settings.build_sbom_payload(all_purls) if self.scan_settings else None
+                    contexts = [self.scan_settings.get_sbom_context(fp) for fp in file_paths] if self.scan_settings and file_paths else []
+                    sbom = SbomContext.union(contexts).to_payload()
                     self.threaded_scan.queue_add(wfp, sbom=sbom)
                     queue_size += 1
                     wfp = ''
@@ -905,15 +898,8 @@ class Scanner(ScanossBase):
             wfp += scan_block  # Store the WFP for the current file
         if wfp:
             file_paths = self._extract_file_paths_from_wfp(wfp)
-            all_purls = []
-            if self.scan_settings and file_paths:
-                seen = set()
-                for fp in file_paths:
-                    for p in self.scan_settings.get_matching_purls(fp):
-                        if p not in seen:
-                            seen.add(p)
-                            all_purls.append(p)
-            sbom = self.scan_settings.build_sbom_payload(all_purls) if self.scan_settings else None
+            contexts = [self.scan_settings.get_sbom_context(fp) for fp in file_paths] if self.scan_settings and file_paths else []
+            sbom = SbomContext.union(contexts).to_payload()
             self.threaded_scan.queue_add(wfp, sbom=sbom)
             queue_size += 1
 
@@ -934,15 +920,8 @@ class Scanner(ScanossBase):
             raise Exception('ERROR: Please specify a WFP to scan')
         raw_output = '{\n'
         file_paths = self._extract_file_paths_from_wfp(wfp)
-        all_purls = []
-        if self.scan_settings and file_paths:
-            seen = set()
-            for fp in file_paths:
-                for p in self.scan_settings.get_matching_purls(fp):
-                    if p not in seen:
-                        seen.add(p)
-                        all_purls.append(p)
-        sbom = self.scan_settings.build_sbom_payload(all_purls) if self.scan_settings else None
+        contexts = [self.scan_settings.get_sbom_context(fp) for fp in file_paths] if self.scan_settings and file_paths else []
+        sbom = SbomContext.union(contexts).to_payload()
         scan_resp = self.scanoss_api.scan(wfp, sbom=sbom)
         if scan_resp is not None:
             for key, value in scan_resp.items():
