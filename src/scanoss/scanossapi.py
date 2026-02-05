@@ -185,15 +185,14 @@ class ScanossApi(ScanossBase):
         :param wfp: WFP to scan
         :param context: Context to help with identification
         :param scan_id: ID of the scan being run (usually thread id)
-        :param sbom: Per-request SBOM context (overrides global self.sbom if provided)
+        :param sbom: Per-request SBOM context
         :return: JSON result object
         """
         request_id = str(uuid.uuid4())
         form_data = {}
-        effective_sbom = sbom if sbom is not None else self.sbom
-        if effective_sbom:
-            form_data['type'] = effective_sbom.get('scan_type')
-            form_data['assets'] = effective_sbom.get('assets')
+        if sbom:
+            form_data['type'] = sbom.get('scan_type')
+            form_data['assets'] = sbom.get('assets')
         if self.scan_format:
             form_data['format'] = self.scan_format
         if self.flags:
