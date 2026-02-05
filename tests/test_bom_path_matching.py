@@ -316,7 +316,7 @@ class TestPostProcessorFolderMatching(unittest.TestCase):
 
 
 class TestSbomForBatch(unittest.TestCase):
-    """Test per-batch SBOM context resolution"""
+    """Test per-file SBOM context resolution and payload building"""
 
     def _make_settings(self, settings_data: dict) -> ScanossSettings:
         """Create a ScanossSettings instance from a dict without file I/O"""
@@ -324,145 +324,7 @@ class TestSbomForBatch(unittest.TestCase):
         settings.data = settings_data
         return settings
 
-    def test_purl_only_entries_always_included(self):
-        """Purl-only include entries should be sent with every batch"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'purl': 'pkg:npm/vue'},
-                    {'purl': 'pkg:npm/react'},
-                ],
-            }
-        })
-        result = settings.get_sbom_for_batch(['any/file.c'])
-        self.assertIsNotNone(result)
-        assets = json.loads(result['assets'])
-        purls = [c['purl'] for c in assets['components']]
-        self.assertIn('pkg:npm/vue', purls)
-        self.assertIn('pkg:npm/react', purls)
-        self.assertEqual(result['scan_type'], 'identify')
-
-    def test_folder_scoped_entry_included_when_matching(self):
-        """Folder-scoped entry should be included when batch contains matching files"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vue'},
-                ],
-            }
-        })
-        result = settings.get_sbom_for_batch(['src/vendor/lib.c'])
-        self.assertIsNotNone(result)
-        assets = json.loads(result['assets'])
-        purls = [c['purl'] for c in assets['components']]
-        self.assertIn('pkg:npm/vue', purls)
-
-    def test_folder_scoped_entry_excluded_when_no_match(self):
-        """Folder-scoped entry should not be included when no batch files match"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vue'},
-                ],
-            }
-        })
-        result = settings.get_sbom_for_batch(['lib/other.c'])
-        self.assertIsNone(result)
-
-    def test_file_scoped_entry_included_when_exact_match(self):
-        """File-scoped entry should be included when exact file is in batch"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'path': 'src/main.c', 'purl': 'pkg:npm/vue'},
-                ],
-            }
-        })
-        result = settings.get_sbom_for_batch(['src/main.c', 'src/other.c'])
-        self.assertIsNotNone(result)
-        assets = json.loads(result['assets'])
-        purls = [c['purl'] for c in assets['components']]
-        self.assertIn('pkg:npm/vue', purls)
-
-    def test_file_scoped_entry_excluded_when_no_match(self):
-        """File-scoped entry should not be included when file is not in batch"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'path': 'src/main.c', 'purl': 'pkg:npm/vue'},
-                ],
-            }
-        })
-        result = settings.get_sbom_for_batch(['src/other.c'])
-        self.assertIsNone(result)
-
-    def test_mixed_purl_only_and_scoped(self):
-        """Purl-only entries always included, scoped entries filtered"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'purl': 'pkg:npm/global-lib'},
-                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor-lib'},
-                    {'path': 'lib/', 'purl': 'pkg:npm/lib-only'},
-                ],
-            }
-        })
-        result = settings.get_sbom_for_batch(['src/vendor/file.c'])
-        self.assertIsNotNone(result)
-        assets = json.loads(result['assets'])
-        purls = [c['purl'] for c in assets['components']]
-        self.assertIn('pkg:npm/global-lib', purls)
-        self.assertIn('pkg:npm/vendor-lib', purls)
-        self.assertNotIn('pkg:npm/lib-only', purls)
-
-    def test_exclude_entries(self):
-        """Exclude entries should use blacklist scan type"""
-        settings = self._make_settings({
-            'bom': {
-                'exclude': [
-                    {'purl': 'pkg:npm/excluded'},
-                ],
-            }
-        })
-        result = settings.get_sbom_for_batch(['any/file.c'])
-        self.assertIsNotNone(result)
-        self.assertEqual(result['scan_type'], 'blacklist')
-        assets = json.loads(result['assets'])
-        purls = [c['purl'] for c in assets['components']]
-        self.assertIn('pkg:npm/excluded', purls)
-
-    def test_no_entries_returns_none(self):
-        """Should return None when no include or exclude entries exist"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [],
-                'exclude': [],
-            }
-        })
-        result = settings.get_sbom_for_batch(['src/main.c'])
-        self.assertIsNone(result)
-
-    def test_no_data_returns_none(self):
-        """Should return None when settings have no data"""
-        settings = self._make_settings({})
-        result = settings.get_sbom_for_batch(['src/main.c'])
-        self.assertIsNone(result)
-
-    def test_deduplicates_purls(self):
-        """Should not duplicate purls when multiple entries match"""
-        settings = self._make_settings({
-            'bom': {
-                'include': [
-                    {'purl': 'pkg:npm/vue'},
-                    {'path': 'src/', 'purl': 'pkg:npm/vue'},
-                ],
-            }
-        })
-        result = settings.get_sbom_for_batch(['src/main.c'])
-        self.assertIsNotNone(result)
-        assets = json.loads(result['assets'])
-        purls = [c['purl'] for c in assets['components']]
-        self.assertEqual(purls.count('pkg:npm/vue'), 1)
+    # -- get_matching_purls tests --
 
     def test_get_matching_purls_purl_only(self):
         """Purl-only entries should match any file path"""
@@ -475,7 +337,8 @@ class TestSbomForBatch(unittest.TestCase):
             }
         })
         result = settings.get_matching_purls('anything/file.c')
-        self.assertEqual(result, frozenset({'pkg:npm/global', 'pkg:npm/other'}))
+        self.assertIsInstance(result, list)
+        self.assertEqual(set(result), {'pkg:npm/global', 'pkg:npm/other'})
 
     def test_get_matching_purls_folder_scoped(self):
         """Folder-scoped entries should only match files under that folder"""
@@ -489,16 +352,164 @@ class TestSbomForBatch(unittest.TestCase):
         })
         # File under vendor/ gets both purls
         result_vendor = settings.get_matching_purls('src/vendor/lib.c')
-        self.assertEqual(result_vendor, frozenset({'pkg:npm/global', 'pkg:npm/vendor-lib'}))
+        self.assertEqual(set(result_vendor), {'pkg:npm/global', 'pkg:npm/vendor-lib'})
         # File outside vendor/ gets only global
         result_other = settings.get_matching_purls('src/core/main.c')
-        self.assertEqual(result_other, frozenset({'pkg:npm/global'}))
+        self.assertEqual(result_other, ['pkg:npm/global'])
 
     def test_get_matching_purls_no_data(self):
-        """Should return empty frozenset when no data"""
+        """Should return empty list when no data"""
         settings = self._make_settings({})
         result = settings.get_matching_purls('src/main.c')
-        self.assertEqual(result, frozenset())
+        self.assertEqual(result, [])
+
+    def test_get_matching_purls_no_entries(self):
+        """Should return empty list when no include/exclude entries"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [],
+                'exclude': [],
+            }
+        })
+        result = settings.get_matching_purls('src/main.c')
+        self.assertEqual(result, [])
+
+    def test_get_matching_purls_deduplicates(self):
+        """Should not duplicate purls when multiple entries match same purl"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/vue'},
+                    {'path': 'src/', 'purl': 'pkg:npm/vue'},
+                ],
+            }
+        })
+        result = settings.get_matching_purls('src/main.c')
+        self.assertEqual(result.count('pkg:npm/vue'), 1)
+
+    def test_get_matching_purls_ordered_by_specificity(self):
+        """Should return purls ordered by specificity (most specific first)"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/global'},                              # score: 2 (purl only)
+                    {'path': 'src/', 'purl': 'pkg:npm/src-lib'},             # score: 4 + 4 = 8
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor-lib'},   # score: 4 + 11 = 15
+                ],
+            }
+        })
+        result = settings.get_matching_purls('src/vendor/lib.c')
+        # Most specific first: vendor-lib (15), src-lib (8), global (2)
+        self.assertEqual(result, ['pkg:npm/vendor-lib', 'pkg:npm/src-lib', 'pkg:npm/global'])
+
+    def test_get_matching_purls_file_path_most_specific(self):
+        """File path should be more specific than folder path"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'src/', 'purl': 'pkg:npm/folder-lib'},
+                    {'path': 'src/main.c', 'purl': 'pkg:npm/file-lib'},
+                ],
+            }
+        })
+        result = settings.get_matching_purls('src/main.c')
+        # File path (10 chars) more specific than folder path (4 chars)
+        self.assertEqual(result[0], 'pkg:npm/file-lib')
+
+    # -- build_sbom_payload tests --
+
+    def test_build_sbom_payload_identify(self):
+        """Should return identify scan type for include entries"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [{'purl': 'pkg:npm/vue'}],
+            }
+        })
+        result = settings.build_sbom_payload(['pkg:npm/vue', 'pkg:npm/react'])
+        self.assertIsNotNone(result)
+        self.assertEqual(result['scan_type'], 'identify')
+        assets = json.loads(result['assets'])
+        # Order should be preserved
+        self.assertEqual(assets['components'], [{'purl': 'pkg:npm/vue'}, {'purl': 'pkg:npm/react'}])
+
+    def test_build_sbom_payload_blacklist(self):
+        """Should return blacklist scan type for exclude entries"""
+        settings = self._make_settings({
+            'bom': {
+                'exclude': [{'purl': 'pkg:npm/excluded'}],
+            }
+        })
+        result = settings.build_sbom_payload(['pkg:npm/excluded'])
+        self.assertIsNotNone(result)
+        self.assertEqual(result['scan_type'], 'blacklist')
+
+    def test_build_sbom_payload_empty_purls(self):
+        """Should return None for empty purls list"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [{'purl': 'pkg:npm/vue'}],
+            }
+        })
+        result = settings.build_sbom_payload([])
+        self.assertIsNone(result)
+
+    def test_build_sbom_payload_preserves_order(self):
+        """Should preserve the order of purls in the payload"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [{'purl': 'pkg:npm/a'}],
+            }
+        })
+        purls = ['pkg:npm/c', 'pkg:npm/a', 'pkg:npm/b']
+        result = settings.build_sbom_payload(purls)
+        assets = json.loads(result['assets'])
+        self.assertEqual([c['purl'] for c in assets['components']], purls)
+
+    # -- Integration tests (get_matching_purls + build_sbom_payload) --
+
+    def test_folder_scoped_entry_included_when_matching(self):
+        """Folder-scoped entry should be included when file matches"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vue'},
+                ],
+            }
+        })
+        purls = settings.get_matching_purls('src/vendor/lib.c')
+        result = settings.build_sbom_payload(purls)
+        self.assertIsNotNone(result)
+        assets = json.loads(result['assets'])
+        self.assertEqual([c['purl'] for c in assets['components']], ['pkg:npm/vue'])
+
+    def test_folder_scoped_entry_excluded_when_no_match(self):
+        """Folder-scoped entry should not be included when file doesn't match"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vue'},
+                ],
+            }
+        })
+        purls = settings.get_matching_purls('lib/other.c')
+        result = settings.build_sbom_payload(purls)
+        self.assertIsNone(result)
+
+    def test_mixed_purl_only_and_scoped(self):
+        """Purl-only entries always included, scoped entries filtered by path"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/global-lib'},
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor-lib'},
+                    {'path': 'lib/', 'purl': 'pkg:npm/lib-only'},
+                ],
+            }
+        })
+        purls = settings.get_matching_purls('src/vendor/file.c')
+        self.assertIn('pkg:npm/global-lib', purls)
+        self.assertIn('pkg:npm/vendor-lib', purls)
+        self.assertNotIn('pkg:npm/lib-only', purls)
 
 
 class TestExtractFilePathsFromWfp(unittest.TestCase):
