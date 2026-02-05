@@ -375,55 +375,6 @@ class ScanossSettings(ScanossBase):
         raw = self._get_bom().get('replace', [])
         return [ReplaceRule.from_dict(entry) for entry in raw]
 
-    def get_sbom(self):
-        """
-        Get the SBOM to be sent to the SCANOSS API
-        Returns:
-            dict: SBOM request payload
-        """
-        if not self.data:
-            return None
-        return {
-            'assets': json.dumps(self._get_sbom_assets()),
-            'scan_type': self.scan_type,
-        }
-
-    def _get_sbom_assets(self):
-        """
-        Get the SBOM assets
-        Returns:
-            List: List of SBOM assets
-        """
-
-        if self.settings_file_type == 'new':
-            if len(self.get_bom_include()):
-                self.scan_type = 'identify'
-                include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
-                return {"components": include_bom_entries}
-            elif len(self.get_bom_exclude()):
-                self.scan_type = 'blacklist'
-                exclude_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_exclude()))
-                return {"components": exclude_bom_entries}
-
-        if self.settings_file_type == 'legacy' and self.scan_type == 'identify':            # sbom-identify.json
-            include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
-            replace_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_replace()))
-            self.print_debug(
-                f"Scan type set to 'identify'. Adding {len(include_bom_entries) + len(replace_bom_entries)} components as context to the scan. \n"  # noqa: E501
-                f'From Include list: {[entry["purl"] for entry in include_bom_entries]} \n'
-                f'From Replace list: {[entry["purl"] for entry in replace_bom_entries]} \n'
-            )
-            return include_bom_entries + replace_bom_entries
-
-        if self.settings_file_type == 'legacy' and self.scan_type == 'blacklist':            # sbom-identify.json
-            exclude_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_exclude()))
-            self.print_debug(
-                f"Scan type set to 'blacklist'. Adding {len(exclude_bom_entries)} components as context to the scan. \n"  # noqa: E501
-                f'From Exclude list: {[entry["purl"] for entry in exclude_bom_entries]} \n')
-            return exclude_bom_entries
-
-        return self.normalize_bom_entries(self.get_bom_remove())
-
     def _get_purls_for_path(self, file_path: str, entries: List[BomEntry]) -> list:
         """
         Extract matching purls from entries for a given file path.
@@ -486,43 +437,6 @@ class ScanossSettings(ScanossBase):
             return SbomContext(purls=tuple(exclude_purls), scan_type='blacklist')
 
         return SbomContext.empty()
-
-    @staticmethod
-    def normalize_bom_entries(bom_entries: List[BomEntry]) -> list:
-        """
-        Normalize the BOM entries by extracting only the purl field.
-
-        Args:
-            bom_entries: List of BOM entries
-        Returns:
-            List of dicts with only the purl field (for API payload)
-        """
-        normalized_bom_entries = []
-        for entry in bom_entries:
-            normalized_bom_entries.append(
-                {
-                    'purl': entry.purl or '',
-                }
-            )
-        return normalized_bom_entries
-
-    @staticmethod
-    def _remove_duplicates(bom_entries: list) -> list:
-        """
-        Remove duplicate BOM entries based on purl field.
-        Args:
-            bom_entries: List of normalized BOM entry dicts
-        Returns:
-            List of unique BOM entries
-        """
-        already_added = set()
-        unique_entries = []
-        for entry in bom_entries:
-            entry_tuple = tuple(entry.items())
-            if entry_tuple not in already_added:
-                already_added.add(entry_tuple)
-                unique_entries.append(entry)
-        return unique_entries
 
     def is_legacy(self):
         """Check if the settings file is legacy"""
