@@ -35,60 +35,59 @@ from scanoss.scanoss_settings import (
     BomEntry,
     ReplaceRule,
     ScanossSettings,
-    entry_priority,
     find_best_match,
-    matches_path,
 )
 from scanoss.scanpostprocessor import ScanPostProcessor
 
 
 class TestMatchesPath(unittest.TestCase):
-    """Unit tests for the matches_path helper function"""
+    """Unit tests for the BomEntry.matches_path method"""
 
     def test_empty_entry_path_matches_everything(self):
-        self.assertTrue(matches_path('', 'src/main.c'))
-        self.assertTrue(matches_path('', ''))
+        self.assertTrue(BomEntry(path='').matches_path('src/main.c'))
+        self.assertTrue(BomEntry(path=None).matches_path('src/main.c'))
+        self.assertTrue(BomEntry(path='').matches_path(''))
 
     def test_exact_file_match(self):
-        self.assertTrue(matches_path('src/main.c', 'src/main.c'))
+        self.assertTrue(BomEntry(path='src/main.c').matches_path('src/main.c'))
 
     def test_exact_file_no_match(self):
-        self.assertFalse(matches_path('src/main.c', 'src/other.c'))
+        self.assertFalse(BomEntry(path='src/main.c').matches_path('src/other.c'))
 
     def test_folder_prefix_match(self):
-        self.assertTrue(matches_path('src/vendor/', 'src/vendor/lib.c'))
-        self.assertTrue(matches_path('src/vendor/', 'src/vendor/sub/deep.c'))
+        self.assertTrue(BomEntry(path='src/vendor/').matches_path('src/vendor/lib.c'))
+        self.assertTrue(BomEntry(path='src/vendor/').matches_path('src/vendor/sub/deep.c'))
 
     def test_folder_no_match(self):
-        self.assertFalse(matches_path('src/vendor/', 'src/other/lib.c'))
-        self.assertFalse(matches_path('src/vendor/', 'src/vendorlib.c'))
+        self.assertFalse(BomEntry(path='src/vendor/').matches_path('src/other/lib.c'))
+        self.assertFalse(BomEntry(path='src/vendor/').matches_path('src/vendorlib.c'))
 
     def test_folder_root_prefix(self):
-        self.assertTrue(matches_path('src/', 'src/main.c'))
-        self.assertTrue(matches_path('src/', 'src/vendor/deep/file.c'))
+        self.assertTrue(BomEntry(path='src/').matches_path('src/main.c'))
+        self.assertTrue(BomEntry(path='src/').matches_path('src/vendor/deep/file.c'))
 
     def test_exact_path_does_not_prefix_match(self):
         """File paths (no trailing slash) should not do prefix matching"""
-        self.assertFalse(matches_path('src/main.c', 'src/main.cpp'))
+        self.assertFalse(BomEntry(path='src/main.c').matches_path('src/main.cpp'))
 
 
 class TestEntryPriority(unittest.TestCase):
-    """Unit tests for the entry_priority helper function"""
+    """Unit tests for the BomEntry.priority property"""
 
     def test_path_and_purl(self):
-        self.assertEqual(entry_priority(BomEntry(path='src/main.c', purl='pkg:npm/vue')), 4)
+        self.assertEqual(BomEntry(path='src/main.c', purl='pkg:npm/vue').priority, 4)
 
     def test_purl_only(self):
-        self.assertEqual(entry_priority(BomEntry(purl='pkg:npm/vue')), 2)
+        self.assertEqual(BomEntry(purl='pkg:npm/vue').priority, 2)
 
     def test_path_only(self):
-        self.assertEqual(entry_priority(BomEntry(path='src/vendor/')), 1)
+        self.assertEqual(BomEntry(path='src/vendor/').priority, 1)
 
     def test_empty_entry(self):
-        self.assertEqual(entry_priority(BomEntry()), 0)
+        self.assertEqual(BomEntry().priority, 0)
 
     def test_empty_strings(self):
-        self.assertEqual(entry_priority(BomEntry(path='', purl='')), 0)
+        self.assertEqual(BomEntry(path='', purl='').priority, 0)
 
 
 class TestFindBestMatch(unittest.TestCase):
