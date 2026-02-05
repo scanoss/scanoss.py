@@ -413,9 +413,8 @@ class ScanossSettings(ScanossBase):
         Get SBOM context matching a file path.
 
         Logic:
-        1. Try include rules first - if any match, return SbomContext with 'identify'
-        2. Fall back to exclude rules - if any match, return SbomContext with 'blacklist'
-        3. If nothing matches, return empty SbomContext
+        - Legacy files: use self.scan_type set during file load
+        - New format: try include rules first, fall back to exclude rules
 
         Args:
             file_path: File path to check
@@ -426,12 +425,20 @@ class ScanossSettings(ScanossBase):
         if not self.data:
             return SbomContext.empty()
 
-        # Try include first
+        # Legacy files: use self.scan_type set during file load (--identify or --ignore flag)
+        if self.is_legacy():
+            raw = self._get_bom()
+            entries = [BomEntry.from_dict(entry) for entry in raw]
+            purls = self._get_purls_for_path(file_path, entries)
+            if purls:
+                return SbomContext(purls=tuple(purls), scan_type=self.scan_type)
+            return SbomContext.empty()
+
+        # New format: try include first, then exclude
         include_purls = self._get_purls_for_path(file_path, self.get_bom_include())
         if include_purls:
             return SbomContext(purls=tuple(include_purls), scan_type='identify')
 
-        # Fall back to exclude
         exclude_purls = self._get_purls_for_path(file_path, self.get_bom_exclude())
         if exclude_purls:
             return SbomContext(purls=tuple(exclude_purls), scan_type='blacklist')
