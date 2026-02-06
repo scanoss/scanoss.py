@@ -250,23 +250,22 @@ class Scanner(ScanossBase):
             self.scanoss_api.set_sbom(sbom)
 
     @staticmethod
-    def _extract_file_paths_from_wfp(wfp: str) -> List[str]:
+    def _extract_file_path_from_line(line: str) -> str:
         """
-        Extract file paths from a WFP string.
+        Extract file path from a single WFP line.
         WFP file lines have the format: file=<hash>,<size>,<path>
 
         Args:
-            wfp: WFP string
+            line: Single WFP line starting with 'file='
         Returns:
-            List of file paths
+            File path or empty string if not found
         """
-        paths = []
-        for line in wfp.split('\n'):
-            if line.startswith(WFP_FILE_START):
-                parts = line[len(WFP_FILE_START):].split(',', 2)
-                if len(parts) >= WFP_FILE_PARTS:
-                    paths.append(parts[2].strip())
-        return paths
+        if not line.startswith(WFP_FILE_START):
+            return ''
+        parts = line[len(WFP_FILE_START):].split(',', 2)
+        if len(parts) >= WFP_FILE_PARTS:
+            return parts[2].strip()
+        return ''
 
     @staticmethod
     def _merge_cli_with_settings(cli_value, settings_value):
@@ -923,7 +922,7 @@ class Scanner(ScanossBase):
                 success = False
         return success
 
-    def scan_wfp_file_threaded(self, wfp_file: str) -> bool:  # noqa: PLR0912
+    def scan_wfp_file_threaded(self, wfp_file: str) -> bool:  # noqa: PLR0912, PLR0915
         """
         Scan the contents of the specified WFP file (threaded)
         :param wfp_file: WFP file to scan
@@ -941,32 +940,48 @@ class Scanner(ScanossBase):
         scan_started = False
         wfp = ''
         scan_block = ''
+        batch_context = None  # Track SBOM context for the current batch
         with open(wfp_file) as f:  # Parse the WFP file
             for line in f:
                 if line.startswith(WFP_FILE_START):
+                    # First, add previous file's content to wfp before checking context
                     if scan_block:
-                        wfp += scan_block  # Store the WFP for the current file
+                        wfp += scan_block
                         cur_size = len(wfp.encode('utf-8'))
+
+                    file_path = Scanner._extract_file_path_from_line(line)
+                    file_context = (
+                        self.scanoss_settings.get_sbom_context(file_path)
+                        if self.scanoss_settings else SbomContext.empty()
+                    )
+
+                    # FLUSH: Context changed (different purls or scan_type)
+                    if wfp and batch_context is not None and file_context != batch_context:
+                        sbom = batch_context.to_payload()
+                        self.threaded_scan.queue_add(wfp, sbom=sbom)
+                        queue_size += 1
+                        wfp = ''
+                        wfp_file_count = 0
+                        cur_size = 0
+                        batch_context = None
+
                     scan_block = line  # Start storing the next file
+                    batch_context = file_context
                     file_count += 1
                     wfp_file_count += 1
                 else:
                     scan_block += line  # Store the rest of the WFP for this file
                 l_size = cur_size + len(scan_block.encode('utf-8'))
-                # Hit the max post size, so sending the current batch and continue processing
+                # FLUSH: Hit the max post size
                 if (wfp_file_count > self.post_file_count or l_size >= self.max_post_size) and wfp:
                     if self.debug and cur_size > self.max_post_size:
                         Scanner.print_stderr(f'Warning: Post size {cur_size} greater than limit {self.max_post_size}')
-                    file_paths = self._extract_file_paths_from_wfp(wfp)
-                    contexts = (
-                        [self.scanoss_settings.get_sbom_context(fp) for fp in file_paths]
-                        if self.scanoss_settings and file_paths else []
-                    )
-                    sbom = SbomContext.union(contexts).to_payload()
+                    sbom = batch_context.to_payload() if batch_context else None
                     self.threaded_scan.queue_add(wfp, sbom=sbom)
                     queue_size += 1
                     wfp = ''
                     wfp_file_count = 0
+                    batch_context = None
                     if not scan_started and queue_size > self.nb_threads:  # Start scanning if we have something to do
                         scan_started = True
                         if not self.threaded_scan.run(wait=False):
@@ -978,12 +993,7 @@ class Scanner(ScanossBase):
         if scan_block:
             wfp += scan_block  # Store the WFP for the current file
         if wfp:
-            file_paths = self._extract_file_paths_from_wfp(wfp)
-            contexts = (
-                [self.scanoss_settings.get_sbom_context(fp) for fp in file_paths]
-                if self.scanoss_settings and file_paths else []
-            )
-            sbom = SbomContext.union(contexts).to_payload()
+            sbom = batch_context.to_payload() if batch_context else None
             self.threaded_scan.queue_add(wfp, sbom=sbom)
             queue_size += 1
 
@@ -993,7 +1003,11 @@ class Scanner(ScanossBase):
 
     def scan_wfp(self, wfp: str) -> bool:
         """
-        Send the specified (single) WFP to ScanOSS for identification
+        Send the specified (single) WFP to ScanOSS for identification.
+
+        NOTE: This method does not support the scanoss settings file (scanoss.json).
+        For folder-level BOM filtering, use scan_wfp_with_options instead.
+
         Parameters
         ----------
             wfp: str
@@ -1003,13 +1017,7 @@ class Scanner(ScanossBase):
         if not wfp:
             raise Exception('ERROR: Please specify a WFP to scan')
         raw_output = '{\n'
-        file_paths = self._extract_file_paths_from_wfp(wfp)
-        contexts = (
-            [self.scanoss_settings.get_sbom_context(fp) for fp in file_paths]
-            if self.scanoss_settings and file_paths else []
-        )
-        sbom = SbomContext.union(contexts).to_payload()
-        scan_resp = self.scanoss_api.scan(wfp, sbom=sbom)
+        scan_resp = self.scanoss_api.scan(wfp)
         if scan_resp is not None:
             for key, value in scan_resp.items():
                 raw_output += '  "%s":%s' % (key, json.dumps(value, indent=2))

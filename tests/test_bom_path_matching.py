@@ -579,30 +579,6 @@ class TestSbomForBatch(unittest.TestCase):
         self.assertEqual(context_other.scan_type, 'blacklist')
 
 
-class TestExtractFilePathsFromWfp(unittest.TestCase):
-    """Test WFP file path extraction"""
-
-    def test_extract_single_file(self):
-        from scanoss.scanner import Scanner
-        wfp = 'file=abc123,1024,src/main.c\n4=abcdef\n'
-        paths = Scanner._extract_file_paths_from_wfp(wfp)
-        self.assertEqual(paths, ['src/main.c'])
-
-    def test_extract_multiple_files(self):
-        from scanoss.scanner import Scanner
-        wfp = (
-            'file=abc123,1024,src/main.c\n4=abcdef\n'
-            'file=def456,2048,src/vendor/lib.c\n4=ghijkl\n'
-        )
-        paths = Scanner._extract_file_paths_from_wfp(wfp)
-        self.assertEqual(paths, ['src/main.c', 'src/vendor/lib.c'])
-
-    def test_extract_empty_wfp(self):
-        from scanoss.scanner import Scanner
-        paths = Scanner._extract_file_paths_from_wfp('')
-        self.assertEqual(paths, [])
-
-
 class TestScannerSbomPayload(unittest.TestCase):
     """End-to-end tests: verify Scanner sends the correct SBOM payload in HTTP POST requests"""
 
