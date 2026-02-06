@@ -61,6 +61,7 @@ except (ModuleNotFoundError, ImportError):
     from .winnowing import Winnowing
 
 WFP_FILE_START = 'file='
+WFP_FILE_PARTS = 3  # WFP format: file=<hash>,<size>,<path>
 MAX_POST_SIZE = 64 * 1024  # 64k Max post size
 
 
@@ -263,7 +264,7 @@ class Scanner(ScanossBase):
         for line in wfp.split('\n'):
             if line.startswith(WFP_FILE_START):
                 parts = line[len(WFP_FILE_START):].split(',', 2)
-                if len(parts) >= 3:
+                if len(parts) >= WFP_FILE_PARTS:
                     paths.append(parts[2].strip())
         return paths
 
