@@ -179,19 +179,20 @@ class ScanossApi(ScanossBase):
         if self.proxies:
             self.session.proxies = self.proxies
 
-    def scan(self, wfp: str, context: str = None, scan_id: int = None):  # noqa: PLR0912, PLR0915
+    def scan(self, wfp: str, context: str = None, scan_id: int = None, sbom: dict = None):  # noqa: PLR0912, PLR0915
         """
         Scan the specified WFP and return the JSON object
         :param wfp: WFP to scan
         :param context: Context to help with identification
         :param scan_id: ID of the scan being run (usually thread id)
+        :param sbom: Per-request SBOM context
         :return: JSON result object
         """
         request_id = str(uuid.uuid4())
         form_data = {}
-        if self.sbom:
-            form_data['type'] = self.sbom.get('scan_type')
-            form_data['assets'] = self.sbom.get('assets')
+        if sbom:
+            form_data['type'] = sbom.get('scan_type')
+            form_data['assets'] = sbom.get('assets')
         if self.scan_format:
             form_data['format'] = self.scan_format
         if self.flags:

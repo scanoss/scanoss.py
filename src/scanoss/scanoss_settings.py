@@ -23,6 +23,7 @@ SPDX-License-Identifier: MIT
 """
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, TypedDict
 
@@ -39,9 +40,150 @@ from .utils.file import (
 DEFAULT_SCANOSS_JSON_FILE = Path('scanoss.json')
 
 
-class BomEntry(TypedDict, total=False):
-    purl: str
-    path: str
+@dataclass
+class BomEntry:
+    purl: Optional[str] = None
+    path: Optional[str] = None
+    comment: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'BomEntry':
+        return cls(
+            purl=data.get('purl'),
+            path=data.get('path'),
+            comment=data.get('comment'),
+        )
+
+    def matches_path(self, result_path: str) -> bool:
+        """
+        Check if this entry's path matches a result path.
+        Folder paths (ending with '/') use prefix matching; file paths use exact matching.
+
+        Args:
+            result_path: Path from the scan result
+
+        Returns:
+            True if this entry's path matches the result path
+        """
+        if not self.path:
+            return True
+        if self.path.endswith('/'):
+            return result_path.startswith(self.path)
+        return self.path == result_path
+
+    @property
+    def priority(self) -> int:
+        """
+        Priority score for this BOM entry. Higher score means higher priority (more specific).
+
+        Score 4: both path and purl (most specific)
+        Score 2: purl only
+        Score 1: path only (remove only, no purl)
+
+        Returns:
+            Priority score
+        """
+        has_path = bool(self.path)
+        has_purl = bool(self.purl)
+        if has_path and has_purl:
+            return 4
+        if has_purl:
+            return 2
+        if has_path:
+            return 1
+        return 0
+
+
+@dataclass
+class ReplaceRule(BomEntry):
+    replace_with: Optional[str] = None
+    license: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'ReplaceRule':
+        return cls(
+            purl=data.get('purl'),
+            path=data.get('path'),
+            comment=data.get('comment'),
+            replace_with=data.get('replace_with'),
+            license=data.get('license'),
+        )
+
+
+@dataclass(frozen=True)
+class SbomContext:
+    """SBOM context for a file or batch of files."""
+
+    purls: tuple  # Use tuple for hashability (frozen dataclass)
+    scan_type: Optional[str]
+
+    def to_payload(self) -> Optional[dict]:
+        """Convert to API payload dict."""
+        if not self.purls or not self.scan_type:
+            return None
+        components = [{'purl': p} for p in self.purls]
+        return {
+            'assets': json.dumps({'components': components}),
+            'scan_type': self.scan_type,
+        }
+
+    @classmethod
+    def empty(cls) -> 'SbomContext':
+        """Return empty context (no purls, no scan_type)."""
+        return cls(purls=(), scan_type=None)
+
+    @classmethod
+    def union(cls, contexts: list) -> 'SbomContext':
+        """Merge multiple contexts: union of purls, first non-None scan_type wins."""
+        all_purls = []
+        scan_type = None
+        seen = set()
+        for ctx in contexts:
+            if scan_type is None and ctx.scan_type:
+                scan_type = ctx.scan_type
+            for p in ctx.purls:
+                if p not in seen:
+                    seen.add(p)
+                    all_purls.append(p)
+        return cls(purls=tuple(all_purls), scan_type=scan_type)
+
+
+def find_best_match(result_path: str, result_purls: List[str], entries: List[BomEntry]) -> Optional[BomEntry]:
+    """
+    Find the highest-priority BOM entry that matches a result.
+    When scores are equal, the longer path wins (more specific).
+
+    Args:
+        result_path: Path from the scan result
+        result_purls: List of purls from the scan result
+        entries: List of BOM entries to check
+
+    Returns:
+        The best matching BOM entry, or None if no match
+    """
+    best_entry = None
+    best_score = -1
+    best_path_len = -1
+
+    for entry in entries:
+        entry_path = entry.path or ''
+        entry_purl = entry.purl or ''
+
+        if not entry_path and not entry_purl:
+            continue
+        if entry_path and not entry.matches_path(result_path):
+            continue
+        if entry_purl and (not result_purls or entry_purl not in result_purls):
+            continue
+
+        score = entry.priority
+        path_len = len(entry_path)
+        if score > best_score or (score == best_score and path_len > best_path_len):
+            best_entry = entry
+            best_score = score
+            best_path_len = path_len
+
+    return best_entry
 
 
 class SizeFilter(TypedDict, total=False):
@@ -193,9 +335,10 @@ class ScanossSettings(ScanossBase):
             list: List of components to include in the scan
         """
         if self.settings_file_type == 'legacy':
-            return self._get_bom()
-        return self._get_bom().get('include', [])
-
+            raw = self._get_bom()
+        else:
+            raw = self._get_bom().get('include', [])
+        return [BomEntry.from_dict(entry) for entry in raw]
 
     def get_bom_exclude(self) -> List[BomEntry]:
         """
@@ -204,8 +347,10 @@ class ScanossSettings(ScanossBase):
             list: List of components to exclude from the scan
         """
         if self.settings_file_type == 'legacy':
-            return self._get_bom()
-        return self._get_bom().get('exclude', [])
+            raw = self._get_bom()
+        else:
+            raw = self._get_bom().get('exclude', [])
+        return [BomEntry.from_dict(entry) for entry in raw]
 
     def get_bom_remove(self) -> List[BomEntry]:
         """
@@ -214,103 +359,140 @@ class ScanossSettings(ScanossBase):
             list: List of components to remove from the scan
         """
         if self.settings_file_type == 'legacy':
-            return self._get_bom()
-        return self._get_bom().get('remove', [])
+            raw = self._get_bom()
+        else:
+            raw = self._get_bom().get('remove', [])
+        return [BomEntry.from_dict(entry) for entry in raw]
 
-    def get_bom_replace(self) -> List[BomEntry]:
+    def get_bom_replace(self) -> List[ReplaceRule]:
         """
         Get the list of components to replace in the scan
         Returns:
-            list: List of components to replace in the scan
+            list: List of replace rules
         """
         if self.settings_file_type == 'legacy':
             return []
-        return self._get_bom().get('replace', [])
+        raw = self._get_bom().get('replace', [])
+        return [ReplaceRule.from_dict(entry) for entry in raw]
 
-    def get_sbom(self):
+    def has_path_scoped_bom_entries(self) -> bool:
         """
-        Get the SBOM to be sent to the SCANOSS API
+        Check if there are any BOM entries with path-scoped rules.
+
         Returns:
-            dict: SBOM request payload
+            bool: True if any include or exclude entry has a path field set
+        """
+        for entry in self.get_bom_include():
+            if entry.path:
+                return True
+        for entry in self.get_bom_exclude():
+            if entry.path:
+                return True
+        return False
+
+    def _get_purls_for_path(self, file_path: str, entries: List[BomEntry]) -> list:
+        """
+        Extract matching purls from entries for a given file path.
+
+        Purl-only entries (no path) are always included.
+        Path-scoped entries are included only if the file matches.
+        When multiple rules match the same purl, the highest specificity is used.
+
+        Args:
+            file_path: File path to check
+            entries: List of BomEntry to check against
+
+        Returns:
+            List of purl strings ordered by specificity (most specific first)
+        """
+        if not entries:
+            return []
+
+        purl_scores = {}
+        for entry in entries:
+            entry_purl = entry.purl or ''
+            if not entry_purl:
+                continue
+            entry_path = entry.path or ''
+            if not entry_path or entry.matches_path(file_path):
+                # Score: priority (0-4) + path length (longer = more specific)
+                score = entry.priority + len(entry_path)
+                if entry_purl not in purl_scores or score > purl_scores[entry_purl]:
+                    purl_scores[entry_purl] = score
+
+        # Sort by score descending (most specific first)
+        return sorted(purl_scores.keys(), key=lambda p: -purl_scores[p])
+
+    def get_sbom_context(self, file_path: str) -> SbomContext:
+        """
+        Get SBOM context matching a file path.
+
+        Logic:
+        - Legacy files: use self.scan_type set during file load
+        - New format: try include rules first, fall back to exclude rules
+
+        Args:
+            file_path: File path to check
+
+        Returns:
+            SbomContext with purls ordered by specificity
         """
         if not self.data:
+            return SbomContext.empty()
+
+        # Legacy files: use self.scan_type set during file load (--identify or --ignore flag)
+        if self.is_legacy():
+            raw = self._get_bom()
+            entries = [BomEntry.from_dict(entry) for entry in raw]
+            purls = self._get_purls_for_path(file_path, entries)
+            if purls:
+                return SbomContext(purls=tuple(purls), scan_type=self.scan_type)
+            return SbomContext.empty()
+
+        # New format: try include first, then exclude
+        include_purls = self._get_purls_for_path(file_path, self.get_bom_include())
+        if include_purls:
+            return SbomContext(purls=tuple(include_purls), scan_type='identify')
+
+        exclude_purls = self._get_purls_for_path(file_path, self.get_bom_exclude())
+        if exclude_purls:
+            return SbomContext(purls=tuple(exclude_purls), scan_type='blacklist')
+
+        return SbomContext.empty()
+
+    def get_sbom(self) -> 'dict | None':
+        """
+        Get global SBOM payload (for purl-only entries without path scope).
+
+        This returns the SBOM context using an empty path, which includes
+        all purl-only entries (entries without a path field).
+
+        Returns:
+            dict: API payload with 'assets' and 'scan_type' keys, or None if no entries
+        """
+        # Use empty path to get purl-only entries
+        context = self.get_sbom_context('')
+        return context.to_payload()
+
+    def get_sbom_for_batch(self, batch_file_paths: list) -> 'dict | None':
+        """
+        Get SBOM payload for a batch of files.
+
+        Computes the union of SBOM contexts for all files in the batch.
+        All matching purls are included, deduplicated.
+
+        Args:
+            batch_file_paths: List of file paths in the batch
+
+        Returns:
+            dict: API payload with 'assets' and 'scan_type' keys, or None if no entries
+        """
+        if not batch_file_paths:
             return None
-        return {
-            'assets': json.dumps(self._get_sbom_assets()),
-            'scan_type': self.scan_type,
-        }
 
-    def _get_sbom_assets(self):
-        """
-        Get the SBOM assets
-        Returns:
-            List: List of SBOM assets
-        """
-
-        if self.settings_file_type == 'new':
-            if len(self.get_bom_include()):
-                self.scan_type = 'identify'
-                include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
-                return {"components": include_bom_entries}
-            elif len(self.get_bom_exclude()):
-                self.scan_type = 'blacklist'
-                exclude_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_exclude()))
-                return {"components": exclude_bom_entries}
-
-        if self.settings_file_type == 'legacy' and self.scan_type == 'identify':            # sbom-identify.json
-            include_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_include()))
-            replace_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_replace()))
-            self.print_debug(
-                f"Scan type set to 'identify'. Adding {len(include_bom_entries) + len(replace_bom_entries)} components as context to the scan. \n"  # noqa: E501
-                f'From Include list: {[entry["purl"] for entry in include_bom_entries]} \n'
-                f'From Replace list: {[entry["purl"] for entry in replace_bom_entries]} \n'
-            )
-            return include_bom_entries + replace_bom_entries
-
-        if self.settings_file_type == 'legacy' and self.scan_type == 'blacklist':            # sbom-identify.json
-            exclude_bom_entries = self._remove_duplicates(self.normalize_bom_entries(self.get_bom_exclude()))
-            self.print_debug(
-                f"Scan type set to 'blacklist'. Adding {len(exclude_bom_entries)} components as context to the scan. \n"  # noqa: E501
-                f'From Exclude list: {[entry["purl"] for entry in exclude_bom_entries]} \n')
-            return exclude_bom_entries
-
-        return self.normalize_bom_entries(self.get_bom_remove())
-
-    @staticmethod
-    def normalize_bom_entries(bom_entries) -> List[BomEntry]:
-        """
-        Normalize the BOM entries
-        Args:
-            bom_entries (List[Dict]): List of BOM entries
-        Returns:
-            List: Normalized BOM entries
-        """
-        normalized_bom_entries = []
-        for entry in bom_entries:
-            normalized_bom_entries.append(
-                {
-                    'purl': entry.get('purl', ''),
-                }
-            )
-        return normalized_bom_entries
-
-    @staticmethod
-    def _remove_duplicates(bom_entries: List[BomEntry]) -> List[BomEntry]:
-        """
-        Remove duplicate BOM entries
-        Args:
-            bom_entries (List[Dict]): List of BOM entries
-        Returns:
-            List: List of unique BOM entries
-        """
-        already_added = set()
-        unique_entries = []
-        for entry in bom_entries:
-            entry_tuple = tuple(entry.items())
-            if entry_tuple not in already_added:
-                already_added.add(entry_tuple)
-                unique_entries.append(entry)
-        return unique_entries
+        contexts = [self.get_sbom_context(path) for path in batch_file_paths]
+        merged = SbomContext.union(contexts)
+        return merged.to_payload()
 
     def is_legacy(self):
         """Check if the settings file is legacy"""
