@@ -634,7 +634,7 @@ class TestScannerSbomPayload(unittest.TestCase):
             (scanner, mock_post) tuple
         """
         scanner = Scanner(
-            scan_settings=settings,
+            scanoss_settings=settings,
             nb_threads=1,
             quiet=True,
             scan_options=3,  # FILES + SNIPPETS, no deps
