@@ -375,6 +375,21 @@ class ScanossSettings(ScanossBase):
         raw = self._get_bom().get('replace', [])
         return [ReplaceRule.from_dict(entry) for entry in raw]
 
+    def has_path_scoped_bom_entries(self) -> bool:
+        """
+        Check if there are any BOM entries with path-scoped rules.
+
+        Returns:
+            bool: True if any include or exclude entry has a path field set
+        """
+        for entry in self.get_bom_include():
+            if entry.path:
+                return True
+        for entry in self.get_bom_exclude():
+            if entry.path:
+                return True
+        return False
+
     def _get_purls_for_path(self, file_path: str, entries: List[BomEntry]) -> list:
         """
         Extract matching purls from entries for a given file path.
@@ -444,6 +459,40 @@ class ScanossSettings(ScanossBase):
             return SbomContext(purls=tuple(exclude_purls), scan_type='blacklist')
 
         return SbomContext.empty()
+
+    def get_sbom(self) -> 'dict | None':
+        """
+        Get global SBOM payload (for purl-only entries without path scope).
+
+        This returns the SBOM context using an empty path, which includes
+        all purl-only entries (entries without a path field).
+
+        Returns:
+            dict: API payload with 'assets' and 'scan_type' keys, or None if no entries
+        """
+        # Use empty path to get purl-only entries
+        context = self.get_sbom_context('')
+        return context.to_payload()
+
+    def get_sbom_for_batch(self, batch_file_paths: list) -> 'dict | None':
+        """
+        Get SBOM payload for a batch of files.
+
+        Computes the union of SBOM contexts for all files in the batch.
+        All matching purls are included, deduplicated.
+
+        Args:
+            batch_file_paths: List of file paths in the batch
+
+        Returns:
+            dict: API payload with 'assets' and 'scan_type' keys, or None if no entries
+        """
+        if not batch_file_paths:
+            return None
+
+        contexts = [self.get_sbom_context(path) for path in batch_file_paths]
+        merged = SbomContext.union(contexts)
+        return merged.to_payload()
 
     def is_legacy(self):
         """Check if the settings file is legacy"""
