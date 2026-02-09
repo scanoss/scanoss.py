@@ -193,6 +193,59 @@ Examples with Explanations
 
 
 
+Scan Tuning Parameters
+----------------------
+The SCANOSS scan engine supports tuning parameters for snippet matching. These parameters allow you to fine-tune how the scanner identifies code snippets in your repository.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 15 10 55
+
+   * - Parameter
+     - Type
+     - Default
+     - Description
+   * - ``min_snippet_hits``
+     - ``integer``
+     - ``0``
+     - Minimum snippet hits required. ``0`` defers to server configuration.
+   * - ``min_snippet_lines``
+     - ``integer``
+     - ``0``
+     - Minimum snippet lines required. ``0`` defers to server configuration.
+   * - ``ranking_enabled``
+     - ``boolean | null``
+     - ``null``
+     - Enable/disable result ranking. ``null`` defers to server configuration.
+   * - ``ranking_threshold``
+     - ``integer | null``
+     - ``0``
+     - Ranking threshold value (``-1`` to ``10``). ``-1`` defers to server configuration.
+   * - ``honour_file_exts``
+     - ``boolean | null``
+     - ``true``
+     - Honour file extensions during matching. ``null`` defers to server configuration.
+
+Example Configuration
+~~~~~~~~~~~~~~~~~~~~~
+
+Add the ``file_snippet`` section to your ``scanoss.json`` file:
+
+.. code-block:: json
+
+    {
+        "settings": {
+            "file_snippet": {
+                "min_snippet_hits": 3,
+                "min_snippet_lines": 5,
+                "ranking_enabled": true,
+                "ranking_threshold": 5,
+                "honour_file_exts": true
+            }
+        }
+    }
+
+
 Complete Example
 -------------------
 Here's a comprehensive example combining pattern and size-based skipping:
@@ -420,6 +473,13 @@ Here's a complete example showing all sections:
                         }
                     ]
                 }
+            },
+            "file_snippet": {
+                "min_snippet_hits": 3,
+                "min_snippet_lines": 5,
+                "ranking_enabled": true,
+                "ranking_threshold": 5,
+                "honour_file_exts": true
             }
         },
         "bom": {
