@@ -157,7 +157,6 @@ class ScanPostProcessor(ScanossBase):
         Returns:
             dict: Updated result
         """
-
         if self.component_info_map.get(to_replace_with_purl):
             result.update(self.component_info_map[to_replace_with_purl])
         else:
@@ -187,6 +186,7 @@ class ScanPostProcessor(ScanossBase):
             result.pop('version', None)
 
         result['purl'] = [to_replace_with_purl]
+        result['status'] = 'identified'
 
         return result
 
