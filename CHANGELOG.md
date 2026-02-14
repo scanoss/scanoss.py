@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Upcoming changes...
 
+## [1.45.1] - 2026-02-23
+### Fixed
+- Fixed `--input` argument validation for inspect subcommands (copyleft, undeclared, license-summary, component-summary) by making it required at the argparse level instead of manual runtime checks
+
 ## [1.45.0] - 2026-02-02
 ### Added
 - Added scan engine tuning parameters for snippet matching:
@@ -796,3 +800,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.43.1]: https://github.com/scanoss/scanoss.py/compare/v1.43.0...v1.43.1
 [1.44.0]: https://github.com/scanoss/scanoss.py/compare/v1.43.1...v1.44.0
 [1.45.0]: https://github.com/scanoss/scanoss.py/compare/v1.44.0...v1.45.0
+[1.45.1]: https://github.com/scanoss/scanoss.py/compare/v1.45.0...v1.45.1

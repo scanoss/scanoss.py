@@ -755,7 +755,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
 
     # Common options for (legacy) copyleft and undeclared component inspection
     for p in [p_inspect_raw_copyleft, p_inspect_raw_undeclared, p_inspect_legacy_copyleft, p_inspect_legacy_undeclared]:
-        p.add_argument('-i', '--input', nargs='?', help='Path to scan results file to analyse')
+        p.add_argument('-i', '--input', required=True, help='Path to scan results file to analyse')
         p.add_argument(
             '-f',
             '--format',
@@ -774,7 +774,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_inspect_legacy_license_summary,
         p_inspect_legacy_component_summary,
     ]:
-        p.add_argument('-i', '--input', nargs='?', help='Path to scan results file to analyse')
+        p.add_argument('-i', '--input', required=True, help='Path to scan results file to analyse')
         p.add_argument('-o', '--output', type=str, help='Save summary report to specified file')
 
     # -------------------------------------------------------------------------
@@ -1803,11 +1803,6 @@ def inspect_copyleft(parser, args):
         - format: Output format (json, md, jira_md)
         - include/exclude/explicit: License filter options
     """
-    # Validate required input file parameter
-    if args.input is None:
-        print_stderr('ERROR: Input file is required for copyleft inspection')
-        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
-        sys.exit(1)
     # Initialise output file if specified
     if args.output:
         initialise_empty_file(args.output)
@@ -1859,12 +1854,6 @@ def inspect_undeclared(parser, args):
         - format: Output format (json, md, jira_md)
         - sbom_format: SBOM format type (legacy, settings)
     """
-    # Validate required input file parameter
-    if args.input is None:
-        print_stderr('ERROR: Input file is required for undeclared component inspection')
-        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
-        sys.exit(1)
-
     # Initialise output file if specified
     if args.output:
         initialise_empty_file(args.output)
@@ -1913,12 +1902,6 @@ def inspect_license_summary(parser, args):
         - output: Optional output file path
         - include/exclude/explicit: License filter options
     """
-    # Validate required input file parameter
-    if args.input is None:
-        print_stderr('ERROR: Input file is required for license summary')
-        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
-        sys.exit(1)
-
     # Initialise output file if specified
     if args.output:
         initialise_empty_file(args.output)
@@ -1960,12 +1943,6 @@ def inspect_component_summary(parser, args):
         - input: Path to scan results file
         - output: Optional output file path
     """
-    # Validate required input file parameter
-    if args.input is None:
-        print_stderr('ERROR: Input file is required for component summary')
-        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
-        sys.exit(1)
-
     # Initialise an output file if specified
     if args.output:
         initialise_empty_file(args.output)  # Create/clear output file
