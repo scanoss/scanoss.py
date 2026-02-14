@@ -1806,7 +1806,12 @@ def inspect_copyleft(parser, args):
     # Validate required input file parameter
     if args.input is None:
         print_stderr('ERROR: Input file is required for copyleft inspection')
-        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
+        subcmd = getattr(args, 'subparser_subcmd', None)
+        help_args = [args.subparser, args.subparsercmd]
+        if subcmd:
+            help_args.append(subcmd)
+        help_args.append('-h')
+        parser.parse_args(help_args)
         sys.exit(1)
     # Initialise output file if specified
     if args.output:
@@ -1862,7 +1867,12 @@ def inspect_undeclared(parser, args):
     # Validate required input file parameter
     if args.input is None:
         print_stderr('ERROR: Input file is required for undeclared component inspection')
-        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
+        subcmd = getattr(args, 'subparser_subcmd', None)
+        help_args = [args.subparser, args.subparsercmd]
+        if subcmd:
+            help_args.append(subcmd)
+        help_args.append('-h')
+        parser.parse_args(help_args)
         sys.exit(1)
 
     # Initialise output file if specified
@@ -1916,7 +1926,12 @@ def inspect_license_summary(parser, args):
     # Validate required input file parameter
     if args.input is None:
         print_stderr('ERROR: Input file is required for license summary')
-        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
+        subcmd = getattr(args, 'subparser_subcmd', None)
+        help_args = [args.subparser, args.subparsercmd]
+        if subcmd:
+            help_args.append(subcmd)
+        help_args.append('-h')
+        parser.parse_args(help_args)
         sys.exit(1)
 
     # Initialise output file if specified
@@ -1963,7 +1978,12 @@ def inspect_component_summary(parser, args):
     # Validate required input file parameter
     if args.input is None:
         print_stderr('ERROR: Input file is required for component summary')
-        parser.parse_args([args.subparser, args.subparsercmd, args.subparser_subcmd, '-h'])
+        subcmd = getattr(args, 'subparser_subcmd', None)
+        help_args = [args.subparser, args.subparsercmd]
+        if subcmd:
+            help_args.append(subcmd)
+        help_args.append('-h')
+        parser.parse_args(help_args)
         sys.exit(1)
 
     # Initialise an output file if specified
