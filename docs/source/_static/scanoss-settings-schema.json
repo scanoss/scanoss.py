@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
+  "$comment": "DEPRECATED: The canonical schema is now maintained at https://github.com/scanoss/schema/blob/main/scanoss-settings-schema.json",
   "title": "Scanoss Settings",
   "type": "object",
   "properties": {
