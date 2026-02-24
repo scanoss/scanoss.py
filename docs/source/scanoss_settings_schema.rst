@@ -1,6 +1,13 @@
 Settings File
 ======================
 
+.. warning:: **Deprecated** — This documentation is no longer maintained here.
+   The settings schema and its documentation have moved to the
+   `scanoss/schema <https://github.com/scanoss/schema>`_ repository.
+   Please refer to the `interactive docs <https://scanoss.github.io/schema/>`_
+   or the `canonical JSON Schema <https://github.com/scanoss/schema/blob/main/scanoss-settings-schema.json>`_
+   for the latest version.
+
 SCANOSS provides a settings file to customize the scanning process. The settings file is a JSON file that contains project information and BOM (Bill of Materials) rules. It allows you to include, remove, or replace components in the BOM before and after scanning.
 
 The schema is available to download :download:`here </_static/scanoss-settings-schema.json>`
