@@ -129,7 +129,6 @@ class ScanossApi(ScanossBase):
             HTTPS_PROXY='http://<ip>:<port>'
         """
         super().__init__(debug, trace, quiet)
-        self.sbom = None
         # Scan tuning parameters
         self.min_snippet_hits = min_snippet_hits
         self.min_snippet_lines = min_snippet_lines
@@ -315,10 +314,6 @@ class ScanossApi(ScanossBase):
             self.print_stderr(
                 f'Warning: Issue writing bad request file - {bad_req_file} ({ee.__class__.__name__}): {ee}'
             )
-
-    def set_sbom(self, sbom):
-        self.sbom = sbom
-        return self
 
     def _build_scan_settings_header(self) -> Optional[str]:
         """
