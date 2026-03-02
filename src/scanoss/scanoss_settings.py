@@ -132,20 +132,6 @@ class SbomContext:
         """Return empty context (no purls, no scan_type)."""
         return cls(purls=(), scan_type=None)
 
-    @classmethod
-    def union(cls, contexts: list) -> 'SbomContext':
-        """Merge multiple contexts: union of purls, first non-None scan_type wins."""
-        all_purls = []
-        scan_type = None
-        seen = set()
-        for ctx in contexts:
-            if scan_type is None and ctx.scan_type:
-                scan_type = ctx.scan_type
-            for p in ctx.purls:
-                if p not in seen:
-                    seen.add(p)
-                    all_purls.append(p)
-        return cls(purls=tuple(all_purls), scan_type=scan_type)
 
 
 def find_best_match(result_path: str, result_purls: List[str], entries: List[BomEntry]) -> Optional[BomEntry]:
