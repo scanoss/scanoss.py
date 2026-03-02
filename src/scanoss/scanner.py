@@ -493,6 +493,7 @@ class Scanner(ScanossBase):
                         if self.scanoss_settings else SbomContext.empty()
                     )
 
+                    # TODO: extract batching/flush logic into a shared helper to deduplicate scan_folder, scan_files, and scan_wfp_file_threaded
                     # FLUSH: Context changed (different purls or scan_type)
                     if scan_block != '' and batch_context is not None and file_context != batch_context:
                         sbom = batch_context.to_payload() if batch_context else None
