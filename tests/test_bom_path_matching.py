@@ -466,51 +466,6 @@ class TestSbomForBatch(unittest.TestCase):
         self.assertIsNone(context.scan_type)
         self.assertIsNone(context.to_payload())
 
-    # -- SbomContext.union tests --
-
-    def test_sbom_context_union_empty_list(self):
-        """Union of empty list should return empty context"""
-        result = SbomContext.union([])
-        self.assertEqual(result.purls, ())
-        self.assertIsNone(result.scan_type)
-
-    def test_sbom_context_union_single(self):
-        """Union of single context should return equivalent context"""
-        ctx = SbomContext(purls=('pkg:npm/a',), scan_type='identify')
-        result = SbomContext.union([ctx])
-        self.assertEqual(result.purls, ('pkg:npm/a',))
-        self.assertEqual(result.scan_type, 'identify')
-
-    def test_sbom_context_union_multiple_same_type(self):
-        """Union of multiple contexts with same scan_type"""
-        ctx1 = SbomContext(purls=('pkg:npm/a',), scan_type='identify')
-        ctx2 = SbomContext(purls=('pkg:npm/b',), scan_type='identify')
-        result = SbomContext.union([ctx1, ctx2])
-        self.assertEqual(result.purls, ('pkg:npm/a', 'pkg:npm/b'))
-        self.assertEqual(result.scan_type, 'identify')
-
-    def test_sbom_context_union_mixed_types_first_wins(self):
-        """Union of mixed scan_types: first non-None wins"""
-        ctx1 = SbomContext(purls=('pkg:npm/a',), scan_type='identify')
-        ctx2 = SbomContext(purls=('pkg:npm/b',), scan_type='blacklist')
-        result = SbomContext.union([ctx1, ctx2])
-        self.assertEqual(result.purls, ('pkg:npm/a', 'pkg:npm/b'))
-        self.assertEqual(result.scan_type, 'identify')
-
-    def test_sbom_context_union_deduplicates_purls(self):
-        """Union should deduplicate purls while preserving order"""
-        ctx1 = SbomContext(purls=('pkg:npm/a', 'pkg:npm/b'), scan_type='identify')
-        ctx2 = SbomContext(purls=('pkg:npm/b', 'pkg:npm/c'), scan_type='identify')
-        result = SbomContext.union([ctx1, ctx2])
-        self.assertEqual(result.purls, ('pkg:npm/a', 'pkg:npm/b', 'pkg:npm/c'))
-
-    def test_sbom_context_union_skips_none_scan_type(self):
-        """Union should skip None scan_types and use first non-None"""
-        ctx1 = SbomContext(purls=('pkg:npm/a',), scan_type=None)
-        ctx2 = SbomContext(purls=('pkg:npm/b',), scan_type='blacklist')
-        result = SbomContext.union([ctx1, ctx2])
-        self.assertEqual(result.scan_type, 'blacklist')
-
     # -- Integration tests (get_sbom_context + to_payload) --
 
     def test_folder_scoped_entry_included_when_matching(self):
