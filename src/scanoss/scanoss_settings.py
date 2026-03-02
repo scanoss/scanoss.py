@@ -101,6 +101,8 @@ class ReplaceRule(BomEntry):
 
     @classmethod
     def from_dict(cls, data: dict) -> 'ReplaceRule':
+        if not data.get('replace_with'):
+            raise ValueError(f'Replace rule missing "replace_with" (purl: {data.get("purl")})')
         return cls(
             purl=data.get('purl'),
             path=data.get('path'),
@@ -359,7 +361,13 @@ class ScanossSettings(ScanossBase):
         if self.settings_file_type == 'legacy':
             return []
         raw = self._get_bom().get('replace', [])
-        return [ReplaceRule.from_dict(entry) for entry in raw]
+        rules = []
+        for entry in raw:
+            try:
+                rules.append(ReplaceRule.from_dict(entry))
+            except ValueError as e:
+                self.print_stderr(f'WARNING: {e}. Skipping.')
+        return rules
 
     def _get_purls_for_path(self, file_path: str, entries: List[BomEntry]) -> list:
         """
@@ -394,6 +402,33 @@ class ScanossSettings(ScanossBase):
         # Sort by score descending (most specific first)
         return sorted(purl_scores.keys(), key=lambda p: -purl_scores[p])
 
+    def _get_replace_with_purls_for_path(self, file_path: str, entries: List[ReplaceRule]) -> list:
+        """
+        Extract replace_with purls from replace rules matching a given file path.
+
+        At scan time we don't know the result PURLs yet, so only path matching
+        is used. Global rules (no path) always contribute their replace_with.
+
+        Args:
+            file_path: File path to check
+            entries: List of ReplaceRule to check against
+
+        Returns:
+            List of replace_with purl strings ordered by specificity (most specific first)
+        """
+        if not entries:
+            return []
+
+        purl_scores = {}
+        for entry in entries:
+            if entry.matches_path(file_path):
+                entry_path = entry.path or ''
+                score = entry.priority + len(entry_path)
+                if entry.replace_with not in purl_scores or score > purl_scores[entry.replace_with]:
+                    purl_scores[entry.replace_with] = score
+
+        return sorted(purl_scores.keys(), key=lambda p: -purl_scores[p])
+
     def get_sbom_context(self, file_path: str) -> SbomContext:
         """
         Get SBOM context matching a file path.
@@ -420,10 +455,14 @@ class ScanossSettings(ScanossBase):
                 return SbomContext(purls=tuple(purls), scan_type=self.scan_type)
             return SbomContext.empty()
 
-        # New format: try include first, then exclude
+        # Collect include + replace_with purls, fall back to exclude
         include_purls = self._get_purls_for_path(file_path, self.get_bom_include())
-        if include_purls:
-            return SbomContext(purls=tuple(include_purls), scan_type='identify')
+        replace_purls = self._get_replace_with_purls_for_path(file_path, self.get_bom_replace())
+
+        # Merge include + replace_with, deduplicating (include order first)
+        all_identify = list(dict.fromkeys(include_purls + replace_purls))
+        if all_identify:
+            return SbomContext(purls=tuple(all_identify), scan_type='identify')
 
         exclude_purls = self._get_purls_for_path(file_path, self.get_bom_exclude())
         if exclude_purls:
