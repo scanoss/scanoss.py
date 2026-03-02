@@ -533,6 +533,110 @@ class TestSbomForBatch(unittest.TestCase):
         self.assertEqual(context_other.purls, ('pkg:npm/lodash',))
         self.assertEqual(context_other.scan_type, 'blacklist')
 
+    # -- replace_with as identify context tests --
+
+    def test_replace_with_sent_as_identify_context(self):
+        """Replace rule with matching path sends replace_with PURL as identify context"""
+        settings = self._make_settings({
+            'bom': {
+                'replace': [
+                    {'path': 'vendor/', 'purl': 'pkg:npm/old-lib', 'replace_with': 'pkg:npm/new-lib'},
+                ],
+            }
+        })
+        context = settings.get_sbom_context('vendor/file.js')
+        self.assertEqual(context.purls, ('pkg:npm/new-lib',))
+        self.assertEqual(context.scan_type, 'identify')
+
+    def test_replace_with_global_sent_for_all_files(self):
+        """Replace rule without path sends replace_with PURL for any file"""
+        settings = self._make_settings({
+            'bom': {
+                'replace': [
+                    {'purl': 'pkg:npm/old-lib', 'replace_with': 'pkg:npm/new-lib'},
+                ],
+            }
+        })
+        context_a = settings.get_sbom_context('src/app.js')
+        self.assertEqual(context_a.purls, ('pkg:npm/new-lib',))
+        self.assertEqual(context_a.scan_type, 'identify')
+
+        context_b = settings.get_sbom_context('lib/utils.c')
+        self.assertEqual(context_b.purls, ('pkg:npm/new-lib',))
+        self.assertEqual(context_b.scan_type, 'identify')
+
+    def test_replace_with_merged_with_include(self):
+        """Both include and replace_with PURLs appear in identify context, deduplicated"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [
+                    {'purl': 'pkg:npm/react'},
+                ],
+                'replace': [
+                    {'purl': 'pkg:npm/old-lib', 'replace_with': 'pkg:npm/new-lib'},
+                    {'purl': 'pkg:npm/dup', 'replace_with': 'pkg:npm/react'},  # duplicate of include
+                ],
+            }
+        })
+        context = settings.get_sbom_context('src/app.js')
+        self.assertEqual(context.scan_type, 'identify')
+        self.assertIn('pkg:npm/react', context.purls)
+        self.assertIn('pkg:npm/new-lib', context.purls)
+        # Deduplicated: react should appear only once
+        self.assertEqual(context.purls.count('pkg:npm/react'), 1)
+
+    def test_replace_with_no_match_falls_to_exclude(self):
+        """Path-scoped replace that doesn't match should not interfere with exclude fallback"""
+        settings = self._make_settings({
+            'bom': {
+                'replace': [
+                    {'path': 'vendor/', 'purl': 'pkg:npm/old-lib', 'replace_with': 'pkg:npm/new-lib'},
+                ],
+                'exclude': [
+                    {'purl': 'pkg:npm/lodash'},
+                ],
+            }
+        })
+        context = settings.get_sbom_context('src/app.js')
+        self.assertEqual(context.purls, ('pkg:npm/lodash',))
+        self.assertEqual(context.scan_type, 'blacklist')
+
+    def test_replace_with_overrides_exclude(self):
+        """When both replace and exclude match, identify context wins"""
+        settings = self._make_settings({
+            'bom': {
+                'replace': [
+                    {'purl': 'pkg:npm/old-lib', 'replace_with': 'pkg:npm/new-lib'},
+                ],
+                'exclude': [
+                    {'purl': 'pkg:npm/lodash'},
+                ],
+            }
+        })
+        context = settings.get_sbom_context('src/app.js')
+        self.assertEqual(context.purls, ('pkg:npm/new-lib',))
+        self.assertEqual(context.scan_type, 'identify')
+
+    def test_replace_missing_replace_with_warns_and_skips(self):
+        """Replace rule missing replace_with should be skipped with a warning"""
+        settings = self._make_settings({
+            'bom': {
+                'replace': [
+                    {'purl': 'pkg:npm/bad-rule'},  # missing replace_with
+                    {'purl': 'pkg:npm/old-lib', 'replace_with': 'pkg:npm/new-lib'},
+                ],
+            }
+        })
+        from unittest.mock import patch
+        with patch.object(settings, 'print_stderr') as mock_stderr:
+            rules = settings.get_bom_replace()
+        # Invalid entry filtered out
+        self.assertEqual(len(rules), 1)
+        self.assertEqual(rules[0].replace_with, 'pkg:npm/new-lib')
+        # Warning was printed
+        mock_stderr.assert_called_once()
+        self.assertIn('replace_with', mock_stderr.call_args[0][0])
+
 
 class TestScannerSbomPayload(unittest.TestCase):
     """End-to-end tests: verify Scanner sends the correct SBOM payload in HTTP POST requests"""
