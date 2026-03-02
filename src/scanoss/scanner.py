@@ -234,20 +234,6 @@ class Scanner(ScanossBase):
         self.post_processor = (
             ScanPostProcessor(scanoss_settings, debug=debug, trace=trace, quiet=quiet) if scan_settings else None
         )
-        self._per_batch_sbom = (
-            scanoss_settings is not None and scanoss_settings.has_path_scoped_bom_entries()
-        )
-        self._maybe_set_api_sbom()
-
-    def _maybe_set_api_sbom(self):
-        if not self.scanoss_settings:
-            return
-        if self._per_batch_sbom:
-            self.print_debug('Path-scoped BOM entries detected. SBOM context will be resolved per-batch.')
-            return
-        sbom = self.scanoss_settings.get_sbom()
-        if sbom:
-            self.scanoss_api.set_sbom(sbom)
 
     @staticmethod
     def _extract_file_path_from_line(line: str) -> str:
