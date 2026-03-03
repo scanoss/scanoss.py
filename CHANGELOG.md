@@ -6,7 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Upcoming changes...
+### Added
+- Added folder-level (path-scoped) BOM filtering for `include`, `exclude`, `remove`, and `replace` rules
+  - BOM rules can now target specific folders (e.g., `"path": "src/vendor/"`) in addition to individual files
+  - Priority-based matching: path+purl (highest) > purl-only > path-only (lowest); longer paths win ties
+  - Path-scoped `include` entries are sent as identify context only for files under the matching folder
+  - Path-scoped `exclude` entries are sent as blacklist context only for files under the matching folder
+- Replace rules now contribute their `replace_with` PURL to the scan context, improving server-side matching
+- BOM path matching is agnostic to trailing slashes (`src/vendor/` and `src/vendor` are equivalent)
+
+### Changed
+- Refactored SBOM handling: replaced global SBOM context with per-file `SbomContext` resolution via `ScanossSettings.get_sbom_context()`
+- Refactored `BomEntry` from TypedDict to dataclass hierarchy with `matches_path()`, `matches_purl()`, and `priority` support
+- Extracted `_iter_wfp_files` generator to simplify WFP parsing in `scan_wfp_file_threaded`
 
 ## [1.45.1] - 2026-02-23
 ### Fixed
