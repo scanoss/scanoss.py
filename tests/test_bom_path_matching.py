@@ -67,9 +67,54 @@ class TestMatchesPath(unittest.TestCase):
         self.assertTrue(BomEntry(path='src/').matches_path('src/main.c'))
         self.assertTrue(BomEntry(path='src/').matches_path('src/vendor/deep/file.c'))
 
+    def test_folder_without_trailing_slash(self):
+        """Paths without trailing slash should still do prefix matching"""
+        self.assertTrue(BomEntry(path='src/vendor').matches_path('src/vendor/lib.c'))
+        self.assertTrue(BomEntry(path='src/vendor').matches_path('src/vendor/sub/deep.c'))
+
+    def test_folder_without_trailing_slash_no_match(self):
+        self.assertFalse(BomEntry(path='src/vendor').matches_path('src/other/lib.c'))
+        self.assertFalse(BomEntry(path='src/vendor').matches_path('src/vendorlib.c'))
+
+    def test_folder_without_trailing_slash_exact_match(self):
+        """Path without trailing slash should still match the exact path"""
+        self.assertTrue(BomEntry(path='src/vendor').matches_path('src/vendor'))
+
     def test_exact_path_does_not_prefix_match(self):
-        """File paths (no trailing slash) should not do prefix matching"""
+        """File paths should not do prefix matching on partial names"""
         self.assertFalse(BomEntry(path='src/main.c').matches_path('src/main.cpp'))
+
+
+class TestFromDictNormalization(unittest.TestCase):
+    """Unit tests for trailing-slash normalization in from_dict"""
+
+    def test_bom_entry_strips_trailing_slash(self):
+        entry = BomEntry.from_dict({'path': 'src/vendor/'})
+        self.assertEqual(entry.path, 'src/vendor')
+
+    def test_bom_entry_no_trailing_slash_unchanged(self):
+        entry = BomEntry.from_dict({'path': 'src/main.c'})
+        self.assertEqual(entry.path, 'src/main.c')
+
+    def test_bom_entry_none_path(self):
+        entry = BomEntry.from_dict({})
+        self.assertIsNone(entry.path)
+
+    def test_replace_rule_strips_trailing_slash(self):
+        entry = ReplaceRule.from_dict({
+            'path': 'src/vendor/',
+            'purl': 'pkg:npm/old',
+            'replace_with': 'pkg:npm/new',
+        })
+        self.assertEqual(entry.path, 'src/vendor')
+
+    def test_replace_rule_no_trailing_slash_unchanged(self):
+        entry = ReplaceRule.from_dict({
+            'path': 'src/main.c',
+            'purl': 'pkg:npm/old',
+            'replace_with': 'pkg:npm/new',
+        })
+        self.assertEqual(entry.path, 'src/main.c')
 
 
 class TestEntryPriority(unittest.TestCase):
@@ -397,13 +442,13 @@ class TestSbomForBatch(unittest.TestCase):
             'bom': {
                 'include': [
                     {'purl': 'pkg:npm/global'},                              # score: 2 (purl only)
-                    {'path': 'src/', 'purl': 'pkg:npm/src-lib'},             # score: 4 + 4 = 8
-                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor-lib'},   # score: 4 + 11 = 15
+                    {'path': 'src/', 'purl': 'pkg:npm/src-lib'},             # score: 4 + 3 = 7 (normalized to 'src')
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor-lib'},   # score: 4 + 10 = 14 (normalized to 'src/vendor')
                 ],
             }
         })
         context = settings.get_sbom_context('src/vendor/lib.c')
-        # Most specific first: vendor-lib (15), src-lib (8), global (2)
+        # Most specific first: vendor-lib (14), src-lib (7), global (2)
         self.assertEqual(context.purls, ('pkg:npm/vendor-lib', 'pkg:npm/src-lib', 'pkg:npm/global'))
 
     def test_get_sbom_context_file_path_most_specific(self):
@@ -911,8 +956,8 @@ class TestScannerSbomPayload(unittest.TestCase):
             'bom': {
                 'include': [
                     {'purl': 'pkg:npm/global'},                        # score: 2
-                    {'path': 'src/', 'purl': 'pkg:npm/src-lib'},       # score: 4 + 4 = 8
-                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor'}, # score: 4 + 11 = 15
+                    {'path': 'src/', 'purl': 'pkg:npm/src-lib'},       # score: 4 + 3 = 7 (normalized to 'src')
+                    {'path': 'src/vendor/', 'purl': 'pkg:npm/vendor'}, # score: 4 + 10 = 14 (normalized to 'src/vendor')
                 ],
             }
         })
@@ -963,7 +1008,7 @@ class TestScannerSbomPayload(unittest.TestCase):
         self.assertEqual(len(payloads), 1)
         assets = json.loads(payloads[0]['assets'])
         purl_order = [c['purl'] for c in assets['components']]
-        # deep (score 15) before shallow (score 8)
+        # deep (score 14) before shallow (score 7)
         self.assertEqual(purl_order[0], 'pkg:npm/deep')
 
     def test_file_path_beats_folder_path_ordering(self):

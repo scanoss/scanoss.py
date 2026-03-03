@@ -45,7 +45,9 @@ def _get_match_type_message(result_path: str, bom_entry: BomEntry, action: str) 
     """
     entry_path = bom_entry.path or ''
     if entry_path and bom_entry.purl:
-        match_kind = 'folder' if entry_path.endswith('/') else 'file'
+        # Result keys are always file paths, so exact match means file-level rule;
+        # otherwise the match came via folder prefix.
+        match_kind = 'file' if entry_path == result_path else 'folder'
         message = f"{action} '{result_path}'. Full match found ({match_kind} + purl)."
     elif bom_entry.purl:
         message = f"{action} '{result_path}'. Found PURL match."
