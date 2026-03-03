@@ -48,16 +48,17 @@ class BomEntry:
 
     @classmethod
     def from_dict(cls, data: dict) -> 'BomEntry':
+        raw_path = data.get('path')
+        path = raw_path.rstrip('/') if raw_path else None
         return cls(
             purl=data.get('purl'),
-            path=data.get('path'),
+            path=path,
             comment=data.get('comment'),
         )
 
     def matches_path(self, result_path: str) -> bool:
         """
         Check if this entry's path matches a result path.
-        Folder paths (ending with '/') use prefix matching; file paths use exact matching.
 
         Args:
             result_path: Path from the scan result
@@ -67,9 +68,8 @@ class BomEntry:
         """
         if not self.path:
             return True
-        if self.path.endswith('/'):
-            return result_path.startswith(self.path)
-        return self.path == result_path
+        path = self.path.rstrip('/')
+        return path == result_path or result_path.startswith(path + '/')
 
     @property
     def priority(self) -> int:
@@ -103,9 +103,11 @@ class ReplaceRule(BomEntry):
     def from_dict(cls, data: dict) -> 'ReplaceRule':
         if not data.get('replace_with'):
             raise ValueError(f'Replace rule missing "replace_with" (purl: {data.get("purl")})')
+        raw_path = data.get('path')
+        path = raw_path.rstrip('/') if raw_path else None
         return cls(
             purl=data.get('purl'),
-            path=data.get('path'),
+            path=path,
             comment=data.get('comment'),
             replace_with=data.get('replace_with'),
             license=data.get('license'),
