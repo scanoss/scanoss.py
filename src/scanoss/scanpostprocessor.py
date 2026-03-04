@@ -211,7 +211,8 @@ class ScanPostProcessor(ScanossBase):
         result_purls = result.get('purl', [])
         match = find_best_match(result_path, result_purls, to_replace_entries)
         if match and isinstance(match, ReplaceRule) and match.replace_with:
-            self._print_message(result_path, result_purls, match, 'Replacing')
+            if self.debug:
+                self._print_message(result_path, result_purls, match, 'Replacing')
             return True, match.replace_with
         return False, None
 
@@ -232,7 +233,8 @@ class ScanPostProcessor(ScanossBase):
         result_purls = result.get('purl', [])
         match = find_best_match(result_path, result_purls, to_remove_entries)
         if match:
-            self._print_message(result_path, result_purls, match, 'Removing')
+            if self.debug:
+                self._print_message(result_path, result_purls, match, 'Removing')
             return True
         return False
 
@@ -246,17 +248,24 @@ class ScanPostProcessor(ScanossBase):
             bom_entry (BomEntry): Matched BOM entry
             action (str): Action being performed
         """
-        message = (
-            f'{_get_match_type_message(result_path, bom_entry, action)} \n'
-            f'Details:\n'
-            f'  - PURLs: {", ".join(result_purls)}\n'
-            f"  - Path: '{result_path}'\n"
-        )
+        if not self.debug:
+            return
         if action == 'Replacing' and isinstance(bom_entry, ReplaceRule):
-            message += f" - {action} with '{bom_entry.replace_with}'"
+            message = (
+                f'{_get_match_type_message(result_path, bom_entry, action)}\n'
+                f'Details:\n'
+                f'  - PURLs: {", ".join(result_purls)}\n'
+                f'  - Replace with: {bom_entry.replace_with}\n'
+                f"  - Path: '{result_path}'"
+            )
+        else:
+            message = (
+                f'{_get_match_type_message(result_path, bom_entry, action)}\n'
+                f'Details:\n'
+                f'  - PURLs: {", ".join(result_purls)}\n'
+                f"  - Path: '{result_path}'"
+            )
         self.print_debug(message)
-
-
 #
 # End of ScanPostProcessor Class
 #
