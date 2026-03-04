@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.46.0] - 2026-03-04
 ### Added
 - Added folder-level (path-scoped) BOM filtering for `include`, `exclude`, `remove`, and `replace` rules
   - BOM rules can now target specific folders (e.g., `"path": "src/vendor/"`) in addition to individual files
@@ -813,3 +815,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.44.0]: https://github.com/scanoss/scanoss.py/compare/v1.43.1...v1.44.0
 [1.45.0]: https://github.com/scanoss/scanoss.py/compare/v1.44.0...v1.45.0
 [1.45.1]: https://github.com/scanoss/scanoss.py/compare/v1.45.0...v1.45.1
+[1.46.0]: https://github.com/scanoss/scanoss.py/compare/v1.45.1...v1.46.0
