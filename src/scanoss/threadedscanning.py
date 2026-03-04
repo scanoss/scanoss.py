@@ -145,7 +145,7 @@ class ThreadedScanning(ScanossBase):
         :param sbom: Per-request SBOM context (optional, overrides global SBOM)
         """
         if sbom and self.debug:
-            w = (wfp.split('\n'))[0]  # show the first file to help debug context
+            w = (wfp.split('\n', maxsplit=1))[0]  # show the first file to help debug context.
             self.print_debug(f'Adding SBOM context: {sbom} to {w} ...')
         if wfp is None or wfp == '':
             self.print_stderr('Warning: empty WFP. Skipping from scan...')
