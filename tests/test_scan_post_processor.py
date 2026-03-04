@@ -22,7 +22,9 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import json
 import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -39,6 +41,21 @@ class MyTestCase(unittest.TestCase):
     scan_settings_path = Path(script_dir, 'data', 'scanoss.json').resolve()
     scan_settings = ScanossSettings(filepath=scan_settings_path)
     post_processor = ScanPostProcessor(scan_settings)
+
+    result_json_path = Path(script_dir, 'data', 'result.json').resolve()
+
+    def _load_result_data(self):
+        """Load result.json fixture, returning a fresh dict each time."""
+        with open(self.result_json_path) as f:
+            return json.load(f)
+
+    def _make_processor(self, settings_data):
+        """Create a ScanPostProcessor from inline settings data, returns (processor, path)."""
+        f = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+        json.dump(settings_data, f)
+        f.close()
+        settings = ScanossSettings(filepath=Path(f.name))
+        return ScanPostProcessor(settings), f.name
 
     def test_remove_files(self):
         """
@@ -112,6 +129,93 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(
             processed_results['only_purl_match.py'][0]['purl'], ['pkg:github/scanoss/only_purl_match_replaced.py']
         )
+
+
+    def test_replace_purls_with_license(self):
+        """Should apply the license from the replace rule to the result"""
+        processor, path = self._make_processor({
+            'bom': {
+                'replace': [{
+                    'purl': 'pkg:github/scanoss/scanner.c',
+                    'replace_with': 'pkg:github/scanoss/replacement',
+                    'license': 'Apache-2.0',
+                }]
+            }
+        })
+        try:
+            processed = processor.load_results(self._load_result_data()).post_process()
+
+            entry = processed['inc/json.h'][0]
+            self.assertEqual(entry['purl'], ['pkg:github/scanoss/replacement'])
+            self.assertEqual(entry['licenses'], [{'name': 'Apache-2.0'}])
+        finally:
+            os.unlink(path)
+
+    def test_replace_purls_without_license(self):
+        """Should remove licenses when replace rule has no license field"""
+        processor, path = self._make_processor({
+            'bom': {
+                'replace': [{
+                    'purl': 'pkg:github/scanoss/scanner.c',
+                    'replace_with': 'pkg:github/scanoss/replacement',
+                }]
+            }
+        })
+        try:
+            processed = processor.load_results(self._load_result_data()).post_process()
+
+            entry = processed['inc/json.h'][0]
+            self.assertEqual(entry['purl'], ['pkg:github/scanoss/replacement'])
+            self.assertNotIn('licenses', entry)
+        finally:
+            os.unlink(path)
+
+    def test_replace_with_realistic_result(self):
+        """Should replace a full realistic scan result and strip old metadata"""
+        processor, path = self._make_processor({
+            'bom': {
+                'replace': [{
+                    'purl': 'pkg:github/scanoss/scanner.c',
+                    'replace_with': 'pkg:github/scanoss/replacement',
+                    'license': 'GPL-2.0-only',
+                }]
+            }
+        })
+        try:
+            processed = processor.load_results(self._load_result_data()).post_process()
+
+            entry = processed['inc/json.h'][0]
+            self.assertEqual(entry['purl'], ['pkg:github/scanoss/replacement'])
+            self.assertEqual(entry['component'], 'replacement')
+            self.assertEqual(entry['vendor'], 'scanoss')
+            self.assertEqual(entry['status'], 'identified')
+            self.assertEqual(entry['licenses'], [{'name': 'GPL-2.0-only'}])
+            # Old metadata should be stripped
+            for field in ('file', 'file_hash', 'file_url', 'latest', 'release_date',
+                          'source_hash', 'url_hash', 'url_stats', 'version'):
+                self.assertNotIn(field, entry)
+        finally:
+            os.unlink(path)
+
+    def test_replace_purl_with_version_no_match_unversioned_result(self):
+        """Should NOT replace when rule has purl@version but result has no version"""
+        processor, path = self._make_processor({
+            'bom': {
+                'replace': [{
+                    'purl': 'pkg:github/scanoss/scanner.c@1.3.3',
+                    'replace_with': 'pkg:github/scanoss/replacement@2.0.0',
+                }]
+            }
+        })
+        try:
+            processed = processor.load_results(self._load_result_data()).post_process()
+
+            entry = processed['inc/json.h'][0]
+            # Should remain unchanged — result purl has no version
+            self.assertEqual(entry['purl'], ['pkg:github/scanoss/scanner.c'])
+            self.assertEqual(entry['status'], 'pending')
+        finally:
+            os.unlink(path)
 
 
 if __name__ == '__main__':

@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Fixed `bom.replace` rules with a `license` field: the license is now applied to the replaced result instead of being silently dropped
 
 ## [1.49.1] - 2026-03-17
 ### Fixed
