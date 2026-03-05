@@ -1730,6 +1730,9 @@ def dependency(parser, args):
     if args.output:
         initialise_empty_file(args.output)
 
+    if args.settings and args.skip_settings_file:
+        print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
+        sys.exit(1)
     scanoss_settings = None
     if not args.skip_settings_file:
         scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
