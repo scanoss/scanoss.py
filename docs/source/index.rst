@@ -118,11 +118,6 @@ Scans a directory or file (source code or ``.wfp`` fingerprint file) and shows r
      - Proxy auto configuration (optional).
    * - --ca-cert <CA_CERT>
      - Alternative certificate PEM file, can also use the environment variables ``REQUEST_CA_BUNDLE`` and ``GRPC_DEFAULT_SSL_ROOTS_FILE_PATH`` (optional)
-   * - --api2url <API2URL>
-     - SCANOSS gRPC API 2.0 base URL (optional - default https://api.osskb.org)
-   * - --grpc-proxy <GRPC_PROXY>
-     - GRPC Proxy URL to use for connections, can also us the environment variable ``GRPC_PROXY`` (optional)
-   
 -------------------------------------------
 Generate fingerprints: fingerprint, fp, wfp
 -------------------------------------------
@@ -264,10 +259,6 @@ Performs a comprehensive scan of a directory using folder hashing to identify co
      - Proxy auto configuration. Specify a file, http url or "auto"
    * - --ca-cert <file>
      - Alternative certificate PEM file
-   * - --api2url <url>
-     - SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)
-   * - --grpc-proxy <url>
-     - GRPC Proxy URL to use for connections
 
 --------------------------------
 Folder Hashing: folder-hash, fh
@@ -404,10 +395,6 @@ The following arguments are common to the ``algorithms``, ``hints``, and ``versi
      - Timeout (in seconds) for API communication (optional - default 600).
    * - --key <KEY>, -k <KEY>
      - SCANOSS API Key token (optional - not required for default OSSKB URL).
-   * - --api2url <API2URL>
-     - SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org).
-   * - --grpc-proxy <GRPC_PROXY>
-     - GRPC Proxy URL to use for connections.
    * - --ca-cert <CA_CERT>
      - Alternative certificate PEM file.
    * - --debug, -d
