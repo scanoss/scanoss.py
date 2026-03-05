@@ -52,12 +52,12 @@ The `scanoss-py` CLI uses two communication methods; REST & gRPC and as such req
   - `export GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/cert.pem`
 
 #### Custom Certificate with CLI Options
-The `scanoss-py` CLI has a `--ca-cert` option to allow the specification of a custom certificate file to be used when communicating over REST/gRPC.
+The `scanoss-py` CLI has a `--ca-cert` option to allow the specification of a custom certificate file to be used when communicating over REST.
 Simply set it using:
 ```shell
 scanoss-py scan --ca-cert scanoss-com.pem -o results.json .
 ```
-Alternative API Urls can also be configured (if necessary) using `--apiurl` & `api2url`.
+Alternative API Urls can also be configured (if necessary) using `--apiurl`.
 
 #### Custom Certificate appended to Defaults
 It is also possible to append this custom certificate to the default certificate list used by `scanoss-py`.
@@ -81,20 +81,15 @@ The SCANOSS clients can be configured to work with proxies. There are a number o
 There are a number of environment variables that can be specified to force the `scanoss-py` command to route calls via proxy.
 
 - REST - `https_proxy`, `http_proxy`, `HTTPS_PROXY`, `HTTP_PROXY`
-- gRPC - `grpc_proxy`, `https_proxy`, `http_proxy`
 
 Set the variable as follows: `export https_proxy="http://<ip-addr>:<port>"`
 
-The REST client support both lowercase & uppercase proxy names, however the gRPC client only supports lowercase variants. The gRPC client provides one extra variable, `grpc_proxy` to enable a separate proxy to be leveraged for it alone.
+The REST client supports both lowercase & uppercase proxy names.
 
 ### Proxy CLI Options
 The proxy for REST based calls can also be configured directly on the `scanoss-py` commandline using `--proxy`. For example:
 ```shell
 scanoss-py scan --proxy "http://<ipaddr>:<port>" -o results.json .
-```
-If a separate proxy is required for GRPC calls, please use the `--grpc-proxy` option:
-```shell
-scanoss-py scan --proxy "http://<ipaddr>:<port>" --grpc-proxy "http://<ipaddr>:<port>" -D -o results.json .
 ```
 
 ### Proxy Auto-Config CLI Options
