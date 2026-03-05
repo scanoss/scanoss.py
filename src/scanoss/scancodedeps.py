@@ -26,6 +26,8 @@ import json
 import os.path
 import subprocess
 
+from pathspec import GitIgnoreSpec
+
 from .scanossbase import ScanossBase
 
 
@@ -43,6 +45,7 @@ class ScancodeDeps(ScanossBase):
         scan_output: str = None,
         timeout: int = 600,
         sc_command: str = None,
+        scanoss_settings=None,
     ):
         """
         Initialise ScancodeDeps class
@@ -55,6 +58,7 @@ class ScancodeDeps(ScanossBase):
         self.scan_output = scan_output
         self.sc_command = sc_command if sc_command else 'scancode'
         self.output_file = output_file if output_file else 'scancode-dependencies.json'
+        self.scanoss_settings = scanoss_settings
 
     def __log_result(self, string, outfile=None):
         """
@@ -183,7 +187,31 @@ class ScancodeDeps(ScanossBase):
             return None
         return self.produce_from_json(data)
 
-    def get_dependencies(self, output_file: str = None, what_to_scan: str = None, result_output: str = None) -> bool:
+    def filter_dependencies_by_path(self, deps: dict) -> dict:
+        """Filter dependency files by path using skip patterns from scanoss_settings.
+
+        :param deps: dependency dict with 'files' key
+        :return: filtered dependency dict
+        """
+        if not self.scanoss_settings:
+            return deps
+        patterns = self.scanoss_settings.get_skip_patterns('dependencies')
+        if not patterns:
+            return deps
+        spec = GitIgnoreSpec.from_lines(patterns)
+        all_files = deps.get('files', [])
+        filtered_files = []
+        for f in all_files:
+            file_path = f.get('file', '')
+            if spec.match_file(file_path):
+                self.print_debug(f'Skipping dependency file: {file_path} (matches skip pattern)')
+            else:
+                filtered_files.append(f)
+        return {'files': filtered_files}
+
+    def get_dependencies(
+        self, output_file: str = None, what_to_scan: str = None, result_output: str = None
+    ) -> bool:
         """
         Get the dependencies for the required file/directory and output the JSON results
         :param output_file:  temporary scanocde file to write interim results to
@@ -196,6 +224,8 @@ class ScancodeDeps(ScanossBase):
             return False
         self.print_msg('Producing summary...')
         deps = self.produce_from_file(output_file)
+        if deps:
+            deps = self.filter_dependencies_by_path(deps)
         deps = self.__remove_dep_scope(deps)
         self.remove_interim_file(output_file)
         if not deps:

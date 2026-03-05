@@ -1097,7 +1097,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         )
 
     # Scanoss settings options
-    for p in [p_folder_scan, p_scan, p_wfp, p_folder_hash]:
+    for p in [p_folder_scan, p_scan, p_wfp, p_folder_hash, p_dep]:
         p.add_argument(
             '--settings',
             '-st',
@@ -1730,10 +1730,22 @@ def dependency(parser, args):
     if args.output:
         initialise_empty_file(args.output)
 
+    scanoss_settings = None
+    if not args.skip_settings_file:
+        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+        try:
+            scanoss_settings.load_json_file(args.settings, args.scan_loc)
+        except ScanossSettingsError as e:
+            print_stderr(f'Error: {e}')
+            sys.exit(1)
+
     sc_deps = ScancodeDeps(
-        debug=args.debug, quiet=args.quiet, trace=args.trace, sc_command=args.sc_command, timeout=args.sc_timeout
+        debug=args.debug, quiet=args.quiet, trace=args.trace, sc_command=args.sc_command, timeout=args.sc_timeout,
+        scanoss_settings=scanoss_settings,
     )
-    if not sc_deps.get_dependencies(what_to_scan=args.scan_loc, result_output=args.output):
+    if not sc_deps.get_dependencies(
+        what_to_scan=args.scan_loc, result_output=args.output
+    ):
         sys.exit(1)
     return None
 
