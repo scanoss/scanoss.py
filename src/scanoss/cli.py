@@ -1173,8 +1173,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             '--proxy',
             type=str,
             help='Proxy URL to use for connections (optional). '
-            'Can also use the environment variable "HTTPS_PROXY=<ip>:<port>" '
-            'and "grcp_proxy=<ip>:<port>" for gRPC',
+            'Can also use the environment variable "HTTPS_PROXY=<ip>:<port>"',
         )
         p.add_argument(
             '--pac',
@@ -1186,11 +1185,10 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             type=str,
             help='Alternative certificate PEM file (optional). '
             'Can also use the environment variable '
-            '"REQUESTS_CA_BUNDLE=/path/to/cacert.pem" and '
-            '"GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/cacert.pem" for gRPC',
+            '"REQUESTS_CA_BUNDLE=/path/to/cacert.pem"',
         )
 
-    # Global GRPC options
+    # Request options
     for p in [
         p_scan,
         c_vulns,
@@ -1206,13 +1204,12 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         c_licenses,
     ]:
         p.add_argument(
-            '--api2url', type=str, help='SCANOSS gRPC API 2.0 URL (optional - default: https://api.osskb.org)'
+            '--api2url', type=str,
+            help='REMOVED: gRPC API URL is no longer supported. Using this flag will cause an error.'
         )
         p.add_argument(
-            '--grpc-proxy',
-            type=str,
-            help='GRPC Proxy URL to use for connections (optional). '
-            'Can also use the environment variable "grcp_proxy=<ip>:<port>"',
+            '--grpc-proxy', type=str,
+            help='REMOVED: gRPC Proxy URL is no longer supported. Using this flag will cause an error.'
         )
         p.add_argument(
             '--header',
@@ -1238,7 +1235,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             help='Timeout (in seconds) for syft to complete (optional - default 600)',
         )
 
-    # gRPC support options
+    # Deprecated gRPC/REST protocol flags (kept for clear error messaging)
     for p in [
         c_vulns,
         p_scan,
@@ -1253,8 +1250,14 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         c_licenses,
         p_folder_scan,
     ]:
-        p.add_argument('--grpc', action='store_true', default=True, help='Use gRPC (default)')
-        p.add_argument('--rest', action='store_true', dest='rest', help='Use REST instead of gRPC')
+        p.add_argument(
+            '--grpc', action='store_true',
+            help='REMOVED: gRPC is no longer supported. Using this flag will cause an error.'
+        )
+        p.add_argument(
+            '--rest', action='store_true', dest='rest',
+            help='REMOVED: REST is now always used. Using this flag will cause an error.'
+        )
 
     # Help/Trace command options
     for p in [
@@ -1304,10 +1307,24 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
 
     args = parser.parse_args()
 
-    # TODO: Remove this hack once we go back to using REST as default
-    # Handle --rest overriding --grpc default
+    # Fail on removed gRPC-related flags
+    _removed_flags_used = []
+    if hasattr(args, 'grpc') and args.grpc:
+        _removed_flags_used.append('--grpc')
     if hasattr(args, 'rest') and args.rest:
-        args.grpc = False
+        _removed_flags_used.append('--rest')
+    if hasattr(args, 'api2url') and args.api2url:
+        _removed_flags_used.append('--api2url')
+    if hasattr(args, 'grpc_proxy') and args.grpc_proxy:
+        _removed_flags_used.append('--grpc-proxy')
+    if _removed_flags_used:
+        flags_str = ', '.join(_removed_flags_used)
+        print_stderr(
+            f'Error: Removed flag(s) used: {flags_str}. '
+            'gRPC is no longer supported. REST is now used by default. '
+            'Please remove these flags from your command.'
+        )
+        sys.exit(1)
 
     if args.version:
         ver(parser, args)
@@ -1579,8 +1596,6 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
             print_stderr('Obfuscating file fingerprints...')
         if args.proxy:
             print_stderr(f'Using Proxy {args.proxy}...')
-        if args.grpc_proxy:
-            print_stderr(f'Using GRPC Proxy {args.grpc_proxy}...')
         if args.pac:
             print_stderr(f'Using Proxy Auto-config (PAC) {args.pac}...')
         if args.ca_cert:
@@ -1619,11 +1634,9 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         scan_options=scan_options,
         sc_timeout=args.sc_timeout,
         sc_command=args.sc_command,
-        grpc_url=args.api2url,
         obfuscate=args.obfuscate,
         ignore_cert_errors=args.ignore_cert_errors,
         proxy=args.proxy,
-        grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         ca_cert=args.ca_cert,
         retry=args.retry,
@@ -1636,7 +1649,6 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         strip_snippet_ids=args.strip_snippet,
         scanoss_settings=scanoss_settings,
         req_headers=process_req_headers(args.header),
-        use_grpc=args.grpc,
         min_snippet_hits=args.min_snippet_hits,
         min_snippet_lines=args.min_snippet_lines,
         ranking=args.ranking,
@@ -2431,16 +2443,13 @@ def comp_vulns(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
-        grpc_url=args.api2url,
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
-        grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
         ignore_cert_errors=args.ignore_cert_errors,
-        use_grpc=args.grpc,
     )
     if not comps.get_vulnerabilities(args.input, args.purl, args.output):
         sys.exit(1)
@@ -2468,15 +2477,12 @@ def comp_semgrep(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
-        grpc_url=args.api2url,
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
-        grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
-        use_grpc=args.grpc,
     )
     if not comps.get_semgrep_details(args.input, args.purl, args.output):
         sys.exit(1)
@@ -2507,15 +2513,12 @@ def comp_search(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
-        grpc_url=args.api2url,
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
-        grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
-        use_grpc=args.grpc,
     )
     if not comps.search_components(
         args.output,
@@ -2553,15 +2556,12 @@ def comp_versions(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
-        grpc_url=args.api2url,
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
-        grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
-        use_grpc=args.grpc,
     )
     if not comps.get_component_versions(args.output, json_file=args.input, purl=args.purl, limit=args.limit):
         sys.exit(1)
@@ -2589,15 +2589,12 @@ def comp_provenance(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
-        grpc_url=args.api2url,
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
-        grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
-        use_grpc=args.grpc,
     )
     if not comps.get_provenance_details(args.input, args.purl, args.output, args.origin):
         sys.exit(1)
@@ -2625,15 +2622,12 @@ def comp_licenses(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
-        grpc_url=args.api2url,
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
-        grpc_proxy=args.grpc_proxy,
         pac=pac_file,
         timeout=args.timeout,
         req_headers=process_req_headers(args.header),
-        use_grpc=args.grpc,
     )
     if not comps.get_licenses(args.input, args.purl, args.output):
         sys.exit(1)
@@ -2737,7 +2731,6 @@ def folder_hashing_scan(parser, args):
             depth=args.depth,
             recursive_threshold=args.recursive_threshold,
             min_accepted_score=args.min_accepted_score,
-            use_grpc=args.grpc,
         )
 
         if scanner.scan():

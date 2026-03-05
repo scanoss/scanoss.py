@@ -6,8 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.47.0] - 2026-03-05
 ### Added
-- Added support for skipping dependency files, configurable via `settings.skip.patterns.dependencies` 
+- Added support for skipping dependency files, configurable via `settings.skip.patterns.dependencies`
+
+### Changed
+- All API communication now uses REST by default
+- The `--grpc`, `--rest`, `--api2url`, and `--grpc-proxy` CLI flags now cause an error if used (gRPC is no longer supported)
 
 ## [1.46.0] - 2026-03-04
 ### Added
