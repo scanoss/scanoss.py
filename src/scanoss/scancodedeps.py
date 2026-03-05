@@ -36,7 +36,7 @@ class ScancodeDeps(ScanossBase):
     SCANOSS dependency scanning class
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         debug: bool = False,
         quiet: bool = False,
@@ -81,12 +81,12 @@ class ScancodeDeps(ScanossBase):
             output_file = self.output_file
         if os.path.isfile(output_file):
             try:
-                self.print_trace(f'Cleaning temporary scancode files...')
+                self.print_trace('Cleaning temporary scancode files...')
                 os.remove(output_file)
             except Exception as e:
                 self.print_stderr(f'Warning: Failed to remove temporary file {output_file}: {e}')
 
-    def produce_from_json(self, data: json) -> dict:
+    def produce_from_json(self, data: json) -> dict:  # noqa: PLR0912
         """
         Parse the given input JSON string and return Dependency summary
         :param data: json - JSON object
@@ -95,7 +95,7 @@ class ScancodeDeps(ScanossBase):
         if not data:
             self.print_stderr('ERROR: No JSON data provided to parse.')
             return None
-        self.print_debug(f'Processing Scancode results into Dependency data...')
+        self.print_debug('Processing Scancode results into Dependency data...')
         files = []
         for t in data:
             if t == 'files':  # Only interested in 'files' details
@@ -118,7 +118,6 @@ class ScancodeDeps(ScanossBase):
                             continue
                     self.print_debug(f'Path: {f_path}, Packages: {len(f_packages)}')
                     purls = []
-                    scopes = []
                     for pkgs in f_packages:
                         pk_deps = pkgs.get('dependencies')
 
@@ -263,6 +262,7 @@ class ScancodeDeps(ScanossBase):
                 stderr=subprocess.STDOUT,
                 text=True,
                 timeout=self.timeout,
+                check=False,
             )
             self.print_trace(f'Subprocess return: {result}')
             if result.returncode:
