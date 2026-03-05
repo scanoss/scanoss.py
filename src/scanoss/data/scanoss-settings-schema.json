@@ -65,6 +65,19 @@
                     ]
                   },
                   "uniqueItems": true
+                },
+                "dependencies": {
+                  "type": "array",
+                  "description": "List of glob patterns to skip dependency files from dependency analysis",
+                  "items": {
+                    "type": "string",
+                    "examples": [
+                      "vendor/**",
+                      "third_party/",
+                      "node_modules/**"
+                    ]
+                  },
+                  "uniqueItems": true
                 }
               }
             },

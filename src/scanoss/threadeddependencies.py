@@ -63,7 +63,7 @@ class ThreadedDependencies(ScanossBase):
     inputs: queue.Queue = queue.Queue()
     output: queue.Queue = queue.Queue()
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         sc_deps: ScancodeDeps,
         grpc_api: ScanossGrpc,
@@ -196,10 +196,14 @@ class ThreadedDependencies(ScanossBase):
             deps = None
             if what_to_scan.startswith(DEP_FILE_PREFIX):  # We have a pre-parsed dependency file, load it
                 deps = self.sc_deps.load_from_file(what_to_scan.strip(DEP_FILE_PREFIX))
+                if deps:
+                    deps = self.sc_deps.filter_dependencies_by_path(deps)
             elif not self.sc_deps.run_scan(what_to_scan=what_to_scan):
                 self._errors = True
             else:
                 deps = self.sc_deps.produce_from_file()
+                if deps:
+                    deps = self.sc_deps.filter_dependencies_by_path(deps)
                 if dep_scope is not None:
                     self.print_debug(f'Filtering {dep_scope.name} dependencies')
                 if dep_scope_include is not None:

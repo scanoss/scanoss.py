@@ -202,7 +202,10 @@ class Scanner(ScanossBase):
             ranking=scan_settings.ranking,
             ranking_threshold=scan_settings.ranking_threshold,
         )
-        sc_deps = ScancodeDeps(debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command)
+        sc_deps = ScancodeDeps(
+            debug=debug, quiet=quiet, trace=trace, timeout=sc_timeout, sc_command=sc_command,
+            scanoss_settings=scanoss_settings,
+        )
         grpc_api = ScanossGrpc(
             url=grpc_url,
             debug=debug,
@@ -218,7 +221,9 @@ class Scanner(ScanossBase):
             ignore_cert_errors=ignore_cert_errors,
             use_grpc=use_grpc
         )
-        self.threaded_deps = ThreadedDependencies(sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace)
+        self.threaded_deps = ThreadedDependencies(
+            sc_deps, grpc_api, debug=debug, quiet=quiet, trace=trace
+        )
         self.nb_threads = nb_threads
         if nb_threads and nb_threads > 0:
             self.threaded_scan = ThreadedScanning(
