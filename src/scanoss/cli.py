@@ -502,6 +502,19 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             help='Timeout (in seconds) for API communication (optional - default 600)',
         )
 
+    # Common Component sub-command API URL option
+    for p in [
+        c_vulns,
+        c_search,
+        c_versions,
+        c_semgrep,
+        c_provenance,
+        c_licenses,
+    ]:
+        p.add_argument(
+            '--apiurl', type=str, help='SCANOSS API base URL (optional - default: https://api.osskb.org)'
+        )
+
     # Sub-command: utils
     p_util = subparsers.add_parser(
         'utils',
@@ -2443,6 +2456,7 @@ def comp_vulns(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
+        grpc_url=args.apiurl,  # Legacy param name; accepts the REST API base URL. TODO: rename to url
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
@@ -2477,6 +2491,7 @@ def comp_semgrep(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
+        grpc_url=args.apiurl,  # Legacy param name; accepts the REST API base URL. TODO: rename to url
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
@@ -2513,6 +2528,7 @@ def comp_search(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
+        grpc_url=args.apiurl,  # Legacy param name; accepts the REST API base URL. TODO: rename to url
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
@@ -2556,6 +2572,7 @@ def comp_versions(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
+        grpc_url=args.apiurl,  # Legacy param name; accepts the REST API base URL. TODO: rename to url
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
@@ -2589,6 +2606,7 @@ def comp_provenance(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
+        grpc_url=args.apiurl,  # Legacy param name; accepts the REST API base URL. TODO: rename to url
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
@@ -2622,6 +2640,7 @@ def comp_licenses(parser, args):
         debug=args.debug,
         trace=args.trace,
         quiet=args.quiet,
+        grpc_url=args.apiurl,  # Legacy param name; accepts the REST API base URL. TODO: rename to url
         api_key=args.key,
         ca_cert=args.ca_cert,
         proxy=args.proxy,
