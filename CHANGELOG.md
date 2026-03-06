@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.48.0] - 2026-03-06
 ### Added
 - Added `--apiurl` option to all component subcommands (`comp vulns`, `comp licenses`, `comp semgrep`, `comp provenance`, `comp search`, `comp versions`) to allow overriding the default API base URL
 
@@ -827,3 +829,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.45.1]: https://github.com/scanoss/scanoss.py/compare/v1.45.0...v1.45.1
 [1.46.0]: https://github.com/scanoss/scanoss.py/compare/v1.45.1...v1.46.0
 [1.47.0]: https://github.com/scanoss/scanoss.py/compare/v1.46.0...v1.47.0
+[1.48.0]: https://github.com/scanoss/scanoss.py/compare/v1.47.0...v1.48.0
