@@ -22,7 +22,7 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-from typing import List, Tuple
+from typing import List, Optional
 
 from packageurl import PackageURL
 from packageurl.contrib import purl2url
@@ -117,7 +117,7 @@ class ScanPostProcessor(ScanossBase):
             )
             return self.results
         self._remove_dismissed_files()
-        self._replace_purls()
+        self._apply_replace_rules()
         return self.results
 
     def _remove_dismissed_files(self):
@@ -133,9 +133,9 @@ class ScanPostProcessor(ScanossBase):
             if not self._should_remove_result(result_path, result, to_remove_entries)
         }
 
-    def _replace_purls(self):
+    def _apply_replace_rules(self):
         """
-        Replace purls in the results based on the SCANOSS settings file
+        Apply BOM replace rules from the SCANOSS settings file to the scan results
         """
         to_replace_entries = self.scanoss_settings.get_bom_replace()
         if not to_replace_entries:
@@ -143,31 +143,32 @@ class ScanPostProcessor(ScanossBase):
 
         for result_path, result in self.results.items():
             entry = result[0] if isinstance(result, list) else result
-            should_replace, to_replace_with_purl = self._should_replace_result(result_path, entry, to_replace_entries)
-            if should_replace:
-                self.results[result_path] = [self._update_replaced_result(entry, to_replace_with_purl)]
+            replace_rule = self._find_replace_rule(result_path, entry, to_replace_entries)
+            if replace_rule:
+                self.results[result_path] = [self._apply_replace_rule(entry, replace_rule)]
 
-    def _update_replaced_result(self, result: dict, to_replace_with_purl: str) -> dict:
+    def _apply_replace_rule(self, result: dict, replace_rule: ReplaceRule) -> dict:
         """
         Update the result with the new purl and component information if available,
         otherwise removes the old component information
 
         Args:
             result (dict): The result to update
-            to_replace_with_purl (str): The purl to replace with
+            replace_rule (ReplaceRule): The replace rule to apply
 
         Returns:
             dict: Updated result
         """
-        if self.component_info_map.get(to_replace_with_purl):
-            result.update(self.component_info_map[to_replace_with_purl])
+        if self.component_info_map.get(replace_rule.replace_with):
+            result.update(self.component_info_map[replace_rule.replace_with])
         else:
             try:
-                new_component = PackageURL.from_string(to_replace_with_purl).to_dict()
-                new_component_url = purl2url.get_repo_url(to_replace_with_purl)
+                new_component = PackageURL.from_string(replace_rule.replace_with).to_dict()
+                new_component_url = purl2url.get_repo_url(replace_rule.replace_with)
             except RuntimeError:
                 self.print_stderr(
-                    f"ERROR: Issue while replacing: Invalid PURL '{to_replace_with_purl}' in settings file. Skipping."
+                    f"ERROR: Issue while replacing: Invalid PURL '{replace_rule.replace_with}'"
+                    ' in settings file. Skipping.'
                 )
                 return result
 
@@ -176,6 +177,8 @@ class ScanPostProcessor(ScanossBase):
             result['vendor'] = new_component.get('namespace')
 
             result.pop('licenses', None)
+            if replace_rule.license:
+                result['licenses'] = [{'name': replace_rule.license}]
             result.pop('file', None)
             result.pop('file_hash', None)
             result.pop('file_url', None)
@@ -187,14 +190,14 @@ class ScanPostProcessor(ScanossBase):
             result.pop('url_stats', None)
             result.pop('version', None)
 
-        result['purl'] = [to_replace_with_purl]
+        result['purl'] = [replace_rule.replace_with]
         result['status'] = 'identified'
 
         return result
 
-    def _should_replace_result(
+    def _find_replace_rule(
         self, result_path: str, result: dict, to_replace_entries: List[ReplaceRule]
-    ) -> Tuple[bool, str]:
+    ) -> Optional[ReplaceRule]:
         """
         Check if a result should be replaced based on the SCANOSS settings.
         Uses priority-based matching: most specific rule wins.
@@ -205,16 +208,15 @@ class ScanPostProcessor(ScanossBase):
             to_replace_entries (List[ReplaceRule]): Replace rules from the settings file
 
         Returns:
-            bool: True if the result should be replaced, False otherwise
-            str: The purl to replace with
+            Optional[ReplaceRule]: The matching replace rule, or None if no match
         """
         result_purls = result.get('purl', [])
         match = find_best_match(result_path, result_purls, to_replace_entries)
         if match and isinstance(match, ReplaceRule) and match.replace_with:
             if self.debug:
                 self._print_message(result_path, result_purls, match, 'Replacing')
-            return True, match.replace_with
-        return False, None
+            return match
+        return None
 
     def _should_remove_result(self, result_path: str, result: dict, to_remove_entries: List[BomEntry]) -> bool:
         """
