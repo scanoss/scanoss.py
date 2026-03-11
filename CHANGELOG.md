@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.49.0] - 2026-03-11
+## [1.49.0] - 2026-03-12
 ### Fixed
 - Fixed `--skip-headers` incorrectly identifying continuation lines inside multi-line import blocks
+### Changed
+- Added error handling for `is_binary` check to catch `RuntimeError` and default to treating the file as binary
 
 ## [1.48.0] - 2026-03-06
 ### Added
