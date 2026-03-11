@@ -501,8 +501,8 @@ class HeaderFilter(ScanossBase):
             return None
         in_multiline_comment = False
         in_license_section = False
-        in_import_block = False  # To handle import blocks in Go
-        consecutive_imports_count = 0
+        inside_multiline_import = False  # To handle multi-line import blocks
+        found_imports = False
         # Get comment & import patterns for the language
         comment_patterns = self.patterns.COMMENT_PATTERNS[self.get_comment_style(language)]
         import_patterns = self.patterns.IMPORT_PATTERNS[language]
@@ -532,26 +532,23 @@ class HeaderFilter(ScanossBase):
             # If not a comment but we find a non-empty line, end license section
             if not is_a_comment:
                 in_license_section = False
-            # Handle import blocks in Go
-            if language == 'go':
-                if stripped.startswith('import ('):
-                    self.print_trace(f'Line {line_number}: Detected Go import block start')
-                    in_import_block = True
-                    continue
-                if in_import_block:
-                    if stripped == ')':
-                        self.print_trace(f'Line {line_number}: Detected Go import block end')
-                        in_import_block = False
-                        continue
-                    if (stripped.startswith('"') or stripped.startswith('_') or
-                            re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*\s+"', stripped)):
-                        # It's part of the import block
-                        continue
+            # Check if this line closes a multi-line import block
+            if inside_multiline_import and (')' in stripped or '}' in stripped):
+                self.print_trace(f'Line {line_number}: Multi-line import block end')
+                inside_multiline_import = False
+                continue
+            # Skip continuation lines inside multi-line import blocks (e.g. "DEFAULT_SYFT_COMMAND,")
+            if inside_multiline_import:
+                continue
             # Check if it's an import
             if self.is_import(line, import_patterns):
-                if consecutive_imports_count == 0:
+                if not found_imports:
                     self.print_trace(f'Line {line_number}: Detected import section')
-                consecutive_imports_count += 1
+                    found_imports = True
+                # Detect start of multi-line import block (e.g. "from x import (", "import {")
+                if ('(' in stripped and ')' not in stripped) or ('{' in stripped and '}' not in stripped):
+                    self.print_trace(f'Line {line_number}: Multi-line import block start')
+                    inside_multiline_import = True
                 continue
             # If we get here, it's implementation code - return immediately!
             self.print_trace(f'Line {line_number}: First implementation line detected')
