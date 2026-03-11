@@ -5,7 +5,9 @@
         "scanning": [
           "src/protoc_gen_swagger",
           "docs",
-          "scanoss_common_pb2_grpc.py"
+          "scanoss_common_pb2_grpc.py",
+          "tests/data/test_src_files.tar.gz",
+          "tests/data/src"
         ]
       },
       "sizes": {}
