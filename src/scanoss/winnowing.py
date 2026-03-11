@@ -294,7 +294,11 @@ class Winnowing(ScanossBase):
         :return: True if binary, False otherwise
         """
         if path:
-            binary_path = is_binary(path)
+            try:
+                binary_path = is_binary(path)
+            except RuntimeError as e:
+                self.print_stderr(f'Warning: Failed to detect binary status for {path}. Assuming binary. Details:{e}')
+                return True
             if binary_path:
                 self.print_trace(f'Detected binary file: {path}')
             return binary_path
