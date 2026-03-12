@@ -160,7 +160,12 @@ class ScanPostProcessor(ScanossBase):
             dict: Updated result
         """
         if self.component_info_map.get(replace_rule.replace_with):
+            # Preserve per-file fields that are specific to the scanned file
+            per_file_keys = ('file', 'file_hash', 'file_url', 'source_hash', 'url_hash',
+                             'lines', 'oss_lines', 'matched')
+            preserved = {k: result[k] for k in per_file_keys if k in result}
             result.update(self.component_info_map[replace_rule.replace_with])
+            result.update(preserved)
         else:
             try:
                 new_component = PackageURL.from_string(replace_rule.replace_with).to_dict()
@@ -176,9 +181,6 @@ class ScanPostProcessor(ScanossBase):
             result['url'] = new_component_url
             result['vendor'] = new_component.get('namespace')
 
-            result.pop('licenses', None)
-            if replace_rule.license:
-                result['licenses'] = [{'name': replace_rule.license}]
             result.pop('file', None)
             result.pop('file_hash', None)
             result.pop('file_url', None)
@@ -187,8 +189,12 @@ class ScanPostProcessor(ScanossBase):
             result.pop('source_hash', None)
             result.pop('url_hash', None)
             result.pop('url_stats', None)
-            result.pop('url_stats', None)
             result.pop('version', None)
+
+        if replace_rule.license:
+            result['licenses'] = [{'name': replace_rule.license}]
+        elif not self.component_info_map.get(replace_rule.replace_with):
+            result.pop('licenses', None)
 
         result['purl'] = [replace_rule.replace_with]
         result['status'] = 'identified'
