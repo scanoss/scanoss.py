@@ -170,7 +170,7 @@ class ScanPostProcessor(ScanossBase):
             try:
                 new_component = PackageURL.from_string(replace_rule.replace_with).to_dict()
                 new_component_url = purl2url.get_repo_url(replace_rule.replace_with)
-            except RuntimeError:
+            except (ValueError, RuntimeError):
                 self.print_stderr(
                     f"ERROR: Issue while replacing: Invalid PURL '{replace_rule.replace_with}'"
                     ' in settings file. Skipping.'
