@@ -152,7 +152,9 @@ class MyTestCase(unittest.TestCase):
             os.unlink(path)
 
     def test_replace_purls_without_license(self):
-        """Should remove licenses when replace rule has no license field"""
+        """When replace_with PURL is NOT in scan results and the rule has no
+        license override, licenses should be removed entirely — we have no
+        license info for the unknown replacement component."""
         processor, path = self._make_processor({
             'bom': {
                 'replace': [{
@@ -166,6 +168,8 @@ class MyTestCase(unittest.TestCase):
 
             entry = processed['inc/json.h'][0]
             self.assertEqual(entry['purl'], ['pkg:github/scanoss/replacement'])
+            # 'replacement' is not in scan results, so there's no license info
+            # to copy — the original component's licenses must be stripped
             self.assertNotIn('licenses', entry)
         finally:
             os.unlink(path)
@@ -199,8 +203,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_replace_with_existing_purl_preserves_per_file_fields(self):
         """When replace_with target exists in scan results (component_info_map),
-        per-file fields from the original result must be preserved, not clobbered
-        by values from the component_info_map entry."""
+        per-file fields must be preserved and component-level fields copied."""
         processor, path = self._make_processor({
             'bom': {
                 'replace': [{
@@ -212,8 +215,6 @@ class MyTestCase(unittest.TestCase):
         try:
             processed = processor.load_results(self._load_result_data()).post_process()
 
-            # inc/json.h originally matched scanner.c and should now be replaced
-            # with engine, but per-file fields must stay from the original result
             entry = processed['inc/json.h'][0]
             self.assertEqual(entry['purl'], ['pkg:github/scanoss/engine'])
             self.assertEqual(entry['status'], 'identified')
@@ -228,15 +229,21 @@ class MyTestCase(unittest.TestCase):
             # Component-level fields should come from the engine entry
             self.assertEqual(entry['component'], 'engine')
             self.assertEqual(entry['vendor'], 'scanoss')
+            # Without a license override, the component's licenses are kept
+            self.assertIn('licenses', entry)
+            self.assertTrue(len(entry['licenses']) > 0)
         finally:
             os.unlink(path)
 
-    def test_replace_with_existing_purl_applies_license_override(self):
-        """When replace_with target exists in component_info_map AND the replace
-        rule has a license, the license override must be applied."""
+    def test_replace_path_scoped_with_existing_purl_and_license_override(self):
+        """Reproduce Sean's bug: path-scoped replace rule where replace_with PURL
+        already exists in results from a different file. Per-file fields must be
+        preserved, license override must be applied, and files outside the path
+        must not be affected."""
         processor, path = self._make_processor({
             'bom': {
                 'replace': [{
+                    'path': 'src/',
                     'purl': 'pkg:github/scanoss/scanner.c',
                     'replace_with': 'pkg:github/scanoss/engine',
                     'license': 'GPL-3.0-only',
@@ -246,34 +253,23 @@ class MyTestCase(unittest.TestCase):
         try:
             processed = processor.load_results(self._load_result_data()).post_process()
 
-            entry = processed['inc/json.h'][0]
+            # src/json.c is under src/ and matches scanner.c → should be replaced
+            entry = processed['src/json.c'][0]
             self.assertEqual(entry['purl'], ['pkg:github/scanoss/engine'])
-            # License override must take effect even though component_info_map
-            # has its own licenses for engine
+            self.assertEqual(entry['status'], 'identified')
             self.assertEqual(entry['licenses'], [{'name': 'GPL-3.0-only'}])
-        finally:
-            os.unlink(path)
+            # Per-file fields must be from src/json.c, not from the engine entry
+            self.assertEqual(entry['file'], 'scanner.c-1.3.3/external/src/json.c')
+            self.assertEqual(entry['file_hash'], '8e4d433c1547b59681379e9fe9960546')
+            self.assertEqual(entry['source_hash'], '8e4d433c1547b59681379e9fe9960546')
+            # Component-level fields from engine
+            self.assertEqual(entry['component'], 'engine')
+            self.assertEqual(entry['vendor'], 'scanoss')
 
-    def test_replace_with_existing_purl_keeps_component_licenses_when_no_override(self):
-        """When replace_with target exists in component_info_map and no license
-        override is specified, the component's licenses from the map are kept."""
-        processor, path = self._make_processor({
-            'bom': {
-                'replace': [{
-                    'purl': 'pkg:github/scanoss/scanner.c',
-                    'replace_with': 'pkg:github/scanoss/engine',
-                }]
-            }
-        })
-        try:
-            processed = processor.load_results(self._load_result_data()).post_process()
-
-            entry = processed['inc/json.h'][0]
-            self.assertEqual(entry['purl'], ['pkg:github/scanoss/engine'])
-            # Without a license override, the entry should have the engine's
-            # original licenses from the component_info_map
-            self.assertIn('licenses', entry)
-            self.assertTrue(len(entry['licenses']) > 0)
+            # inc/json.h is NOT under src/ → should remain unchanged
+            inc_entry = processed['inc/json.h'][0]
+            self.assertEqual(inc_entry['purl'], ['pkg:github/scanoss/scanner.c'])
+            self.assertEqual(inc_entry['status'], 'pending')
         finally:
             os.unlink(path)
 
