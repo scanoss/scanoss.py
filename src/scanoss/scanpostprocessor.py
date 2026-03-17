@@ -160,12 +160,13 @@ class ScanPostProcessor(ScanossBase):
             dict: Updated result
         """
         if self.component_info_map.get(replace_rule.replace_with):
-            # Preserve per-file fields that are specific to the scanned file
-            per_file_keys = ('file', 'file_hash', 'file_url', 'source_hash', 'url_hash',
-                             'lines', 'oss_lines', 'matched')
-            preserved = {k: result[k] for k in per_file_keys if k in result}
-            result.update(self.component_info_map[replace_rule.replace_with])
-            result.update(preserved)
+            # Only copy component-level fields from the map entry, leaving
+            # per-file fields (file, file_hash, lines, matched, etc.) untouched.
+            source = self.component_info_map[replace_rule.replace_with]
+            for key in ('component', 'vendor', 'url', 'version', 'latest',
+                        'release_date', 'licenses', 'url_stats'):
+                if key in source:
+                    result[key] = source[key]
         else:
             try:
                 new_component = PackageURL.from_string(replace_rule.replace_with).to_dict()
