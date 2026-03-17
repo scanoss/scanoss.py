@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.50.0] - 2026-03-17
+### Fixed
+- Fixed `requirement` field being lost during dependency decoration in scan command
+- Sanitized scancode `extracted_requirement` to strip redundant package name prefix (e.g., `gtest==1.17.0` → `1.17.0`)
+
 ## [1.49.1] - 2026-03-17
 ### Fixed
 - When an error occurs during the scan, do not write a partial scan result file. Leave it empty.
@@ -842,3 +847,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.48.0]: https://github.com/scanoss/scanoss.py/compare/v1.47.0...v1.48.0
 [1.49.0]: https://github.com/scanoss/scanoss.py/compare/v1.48.0...v1.49.0
 [1.49.1]: https://github.com/scanoss/scanoss.py/compare/v1.49.0...v1.49.1
+[1.50.0]: https://github.com/scanoss/scanoss.py/compare/v1.49.1...v1.50.0

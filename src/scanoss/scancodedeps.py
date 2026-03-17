@@ -24,11 +24,16 @@ SPDX-License-Identifier: MIT
 
 import json
 import os.path
+import re
 import subprocess
 
 from pathspec import GitIgnoreSpec
 
 from .scanossbase import ScanossBase
+
+# Regex to strip package name prefix from a requirement, keeping only the version specifier.
+# e.g. 'gtest==1.17.0' -> '==1.17.0', 'boost>=1.83.0' -> '>=1.83.0', '^4.18.0' -> '^4.18.0'
+REQUIREMENT_NAME_PREFIX_RE = re.compile(r'^\s*[^<>=!^]+\s*(?===|!=|>=|<=|=|>|<|\^)')
 
 
 class ScancodeDeps(ScanossBase):
@@ -134,8 +139,12 @@ class ScancodeDeps(ScanossBase):
                             if not rq or rq == '':
                                 rq = d.get('requirement')  # scancode format 1.0
                             # skip requirement if it ends with the purl (i.e. exact version) or if it's local (file)
-                            if rq and rq != '' and not dp.endswith(rq) and not rq.startswith('file:'):
-                                dp_data['requirement'] = rq
+                            if rq and rq != '':
+                                # Strip any prefix data before a version comparator
+                                rq = REQUIREMENT_NAME_PREFIX_RE.sub('', rq)
+                                # skip if it ends with the purl (exact version) or is local (file)
+                                if not dp.endswith(rq) and not rq.startswith('file:'):
+                                    dp_data['requirement'] = rq
 
                             # Gets dependency scope
                             scope = d.get('scope')
