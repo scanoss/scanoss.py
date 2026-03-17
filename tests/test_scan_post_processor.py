@@ -235,6 +235,30 @@ class MyTestCase(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_replace_with_existing_purl_empty_licenses_clears_original(self):
+        """When replace_with PURL exists in scan results but has an empty
+        licenses list, the original component's licenses must be replaced
+        with the empty list — not left stale."""
+        processor, path = self._make_processor({
+            'bom': {
+                'replace': [{
+                    'purl': 'pkg:github/scanoss/scanner.c',
+                    'replace_with': 'pkg:github/scanoss/jenkins-pipeline-example',
+                }]
+            }
+        })
+        try:
+            processed = processor.load_results(self._load_result_data()).post_process()
+
+            # inc/json.h originally had BSD-2-Clause + GPL-2.0-only licenses;
+            # jenkins-pipeline-example (from inc/log.c) has licenses: []
+            entry = processed['inc/json.h'][0]
+            self.assertEqual(entry['purl'], ['pkg:github/scanoss/jenkins-pipeline-example'])
+            # Original licenses must NOT remain — replaced with empty list
+            self.assertEqual(entry['licenses'], [])
+        finally:
+            os.unlink(path)
+
     def test_replace_path_scoped_with_existing_purl_and_license_override(self):
         """Reproduce Sean's bug: path-scoped replace rule where replace_with PURL
         already exists in results from a different file. Per-file fields must be
