@@ -598,7 +598,10 @@ class Scanner(ScanossBase):
                 self.print_stderr('Warning: Dependency analysis ran into some trouble.')
                 success = False
             dep_responses = self.threaded_deps.responses
-
+        # If anything fails during scanning or decoration, then do not produce a results file
+        if not success:
+            self.print_stderr('Error: Scanning analysis ran into some trouble. Not producing results file.')
+            return success
         raw_scan_results = self._merge_scan_results(scan_responses, dep_responses, file_map)
 
         if self.post_processor:
