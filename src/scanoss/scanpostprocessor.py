@@ -163,8 +163,10 @@ class ScanPostProcessor(ScanossBase):
             # Only copy component-level fields from the map entry, leaving
             # per-file fields (file, file_hash, lines, matched, etc.) untouched.
             source = self.component_info_map[replace_rule.replace_with]
-            for key in ('component', 'vendor', 'url', 'version', 'latest',
-                        'release_date', 'licenses', 'url_stats'):
+            for key in ('component', 'vendor', 'url', 'url_hash', 'version', 'latest',
+                        'release_date', 'licenses', 'url_stats', 'cryptography',
+                        'vulnerabilities', 'provenance', 'dependencies', 'health',
+                        'quality'):
                 if key in source:
                     result[key] = source[key]
         else:
