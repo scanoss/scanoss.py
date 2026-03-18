@@ -6,8 +6,44 @@ on:
   workflow_dispatch:
 
 jobs:
-  schema-sync:
-    uses: scanoss/scanoss-devops/.github/workflows/schema-sync-check.yml@feat/SP-4166/schema-sync-ci
-    with:
-      source-file: scanoss-settings-schema.json
-      target-file: src/scanoss/data/scanoss-settings-schema.json
+  check-schema-sync:
+    name: Check Schema Sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout consumer repo
+        uses: actions/checkout@v4
+
+      - name: Checkout schema repo
+        uses: actions/checkout@v4
+        with:
+          repository: scanoss/schema
+          ref: main
+          path: .schema-source
+
+      - name: Compare schemas
+        id: compare
+        shell: bash
+        run: |
+          source_path=".schema-source/scanoss-settings-schema.json"
+          target_path="src/scanoss/data/scanoss-settings-schema.json"
+
+          if [ ! -f "$source_path" ]; then
+            echo "::error::Source schema not found in scanoss/schema@main"
+            exit 1
+          fi
+
+          if [ ! -f "$target_path" ]; then
+            echo "::error::Local vendored schema not found: $target_path"
+            exit 1
+          fi
+
+          if diff -u "$source_path" "$target_path"; then
+            echo "Schema is in sync."
+          else
+            echo ""
+            echo "::error::Schema out of sync: $target_path"
+            echo ""
+            echo "To fix, run:"
+            echo "  curl -sL https://raw.githubusercontent.com/scanoss/schema/main/scanoss-settings-schema.json -o $target_path"
+            exit 1
+          fi
