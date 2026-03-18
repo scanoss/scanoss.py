@@ -1,0 +1,13 @@
+name: Schema Sync Check
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  schema-sync:
+    uses: scanoss/scanoss-devops/.github/workflows/schema-sync-check.yml@main
+    with:
+      source-file: scanoss-settings-schema.json
+      target-file: src/scanoss/data/scanoss-settings-schema.json
