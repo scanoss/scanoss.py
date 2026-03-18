@@ -7,7 +7,7 @@ on:
 
 jobs:
   schema-sync:
-    uses: scanoss/scanoss-devops/.github/workflows/schema-sync-check.yml@feat/SP-4166/schema-sync-ci
+    uses: scanoss/scanoss-devops/.github/workflows/schema-sync-check.yml@main
     with:
       source-file: scanoss-settings-schema.json
       target-file: src/scanoss/data/scanoss-settings-schema.json
