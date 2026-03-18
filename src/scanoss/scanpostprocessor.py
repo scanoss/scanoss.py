@@ -30,6 +30,13 @@ from packageurl.contrib import purl2url
 from .scanoss_settings import BomEntry, ReplaceRule, ScanossSettings, find_best_match
 from .scanossbase import ScanossBase
 
+COMPONENT_LEVEL_FIELDS = (
+    'component', 'vendor', 'url', 'url_hash', 'version', 'latest',
+    'release_date', 'licenses', 'url_stats', 'cryptography',
+    'vulnerabilities', 'provenance', 'dependencies', 'health',
+    'quality',
+)
+
 
 def _get_match_type_message(result_path: str, bom_entry: BomEntry, action: str) -> str:
     """
@@ -163,10 +170,7 @@ class ScanPostProcessor(ScanossBase):
             # Only copy component-level fields from the map entry, leaving
             # per-file fields (file, file_hash, lines, matched, etc.) untouched.
             source = self.component_info_map[replace_rule.replace_with]
-            for key in ('component', 'vendor', 'url', 'url_hash', 'version', 'latest',
-                        'release_date', 'licenses', 'url_stats', 'cryptography',
-                        'vulnerabilities', 'provenance', 'dependencies', 'health',
-                        'quality'):
+            for key in COMPONENT_LEVEL_FIELDS:
                 if key in source:
                     result[key] = source[key]
         else:
@@ -180,19 +184,20 @@ class ScanPostProcessor(ScanossBase):
                 )
                 return result
 
+            # Pop all stale component-level fields first
+            for key in COMPONENT_LEVEL_FIELDS:
+                result.pop(key, None)
+
+            # Pop stale KB match fields (remote file info)
+            result.pop('file', None)
+            result.pop('file_hash', None)
+            result.pop('file_url', None)
+
+            # Set what we know from the PURL
             result['component'] = new_component.get('name')
             result['url'] = new_component_url
             result['vendor'] = new_component.get('namespace')
 
-            result.pop('file', None)
-            result.pop('file_hash', None)
-            result.pop('file_url', None)
-            result.pop('latest', None)
-            result.pop('release_date', None)
-            result.pop('source_hash', None)
-            result.pop('url_hash', None)
-            result.pop('url_stats', None)
-            result.pop('version', None)
 
         if replace_rule.license:
             result['licenses'] = [{'name': replace_rule.license}]

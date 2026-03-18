@@ -194,9 +194,13 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(entry['vendor'], 'scanoss')
             self.assertEqual(entry['status'], 'identified')
             self.assertEqual(entry['licenses'], [{'name': 'GPL-2.0-only'}])
-            # Old metadata should be stripped
+            # source_hash belongs to the local scanned file and must be preserved
+            self.assertIn('source_hash', entry)
+            # Old component/KB metadata should be stripped
             for field in ('file', 'file_hash', 'file_url', 'latest', 'release_date',
-                          'source_hash', 'url_hash', 'url_stats', 'version'):
+                          'url_hash', 'url_stats', 'version', 'cryptography',
+                          'vulnerabilities', 'provenance', 'dependencies', 'health',
+                          'quality'):
                 self.assertNotIn(field, entry)
         finally:
             os.unlink(path)
