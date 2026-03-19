@@ -100,6 +100,7 @@ class CycloneDx(ScanossBase):
                                     fdl.append({'id': name})
                                     dc.append(name)
                         fd['licenses'] = fdl
+                        fd['acknowledgement'] = deps.get('acknowledgement')
                         cdx[purl] = fd
                 else:
                     purls = d.get('purl')
@@ -158,6 +159,7 @@ class CycloneDx(ScanossBase):
                                 continue
                             fdl.append({'id': name})
                     fd['licenses'] = fdl
+                    fd['acknowledgement'] = d.get('acknowledgement')
                     cdx[purl] = fd
         # self.print_stderr(f'VD: {vdx}')
         # self.print_stderr(f'CDX: {cdx}')
@@ -253,6 +255,9 @@ class CycloneDx(ScanossBase):
             cpe = comp.get('cpe', '')
             if cpe and cpe != '':
                 c_data['cpe'] = cpe
+            acknowledgement = comp.get('acknowledgement')
+            if acknowledgement:
+                c_data['properties'] = [{'name': 'scanoss:acknowledgement', 'value': acknowledgement}]
             data['components'].append(c_data)
         # End for loop
         if vdx:
