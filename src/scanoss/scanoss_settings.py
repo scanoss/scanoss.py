@@ -45,6 +45,7 @@ class BomEntry:
     purl: Optional[str] = None
     path: Optional[str] = None
     comment: Optional[str] = None
+    acknowledgement: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: dict) -> 'BomEntry':
@@ -54,6 +55,7 @@ class BomEntry:
             purl=data.get('purl'),
             path=path,
             comment=data.get('comment'),
+            acknowledgement=data.get('acknowledgement'),
         )
 
     def matches_path(self, result_path: str) -> bool:
@@ -109,6 +111,7 @@ class ReplaceRule(BomEntry):
             purl=data.get('purl'),
             path=path,
             comment=data.get('comment'),
+            acknowledgement=data.get('acknowledgement'),
             replace_with=data.get('replace_with'),
             license=data.get('license'),
         )

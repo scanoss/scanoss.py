@@ -114,5 +114,124 @@ class MyTestCase(unittest.TestCase):
         )
 
 
+class TestAcknowledgementInjection(unittest.TestCase):
+    """Unit tests for acknowledgement injection during post-processing"""
+
+    def _make_settings(self, settings_data: dict) -> ScanossSettings:
+        settings = ScanossSettings()
+        settings.data = settings_data
+        return settings
+
+    def test_replace_injects_acknowledgement(self):
+        """Replace rule with acknowledgement should inject it into the result"""
+        settings = self._make_settings({
+            'bom': {
+                'replace': [{
+                    'purl': 'pkg:npm/old-lib',
+                    'replace_with': 'pkg:npm/new-lib',
+                    'acknowledgement': 'acknowledged',
+                }],
+            }
+        })
+        results = {
+            'src/main.c': [{'purl': ['pkg:npm/old-lib']}],
+        }
+        processor = ScanPostProcessor(settings)
+        processed = processor.load_results(results).post_process()
+        self.assertEqual(processed['src/main.c'][0]['acknowledgement'], 'acknowledged')
+
+    def test_replace_no_acknowledgement_when_absent(self):
+        """Replace rule without acknowledgement should not add it to the result"""
+        settings = self._make_settings({
+            'bom': {
+                'replace': [{
+                    'purl': 'pkg:npm/old-lib',
+                    'replace_with': 'pkg:npm/new-lib',
+                }],
+            }
+        })
+        results = {
+            'src/main.c': [{'purl': ['pkg:npm/old-lib']}],
+        }
+        processor = ScanPostProcessor(settings)
+        processed = processor.load_results(results).post_process()
+        self.assertNotIn('acknowledgement', processed['src/main.c'][0])
+
+    def test_include_injects_acknowledgement(self):
+        """Include entry with acknowledgement should inject it into matching result"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [{
+                    'purl': 'pkg:npm/vue',
+                    'acknowledgement': 'noticed',
+                }],
+            }
+        })
+        results = {
+            'src/main.c': [{'purl': ['pkg:npm/vue']}],
+        }
+        processor = ScanPostProcessor(settings)
+        processed = processor.load_results(results).post_process()
+        self.assertEqual(processed['src/main.c'][0]['acknowledgement'], 'noticed')
+
+    def test_include_no_acknowledgement_when_absent(self):
+        """Include entry without acknowledgement should not add it"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [{
+                    'purl': 'pkg:npm/vue',
+                }],
+            }
+        })
+        results = {
+            'src/main.c': [{'purl': ['pkg:npm/vue']}],
+        }
+        processor = ScanPostProcessor(settings)
+        processed = processor.load_results(results).post_process()
+        self.assertNotIn('acknowledgement', processed['src/main.c'][0])
+
+    def test_replace_acknowledgement_takes_priority_over_include(self):
+        """When both replace and include have acknowledgement, replace should win"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [{
+                    'purl': 'pkg:npm/new-lib',
+                    'acknowledgement': 'include-ack',
+                }],
+                'replace': [{
+                    'purl': 'pkg:npm/old-lib',
+                    'replace_with': 'pkg:npm/new-lib',
+                    'acknowledgement': 'replace-ack',
+                }],
+            }
+        })
+        results = {
+            'src/main.c': [{'purl': ['pkg:npm/old-lib']}],
+        }
+        processor = ScanPostProcessor(settings)
+        processed = processor.load_results(results).post_process()
+        self.assertEqual(processed['src/main.c'][0]['acknowledgement'], 'replace-ack')
+
+    def test_include_acknowledgement_with_path_scope(self):
+        """Include acknowledgement should respect path scoping"""
+        settings = self._make_settings({
+            'bom': {
+                'include': [{
+                    'path': 'src/vendor/',
+                    'purl': 'pkg:npm/vue',
+                    'acknowledgement': 'noticed',
+                }],
+            }
+        })
+        results = {
+            'src/vendor/lib.c': [{'purl': ['pkg:npm/vue']}],
+            'src/main.c': [{'purl': ['pkg:npm/vue']}],
+        }
+        processor = ScanPostProcessor(settings)
+        processed = processor.load_results(results).post_process()
+        self.assertEqual(processed['src/vendor/lib.c'][0]['acknowledgement'], 'noticed')
+        self.assertNotIn('acknowledgement', processed['src/main.c'][0])
+
+
 if __name__ == '__main__':
     unittest.main()

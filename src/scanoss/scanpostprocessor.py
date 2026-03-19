@@ -22,7 +22,7 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from packageurl import PackageURL
 from packageurl.contrib import purl2url
@@ -118,7 +118,27 @@ class ScanPostProcessor(ScanossBase):
             return self.results
         self._remove_dismissed_files()
         self._replace_purls()
+        self._apply_include_acknowledgements()
         return self.results
+
+    def _apply_include_acknowledgements(self):
+        """
+        Apply acknowledgement from bom.include entries to matching results.
+        Only injects if the result doesn't already have an acknowledgement (replace takes priority).
+        """
+        include_entries = self.scanoss_settings.get_bom_include()
+        entries_with_ack = [e for e in include_entries if e.acknowledgement]
+        if not entries_with_ack:
+            return
+
+        for result_path, result in self.results.items():
+            entry = result[0] if isinstance(result, list) else result
+            if entry.get('acknowledgement'):
+                continue
+            result_purls = entry.get('purl', [])
+            match = find_best_match(result_path, result_purls, entries_with_ack)
+            if match and match.acknowledgement:
+                entry['acknowledgement'] = match.acknowledgement
 
     def _remove_dismissed_files(self):
         """
@@ -143,22 +163,23 @@ class ScanPostProcessor(ScanossBase):
 
         for result_path, result in self.results.items():
             entry = result[0] if isinstance(result, list) else result
-            should_replace, to_replace_with_purl = self._should_replace_result(result_path, entry, to_replace_entries)
+            should_replace, matched_rule = self._should_replace_result(result_path, entry, to_replace_entries)
             if should_replace:
-                self.results[result_path] = [self._update_replaced_result(entry, to_replace_with_purl)]
+                self.results[result_path] = [self._update_replaced_result(entry, matched_rule)]
 
-    def _update_replaced_result(self, result: dict, to_replace_with_purl: str) -> dict:
+    def _update_replaced_result(self, result: dict, rule: ReplaceRule) -> dict:
         """
         Update the result with the new purl and component information if available,
         otherwise removes the old component information
 
         Args:
             result (dict): The result to update
-            to_replace_with_purl (str): The purl to replace with
+            rule (ReplaceRule): The replace rule to apply
 
         Returns:
             dict: Updated result
         """
+        to_replace_with_purl = rule.replace_with
         if self.component_info_map.get(to_replace_with_purl):
             result.update(self.component_info_map[to_replace_with_purl])
         else:
@@ -189,12 +210,14 @@ class ScanPostProcessor(ScanossBase):
 
         result['purl'] = [to_replace_with_purl]
         result['status'] = 'identified'
+        if rule.acknowledgement:
+            result['acknowledgement'] = rule.acknowledgement
 
         return result
 
     def _should_replace_result(
         self, result_path: str, result: dict, to_replace_entries: List[ReplaceRule]
-    ) -> Tuple[bool, str]:
+    ) -> Tuple[bool, Optional[ReplaceRule]]:
         """
         Check if a result should be replaced based on the SCANOSS settings.
         Uses priority-based matching: most specific rule wins.
@@ -206,14 +229,14 @@ class ScanPostProcessor(ScanossBase):
 
         Returns:
             bool: True if the result should be replaced, False otherwise
-            str: The purl to replace with
+            Optional[ReplaceRule]: The matched replace rule, or None
         """
         result_purls = result.get('purl', [])
         match = find_best_match(result_path, result_purls, to_replace_entries)
         if match and isinstance(match, ReplaceRule) and match.replace_with:
             if self.debug:
                 self._print_message(result_path, result_purls, match, 'Replacing')
-            return True, match.replace_with
+            return True, match
         return False, None
 
     def _should_remove_result(self, result_path: str, result: dict, to_remove_entries: List[BomEntry]) -> bool:

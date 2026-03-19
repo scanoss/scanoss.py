@@ -199,6 +199,7 @@ class SpdxLite:
         for field in ['component', 'version', 'url']:
             summary[field] = dep.get(field, '')
         summary['licenses'] = self._process_licenses(dep.get('licenses'))
+        summary['acknowledgement'] = dep.get('acknowledgement')
         return summary
 
     def _create_file_summary(self, entry: dict) -> dict:
@@ -219,6 +220,7 @@ class SpdxLite:
         for field in fields:
             summary[field] = entry.get(field)
         summary['licenses'] = self._process_licenses(entry.get('licenses'))
+        summary['acknowledgement'] = entry.get('acknowledgement')
         return summary
 
     def _process_licenses(self, licenses: list) -> list:
@@ -426,7 +428,7 @@ class SpdxLite:
         purl_ver = f'{purl}@{comp_ver}'
         purl_hash = hashlib.md5(purl_ver.encode('utf-8')).hexdigest()
 
-        return {
+        package_info = {
             'name': comp.get('component'),
             'SPDXID': f'SPDXRef-{purl_hash}',
             'versionInfo': comp_ver,
@@ -451,6 +453,10 @@ class SpdxLite:
                 }
             ],
         }
+        acknowledgement = comp.get('acknowledgement')
+        if acknowledgement:
+            package_info['comment'] = acknowledgement
+        return package_info
 
     def _process_package_licenses(self, licenses: list, lic_refs: set) -> str:
         """
