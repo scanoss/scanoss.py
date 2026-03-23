@@ -184,14 +184,19 @@ class ScanPostProcessor(ScanossBase):
                 )
                 return result
 
-            # Pop all stale component-level fields first
-            for key in COMPONENT_LEVEL_FIELDS:
-                result.pop(key, None)
-
-            # Pop stale KB match fields (remote file info)
-            result.pop('file', None)
-            result.pop('file_hash', None)
-            result.pop('file_url', None)
+            # Reset component-level fields to defaults
+            result['licenses'] = []
+            result['cryptography'] = []
+            result['dependencies'] = []
+            result['quality'] = []
+            result['vulnerabilities'] = []
+            result['health'] = {}
+            result['provenance'] = ''
+            result['latest'] = ''
+            result['release_date'] = ''
+            result['version'] = ''
+            result['url_hash'] = ''
+            result['url_stats'] = {}
 
             # Set what we know from the PURL
             result['component'] = new_component.get('name')
@@ -202,7 +207,7 @@ class ScanPostProcessor(ScanossBase):
         if replace_rule.license:
             result['licenses'] = [{'name': replace_rule.license}]
         elif not self.component_info_map.get(replace_rule.replace_with):
-            result.pop('licenses', None)
+            result['licenses'] = []
 
         result['purl'] = [replace_rule.replace_with]
         result['status'] = 'identified'
