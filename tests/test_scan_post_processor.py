@@ -169,8 +169,8 @@ class MyTestCase(unittest.TestCase):
             entry = processed['inc/json.h'][0]
             self.assertEqual(entry['purl'], ['pkg:github/scanoss/replacement'])
             # 'replacement' is not in scan results, so there's no license info
-            # to copy — the original component's licenses must be stripped
-            self.assertNotIn('licenses', entry)
+            # to copy — the original component's licenses must be reset to default
+            self.assertEqual(entry['licenses'], [])
         finally:
             os.unlink(path)
 
@@ -194,14 +194,23 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(entry['vendor'], 'scanoss')
             self.assertEqual(entry['status'], 'identified')
             self.assertEqual(entry['licenses'], [{'name': 'GPL-2.0-only'}])
-            # source_hash belongs to the local scanned file and must be preserved
+            # File-related fields must be preserved
             self.assertIn('source_hash', entry)
-            # Old component/KB metadata should be stripped
-            for field in ('file', 'file_hash', 'file_url', 'latest', 'release_date',
-                          'url_hash', 'url_stats', 'version', 'cryptography',
-                          'vulnerabilities', 'provenance', 'dependencies', 'health',
-                          'quality'):
-                self.assertNotIn(field, entry)
+            self.assertIn('file', entry)
+            self.assertIn('file_hash', entry)
+            self.assertIn('file_url', entry)
+            # Component-level fields should be reset to defaults
+            self.assertEqual(entry['cryptography'], [])
+            self.assertEqual(entry['dependencies'], [])
+            self.assertEqual(entry['quality'], [])
+            self.assertEqual(entry['vulnerabilities'], [])
+            self.assertEqual(entry['health'], {})
+            self.assertEqual(entry['provenance'], '')
+            self.assertEqual(entry['latest'], '')
+            self.assertEqual(entry['release_date'], '')
+            self.assertEqual(entry['version'], '')
+            self.assertEqual(entry['url_hash'], '')
+            self.assertEqual(entry['url_stats'], {})
         finally:
             os.unlink(path)
 
