@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added `--format raw` option to `folder-scan` command to export HFH results in snippet-scanner JSON format
+  - Expands directory-level HFH results into per-file entries keyed by relative file path
+  - Assigns each file to the most specific matching `path_id` (deepest directory match wins)
 
 ## [1.50.1] - 2026-03-23
 ### Fixed
