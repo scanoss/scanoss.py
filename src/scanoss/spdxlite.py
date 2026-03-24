@@ -34,6 +34,7 @@ import importlib_resources
 from packageurl import PackageURL
 
 from . import __version__
+from .scanoss_settings import find_best_match
 
 
 class SpdxLite:
@@ -42,12 +43,13 @@ class SpdxLite:
     Handle all interaction with SPDX Lite formatting
     """
 
-    def __init__(self, debug: bool = False, output_file: str = None):
+    def __init__(self, debug: bool = False, output_file: str = None, scanoss_settings=None):
         """
         Initialise the SpdxLite class
         """
         self.output_file = output_file
         self.debug = debug
+        self.scanoss_settings = scanoss_settings
         self._spdx_licenses = {}  # Used to lookup for valid SPDX license identifiers
         self._spdx_lic_names = {}  # Used to look for SPDX license identifiers by name
 
@@ -136,7 +138,9 @@ class SpdxLite:
             if not self._is_valid_purl(file_path, dep, purl, summary):
                 continue
             # Modifying the summary dictionary directly as it's passed by reference
-            summary[purl] = self._create_dependency_summary(dep)
+            dep_summary = self._create_dependency_summary(dep)
+            dep_summary['_file_path'] = file_path
+            summary[purl] = dep_summary
 
     def _process_file_entry(self, file_path: str, entry: dict, summary: dict):
         """
@@ -156,7 +160,9 @@ class SpdxLite:
         if not self._is_valid_purl(file_path, entry, purl, summary):
             return
 
-        summary[purl] = self._create_file_summary(entry)
+        file_summary = self._create_file_summary(entry)
+        file_summary['_file_path'] = file_path
+        summary[purl] = file_summary
 
     def _is_valid_purl(self, file_path: str, entry: dict, purl: str, summary: dict) -> bool:
         """
@@ -199,7 +205,6 @@ class SpdxLite:
         for field in ['component', 'version', 'url']:
             summary[field] = dep.get(field, '')
         summary['licenses'] = self._process_licenses(dep.get('licenses'))
-        summary['acknowledgement'] = dep.get('acknowledgement')
         return summary
 
     def _create_file_summary(self, entry: dict) -> dict:
@@ -220,7 +225,6 @@ class SpdxLite:
         for field in fields:
             summary[field] = entry.get(field)
         summary['licenses'] = self._process_licenses(entry.get('licenses'))
-        summary['acknowledgement'] = entry.get('acknowledgement')
         return summary
 
     def _process_licenses(self, licenses: list) -> list:
@@ -293,6 +297,7 @@ class SpdxLite:
         self.load_license_data()
         spdx_document = self._create_base_document(raw_data)
         self._process_packages(raw_data, spdx_document)
+        self._build_annotations(raw_data, spdx_document)
         return self._write_output(spdx_document, output_file)
 
     def _create_base_document(self, raw_data: dict) -> dict:
@@ -392,6 +397,36 @@ class SpdxLite:
 
         self._process_license_refs(lic_refs, spdx_document)
 
+    def _build_annotations(self, raw_data: dict, spdx_document: dict):
+        """Build SPDX annotations from BOM rules via ScanossSettings."""
+        if not self.scanoss_settings:
+            return
+        all_entries = (self.scanoss_settings.get_bom_include()
+                       + self.scanoss_settings.get_bom_replace())
+        entries_with_ack = [e for e in all_entries if e.acknowledgement]
+        if not entries_with_ack:
+            return
+        annotations = []
+        org = self.scanoss_settings.get_organization()
+        for purl, comp in raw_data.items():
+            file_path = comp.get('_file_path', '')
+            match = find_best_match(file_path, [purl], entries_with_ack)
+            if match:
+                ts = match.timestamp
+                if not ts:
+                    self.print_stderr(
+                        f'Warning: No timestamp for annotation on {purl}, using current time'
+                    )
+                    ts = spdx_document['creationInfo']['created']
+                annotations.append({
+                    'annotationDate': ts,
+                    'annotationType': 'REVIEW',
+                    'annotator': f'Organization: {org}',
+                    'comment': match.acknowledgement,
+                })
+        if annotations:
+            spdx_document['annotations'] = annotations
+
     def _create_package_info(self, purl: str, comp: dict, lic_refs: set) -> dict:
         """
             Create package information for SPDX document.
@@ -453,9 +488,6 @@ class SpdxLite:
                 }
             ],
         }
-        acknowledgement = comp.get('acknowledgement')
-        if acknowledgement:
-            package_info['comment'] = acknowledgement
         return package_info
 
     def _process_package_licenses(self, licenses: list, lic_refs: set) -> str:

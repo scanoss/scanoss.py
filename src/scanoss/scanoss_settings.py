@@ -46,6 +46,7 @@ class BomEntry:
     path: Optional[str] = None
     comment: Optional[str] = None
     acknowledgement: Optional[str] = None
+    timestamp: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: dict) -> 'BomEntry':
@@ -56,6 +57,7 @@ class BomEntry:
             path=path,
             comment=data.get('comment'),
             acknowledgement=data.get('acknowledgement'),
+            timestamp=data.get('timestamp'),
         )
 
     def matches_path(self, result_path: str) -> bool:
@@ -112,6 +114,7 @@ class ReplaceRule(BomEntry):
             path=path,
             comment=data.get('comment'),
             acknowledgement=data.get('acknowledgement'),
+            timestamp=data.get('timestamp'),
             replace_with=data.get('replace_with'),
             license=data.get('license'),
         )
@@ -320,6 +323,10 @@ class ScanossSettings(ScanossBase):
             else:
                 return []
         return self.data.get('bom', {})
+
+    def get_organization(self) -> str:
+        """Get the organization name from self section. Returns 'unspecified' if not set."""
+        return self.data.get('self', {}).get('organization') or 'unspecified'
 
     def get_bom_include(self) -> List[BomEntry]:
         """

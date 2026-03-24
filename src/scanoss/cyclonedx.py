@@ -32,6 +32,7 @@ from cyclonedx.schema import SchemaVersion
 from cyclonedx.validation.json import JsonValidator
 
 from . import __version__
+from .scanoss_settings import find_best_match
 from .scanossbase import ScanossBase
 from .spdxlite import SpdxLite
 
@@ -42,13 +43,14 @@ class CycloneDx(ScanossBase):
     Handle all interaction with CycloneDX formatting
     """
 
-    def __init__(self, debug: bool = False, output_file: str = None):
+    def __init__(self, debug: bool = False, output_file: str = None, scanoss_settings=None):
         """
         Initialise the CycloneDX class
         """
         super().__init__(debug)
         self.output_file = output_file
         self.debug = debug
+        self.scanoss_settings = scanoss_settings
         self._spdx = SpdxLite(debug=debug)
 
     def parse(self, data: dict):  # noqa: PLR0912, PLR0915
@@ -100,7 +102,7 @@ class CycloneDx(ScanossBase):
                                     fdl.append({'id': name})
                                     dc.append(name)
                         fd['licenses'] = fdl
-                        fd['acknowledgement'] = deps.get('acknowledgement')
+                        fd['_file_path'] = f
                         cdx[purl] = fd
                 else:
                     purls = d.get('purl')
@@ -159,7 +161,7 @@ class CycloneDx(ScanossBase):
                                 continue
                             fdl.append({'id': name})
                     fd['licenses'] = fdl
-                    fd['acknowledgement'] = d.get('acknowledgement')
+                    fd['_file_path'] = f
                     cdx[purl] = fd
         # self.print_stderr(f'VD: {vdx}')
         # self.print_stderr(f'CDX: {cdx}')
@@ -202,13 +204,12 @@ class CycloneDx(ScanossBase):
             self.print_msg('Warning: Empty scan results - generating minimal CycloneDX SBOM with no components.')
         self._spdx.load_license_data()  # Load SPDX license name data for later reference
         #
-        # Using CDX version 1.4: https://cyclonedx.org/docs/1.4/json/
+        # Using CDX version 1.5: https://cyclonedx.org/docs/1.5/json/
         # Validate using: https://github.com/CycloneDX/cyclonedx-cli
-        # cyclonedx-cli validate --input-format json --input-version v1_4 --fail-on-errors --input-file cdx.json
         #
         data = {
             'bomFormat': 'CycloneDX',
-            'specVersion': '1.4',
+            'specVersion': '1.5',
             'serialNumber': f'urn:uuid:{uuid.uuid4()}',
             'version': 1,
             'metadata': {
@@ -255,11 +256,35 @@ class CycloneDx(ScanossBase):
             cpe = comp.get('cpe', '')
             if cpe and cpe != '':
                 c_data['cpe'] = cpe
-            acknowledgement = comp.get('acknowledgement')
-            if acknowledgement:
-                c_data['properties'] = [{'name': 'scanoss:acknowledgement', 'value': acknowledgement}]
             data['components'].append(c_data)
         # End for loop
+        # Build annotations from BOM rules via ScanossSettings
+        annotations = []
+        if self.scanoss_settings:
+            all_entries = (self.scanoss_settings.get_bom_include()
+                           + self.scanoss_settings.get_bom_replace())
+            entries_with_ack = [e for e in all_entries if e.acknowledgement]
+            if entries_with_ack:
+                org = self.scanoss_settings.get_organization()
+                for purl in cdx:
+                    comp = cdx.get(purl)
+                    file_path = comp.get('_file_path', '')
+                    match = find_best_match(file_path, [purl], entries_with_ack)
+                    if match:
+                        ts = match.timestamp
+                        if not ts:
+                            self.print_stderr(
+                                f'Warning: No timestamp for annotation on {purl}, using current time'
+                            )
+                            ts = data['metadata']['timestamp']
+                        annotations.append({
+                            'subjects': [purl],
+                            'text': match.acknowledgement,
+                            'timestamp': ts,
+                            'annotator': {'organization': {'name': org}},
+                        })
+        if annotations:
+            data['annotations'] = annotations
         if vdx:
             for vuln_id in vdx:
                 vulns = vdx.get(vuln_id)

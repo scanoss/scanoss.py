@@ -612,10 +612,10 @@ class Scanner(ScanossBase):
         if self.output_format == 'plain':
             self.__log_result(json.dumps(results, indent=2, sort_keys=True))
         elif self.output_format == 'cyclonedx':
-            cdx = CycloneDx(self.debug, self.scan_output)
+            cdx = CycloneDx(self.debug, self.scan_output, scanoss_settings=self.scanoss_settings)
             success, _ = cdx.produce_from_json(results)
         elif self.output_format == 'spdxlite':
-            spdxlite = SpdxLite(self.debug, self.scan_output)
+            spdxlite = SpdxLite(self.debug, self.scan_output, scanoss_settings=self.scanoss_settings)
             success = spdxlite.produce_from_json(results)
         elif self.output_format == 'csv':
             csvo = CsvOutput(self.debug, self.scan_output)
@@ -1050,10 +1050,10 @@ class Scanner(ScanossBase):
         if self.output_format == 'plain':
             self.__log_result(raw_output)
         elif self.output_format == 'cyclonedx':
-            cdx = CycloneDx(self.debug, self.scan_output)
+            cdx = CycloneDx(self.debug, self.scan_output, scanoss_settings=self.scanoss_settings)
             cdx.produce_from_str(raw_output)
         elif self.output_format == 'spdxlite':
-            spdxlite = SpdxLite(self.debug, self.scan_output)
+            spdxlite = SpdxLite(self.debug, self.scan_output, scanoss_settings=self.scanoss_settings)
             success = spdxlite.produce_from_str(raw_output)
         elif self.output_format == 'csv':
             csvo = CsvOutput(self.debug, self.scan_output)
