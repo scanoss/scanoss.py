@@ -18,6 +18,11 @@
         "description": {
           "type": "string",
           "description": "Description of the project"
+        },
+        "organization": {
+          "type": "string",
+          "description": "Name of the organization responsible for this project and its BOM decisions",
+          "examples": ["SCANOSS"]
         }
       }
     },
@@ -292,6 +297,12 @@
               "acknowledgement": {
                 "type": "string",
                 "description": "Formal acknowledgement of this BOM decision, propagated to SBOM output"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 UTC timestamp recording when this BOM decision was made",
+                "examples": ["2026-03-15T10:30:00Z"]
               }
             },
             "uniqueItems": true,
@@ -303,7 +314,8 @@
                 "path": "src/lib/component.js",
                 "purl": "pkg:npm/lodash@4.17.21",
                 "comment": "Full match: path + purl",
-                "acknowledgement": "Confirmed: lodash 4.17.21 vendored under src/lib"
+                "acknowledgement": "Confirmed: lodash 4.17.21 vendored under src/lib",
+                "timestamp": "2026-03-15T10:30:00Z"
               },
               {
                 "purl": "pkg:npm/vue@2.6.12",
@@ -338,6 +350,12 @@
               "acknowledgement": {
                 "type": "string",
                 "description": "Formal acknowledgement of this BOM decision, propagated to SBOM output"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 UTC timestamp recording when this BOM decision was made",
+                "examples": ["2026-03-15T10:30:00Z"]
               }
             },
             "anyOf": [
@@ -352,7 +370,8 @@
                 "path": "src/main.c",
                 "purl": "pkg:npm/vue@2.6.12",
                 "comment": "Full match: removes only this purl at this path",
-                "acknowledgement": "Reviewed and confirmed as original code, not third-party"
+                "acknowledgement": "Reviewed and confirmed as original code, not third-party",
+                "timestamp": "2026-03-15T10:30:00Z"
               },
               {
                 "purl": "pkg:npm/deprecated-pkg@1.0.0",
@@ -392,6 +411,12 @@
                 "type": "string",
                 "description": "Formal acknowledgement of this BOM decision, propagated to SBOM output"
               },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 UTC timestamp recording when this BOM decision was made",
+                "examples": ["2026-03-15T10:30:00Z"]
+              },
               "license": {
                 "type": "string",
                 "description": "License of the replacement component. Should be a valid SPDX license expression (e.g. `MIT`, `Apache-2.0`, `GPL-3.0-only`).",
@@ -417,7 +442,8 @@
                 "replace_with": "pkg:npm/new-lib@2.0.0",
                 "license": "MIT",
                 "comment": "Upgrade to newer version",
-                "acknowledgement": "Verified upstream project is the correct attribution"
+                "acknowledgement": "Verified upstream project is the correct attribution",
+                "timestamp": "2026-03-15T10:30:00Z"
               }
             ]
           ]
