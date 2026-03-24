@@ -22,11 +22,15 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import hashlib
 import json
+import os
 import threading
 import time
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
+from packageurl.contrib import purl2url
 from progress.spinner import Spinner
 
 from scanoss.constants import (
@@ -163,6 +167,13 @@ class ScannerHFHPresenter(AbstractPresenter):
     """
 
     def __init__(self, scanner: ScannerHFH, **kwargs):
+        """
+        Initialize the presenter.
+
+        Args:
+            scanner (ScannerHFH): The HFH scanner instance containing scan results and file filters.
+            **kwargs: Additional arguments passed to AbstractPresenter (debug, trace, quiet, etc.).
+        """
         super().__init__(**kwargs)
         self.scanner = scanner
 
@@ -249,4 +260,176 @@ class ScannerHFHPresenter(AbstractPresenter):
         raise NotImplementedError('CSV output is not implemented')
 
     def _format_raw_output(self) -> str:
-        raise NotImplementedError('Raw output is not implemented')
+        """
+        Convert HFH scan results into snippet-scanner JSON format.
+
+        Expands directory-level HFH results into per-file entries keyed by
+        relative file path, matching the structure returned by the snippet scanner.
+        For each file, computes the MD5 hash and constructs the file_url using
+        the API base URL from the scanner config.
+
+        Returns:
+            str: A JSON string with the snippet-scanner format, or '{}' if no results.
+        """
+        if not self.scanner.scan_results or 'results' not in self.scanner.scan_results:
+            return '{}'
+
+        hfh_results = self.scanner.scan_results.get('results', [])
+        if not hfh_results:
+            return '{}'
+
+        # Collect best-match component info per path_id
+        path_components = self._extract_best_components(hfh_results)
+        if not path_components:
+            return '{}'
+
+        # Get all filtered files once (relative paths to scan_dir)
+        all_files = self.scanner.file_filters.get_filtered_files_from_folder(self.scanner.scan_dir)
+
+        # Sort path_ids by depth (deepest first) so most-specific match wins.
+        # Root path '.' is always last (-1), others sort by separator count then path length.
+        # Example with path_ids: ['.', 'external', 'project-1.0', 'project-1.0/src/lib']
+        #   Sorted result: ['project-1.0/src/lib', 'project-1.0', 'external', '.']
+        #   - 'project-1.0/src/lib' (depth 2) claims its files first
+        #   - 'project-1.0' (depth 0, len 11) claims remaining files under it
+        #   - 'external' (depth 0, len 8) claims external/ files
+        #   - '.' (root, always last) picks up everything else
+        sorted_path_ids = sorted(
+            path_components.keys(),
+            key=lambda p: (-1, 0) if p == '.' else (p.count(os.sep), len(p)),
+            reverse=True,
+        )
+
+        output = {}
+        claimed_files = set()
+        scan_dir = Path(self.scanner.scan_dir).resolve()
+
+        for path_id in sorted_path_ids:
+            component, best_version = path_components[path_id]
+            for file_path in all_files:
+                if file_path in claimed_files:
+                    continue
+                if not self._file_matches_path_id(file_path, path_id):
+                    continue
+
+                claimed_files.add(file_path)
+                # Path.__truediv__ (/) joins paths using the correct OS separator
+                file_hash = self._compute_file_md5(scan_dir / file_path)
+                api_url = self.scanner.client.orig_url or ''
+                entry = self._build_file_match_entry(component, best_version, file_path, file_hash, api_url)
+                output[file_path] = [entry]
+
+        return json.dumps(output, indent=2)
+
+    @staticmethod
+    def _extract_best_components(hfh_results: List[Dict]) -> Dict[str, Tuple[Dict, Dict]]:
+        """
+        Extract the best-match component and version for each path_id from HFH results.
+
+        Filters for components with order == 1 (best match) and takes their first version.
+        Results without a qualifying component or without versions are skipped.
+
+        Args:
+            hfh_results (List[Dict]): The 'results' list from the HFH API response.
+
+        Returns:
+            Dict[str, Tuple[Dict, Dict]]: A dict mapping path_id to (component, best_version).
+        """
+        path_components = {}
+        for result in hfh_results:
+            path_id = result.get('path_id', '.')
+            components = result.get('components', [])
+            best = [c for c in components if c.get('order') == 1]
+            if not best:
+                continue
+            component = best[0]
+            versions = component.get('versions', [])
+            if not versions:
+                continue
+            path_components[path_id] = (component, versions[0])
+        return path_components
+
+    @staticmethod
+    def _file_matches_path_id(file_path: str, path_id: str) -> bool:
+        """
+        Check if a file path belongs under a given path_id directory.
+
+        Both file_path and path_id are relative to the scan root directory.
+        A path_id of '.' matches all files (root directory).
+
+        Args:
+            file_path (str): Relative file path from the scan root.
+            path_id (str): Relative directory path from the HFH result.
+
+        Returns:
+            bool: True if the file is under the given path_id directory.
+        """
+        if path_id == '.':
+            return True
+        # file_path and path_id are both relative to scan_dir
+        return file_path == path_id or file_path.startswith(path_id + os.sep)
+
+    def _compute_file_md5(self, file_path: Path) -> str:
+        """
+        Compute the MD5 hash of a file's contents.
+
+        Uses the same approach as the snippet scanner (winnowing.py) to ensure
+        consistent file_hash values across scan types.
+
+        Args:
+            file_path (Path): Absolute path to the file.
+
+        Returns:
+            str: The MD5 hex digest, or an empty string if the file cannot be read.
+        """
+        try:
+            return hashlib.md5(file_path.read_bytes()).hexdigest()
+        except (OSError, IOError) as e:
+            self.base.print_stderr(f'Warning: Failed to compute MD5 for {file_path}: {e}')
+            return ''
+
+    @staticmethod
+    def _build_file_match_entry(
+        component: Dict, best_version: Dict, file_path: str, file_hash: str, base_url: str,
+    ) -> Dict:
+        """
+        Build a snippet-scanner-compatible result entry from an HFH component.
+
+        Maps HFH component fields to the standard scan result format. Fields not
+        available from HFH (url_hash, release_date, licenses) are included as empty
+        values since downstream validators require them.
+
+        Args:
+            component (Dict): The HFH component with purl, name, vendor fields.
+            best_version (Dict): The top version entry with version and score fields.
+            file_path (str): Relative file path from the scan root directory.
+            file_hash (str): Pre-computed MD5 hash of the local file.
+            base_url (str): API base URL used to construct the file_url field.
+
+        Returns:
+            Dict: A result entry compatible with the snippet-scanner JSON format.
+        """
+        purl = component.get('purl', '')
+        version = best_version.get('version', '')
+
+        url = purl2url.get_repo_url(purl) if purl else ''
+        return {
+            'id': 'file',
+            'matched': '100%',
+            'purl': [purl],
+            'component': component.get('name', ''),
+            'vendor': component.get('vendor', ''),
+            'version': version,
+            'latest': version,
+            'url': url or '',
+            'file': file_path,
+            'file_hash': file_hash,
+            'file_url': f'{base_url}/file_contents/{file_hash}',
+            'source_hash': file_hash,
+            'url_hash': '',
+            'release_date': '',
+            'licenses': [],
+            'lines': 'all',
+            'oss_lines': 'all',
+            'status': 'pending',
+        }

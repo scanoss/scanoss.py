@@ -988,7 +988,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--format',
         '-f',
         type=str,
-        choices=['json', 'cyclonedx'],
+        choices=['json', 'cyclonedx', 'raw'],
         default='json',
         help='Result output format (optional - default: json)',
     )
