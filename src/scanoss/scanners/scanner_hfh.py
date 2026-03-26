@@ -116,16 +116,107 @@ class ScannerHFH:
 
     def _execute_grpc_scan(self, hfh_request: Dict) -> None:
         """
-        Execute folder hash scan.
+        Execute folder hash scan and decorate results with license information.
 
         Args:
             hfh_request: Request dictionary for the gRPC call
         """
         try:
             self.scan_results = self.client.folder_hash_scan(hfh_request, self.use_grpc)
+            self._decorate_with_licenses()
         except Exception as e:
             self.base.print_stderr(f'Error during folder hash scan: {e}')
             self.scan_results = None
+
+    def _decorate_with_licenses(self) -> None:
+        """
+        Decorate each component version in scan results with license information
+        by calling the dependency service.
+        """
+        if not self.scan_results or not self.client:
+            return
+        results = self.scan_results.get('results', [])
+        if not results:
+            return
+
+        dep_files = self._collect_dep_files(results)
+        if not dep_files:
+            return
+
+        try:
+            decorated = self.client.get_dependencies({'files': dep_files})
+        except Exception as e:
+            self.base.print_stderr(f'Warning: Failed to fetch license data: {e}')
+            return
+
+        if not decorated or 'files' not in decorated:
+            return
+
+        license_map = self._build_license_map(decorated)
+        self._inject_licenses(results, license_map)
+
+    @staticmethod
+    def _collect_dep_files(results: List[Dict]) -> List[Dict]:
+        """Collect dependency file entries for all component versions in the results."""
+        dep_files = []
+        for result in results:
+            path_id = result.get('path_id', '')
+            for component in result.get('components', []):
+                purl = component.get('purl', '')
+                if not purl:
+                    continue
+                for version_entry in component.get('versions', []):
+                    version = version_entry.get('version', '')
+                    if not version:
+                        continue
+                    dep_files.append({
+                        'file': path_id,
+                        'purls': [{'purl': purl, 'requirement': version}],
+                    })
+        return dep_files
+
+    @staticmethod
+    def _build_license_map(decorated: Dict) -> Dict[str, List]:
+        """Build a purl@requirement -> licenses lookup from the dependency service response.
+
+        Args:
+            decorated (Dict): The response from the dependency service containing
+                decorated files with license information.
+
+        Returns:
+            Dict[str, List]: A mapping of 'purl@requirement' keys to their
+                corresponding list of license dictionaries.
+        """
+        license_map = {}
+        for dep_file in decorated.get('files', []):
+            for dep in dep_file.get('dependencies', []):
+                dep_purl = dep.get('purl', '')
+                # Use 'requirement' instead of 'version' as the key because the service
+                # may resolve a different version, but the requirement always matches what was sent.
+                dep_requirement = dep.get('requirement', '')
+                licenses = dep.get('licenses', [])
+                if dep_purl and licenses:
+                    license_map[f'{dep_purl}@{dep_requirement}'] = licenses
+        return license_map
+
+    @staticmethod
+    def _inject_licenses(results: List[Dict], license_map: Dict[str, List]) -> None:
+        """Inject licenses from the lookup map into each component version entry.
+
+        Args:
+            results (List[Dict]): The 'results' list from the HFH scan response.
+                Each result contains components with version entries that will
+                be mutated in place to include license data.
+            license_map (Dict[str, List]): A mapping of 'purl@version' keys to
+                their corresponding list of license dictionaries, as built by
+                ``_build_license_map``.
+        """
+        for result in results:
+            for component in result.get('components', []):
+                purl = component.get('purl', '')
+                for version_entry in component.get('versions', []):
+                    version = version_entry.get('version', '')
+                    version_entry['licenses'] = license_map.get(f'{purl}@{version}', [])
 
     def scan(self) -> Optional[Dict]:
         """
@@ -215,30 +306,34 @@ class ScannerHFHPresenter(AbstractPresenter):
             if not best_match_component.get('versions'):
                 self.base.print_stderr('ERROR: No versions found for best match component')
                 return ''
-
             best_match_version = best_match_component['versions'][0]
             purl = best_match_component['purl']
+            version = best_match_version['version']
+            licenses = best_match_version.get('licenses', [])
 
-            get_dependencies_json_request = {
-                'files': [
+            # Build scan_results from already-decorated HFH data
+            scan_results = {
+                f'{best_match_component["name"]}:{version}': [
                     {
-                        'file': f'{best_match_component["name"]}:{best_match_version["version"]}',
-                        'purls': [{'purl': purl, 'requirement': best_match_version['version']}],
+                        'id': 'dependency',
+                        'dependencies': [
+                            {
+                                'purl': purl,
+                                'component': best_match_component.get('name', ''),
+                                'version': version,
+                                'licenses': licenses,
+                            }
+                        ],
                     }
                 ]
             }
 
             get_vulnerabilities_json_request = {
-                'components': [{'purl': purl, 'requirement': best_match_version['version']}],
+                'components': [{'purl': purl, 'requirement': version}],
             }
-
-            decorated_scan_results = self.scanner.client.get_dependencies(get_dependencies_json_request)
             vulnerabilities = self.scanner.client.get_vulnerabilities_json(get_vulnerabilities_json_request)
 
             cdx = CycloneDx(self.base.debug)
-            scan_results = {}
-            for f in decorated_scan_results['files']:
-                scan_results[f['file']] = [f]
             success, cdx_output = cdx.produce_from_json(scan_results)
             if not success:
                 error_msg = 'ERROR: Failed to produce CycloneDX output'
@@ -250,7 +345,7 @@ class ScannerHFHPresenter(AbstractPresenter):
 
             return json.dumps(cdx_output, indent=2)
         except Exception as e:
-            self.base.print_stderr(f'ERROR: Failed to get license information: {e}')
+            self.base.print_stderr(f'ERROR: Failed to produce CycloneDX output: {e}')
             return None
 
     def _format_spdxlite_output(self) -> str:
@@ -411,6 +506,19 @@ class ScannerHFHPresenter(AbstractPresenter):
         """
         purl = component.get('purl', '')
         version = best_version.get('version', '')
+        licenses = [
+            {
+                'name': lic.get('spdx_id') or lic.get('name', ''),
+                'patent_hints': '',
+                'copyleft': '',
+                'checklist_url': '',
+                'incompatible_with': '',
+                'osadl_updated': '',
+                'source': 'component_declared',
+                'url': f"https://spdx.org/licenses/{lic['spdx_id']}.html" if lic.get('spdx_id') else '',
+            }
+            for lic in best_version.get('licenses', [])
+        ]
 
         url = purl2url.get_repo_url(purl) if purl else ''
         return {
@@ -428,7 +536,7 @@ class ScannerHFHPresenter(AbstractPresenter):
             'source_hash': file_hash,
             'url_hash': '',
             'release_date': '',
-            'licenses': [],
+            'licenses': licenses,
             'lines': 'all',
             'oss_lines': 'all',
             'status': 'pending',

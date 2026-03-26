@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `--format raw` option to `folder-scan` command to export HFH results in snippet-scanner JSON format
   - Expands directory-level HFH results into per-file entries keyed by relative file path
   - Assigns each file to the most specific matching `path_id` (deepest directory match wins)
+- Added license decoration to folder hash scan results via dependency service
+  - Each component version in HFH results is now decorated with license information
+  - CycloneDX output uses pre-decorated licenses instead of making a separate dependency API call
 
 ## [1.50.1] - 2026-03-23
 ### Fixed
