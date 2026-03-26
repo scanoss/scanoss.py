@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.51.0] - 2026-03-26
 ### Added
 - Added `--format raw` option to `folder-scan` command to export HFH results in snippet-scanner JSON format
   - Expands directory-level HFH results into per-file entries keyed by relative file path
@@ -859,3 +861,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.49.0]: https://github.com/scanoss/scanoss.py/compare/v1.48.0...v1.49.0
 [1.49.1]: https://github.com/scanoss/scanoss.py/compare/v1.49.0...v1.49.1
 [1.50.0]: https://github.com/scanoss/scanoss.py/compare/v1.49.1...v1.50.0
+[1.50.1]: https://github.com/scanoss/scanoss.py/compare/v1.50.0...v1.50.1
+[1.51.0]: https://github.com/scanoss/scanoss.py/compare/v1.50.1...v1.51.0
