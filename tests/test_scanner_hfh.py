@@ -212,7 +212,13 @@ class TestBuildFileMatchEntry(unittest.TestCase):
     def test_basic_entry(self, mock_purl2url):
         mock_purl2url.get_repo_url.return_value = 'https://github.com/vendor/comp'
         component = {'purl': 'pkg:github/vendor/comp', 'name': 'comp', 'vendor': 'vendor'}
-        best_version = {'version': '1.0.0', 'licenses': [{'name': 'MIT'}]}
+        # HFH API license format
+        best_version = {
+            'version': '1.0.0',
+            'licenses': [
+                {'name': 'MIT License', 'spdx_id': 'MIT', 'is_spdx_approved': True, 'url': 'https://spdx.org/licenses/MIT.html'},
+            ],
+        }
 
         entry = ScannerHFHPresenter._build_file_match_entry(
             component, best_version, 'src/file.py', 'abc123', 'https://api.example.com'
@@ -232,7 +238,17 @@ class TestBuildFileMatchEntry(unittest.TestCase):
         self.assertEqual(entry['source_hash'], 'abc123')
         self.assertEqual(entry['url_hash'], '')
         self.assertEqual(entry['release_date'], '')
-        self.assertEqual(entry['licenses'], [{'name': 'MIT'}])
+        # License should be transformed from HFH format to snippet-scanner format
+        self.assertEqual(len(entry['licenses']), 1)
+        lic = entry['licenses'][0]
+        self.assertEqual(lic['name'], 'MIT')
+        self.assertEqual(lic['source'], 'component_declared')
+        self.assertEqual(lic['url'], 'https://spdx.org/licenses/MIT.html')
+        self.assertEqual(lic['patent_hints'], '')
+        self.assertEqual(lic['copyleft'], '')
+        self.assertEqual(lic['checklist_url'], '')
+        self.assertEqual(lic['incompatible_with'], '')
+        self.assertEqual(lic['osadl_updated'], '')
         self.assertEqual(entry['lines'], 'all')
         self.assertEqual(entry['oss_lines'], 'all')
         self.assertEqual(entry['status'], 'pending')
@@ -265,6 +281,64 @@ class TestBuildFileMatchEntry(unittest.TestCase):
         self.assertEqual(entry['vendor'], '')
         self.assertEqual(entry['version'], '')
         self.assertEqual(entry['licenses'], [])
+
+    @patch('scanoss.scanners.scanner_hfh.purl2url')
+    def test_license_uses_spdx_id_as_name(self, mock_purl2url):
+        mock_purl2url.get_repo_url.return_value = ''
+        component = {'purl': 'pkg:github/v/c', 'name': 'c', 'vendor': 'v'}
+        best_version = {
+            'version': '1.0',
+            'licenses': [
+                {'name': 'GNU General Public License v2.0 only', 'spdx_id': 'GPL-2.0-only', 'is_spdx_approved': True, 'url': 'https://spdx.org/licenses/GPL-2.0-only.html'},
+            ],
+        }
+
+        entry = ScannerHFHPresenter._build_file_match_entry(
+            component, best_version, 'file.py', 'hash', 'https://api.example.com'
+        )
+
+        lic = entry['licenses'][0]
+        self.assertEqual(lic['name'], 'GPL-2.0-only')
+        self.assertEqual(lic['url'], 'https://spdx.org/licenses/GPL-2.0-only.html')
+
+    @patch('scanoss.scanners.scanner_hfh.purl2url')
+    def test_license_without_spdx_id_falls_back_to_name(self, mock_purl2url):
+        mock_purl2url.get_repo_url.return_value = ''
+        component = {'purl': 'pkg:github/v/c', 'name': 'c', 'vendor': 'v'}
+        best_version = {
+            'version': '1.0',
+            'licenses': [{'name': 'Some Custom License'}],
+        }
+
+        entry = ScannerHFHPresenter._build_file_match_entry(
+            component, best_version, 'file.py', 'hash', 'https://api.example.com'
+        )
+
+        lic = entry['licenses'][0]
+        self.assertEqual(lic['name'], 'Some Custom License')
+        self.assertEqual(lic['url'], '')
+
+    @patch('scanoss.scanners.scanner_hfh.purl2url')
+    def test_multiple_licenses_transformed(self, mock_purl2url):
+        mock_purl2url.get_repo_url.return_value = ''
+        component = {'purl': 'pkg:github/v/c', 'name': 'c', 'vendor': 'v'}
+        best_version = {
+            'version': '1.0',
+            'licenses': [
+                {'name': 'MIT License', 'spdx_id': 'MIT', 'is_spdx_approved': True, 'url': 'https://spdx.org/licenses/MIT.html'},
+                {'name': 'Apache License 2.0', 'spdx_id': 'Apache-2.0', 'is_spdx_approved': True, 'url': 'https://spdx.org/licenses/Apache-2.0.html'},
+            ],
+        }
+
+        entry = ScannerHFHPresenter._build_file_match_entry(
+            component, best_version, 'file.py', 'hash', 'https://api.example.com'
+        )
+
+        self.assertEqual(len(entry['licenses']), 2)
+        self.assertEqual(entry['licenses'][0]['name'], 'MIT')
+        self.assertEqual(entry['licenses'][0]['url'], 'https://spdx.org/licenses/MIT.html')
+        self.assertEqual(entry['licenses'][1]['name'], 'Apache-2.0')
+        self.assertEqual(entry['licenses'][1]['url'], 'https://spdx.org/licenses/Apache-2.0.html')
 
     @patch('scanoss.scanners.scanner_hfh.purl2url')
     def test_purl2url_returns_none(self, mock_purl2url):
