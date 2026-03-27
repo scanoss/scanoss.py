@@ -18,6 +18,11 @@
         "description": {
           "type": "string",
           "description": "Description of the project"
+        },
+        "organization": {
+          "type": "string",
+          "description": "Name of the organization responsible for this project and its BOM decisions",
+          "examples": ["SCANOSS"]
         }
       }
     },
@@ -34,7 +39,7 @@
               "properties": {
                 "scanning": {
                   "type": "array",
-                  "description": "List of glob patterns to skip files from scanning",
+                  "description": "List of glob patterns (gitignore format) to exclude files from scanning. Patterns are matched relative to the scan root directory.\n\n- A trailing `/` matches a directory\n- `*` matches anything except `/`\n- `**` matches zero or more directories\n- `[0-9]` matches character ranges\n- `?` matches a single character except `/`\n- Leading `!` negates a pattern",
                   "items": {
                     "type": "string",
                     "examples": [
@@ -44,14 +49,17 @@
                       "path/to/file.c",
                       "path/to/another/file.py",
                       "**/*.ts",
-                      "**/*.json"
+                      "**/*.json",
+                      "!important.log",
+                      "temp/",
+                      "debug[0-9]*.txt"
                     ]
                   },
                   "uniqueItems": true
                 },
                 "fingerprinting": {
                   "type": "array",
-                  "description": "List of glob patterns to skip files from fingerprinting",
+                  "description": "List of glob patterns (gitignore format) to exclude files from fingerprinting. Patterns are matched relative to the scan root directory.\n\n- A trailing `/` matches a directory\n- `*` matches anything except `/`\n- `**` matches zero or more directories\n- `[0-9]` matches character ranges\n- `?` matches a single character except `/`\n- Leading `!` negates a pattern",
                   "items": {
                     "type": "string",
                     "examples": [
@@ -61,20 +69,10 @@
                       "path/to/file.c",
                       "path/to/another/file.py",
                       "**/*.ts",
-                      "**/*.json"
-                    ]
-                  },
-                  "uniqueItems": true
-                },
-                "dependencies": {
-                  "type": "array",
-                  "description": "List of glob patterns to skip dependency files from dependency analysis",
-                  "items": {
-                    "type": "string",
-                    "examples": [
-                      "vendor/**",
-                      "third_party/",
-                      "node_modules/**"
+                      "**/*.json",
+                      "!important.log",
+                      "temp/",
+                      "debug[0-9]*.txt"
                     ]
                   },
                   "uniqueItems": true
@@ -87,6 +85,7 @@
               "properties": {
                 "scanning": {
                   "type": "array",
+                  "description": "Rules for skipping files based on their size during scanning. Each rule combines glob patterns with min/max byte thresholds.",
                   "items": {
                     "type": "object",
                     "properties": {
@@ -115,10 +114,20 @@
                         "description": "Maximum size of the file in bytes"
                       }
                     }
-                  }
+                  },
+                  "examples": [
+                    [
+                      {
+                        "patterns": ["*.log", "!important.log"],
+                        "min": 512,
+                        "max": 5242880
+                      }
+                    ]
+                  ]
                 },
                 "fingerprinting": {
                   "type": "array",
+                  "description": "Rules for skipping files based on their size during fingerprinting. Each rule combines glob patterns with min/max byte thresholds.",
                   "items": {
                     "type": "object",
                     "properties": {
@@ -126,17 +135,17 @@
                         "type": "array",
                         "description": "List of glob patterns to apply the min/max size rule",
                         "items": {
-                          "type": "string"
-                        },
-                        "examples": [
-                          "path/to/folder",
-                          "path/to/folder/**",
-                          "path/to/folder/**/*",
-                          "path/to/file.c",
-                          "path/to/another/file.py",
-                          "**/*.ts",
-                          "**/*.json"
-                        ]
+                          "type": "string",
+                          "examples": [
+                            "path/to/folder",
+                            "path/to/folder/**",
+                            "path/to/folder/**/*",
+                            "path/to/file.c",
+                            "path/to/another/file.py",
+                            "**/*.ts",
+                            "**/*.json"
+                          ]
+                        }
                       },
                       "min": {
                         "type": "integer",
@@ -147,7 +156,16 @@
                         "description": "Maximum size of the file in bytes"
                       }
                     }
-                  }
+                  },
+                  "examples": [
+                    [
+                      {
+                        "patterns": ["temp/", "*.tmp"],
+                        "min": 512,
+                        "max": 5242880
+                      }
+                    ]
+                  ]
                 }
               }
             }
@@ -177,7 +195,7 @@
                 },
                 "ignore_cert_errors": {
                   "type": "boolean",
-                  "description": "Whether to ignore certificate errors"
+                  "description": "Whether to ignore TLS/SSL certificate errors. Intended for testing and development environments only; do not enable in production."
                 }
               }
             },
@@ -188,7 +206,7 @@
             },
             "ranking_threshold": {
               "type": ["integer", "null"],
-              "description": "Ranking threshold value. A value of -1 defers to server configuration",
+              "description": "Ranking threshold for file snippet results (range 0\u201310). A value of `-1` defers to server configuration. Higher values require stronger matches.",
               "minimum": -1,
               "maximum": 10,
               "default": 0
@@ -207,7 +225,7 @@
             },
             "honour_file_exts": {
               "type": ["boolean", "null"],
-              "description": "Ignores file extensions. When not set, defers to server configuration.",
+              "description": "When `true`, the server considers file extensions during matching (e.g. a `.c` file only matches other `.c` files). When `false`, file extensions are ignored. When `null`, defers to server configuration.",
               "default": true
             },
             "dependency_analysis": {
@@ -216,27 +234,27 @@
             },
             "skip_headers": {
               "type": "boolean",
-              "description": "Skip license headers, comments and imports at the beginning of files",
+              "description": "Skip license headers, comments, and imports at the beginning of files before snippet matching. Works together with `skip_headers_limit` to control how many leading lines are stripped.",
               "default": false
             },
             "skip_headers_limit": {
               "type": "integer",
-              "description": "Maximum number of lines to skip when filtering headers",
+              "description": "Maximum number of leading lines to strip when `skip_headers` is enabled. A value of `0` means no limit (strip all detected header lines).",
               "default": 0
             }
           }
         },
         "hpfm": {
           "type": "object",
-          "description": "HPFM (High Precision Folder Matching) configuration",
+          "description": "HPFM (High Precision Folder Matching) configuration. HPFM detects copied directory structures by comparing folder-level fingerprints.",
           "properties": {
             "ranking_enabled": {
               "type": "boolean",
-              "description": "Enable ranking for HPFM"
+              "description": "Enable ranking for HPFM results"
             },
             "ranking_threshold": {
               "type": ["integer", "null"],
-              "description": "Ranking threshold value. A value of -1 defers to server configuration",
+              "description": "Ranking threshold for HPFM results (range 0\u201399). Note: this range differs from `file_snippet.ranking_threshold` (0\u201310). A value of `-1` defers to server configuration. Higher values require stronger matches.",
               "minimum": -1,
               "maximum": 99,
               "default": 0
@@ -255,18 +273,18 @@
       "properties": {
         "include": {
           "type": "array",
-          "description": "Set of rules to be added as context when scanning. This list will be sent as payload to the API.",
+          "description": "Rules for adding components as scan context. Sent to the SCANOSS API to influence result matching. Requires purl; path is optional for partial matching.",
           "items": {
             "type": "object",
             "properties": {
               "path": {
                 "type": "string",
-                "description": "File or folder path. Paths ending with '/' are treated as folder rules and match all files under that directory.",
+                "description": "File or folder path, relative to the scan root. Paths ending with `/` are treated as folder rules and match all files under that directory.",
                 "examples": ["src/main.c", "src/vendor/"]
               },
               "purl": {
                 "type": "string",
-                "description": "Package URL to be used to match the component",
+                "description": "Package URL identifying the component. Format: `pkg:<type>/<namespace>/<name>@<version>`. Version is recommended but optional.",
                 "examples": [
                   "pkg:npm/vue@2.6.12",
                   "pkg:golang/github.com/golang/go@1.17.3"
@@ -275,26 +293,51 @@
               "comment": {
                 "type": "string",
                 "description": "Additional notes or comments"
+              },
+              "acknowledgement": {
+                "type": "string",
+                "description": "Formal acknowledgement of this BOM decision, propagated to SBOM output"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 UTC timestamp recording when this BOM decision was made",
+                "examples": ["2026-03-15T10:30:00Z"]
               }
             },
             "uniqueItems": true,
             "required": ["purl"]
-          }
+          },
+          "examples": [
+            [
+              {
+                "path": "src/lib/component.js",
+                "purl": "pkg:npm/lodash@4.17.21",
+                "comment": "Full match: path + purl",
+                "acknowledgement": "Confirmed: lodash 4.17.21 vendored under src/lib",
+                "timestamp": "2026-03-15T10:30:00Z"
+              },
+              {
+                "purl": "pkg:npm/vue@2.6.12",
+                "comment": "Partial match: purl only"
+              }
+            ]
+          ]
         },
         "remove": {
           "type": "array",
-          "description": "Set of rules that will remove files from the results file after the scan is completed.",
+          "description": "Rules for removing components from results after scanning (client-side post-processing). Supports full match (both path and purl) or partial match (path only or purl only).",
           "items": {
             "type": "object",
             "properties": {
               "path": {
                 "type": "string",
-                "description": "File or folder path. Paths ending with '/' are treated as folder rules and match all files under that directory.",
+                "description": "File or folder path, relative to the scan root. Paths ending with `/` are treated as folder rules and match all files under that directory.",
                 "examples": ["src/main.c", "src/vendor/"]
               },
               "purl": {
                 "type": "string",
-                "description": "Package URL",
+                "description": "Package URL identifying the component to remove. Format: `pkg:<type>/<namespace>/<name>@<version>`. Version is recommended but optional.",
                 "examples": [
                   "pkg:npm/vue@2.6.12",
                   "pkg:golang/github.com/golang/go@1.17.3"
@@ -303,6 +346,16 @@
               "comment": {
                 "type": "string",
                 "description": "Additional notes or comments"
+              },
+              "acknowledgement": {
+                "type": "string",
+                "description": "Formal acknowledgement of this BOM decision, propagated to SBOM output"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 UTC timestamp recording when this BOM decision was made",
+                "examples": ["2026-03-15T10:30:00Z"]
               }
             },
             "anyOf": [
@@ -310,22 +363,41 @@
               {"required": ["path"]}
             ],
             "uniqueItems": true
-          }
+          },
+          "examples": [
+            [
+              {
+                "path": "src/main.c",
+                "purl": "pkg:npm/vue@2.6.12",
+                "comment": "Full match: removes only this purl at this path",
+                "acknowledgement": "Reviewed and confirmed as original code, not third-party",
+                "timestamp": "2026-03-15T10:30:00Z"
+              },
+              {
+                "purl": "pkg:npm/deprecated-pkg@1.0.0",
+                "comment": "Partial match: removes this purl wherever it appears"
+              },
+              {
+                "path": "src/vendor/",
+                "comment": "Partial match: removes all results under this folder"
+              }
+            ]
+          ]
         },
         "replace": {
           "type": "array",
-          "description": "Set of rules that will replace components with the specified one after the scan is completed.",
+          "description": "Rules for replacing components in results after scanning (client-side post-processing). Requires both purl (original component) and replace_with (replacement). Path is optional for scoping.",
           "items": {
             "type": "object",
             "properties": {
               "path": {
                 "type": "string",
-                "description": "File or folder path. Paths ending with '/' are treated as folder rules and match all files under that directory.",
+                "description": "File or folder path, relative to the scan root. Paths ending with `/` are treated as folder rules and match all files under that directory.",
                 "examples": ["src/main.c", "src/vendor/"]
               },
               "purl": {
                 "type": "string",
-                "description": "Package URL to replace",
+                "description": "Package URL of the original component to replace. Format: `pkg:<type>/<namespace>/<name>@<version>`. Version is recommended but optional.",
                 "examples": [
                   "pkg:npm/vue@2.6.12",
                   "pkg:golang/github.com/golang/go@1.17.3"
@@ -335,23 +407,46 @@
                 "type": "string",
                 "description": "Additional notes or comments"
               },
+              "acknowledgement": {
+                "type": "string",
+                "description": "Formal acknowledgement of this BOM decision, propagated to SBOM output"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 UTC timestamp recording when this BOM decision was made",
+                "examples": ["2026-03-15T10:30:00Z"]
+              },
               "license": {
                 "type": "string",
-                "description": "License of the component. Should be a valid SPDX license expression",
+                "description": "License of the replacement component. Should be a valid SPDX license expression (e.g. `MIT`, `Apache-2.0`, `GPL-3.0-only`).",
                 "examples": ["MIT", "Apache-2.0"]
               },
               "replace_with": {
                 "type": "string",
-                "description": "Package URL to replace with",
+                "description": "The replacement Package URL. Format: `pkg:<type>/<namespace>/<name>@<version>`.",
                 "examples": [
-                  "pkg:npm/vue@2.6.12",
-                  "pkg:golang/github.com/golang/go@1.17.3"
+                  "pkg:npm/vue@2.6.14",
+                  "pkg:npm/new-lib@2.0.0"
                 ]
               }
             },
             "uniqueItems": true,
             "required": ["purl", "replace_with"]
-          }
+          },
+          "examples": [
+            [
+              {
+                "path": "src/utils/helper.js",
+                "purl": "pkg:npm/old-lib@1.0.0",
+                "replace_with": "pkg:npm/new-lib@2.0.0",
+                "license": "MIT",
+                "comment": "Upgrade to newer version",
+                "acknowledgement": "Verified upstream project is the correct attribution",
+                "timestamp": "2026-03-15T10:30:00Z"
+              }
+            ]
+          ]
         }
       }
     }

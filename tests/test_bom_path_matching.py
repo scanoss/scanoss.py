@@ -85,6 +85,33 @@ class TestMatchesPath(unittest.TestCase):
         self.assertFalse(BomEntry(path='src/main.c').matches_path('src/main.cpp'))
 
 
+class TestAcknowledgementParsing(unittest.TestCase):
+    """Unit tests for acknowledgement field parsing in BomEntry and ReplaceRule"""
+
+    def test_bom_entry_parses_acknowledgement(self):
+        entry = BomEntry.from_dict({'purl': 'pkg:npm/vue', 'acknowledgement': 'noticed'})
+        self.assertEqual(entry.acknowledgement, 'noticed')
+
+    def test_bom_entry_acknowledgement_none_when_absent(self):
+        entry = BomEntry.from_dict({'purl': 'pkg:npm/vue'})
+        self.assertIsNone(entry.acknowledgement)
+
+    def test_replace_rule_parses_acknowledgement(self):
+        entry = ReplaceRule.from_dict({
+            'purl': 'pkg:npm/old',
+            'replace_with': 'pkg:npm/new',
+            'acknowledgement': 'acknowledged',
+        })
+        self.assertEqual(entry.acknowledgement, 'acknowledged')
+
+    def test_replace_rule_acknowledgement_none_when_absent(self):
+        entry = ReplaceRule.from_dict({
+            'purl': 'pkg:npm/old',
+            'replace_with': 'pkg:npm/new',
+        })
+        self.assertIsNone(entry.acknowledgement)
+
+
 class TestFromDictNormalization(unittest.TestCase):
     """Unit tests for trailing-slash normalization in from_dict"""
 
