@@ -180,13 +180,14 @@ class CycloneDx(ScanossBase):
             success = self.produce_from_str(f.read(), output_file)
         return success
 
-    def produce_from_json(self, data: dict, output_file: str = None) -> tuple[bool, dict]:  # noqa: PLR0912
+    def produce_from_json(self, data: dict, output_file: str = None, print_output: bool = True) -> tuple[bool, dict]:  # noqa: PLR0912
         """
         Produce the CycloneDX output from the raw scan results input data
 
         Args:
             data (dict): JSON object
             output_file (str, optional): Output file (optional). Defaults to None.
+            print_output (bool, optional): Print/write output. Defaults to True.
 
         Returns:
             bool: True if successful, False otherwise
@@ -273,14 +274,15 @@ class CycloneDx(ScanossBase):
                 data['vulnerabilities'].append(vd)
             # End for loop
 
-        file = sys.stdout
-        if not output_file and self.output_file:
-            output_file = self.output_file
-        if output_file:
-            file = open(output_file, 'w')
-        print(json.dumps(data, indent=2), file=file)
-        if output_file:
-            file.close()
+        if print_output:
+            file = sys.stdout
+            if not output_file and self.output_file:
+                output_file = self.output_file
+            if output_file:
+                file = open(output_file, 'w')
+            print(json.dumps(data, indent=2), file=file)
+            if output_file:
+                file.close()
 
         return True, data
 
