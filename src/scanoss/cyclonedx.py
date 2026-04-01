@@ -352,7 +352,7 @@ class CycloneDx(ScanossBase):
             cdx_dict['vulnerabilities'] = []
 
         # Extract vulnerabilities from the response
-        vulns_list = vulnerabilities_data.get('purls', [])
+        vulns_list = vulnerabilities_data.get('components', [])
         if not vulns_list:
             return cdx_dict
 

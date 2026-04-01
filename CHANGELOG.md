@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.51.1] - 2026-04-01
+### Fixed
+- Fixed vulnerabilities not appearing in CycloneDX output for folder-scan (`fs`) command
+
 ## [1.51.0] - 2026-03-26
 ### Added
 - Added `--format raw` option to `folder-scan` command to export HFH results in snippet-scanner JSON format
