@@ -334,7 +334,7 @@ class ScannerHFHPresenter(AbstractPresenter):
             vulnerabilities = self.scanner.client.get_vulnerabilities_json(get_vulnerabilities_json_request)
 
             cdx = CycloneDx(self.base.debug)
-            success, cdx_output = cdx.produce_from_json(scan_results)
+            success, cdx_output = cdx.produce_from_json(scan_results, print_output=False)
             if not success:
                 error_msg = 'ERROR: Failed to produce CycloneDX output'
                 self.base.print_stderr(error_msg)

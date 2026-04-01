@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.51.1] - 2026-04-01
 ### Fixed
 - Fixed vulnerabilities not appearing in CycloneDX output for folder-scan (`fs`) command
+- Fixed CycloneDX output without vulnerabilities being printed to stdout when using `--output` with folder-scan
 
 ## [1.51.0] - 2026-03-26
 ### Added
