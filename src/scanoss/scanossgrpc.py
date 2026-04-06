@@ -95,6 +95,7 @@ REST_ENDPOINTS = {
     },
     'components.SearchComponents': {'path': '/components/search', 'method': 'GET'},
     'components.GetComponentVersions': {'path': '/components/versions', 'method': 'GET'},
+    'components.GetComponentsStatus': {'path': '/components/status/components', 'method': 'POST'},
     'geoprovenance.GetCountryContributorsByComponents': {
         'path': '/geoprovenance/countries/components',
         'method': 'POST',
@@ -763,6 +764,29 @@ class ScanossGrpc(ScanossBase):
             ComponentsRequest,
             'Sending data for license decoration (rqId: {rqId})...',
             use_grpc=use_grpc,
+        )
+
+    def get_component_status(self, request: Dict, use_grpc: Optional[bool] = None) -> Optional[Dict]:
+        """
+        Client function to call the API for Components GetComponentsStatus
+        Only REST API is supported for this endpoint (gRPC not yet available)
+
+        Args:
+            request (Dict): ComponentsRequest
+        Returns:
+            Optional[Dict]: ComponentsStatusResponse, or None if the request was not successful
+        """
+        # Force REST API since gRPC is not available for this endpoint
+        if use_grpc:
+            self.print_stderr('WARNING: gRPC is not supported for component status. Using REST API instead.')
+
+        return self._call_api(
+            'components.GetComponentsStatus',
+            None,  # No gRPC method available
+            request,
+            ComponentsRequest,
+            'Sending data for component status retrieval (rqId: {rqId})...',
+            use_grpc=False,  # Force REST
         )
 
     def load_generic_headers(self, url: Optional[str] = None):

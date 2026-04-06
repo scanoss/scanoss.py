@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.52.0] - 2026-04-06
+### Added
+- Added `status` subcommand query to `component` command to retrieve development life-cycle staus:
+  - Component and version specific for a single component
+  - Component and version specific for a list of components
+
 ## [1.51.1] - 2026-04-01
 ### Fixed
 - Fixed vulnerabilities not appearing in CycloneDX output for folder-scan (`fs`) command
@@ -869,3 +876,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.50.1]: https://github.com/scanoss/scanoss.py/compare/v1.50.0...v1.50.1
 [1.51.0]: https://github.com/scanoss/scanoss.py/compare/v1.50.1...v1.51.0
 [1.51.1]: https://github.com/scanoss/scanoss.py/compare/v1.51.0...v1.51.1
+[1.52.0]: https://github.com/scanoss/scanoss.py/compare/v1.51.1...v1.52.0
