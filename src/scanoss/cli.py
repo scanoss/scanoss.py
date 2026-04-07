@@ -423,7 +423,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     # Component Sub-command: component status
     c_status = comp_sub.add_parser(
         'status',
-        aliases=['stat'],
+        aliases=['sts','st'],
         description=f'Show Component Status details: {__version__}',
         help='Retrieve development status for the given components',
     )

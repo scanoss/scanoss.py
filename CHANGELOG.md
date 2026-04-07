@@ -10,9 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.52.0] - 2026-04-06
 ### Added
-- Added `status` subcommand query to `component` command to retrieve development life-cycle staus:
-  - Component and version specific for a single component
-  - Component and version specific for a list of components
+- Added `status` subcommand query to `component` command to retrieve development life-cycle status:
+  - Component and version-specific for a single component
+  - Component and version-specific for a list of components
 
 ## [1.51.1] - 2026-04-01
 ### Fixed
