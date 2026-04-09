@@ -423,6 +423,8 @@ The `component` command has a suite of sub-commands designed to operate on OSS c
 * Version Details (`versions`)
 * Cryptography (`crypto`)
 * Provenance (`provenance`)
+* Licenses (`licenses`)
+* Status (`status`)
 
 For the latest list of sub-commands, please run:
 ```bash
@@ -518,14 +520,38 @@ The licenses command also supports CycloneDX (CDX) input files. You can provide 
 scanoss-py comp licenses -i cyclonedx-sbom.json -o component-licenses.json
 ```
 
+#### Component Status
+The following command provides the capability to search the SCANOSS KB for development status information of Open Source components:
+```bash
+scanoss-py comp status -p "pkg:npm/react@17.0.2"
+```
+It is possible to supply multiple PURLs by repeating the `-p pkg` option, or providing a purl input file `-i purl-input.json` ([for example](tests/data/purl-input.json)):
+```bash
+scanoss-py comp status -i purl-input.json -o component-status.json
+```
+
+The status command also supports CycloneDX (CDX) input files. You can provide a CycloneDX SBOM file and retrieve status information for all components:
+```bash
+scanoss-py comp status -i cyclonedx-sbom.json -o component-status.json
+```
+
+The component status provides information about:
+- **Component status**: Overall status of the component (active, inactive, deprecated)
+- **Repository status**: Current status of the component's repository
+- **First indexed date**: When the component was first indexed in SCANOSS KB
+- **Last indexed date**: Most recent indexing date
+- **Version status**: Status specific to the requested version
+- **Indexed date**: When the specific version was indexed
+
 ### CDX Input Support for Component Commands
 Several component commands now support CycloneDX (CDX) input files. This allows you to analyze components from existing SBOM files:
 
 **Supported commands with CDX input:**
 - `comp vulns` - Analyze vulnerabilities from CDX file
-- `comp licenses` - Retrieve licenses from CDX file  
+- `comp licenses` - Retrieve licenses from CDX file
 - `comp crypto` - Detect cryptographic algorithms from CDX file
 - `comp semgrep` - Find semgrep issues from CDX file
+- `comp status` - Retrieve development status from CDX file
 
 **Example using CDX input:**
 ```bash
@@ -534,6 +560,9 @@ scanoss-py comp vulns -i sbom.cdx.json -o vulnerabilities.json
 
 # Get licenses for all components in a CycloneDX SBOM
 scanoss-py comp licenses -i sbom.cdx.json -o licenses.json
+
+# Get status information for all components in a CycloneDX SBOM
+scanoss-py comp status -i sbom.cdx.json -o status.json
 
 # Detect cryptographic usage from CDX
 scanoss-py comp crypto -i sbom.cdx.json -o crypto-findings.json

@@ -395,3 +395,36 @@ class Components(ScanossBase):
                 self.print_msg(f'Results written to: {output_file}')
         self._close_file(output_file, file)
         return success
+
+    def get_status(self, json_file: str = None, purls: [] = None, output_file: str = None) -> bool:
+        """
+        Retrieve the development status details for the supplied PURLs
+
+        Args:
+            json_file (str, optional): Input JSON file. Defaults to None.
+            purls (None, optional): PURLs to retrieve status details for. Defaults to None.
+            output_file (str, optional): Output file. Defaults to None.
+
+        Returns:
+            bool: True on success, False otherwise
+        """
+        success = False
+
+        purls_request = self.load_purls(json_file, purls)
+        if not purls_request:
+            return False
+        file = self._open_file_or_sdtout(output_file)
+        if file is None:
+            return False
+
+        # Use ComponentBatchRequest format for the status api
+        component_batch_request = {'components': purls_request.get('purls')}
+        self.print_msg('Sending PURLs to Component Status API...')
+        response = self.grpc_api.get_component_status(component_batch_request, use_grpc=self.use_grpc)
+        if response:
+            print(json.dumps(response, indent=2, sort_keys=True), file=file)
+            success = True
+            if output_file:
+                self.print_msg(f'Results written to: {output_file}')
+        self._close_file(output_file, file)
+        return success
