@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
-## [1.52.0] - 2026-04-06
+## [1.52.0] - 2026-04-09
 ### Added
 - Added `status` subcommand query to `component` command to retrieve development life-cycle status:
   - Component and version-specific for a single component
