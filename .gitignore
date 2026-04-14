@@ -34,3 +34,4 @@ docs/build
 .DS_Store
 !scanoss.json
 examples/output/
+!spdx-*.json

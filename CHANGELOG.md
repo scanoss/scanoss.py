@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [1.52.1] - 2026-04-14
+### Fixed
+- Fixed CPE identifiers missing from SPDX Lite output (`--format spdxlite`)
+  - CPEs are now emitted as SPDX 2.2 `externalRefs` with `referenceCategory: SECURITY`
+  - CPE 2.3 strings use `referenceType: cpe23Type`; legacy `cpe:/...` and `cpe:2.2:...` use `cpe22Type`
+  - Multiple CPEs per component are preserved and deduplicated
+
 ## [1.52.0] - 2026-04-09
 ### Added
 - Added `status` subcommand query to `component` command to retrieve development life-cycle status:
@@ -877,3 +884,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.51.0]: https://github.com/scanoss/scanoss.py/compare/v1.50.1...v1.51.0
 [1.51.1]: https://github.com/scanoss/scanoss.py/compare/v1.51.0...v1.51.1
 [1.52.0]: https://github.com/scanoss/scanoss.py/compare/v1.51.1...v1.52.0
+[1.52.0]: https://github.com/scanoss/scanoss.py/compare/v1.51.1...v1.52.1

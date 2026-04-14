@@ -247,9 +247,10 @@ class SpdxLite:
             vuln_id = vuln.get('ID') or vuln.get('id') or ''
             if not vuln_id.upper().startswith('CPE:'):
                 continue
-            if vuln_id in seen:
+            normalized = vuln_id.upper()
+            if normalized in seen:
                 continue
-            seen.add(vuln_id)
+            seen.add(normalized)
             cpes.append(vuln_id)
         return cpes
 

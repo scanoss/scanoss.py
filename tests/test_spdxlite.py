@@ -94,13 +94,16 @@ class SpdxLiteCpeTests(unittest.TestCase):
         }
 
     def _run(self, raw):
-        out_path = os.path.join(tempfile.gettempdir(), 'spdxlite_cpe_test.json')
-        spdx = SpdxLite(debug=False, output_file=out_path)
-        spdx.produce_from_json(raw)
-        with open(out_path, 'r') as f:
-            doc = json.load(f)
-        os.remove(out_path)
-        return doc
+        fd, out_path = tempfile.mkstemp(prefix='spdxlite_cpe_', suffix='.json')
+        os.close(fd)  # SpdxLite re-opens the path itself for writing
+        try:
+            spdx = SpdxLite(debug=False, output_file=out_path)
+            spdx.produce_from_json(raw)
+            with open(out_path, 'r') as f:
+                return json.load(f)
+        finally:
+            if os.path.exists(out_path):
+                os.remove(out_path)
 
     def _security_refs(self, doc):
         refs = doc['packages'][0]['externalRefs']
@@ -146,6 +149,17 @@ class SpdxLiteCpeTests(unittest.TestCase):
         ]))
         refs = self._security_refs(doc)
         self.assertEqual(len(refs), 1)
+
+    def test_dedup_is_case_insensitive_and_preserves_first_locator(self):
+        lower = 'cpe:2.3:a:postgresql:postgresql:17.0:*:*:*:*:*:*:*'
+        upper = 'CPE:2.3:A:POSTGRESQL:POSTGRESQL:17.0:*:*:*:*:*:*:*'
+        doc = self._run(self._build_raw([
+            {'ID': lower, 'source': 'nvd'},
+            {'ID': upper, 'source': 'nvd'},
+        ]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['referenceLocator'], lower)  # first-seen wins
 
     def test_cve_entries_are_ignored(self):
         doc = self._run(self._build_raw([
