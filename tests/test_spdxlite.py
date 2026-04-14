@@ -68,3 +68,150 @@ class MyTestCase(unittest.TestCase):
 
 
         os.remove(spdx_lite_output) #Removes tmp spdxlite.json file
+
+
+class SpdxLiteCpeTests(unittest.TestCase):
+    """
+    Exercise CPE extraction and SPDX externalRefs emission.
+    """
+
+    @staticmethod
+    def _build_raw(vulnerabilities, purl='pkg:github/postgres/postgres'):
+        return {
+            'src/main.c': [{
+                'id': 'file',
+                'component': 'postgresql',
+                'vendor': 'postgresql',
+                'version': '17.0',
+                'latest': '17.0',
+                'url': 'https://www.postgresql.org',
+                'url_hash': 'abc123',
+                'download_url': 'https://example.com/pg.tar.gz',
+                'purl': [purl],
+                'licenses': [{'name': 'PostgreSQL', 'source': 'component_declared'}],
+                'vulnerabilities': vulnerabilities,
+            }]
+        }
+
+    def _run(self, raw):
+        out_path = os.path.join(tempfile.gettempdir(), 'spdxlite_cpe_test.json')
+        spdx = SpdxLite(debug=False, output_file=out_path)
+        spdx.produce_from_json(raw)
+        with open(out_path, 'r') as f:
+            doc = json.load(f)
+        os.remove(out_path)
+        return doc
+
+    def _security_refs(self, doc):
+        refs = doc['packages'][0]['externalRefs']
+        return [r for r in refs if r['referenceCategory'] == 'SECURITY']
+
+    def test_cpe23_emits_cpe23Type(self):
+        cpe = 'cpe:2.3:a:postgresql:postgresql:17.0:*:*:*:*:*:*:*'
+        doc = self._run(self._build_raw([{'ID': cpe, 'source': 'nvd'}]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['referenceType'], 'cpe23Type')
+        self.assertEqual(refs[0]['referenceLocator'], cpe)
+
+    def test_legacy_cpe22_slash_emits_cpe22Type(self):
+        cpe = 'cpe:/a:postgresql:postgresql:17.0'
+        doc = self._run(self._build_raw([{'ID': cpe, 'source': 'nvd'}]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['referenceType'], 'cpe22Type')
+        self.assertEqual(refs[0]['referenceLocator'], cpe)
+
+    def test_explicit_cpe22_prefix_emits_cpe22Type(self):
+        cpe = 'cpe:2.2:a:postgresql:postgresql:17.0'
+        doc = self._run(self._build_raw([{'ID': cpe, 'source': 'nvd'}]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['referenceType'], 'cpe22Type')
+
+    def test_case_insensitive_prefix_detection(self):
+        cpe = 'CPE:2.3:a:postgresql:postgresql:17.0:*:*:*:*:*:*:*'
+        doc = self._run(self._build_raw([{'ID': cpe, 'source': 'nvd'}]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['referenceType'], 'cpe23Type')
+        self.assertEqual(refs[0]['referenceLocator'], cpe)  # casing preserved in locator
+
+    def test_duplicate_cpes_are_deduplicated(self):
+        cpe = 'cpe:2.3:a:postgresql:postgresql:17.0:*:*:*:*:*:*:*'
+        doc = self._run(self._build_raw([
+            {'ID': cpe, 'source': 'nvd'},
+            {'ID': cpe, 'source': 'nvd'},
+            {'ID': cpe, 'source': 'nvd'},
+        ]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 1)
+
+    def test_cve_entries_are_ignored(self):
+        doc = self._run(self._build_raw([
+            {'ID': 'CVE-2024-12345', 'CVE': 'CVE-2024-12345',
+             'source': 'nvd', 'severity': 'high'},
+            {'ID': 'GHSA-xxxx-yyyy-zzzz', 'source': 'github'},
+        ]))
+        refs = self._security_refs(doc)
+        self.assertEqual(refs, [])
+
+    def test_mixed_cpe_versions_in_same_component(self):
+        cpe23 = 'cpe:2.3:a:postgresql:postgresql:17.0:*:*:*:*:*:*:*'
+        cpe22 = 'cpe:/a:postgresql:postgresql:17.0'
+        doc = self._run(self._build_raw([
+            {'ID': cpe23, 'source': 'nvd'},
+            {'ID': cpe22, 'source': 'nvd'},
+        ]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 2)
+        types = {r['referenceType']: r['referenceLocator'] for r in refs}
+        self.assertEqual(types['cpe23Type'], cpe23)
+        self.assertEqual(types['cpe22Type'], cpe22)
+
+    def test_unknown_cpe_format_falls_back_to_cpe23Type(self):
+        odd_cpe = 'cpe:weird-format:postgresql:17.0'
+        doc = self._run(self._build_raw([{'ID': odd_cpe, 'source': 'nvd'}]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['referenceType'], 'cpe23Type')
+        self.assertEqual(refs[0]['referenceLocator'], odd_cpe)
+
+    def test_no_vulnerabilities_field_produces_no_security_refs(self):
+        raw = self._build_raw([])
+        # Drop the key entirely to simulate entries without a vulnerabilities block
+        del raw['src/main.c'][0]['vulnerabilities']
+        doc = self._run(raw)
+        self.assertEqual(self._security_refs(doc), [])
+        # PURL externalRef must still be present
+        refs = doc['packages'][0]['externalRefs']
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['referenceType'], 'purl')
+
+    def test_empty_vulnerabilities_list_produces_no_security_refs(self):
+        doc = self._run(self._build_raw([]))
+        self.assertEqual(self._security_refs(doc), [])
+
+    def test_dependency_entries_do_not_emit_cpes(self):
+        raw = {
+            'package.json': [{
+                'id': 'dependency',
+                'dependencies': [{
+                    'purl': 'pkg:npm/left-pad',
+                    'component': 'left-pad',
+                    'version': '1.3.0',
+                    'url': 'https://npmjs.com/package/left-pad',
+                    'licenses': [{'name': 'MIT', 'source': 'component_declared'}],
+                }]
+            }]
+        }
+        doc = self._run(raw)
+        self.assertEqual(self._security_refs(doc), [])
+
+    def test_lowercase_id_key_is_also_supported(self):
+        cpe = 'cpe:2.3:a:postgresql:postgresql:17.0:*:*:*:*:*:*:*'
+        # Raw scan output has been known to use 'id' (lowercase) occasionally
+        doc = self._run(self._build_raw([{'id': cpe, 'source': 'nvd'}]))
+        refs = self._security_refs(doc)
+        self.assertEqual(len(refs), 1)
+        self.assertEqual(refs[0]['referenceType'], 'cpe23Type')
