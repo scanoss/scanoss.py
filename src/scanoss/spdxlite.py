@@ -219,7 +219,40 @@ class SpdxLite:
         for field in fields:
             summary[field] = entry.get(field)
         summary['licenses'] = self._process_licenses(entry.get('licenses'))
+        summary['cpes'] = self._extract_cpes(entry.get('vulnerabilities'))
         return summary
+
+    def _extract_cpes(self, vulnerabilities: list) -> list:
+        """
+        Extract CPE identifiers from a file entry's vulnerabilities array.
+
+        Raw scan results deliver CPEs embedded as vulnerability IDs prefixed with "CPE:"
+        (case-insensitive). Everything else in the array is a real vulnerability record
+        (CVE/GHSA) and must be ignored here.
+
+        Args:
+            vulnerabilities (list): The 'vulnerabilities' list from a file match entry.
+                                    May be None or empty.
+
+        Returns:
+            list: Deduplicated list of CPE strings in source order (e.g.
+                  ['cpe:2.3:a:postgresql:postgresql:17.0:*:*:*:*:*:*:*']).
+                  Returns an empty list when there are no CPE entries.
+        """
+        if not vulnerabilities:
+            return []
+        cpes = []
+        seen = set()
+        for vuln in vulnerabilities:
+            vuln_id = vuln.get('ID') or vuln.get('id') or ''
+            if not vuln_id.upper().startswith('CPE:'):
+                continue
+            normalized = vuln_id.upper()
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            cpes.append(vuln_id)
+        return cpes
 
     def _process_licenses(self, licenses: list) -> list:
         """
@@ -426,6 +459,15 @@ class SpdxLite:
         purl_ver = f'{purl}@{comp_ver}'
         purl_hash = hashlib.md5(purl_ver.encode('utf-8')).hexdigest()
 
+        external_refs = [
+            {
+                'referenceCategory': 'PACKAGE-MANAGER',
+                'referenceLocator': PackageURL.from_string(purl_ver).to_string(),
+                'referenceType': 'purl'
+            }
+        ]
+        external_refs.extend(self._create_cpe_external_refs(comp.get('cpes', [])))
+
         return {
             'name': comp.get('component'),
             'SPDXID': f'SPDXRef-{purl_hash}',
@@ -437,13 +479,7 @@ class SpdxLite:
             'filesAnalyzed': False,
             'copyrightText': 'NOASSERTION',
             'supplier': f'Organization: {comp.get("vendor", "NOASSERTION")}',
-            'externalRefs': [
-                {
-                    'referenceCategory': 'PACKAGE-MANAGER',
-                    'referenceLocator': PackageURL.from_string(purl_ver).to_string(),
-                    'referenceType': 'purl'
-                }
-            ],
+            'externalRefs': external_refs,
             'checksums': [
                 {
                     'algorithm': 'MD5',
@@ -451,6 +487,48 @@ class SpdxLite:
                 }
             ],
         }
+
+    def _create_cpe_external_refs(self, cpes: list) -> list:
+        """
+        Build SPDX externalRefs entries for a component's CPE identifiers.
+
+        SPDX 2.2 models CPEs under the SECURITY reference category. Each CPE string
+        must be emitted as its own externalRef dict with the shape:
+
+            {
+                'referenceCategory': 'SECURITY',
+                'referenceType': 'cpe23Type' | 'cpe22Type',
+                'referenceLocator': '<cpe string>',
+            }
+
+        Args:
+            cpes (list): CPE strings extracted from the raw scan results. The list is
+                         already deduplicated by `_extract_cpes`. Values look like
+                         'cpe:2.3:a:vendor:product:version:...' (CPE 2.3) or
+                         'cpe:/a:vendor:product:version' (legacy CPE 2.2). May be empty.
+
+        Returns:
+            list: A list of SPDX externalRef dicts ready to be appended to a package's
+                  `externalRefs`. Return an empty list when `cpes` is empty.
+        """
+        if not cpes:
+            return []
+        refs = []
+        for cpe in cpes:
+            normalized = cpe.lower()
+            if normalized.startswith('cpe:2.3:'):
+                ref_type = 'cpe23Type'
+            elif normalized.startswith('cpe:/') or normalized.startswith('cpe:2.2:'):
+                ref_type = 'cpe22Type'
+            else:
+                self.print_debug(f'Warning: Unrecognized CPE format, defaulting to cpe23Type: {cpe}')
+                ref_type = 'cpe23Type'
+            refs.append({
+                'referenceCategory': 'SECURITY',
+                'referenceType': ref_type,
+                'referenceLocator': cpe,
+            })
+        return refs
 
     def _process_package_licenses(self, licenses: list, lic_refs: set) -> str:
         """
