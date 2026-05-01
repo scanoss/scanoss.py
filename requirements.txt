@@ -3,7 +3,7 @@ crc32c>=2.2
 binaryornot
 progress
 grpcio>=1.73.1
-protobuf>=6.3.1
+protobuf>=7.34.1
 protoc-gen-openapiv2
 pypac
 urllib3
