@@ -1713,6 +1713,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
     elif args.files_from:
         file_list: Optional[list] = load_files_from_file(args.files_from)
         if not file_list:
+            print_stderr(f'ERROR: No valid file paths found in: {args.files_from}')
             sys.exit(1)
         if not scanner.scan_files_with_options(file_list, args.dep, scanner.winnowing.file_map):
             sys.exit(1)
@@ -2362,7 +2363,7 @@ def load_files_from_file(filepath):
                     if source_file and not source_file.startswith('#'):
                         files.append(source_file)
                 # End of for loop
-        except (OSError, IOError) as e:
+        except (OSError, IOError, RuntimeError) as e:
             print_stderr(f'ERROR: Failed to read input file; {filepath}: {e}')
     return files
 
