@@ -308,12 +308,13 @@ class FileFilters(ScanossBase):
         self.file_folder_pat_spec = self._get_file_folder_pattern_spec(kwargs.get('operation_type', 'scanning'))
         self.size_pat_rules = self._get_size_limit_pattern_rules(kwargs.get('operation_type', 'scanning'))
 
-    def get_filtered_files_from_folder(self, root: str) -> List[str]:
+    def get_filtered_files_from_folder(self, root: str, filter_path: str = None) -> List[str]:
         """
         Retrieve a list of files to scan or fingerprint from a given directory root based on filter settings.
 
         Args:
             root (str): Root directory to scan or fingerprint
+            filter_path (str): Path to filter files within the root directory
 
         Returns:
             list[str]: Filtered list of files to scan or fingerprint
@@ -340,8 +341,7 @@ class FileFilters(ScanossBase):
             rel_path = dir_path.relative_to(root_path)
             if dir_path.is_symlink():  # TODO should we skip symlink folders?
                 self.print_msg(f'WARNING: Found symbolic link folder: {dir_path}')
-
-            if self.should_skip_dir(str(rel_path)):  # Current directory should be skipped
+            if self.should_skip_dir(str(rel_path), filter_path):  # The current directory should be skipped
                 dirnames.clear()
                 continue
             for filename in filenames:
@@ -502,15 +502,16 @@ class FileFilters(ScanossBase):
         # End rules loop
         return min_size, max_size
 
-    def should_skip_dir(self, dir_rel_path: str) -> bool:  # noqa: PLR0911
+    def should_skip_dir(self, dir_rel_path: str, filter_path: str = None) -> bool:  # noqa: PLR0911
         """
         Check if a directory should be skipped based on operation type and default rules.
 
         Args:
             dir_rel_path (str): Relative path to the directory
+            filter_path (str): Optional filter path to check if the directory is within it
 
         Returns:
-            bool: True if directory should be skipped, False otherwise
+            bool: True if the directory should be skipped, False otherwise
         """
         dir_name = os.path.basename(dir_rel_path)
         dir_path = Path(dir_rel_path)
@@ -520,6 +521,9 @@ class FileFilters(ScanossBase):
             and any(part.startswith('.') for part in dir_path.parts)
         ):
             self.print_debug(f'Skipping directory: {dir_rel_path} (hidden directory)')
+            return True
+        if filter_path and not dir_rel_path.startswith(filter_path):
+            self.print_debug(f'Skipping directory: {dir_rel_path} (not in filter path)')
             return True
         if self.all_folders:
             return False
