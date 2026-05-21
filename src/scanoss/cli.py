@@ -28,7 +28,7 @@ import sys
 import traceback
 from dataclasses import asdict
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import pypac
 
@@ -1711,7 +1711,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         if not scanner.scan_files_with_options(args.files, args.dep, scanner.winnowing.file_map):
             sys.exit(1)
     elif args.files_from:
-        file_list: Optional[list] = load_files_from_file(args.files_from)
+        file_list = load_files_from_file(args.files_from)
         if not file_list:
             sys.exit(1)
         if not scanner.scan_files_with_options(file_list, args.dep, scanner.winnowing.file_map):
@@ -2338,7 +2338,7 @@ def get_pac_file(pac: str):
     return pac_file
 
 
-def load_files_from_file(filepath):
+def load_files_from_file(filepath) -> []:
     """
     Loads a list of file paths from a given file. Each line in the input file
     represents a file path. Trailing and leading whitespace is stripped for
