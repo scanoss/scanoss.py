@@ -133,6 +133,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         '--stdin', '-s', metavar='STDIN-FILENAME', type=str, help='Scan the file contents supplied via STDIN (optional)'
     )
     p_scan.add_argument('--files', '-e', type=str, nargs='*', help='List of files to scan.')
+    p_scan.add_argument('--files-from', '-ff', type=str, help='List of files to scan, read from file.')
     p_scan.add_argument('--identify', '-i', type=str, help='Scan and identify components in SBOM file')
     p_scan.add_argument('--ignore', '-n', type=str, help='Ignore components specified in the SBOM file')
     p_scan.add_argument(
@@ -1553,10 +1554,16 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_dir and not args.wfp and not args.stdin and not args.dep and not args.files:
+    if (not args.scan_dir and not args.wfp and not args.stdin
+            and not args.dep and not args.files and not args.files_from):
         print_stderr(
-            'Please specify a file/folder, files (--files), fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)'
+            'Please specify a file/folder, files (--files/--files-from),'
+            ' fingerprint (--wfp), dependency (--dep), or STDIN (--stdin)'
         )
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+    if args.files and args.files_from:
+        print_stderr('Please specify only one of --files or --files-from')
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
     if args.no_wfp_output:
@@ -1702,6 +1709,12 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
             sys.exit(1)
     elif args.files:
         if not scanner.scan_files_with_options(args.files, args.dep, scanner.winnowing.file_map):
+            sys.exit(1)
+    elif args.files_from:
+        file_list = load_files_from_file(args.files_from)
+        if not file_list:
+            sys.exit(1)
+        if not scanner.scan_files_with_options(file_list, args.dep, scanner.winnowing.file_map):
             sys.exit(1)
     elif args.scan_dir:
         if not os.path.exists(args.scan_dir):
@@ -2324,6 +2337,36 @@ def get_pac_file(pac: str):
             sys.exit(1)
     return pac_file
 
+
+def load_files_from_file(filepath) -> []:
+    """
+    Loads a list of file paths from a given file. Each line in the input file
+    represents a file path. Trailing and leading whitespace is stripped for
+    each line. Returns a list containing all the file paths successfully
+    loaded from the input file. If the file is empty or not provided, an
+    empty list will be returned.
+
+    Args:
+        filepath (str): The path to the input file containing file paths
+
+    Returns:
+        list: A list containing the file paths as strings loaded from the input
+        file.
+    """
+    files = []
+    if filepath:
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                for line in f:
+                    source_file = line.rstrip().lstrip()  # Strip leading/trailing whitespace
+                    if source_file and not source_file.startswith('#'):
+                        files.append(source_file)
+                # End of for loop
+        except (OSError, IOError, RuntimeError) as e:
+            print_stderr(f'ERROR: Failed to read input file; {filepath}: {e}')
+        if not files:
+            print_stderr(f'WARNING: No valid file paths found in {filepath}')
+    return files
 
 def crypto_algorithms(parser, args):
     """

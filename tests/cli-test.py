@@ -22,9 +22,75 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
+import os
+import shutil
+import tempfile
 import unittest
 
-from scanoss.cli import process_req_headers
+from scanoss.cli import load_files_from_file, process_req_headers
+
+
+class TestLoadFilesFromFile(unittest.TestCase):
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def _write(self, content: str, filename: str = 'filelist.txt') -> str:
+        path = os.path.join(self.test_dir, filename)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return path
+
+    def test_reads_paths(self):
+        p = self._write('src/foo.py\nsrc/bar.py\n')
+        self.assertEqual(load_files_from_file(p), ['src/foo.py', 'src/bar.py'])
+
+    def test_strips_leading_and_trailing_whitespace(self):
+        p = self._write('  src/foo.py  \n\tsrc/bar.py\t\n')
+        self.assertEqual(load_files_from_file(p), ['src/foo.py', 'src/bar.py'])
+
+    def test_skips_empty_lines(self):
+        p = self._write('\nsrc/foo.py\n\nsrc/bar.py\n\n')
+        self.assertEqual(load_files_from_file(p), ['src/foo.py', 'src/bar.py'])
+
+    def test_skips_whitespace_only_lines(self):
+        p = self._write('src/foo.py\n   \nsrc/bar.py\n')
+        self.assertEqual(load_files_from_file(p), ['src/foo.py', 'src/bar.py'])
+
+    def test_skips_comment_lines(self):
+        p = self._write('# header comment\nsrc/foo.py\n# another comment\nsrc/bar.py\n')
+        self.assertEqual(load_files_from_file(p), ['src/foo.py', 'src/bar.py'])
+
+    def test_empty_file_returns_empty_list(self):
+        p = self._write('')
+        self.assertEqual(load_files_from_file(p), [])
+
+    def test_only_comments_and_blanks_returns_empty_list(self):
+        p = self._write('# comment\n\n# another\n   \n')
+        self.assertEqual(load_files_from_file(p), [])
+
+    def test_nonexistent_file_returns_empty_list(self):
+        self.assertEqual(load_files_from_file('/nonexistent/path/filelist.txt'), [])
+
+    def test_none_filepath_returns_empty_list(self):
+        self.assertEqual(load_files_from_file(None), [])  # type: ignore[arg-type]
+
+    def test_empty_string_filepath_returns_empty_list(self):
+        self.assertEqual(load_files_from_file(''), [])
+
+    def test_windows_line_endings(self):
+        # Write raw CRLF bytes to simulate a file produced on Windows
+        path = os.path.join(self.test_dir, 'crlf.txt')
+        with open(path, 'wb') as f:
+            f.write(b'src/foo.py\r\nsrc/bar.py\r\n')
+        self.assertEqual(load_files_from_file(path), ['src/foo.py', 'src/bar.py'])
+
+    def test_utf8_paths(self):
+        p = self._write('src/föö.py\nsrc/bàr.py\n')
+        self.assertEqual(load_files_from_file(p), ['src/föö.py', 'src/bàr.py'])
 
 
 class MyTestCase(unittest.TestCase):
