@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.54.0] - 2026-05-22
+### Added
+- Added `--scan-root` to specify the scan root to load scanoss.json from
+- Added a priority list for loading scanoss.json (1. --settings 2. Scan directory (`--scan-root` if specified) 3. CWD)
+
 ## [1.53.0] - 2026-05-21
 ### Added
 - Added the ability to scan a file-based list of files (`--files-from`)
@@ -889,3 +894,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.52.0]: https://github.com/scanoss/scanoss.py/compare/v1.51.1...v1.52.0
 [1.52.1]: https://github.com/scanoss/scanoss.py/compare/v1.52.0...v1.52.1
 [1.53.0]: https://github.com/scanoss/scanoss.py/compare/v1.52.1...v1.53.0
+[1.54.0]: https://github.com/scanoss/scanoss.py/compare/v1.53.0...v1.54.0

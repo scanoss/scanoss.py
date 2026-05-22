@@ -349,7 +349,11 @@ class FileFilters(ScanossBase):
                 all_files.append(str(file_path))
         # End os.walk loop
         # Now filter the files and return the reduced list
-        return self.get_filtered_files_from_files(all_files, str(root_path))
+        files = self.get_filtered_files_from_files(all_files, str(root_path))
+        if filter_path:
+            normalized = filter_path.strip('/')
+            files = [f for f in files if f == normalized or f.startswith(normalized + os.sep)]
+        return files
 
     def get_filtered_files_from_files(self, files: List[str], scan_root: Optional[str] = None) -> List[str]:
         """
@@ -522,9 +526,13 @@ class FileFilters(ScanossBase):
         ):
             self.print_debug(f'Skipping directory: {dir_rel_path} (hidden directory)')
             return True
-        if filter_path and not dir_rel_path.startswith(filter_path):
-            self.print_debug(f'Skipping directory: {dir_rel_path} (not in filter path)')
-            return True
+        if filter_path and dir_rel_path != '.':
+            normalized = filter_path.strip('/')
+            in_filter = dir_rel_path == normalized or dir_rel_path.startswith(normalized + '/')
+            is_ancestor = normalized.startswith(dir_rel_path + '/')
+            if not in_filter and not is_ancestor:
+                self.print_debug(f'Skipping directory: {dir_rel_path} (not in filter path)')
+                return True
         if self.all_folders:
             return False
         dir_name_lower = dir_name.lower()

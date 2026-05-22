@@ -127,6 +127,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     )
     p_scan.set_defaults(func=scan)
     p_scan.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
+    p_scan.add_argument(
+        '--scan-root', '-scr', type=str,
+        help='Scan root directory. FILE/DIR is treated as relative to this root, '
+             'and scanoss.json is loaded from it.',
+    )
     p_scan.add_argument('--wfp', '-w', type=str, help='Scan a WFP File instead of a folder (optional)')
     p_scan.add_argument('--dep', '-p', type=str, help='Use a dependency file instead of a folder (optional)')
     p_scan.add_argument(
@@ -1578,21 +1583,37 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
     if args.settings and args.skip_settings_file:
         print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
         sys.exit(1)
+    if args.scan_root:
+        scan_root: str = args.scan_root
+        if not args.scan_dir:
+            print_stderr('ERROR: --scan-root requires a scan target (FILE/DIR).')
+            sys.exit(1)
+        if not os.path.isdir(scan_root):
+            print_stderr(f'ERROR: --scan-root must be an existing directory: {scan_root}')
+            sys.exit(1)
+        effective_target = os.path.join(scan_root, args.scan_dir)
+        if not os.path.exists(effective_target):
+            print_stderr(f'ERROR: Resolved scan target does not exist: {effective_target}')
+            sys.exit(1)
+        if not Path(effective_target).resolve().is_relative_to(Path(scan_root).resolve()):
+            print_stderr(f'ERROR: Scan target escapes scan root: {args.scan_dir}')
+            sys.exit(1)
     # Figure out which settings (if any) to load before processing
+    settings_root = args.scan_root if args.scan_root else args.scan_dir
     scanoss_settings = None
     if not args.skip_settings_file:
         scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
         try:
             if args.identify:
-                scanoss_settings.load_json_file(args.identify, args.scan_dir).set_file_type('legacy').set_scan_type(
+                scanoss_settings.load_json_file(args.identify, settings_root).set_file_type('legacy').set_scan_type(
                     'identify'
                 )
             elif args.ignore:
-                scanoss_settings.load_json_file(args.ignore, args.scan_dir).set_file_type('legacy').set_scan_type(
+                scanoss_settings.load_json_file(args.ignore, settings_root).set_file_type('legacy').set_scan_type(
                     'blacklist'
                 )
             else:
-                scanoss_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new')
+                scanoss_settings.load_json_file(args.settings, settings_root).set_file_type('new')
 
         except ScanossSettingsError as e:
             print_stderr(f'Error: {e}')
@@ -1717,31 +1738,35 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         if not scanner.scan_files_with_options(file_list, args.dep, scanner.winnowing.file_map):
             sys.exit(1)
     elif args.scan_dir:
-        if not os.path.exists(args.scan_dir):
-            print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
+        scan_root = args.scan_root
+        effective_path = os.path.join(scan_root, args.scan_dir) if scan_root else args.scan_dir
+        if not os.path.exists(effective_path):
+            print_stderr(f'Error: File or folder specified does not exist: {effective_path}.')
             sys.exit(1)
-        if os.path.isdir(args.scan_dir):
+        if os.path.isdir(effective_path):
             if not scanner.scan_folder_with_options(
-                args.scan_dir,
+                scan_root or args.scan_dir,
                 args.dep,
                 scanner.winnowing.file_map,
                 args.dep_scope,
                 args.dep_scope_inc,
                 args.dep_scope_exc,
+                filter_path=args.scan_dir if scan_root else None,
             ):
                 sys.exit(1)
-        elif os.path.isfile(args.scan_dir):
+        elif os.path.isfile(effective_path):
             if not scanner.scan_file_with_options(
-                args.scan_dir,
+                effective_path,
                 args.dep,
                 scanner.winnowing.file_map,
                 args.dep_scope,
                 args.dep_scope_inc,
                 args.dep_scope_exc,
+                file_id=args.scan_dir if scan_root else None,
             ):
                 sys.exit(1)
         else:
-            print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
+            print_stderr(f'Error: Path specified is neither a file or a folder: {effective_path}.')
             sys.exit(1)
     elif args.dep:
         if not args.dependencies_only:

@@ -247,7 +247,7 @@ class ScanossSettings(ScanossBase):
             file_path = Path(filepath)
         # Builds a prioritised candidate paths for settings file from scan root or cwd
         candidates = []
-        # Prepend the scan root directory to the filepath if it's not an absolute path and not a relative path'
+        # Prepend the scan root directory to the filepath if it's not an absolute path and not a relative path
         if not file_path.is_absolute() and (not filepath or not filepath.startswith('.')):
             if scan_root:
                 scan_root_path = Path(scan_root)
