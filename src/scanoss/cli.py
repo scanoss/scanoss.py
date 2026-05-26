@@ -245,6 +245,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_wfp.set_defaults(func=wfp)
     p_wfp.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
     p_wfp.add_argument(
+        '--scan-root', '-scr', type=str,
+        help='Scan root directory. scan_dir is treated as relative to this root, '
+             'and scanoss.json is loaded from it.',
+    )
+    p_wfp.add_argument(
         '--stdin',
         '-s',
         metavar='STDIN-FILENAME',
@@ -1462,21 +1467,13 @@ def wfp(parser, args):
         print_stderr('Please specify a file/folder or STDIN (--stdin)')
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
+    validate_scan_root(args)
     if args.strip_hpsm and not args.hpsm and not args.quiet:
         print_stderr('Warning: --strip-hpsm option supplied without enabling HPSM (--hpsm). Ignoring.')
     if args.output:
         initialise_empty_file(args.output)
 
-    # Load scan settings
-    scanoss_settings = None
-    if not args.skip_settings_file:
-        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
-        try:
-            scanoss_settings.load_json_file(args.settings, args.scan_dir)
-        except ScanossSettingsError as e:
-            print_stderr(f'Error: {e}')
-            sys.exit(1)
-
+    scanoss_settings = get_scanoss_settings_from_args(args)
     scan_options = 0 if args.skip_snippets else ScanType.SCAN_SNIPPETS.value  # Skip snippet generation or not
     scanner = Scanner(
         debug=args.debug,
@@ -1502,15 +1499,25 @@ def wfp(parser, args):
         contents = sys.stdin.buffer.read()
         scanner.wfp_contents(args.stdin, contents, args.output)
     elif args.scan_dir:
-        if not os.path.exists(args.scan_dir):
-            print_stderr(f'Error: File or folder specified does not exist: {args.scan_dir}.')
+        scan_root = args.scan_root
+        effective_path = os.path.join(scan_root, args.scan_dir) if scan_root else args.scan_dir
+        relative_target = None
+        if scan_root:
+            relative_target = os.path.relpath(
+                Path(effective_path).resolve(),
+                Path(scan_root).resolve(),
+            )
+            if relative_target == '.':
+                relative_target = None
+        if not os.path.exists(effective_path):
+            print_stderr(f'Error: File or folder specified does not exist: {effective_path}.')
             sys.exit(1)
-        if os.path.isdir(args.scan_dir):
-            scanner.wfp_folder(args.scan_dir, args.output)
-        elif os.path.isfile(args.scan_dir):
-            scanner.wfp_file(args.scan_dir, args.output)
+        if os.path.isdir(effective_path):
+            scanner.wfp_folder(scan_root or args.scan_dir, args.output, filter_path=relative_target)
+        elif os.path.isfile(effective_path):
+            scanner.wfp_file(effective_path, args.output, file_id=relative_target)
         else:
-            print_stderr(f'Error: Path specified is neither a file or a folder: {args.scan_dir}.')
+            print_stderr(f'Error: Path specified is neither a file or a folder: {effective_path}.')
             sys.exit(1)
     else:
         print_stderr('No action found to process')
@@ -1583,41 +1590,9 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
     if args.settings and args.skip_settings_file:
         print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
         sys.exit(1)
-    if args.scan_root:
-        scan_root: str = args.scan_root
-        if not args.scan_dir:
-            print_stderr('ERROR: --scan-root requires a scan target (FILE/DIR).')
-            sys.exit(1)
-        if not os.path.isdir(scan_root):
-            print_stderr(f'ERROR: --scan-root must be an existing directory: {scan_root}')
-            sys.exit(1)
-        effective_target = os.path.join(scan_root, args.scan_dir)
-        if not os.path.exists(effective_target):
-            print_stderr(f'ERROR: Resolved scan target does not exist: {effective_target}')
-            sys.exit(1)
-        if not Path(effective_target).resolve().is_relative_to(Path(scan_root).resolve()):
-            print_stderr(f'ERROR: Scan target escapes scan root: {args.scan_dir}')
-            sys.exit(1)
+    validate_scan_root(args)
     # Figure out which settings (if any) to load before processing
-    settings_root = args.scan_root if args.scan_root else args.scan_dir
-    scanoss_settings = None
-    if not args.skip_settings_file:
-        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
-        try:
-            if args.identify:
-                scanoss_settings.load_json_file(args.identify, settings_root).set_file_type('legacy').set_scan_type(
-                    'identify'
-                )
-            elif args.ignore:
-                scanoss_settings.load_json_file(args.ignore, settings_root).set_file_type('legacy').set_scan_type(
-                    'blacklist'
-                )
-            else:
-                scanoss_settings.load_json_file(args.settings, settings_root).set_file_type('new')
-
-        except ScanossSettingsError as e:
-            print_stderr(f'Error: {e}')
-            sys.exit(1)
+    scanoss_settings = get_scanoss_settings_from_args(args)
     if args.dep:
         if not os.path.exists(args.dep) or not os.path.isfile(args.dep):
             print_stderr(f'Specified --dep file does not exist or is not a file: {args.dep}')
@@ -2957,15 +2932,46 @@ def container_scan(parser, args, only_interim_results: bool = False):
         sys.exit(1)
 
 
+def validate_scan_root(args):
+    """Validate --scan-root and its relationship to the scan target. Exits on error."""
+    if not args.scan_root:
+        return
+    scan_root: str = args.scan_root
+    if not args.scan_dir:
+        print_stderr('ERROR: --scan-root requires a scan target (FILE/DIR).')
+        sys.exit(1)
+    if not os.path.isdir(scan_root):
+        print_stderr(f'ERROR: --scan-root must be an existing directory: {scan_root}')
+        sys.exit(1)
+    effective_target = os.path.join(scan_root, args.scan_dir)
+    if not os.path.exists(effective_target):
+        print_stderr(f'ERROR: Resolved scan target does not exist: {effective_target}')
+        sys.exit(1)
+    try:
+        Path(effective_target).resolve().relative_to(Path(scan_root).resolve())
+    except ValueError:
+        print_stderr(f'ERROR: Scan target escapes scan root: {args.scan_dir}')
+        sys.exit(1)
+
+
 def get_scanoss_settings_from_args(args):
-    scanoss_settings = None
-    if not args.skip_settings_file:
-        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
-        try:
-            scanoss_settings.load_json_file(args.settings, args.scan_dir).set_file_type('new').set_scan_type('identify')
-        except ScanossSettingsError as e:
-            print_stderr(f'Error: {e}')
-            sys.exit(1)
+    if args.skip_settings_file:
+        return None
+    settings_root = getattr(args, 'scan_root', None) or getattr(args, 'scan_dir', None)
+    scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
+    try:
+        identify = getattr(args, 'identify', None)
+        ignore = getattr(args, 'ignore', None)
+        settings = getattr(args, 'settings', None)
+        if identify:
+            scanoss_settings.load_json_file(identify, settings_root).set_file_type('legacy').set_scan_type('identify')
+        elif ignore:
+            scanoss_settings.load_json_file(ignore, settings_root).set_file_type('legacy').set_scan_type('blacklist')
+        else:
+            scanoss_settings.load_json_file(settings, settings_root).set_file_type('new')
+    except ScanossSettingsError as e:
+        print_stderr(f'Error: {e}')
+        sys.exit(1)
     return scanoss_settings
 
 
