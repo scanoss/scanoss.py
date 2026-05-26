@@ -1097,7 +1097,7 @@ class Scanner(ScanossBase):
         else:
             Scanner.print_stderr(f'Warning: No fingerprints generated for: {wfp_file}')
 
-    def wfp_file(self, scan_file: str, wfp_file: str = None):
+    def wfp_file(self, scan_file: str, wfp_file: str = None, file_id: str = None):
         """
         Fingerprint the specified file
         """
@@ -1107,7 +1107,8 @@ class Scanner(ScanossBase):
             raise Exception(f'ERROR: Specified file does not exist or is not a file: {scan_file}')
 
         self.print_debug(f'Fingerprinting {scan_file}...')
-        wfp = self.winnowing.wfp_for_file(scan_file, scan_file)
+        wfp_id = file_id or scan_file
+        wfp = self.winnowing.wfp_for_file(scan_file, wfp_id)
         if wfp:
             if wfp_file:
                 self.print_stderr(f'Writing fingerprints to {wfp_file}')
@@ -1118,7 +1119,7 @@ class Scanner(ScanossBase):
         else:
             Scanner.print_stderr(f'Warning: No fingerprints generated for: {scan_file}')
 
-    def wfp_folder(self, scan_dir: str, wfp_file: str = None):
+    def wfp_folder(self, scan_dir: str, wfp_file: str = None, filter_path: str = None):
         """
         Fingerprint the specified folder producing fingerprints
         """
@@ -1144,7 +1145,7 @@ class Scanner(ScanossBase):
         spinner_ctx = Spinner('Fingerprinting ') if (not self.quiet and self.isatty) else nullcontext()
 
         with spinner_ctx as spinner:
-            to_fingerprint_files = file_filters.get_filtered_files_from_folder(scan_dir)
+            to_fingerprint_files = file_filters.get_filtered_files_from_folder(scan_dir, filter_path)
             for file in to_fingerprint_files:
                 if spinner:
                     spinner.next()
