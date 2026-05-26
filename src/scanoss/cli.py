@@ -264,7 +264,12 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         description=f'Produce dependency file summary: {__version__}',
         help='Scan source code for dependencies, but do not decorate them',
     )
-    p_dep.add_argument('scan_loc', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
+    p_dep.add_argument('scan_dir', metavar='FILE/DIR', type=str, nargs='?', help='A file or folder to scan')
+    p_dep.add_argument(
+        '--scan-root', '-scr', type=str,
+        help='Scan root directory. FILE/DIR is treated as relative to this root, '
+             'and scanoss.json is loaded from it.',
+    )
     p_dep.add_argument(
         '--container',
         type=str,
@@ -1043,6 +1048,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
             f'(optional - default: {DEFAULT_HFH_MIN_ACCEPTED_SCORE})'
         ),
     )
+    p_folder_scan.add_argument(
+        '--scan-root', '-scr', type=str,
+        help='Scan root directory. FILE/DIR is treated as relative to this root, '
+             'and scanoss.json is loaded from it.',
+    )
     p_folder_scan.set_defaults(func=folder_hashing_scan)
 
     # Sub-command: folder-hash
@@ -1066,6 +1076,11 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         type=int,
         default=DEFAULT_HFH_DEPTH,
         help=f'Defines how deep to hash the root directory (optional - default {DEFAULT_HFH_DEPTH})',
+    )
+    p_folder_hash.add_argument(
+        '--scan-root', '-scr', type=str,
+        help='Scan root directory. FILE/DIR is treated as relative to this root, '
+             'and scanoss.json is loaded from it.',
     )
     p_folder_hash.set_defaults(func=folder_hash)
 
@@ -1777,7 +1792,7 @@ def dependency(parser, args):
         args: Namespace
             Parsed arguments
     """
-    if not args.scan_loc and not args.container:
+    if not args.scan_dir and not args.container:
         print_stderr('Please specify a file/folder or container image')
         parser.parse_args([args.subparser, '-h'])
         sys.exit(1)
@@ -1787,30 +1802,21 @@ def dependency(parser, args):
         args.scan_loc = args.container
         return container_scan(parser, args, only_interim_results=True)
 
-    if not os.path.exists(args.scan_loc):
-        print_stderr(f'Error: File or folder specified does not exist: {args.scan_loc}.')
+    validate_scan_root(args)
+    effective_scan_dir = os.path.join(args.scan_root, args.scan_dir) if args.scan_root else args.scan_dir
+    if not os.path.exists(effective_scan_dir):
+        print_stderr(f'Error: File or folder specified does not exist: {effective_scan_dir}.')
         sys.exit(1)
     if args.output:
         initialise_empty_file(args.output)
 
-    if args.settings and args.skip_settings_file:
-        print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
-        sys.exit(1)
-    scanoss_settings = None
-    if not args.skip_settings_file:
-        scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
-        try:
-            scanoss_settings.load_json_file(args.settings, args.scan_loc)
-        except ScanossSettingsError as e:
-            print_stderr(f'Error: {e}')
-            sys.exit(1)
-
+    scanoss_settings = get_scanoss_settings_from_args(args)
     sc_deps = ScancodeDeps(
         debug=args.debug, quiet=args.quiet, trace=args.trace, sc_command=args.sc_command, timeout=args.sc_timeout,
         scanoss_settings=scanoss_settings,
     )
     if not sc_deps.get_dependencies(
-        what_to_scan=args.scan_loc, result_output=args.output
+        what_to_scan=effective_scan_dir, result_output=args.output
     ):
         sys.exit(1)
     return None
@@ -2834,8 +2840,10 @@ def folder_hashing_scan(parser, args):
             parser.parse_args([args.subparser, '-h'])
             sys.exit(1)
 
-        if not os.path.exists(args.scan_dir) or not os.path.isdir(args.scan_dir):
-            print_stderr(f'ERROR: The specified directory {args.scan_dir} does not exist')
+        validate_scan_root(args)
+        effective_scan_dir = os.path.join(args.scan_root, args.scan_dir) if args.scan_root else args.scan_dir
+        if not os.path.exists(effective_scan_dir) or not os.path.isdir(effective_scan_dir):
+            print_stderr(f'ERROR: The specified directory {effective_scan_dir} does not exist')
             sys.exit(1)
 
         scanner_config = create_scanner_config_from_args(args)
@@ -2845,7 +2853,7 @@ def folder_hashing_scan(parser, args):
         client = ScanossGrpc(**asdict(grpc_config))
 
         scanner = ScannerHFH(
-            scan_dir=args.scan_dir,
+            scan_dir=effective_scan_dir,
             config=scanner_config,
             client=client,
             scanoss_settings=scanoss_settings,
@@ -2875,21 +2883,23 @@ def folder_hash(parser, args):
             parser.parse_args([args.subparser, '-h'])
             sys.exit(1)
 
-        if not os.path.exists(args.scan_dir) or not os.path.isdir(args.scan_dir):
-            print_stderr(f'ERROR: The specified directory {args.scan_dir} does not exist')
+        validate_scan_root(args)
+        effective_scan_dir = os.path.join(args.scan_root, args.scan_dir) if args.scan_root else args.scan_dir
+        if not os.path.exists(effective_scan_dir) or not os.path.isdir(effective_scan_dir):
+            print_stderr(f'ERROR: The specified directory {effective_scan_dir} does not exist')
             sys.exit(1)
 
         folder_hasher_config = create_folder_hasher_config_from_args(args)
         scanoss_settings = get_scanoss_settings_from_args(args)
 
         folder_hasher = FolderHasher(
-            scan_dir=args.scan_dir,
+            scan_dir=effective_scan_dir,
             config=folder_hasher_config,
             scanoss_settings=scanoss_settings,
             depth=args.depth,
         )
 
-        folder_hasher.hash_directory(args.scan_dir)
+        folder_hasher.hash_directory(effective_scan_dir)
         folder_hasher.present(output_file=args.output, output_format=args.format)
     except Exception as e:
         print_stderr(f'ERROR: {e}')

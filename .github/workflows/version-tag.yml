@@ -20,6 +20,7 @@ jobs:
         with:
           fetch-depth: "0"
           token: ${{ secrets.SC_GH_TAG_TOKEN }}
+          persist-credentials: false
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -34,9 +35,12 @@ jobs:
       - name: Apply Tag
         if: ${{ inputs.run_for_real }}
         id: taggerApply
+        env:
+          TAG_TOKEN: ${{ secrets.SC_GH_TAG_TOKEN }}
         run: |
           echo "Applying tag ${{env.package_app_version}} ..."
           git tag "${{env.package_app_version}}"
           echo "Pushing changes..."
+          git remote set-url origin "https://x-access-token:${TAG_TOKEN}@github.com/${{ github.repository }}"
           git push --tags
 
