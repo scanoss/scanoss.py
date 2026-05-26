@@ -20,11 +20,11 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run SCANOSS Code Scan
         id: scanoss-code-scan-step
-        uses: scanoss/code-scan-action@v1
+        uses: scanoss/gha-code-scan@v1
         with:
           policies: undeclared
           api.url: https://api.scanoss.com/scan/direct
