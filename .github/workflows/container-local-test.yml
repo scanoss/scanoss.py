@@ -21,11 +21,11 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Setup and build the python package
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.9.x"
 
@@ -38,12 +38,12 @@ jobs:
         run: make dist
 
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Build Docker image with Buildx - Base
       - name: Build Docker Image - No Entrypoint
         id: build-no-ep
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: false
@@ -54,7 +54,7 @@ jobs:
       # Build Docker image with Buildx - Jenkins
       - name: Build Docker Image - Jenkins
         id: build-je
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: false
@@ -65,7 +65,7 @@ jobs:
       # Build Docker image with Buildx - Entrypoint
       - name: Build Docker Image - With Entrypoint
         id: build-with-ep
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: false
