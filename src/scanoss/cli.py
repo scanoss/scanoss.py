@@ -1740,6 +1740,14 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
     elif args.scan_dir:
         scan_root = args.scan_root
         effective_path = os.path.join(scan_root, args.scan_dir) if scan_root else args.scan_dir
+        relative_target = None
+        if scan_root:
+            relative_target = os.path.relpath(
+                Path(effective_path).resolve(),
+                Path(scan_root).resolve(),
+            )
+            if relative_target == '.':
+                relative_target = None
         if not os.path.exists(effective_path):
             print_stderr(f'Error: File or folder specified does not exist: {effective_path}.')
             sys.exit(1)
@@ -1751,7 +1759,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
                 args.dep_scope,
                 args.dep_scope_inc,
                 args.dep_scope_exc,
-                filter_path=args.scan_dir if scan_root else None,
+                filter_path=relative_target,
             ):
                 sys.exit(1)
         elif os.path.isfile(effective_path):
@@ -1762,7 +1770,7 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
                 args.dep_scope,
                 args.dep_scope_inc,
                 args.dep_scope_exc,
-                file_id=args.scan_dir if scan_root else None,
+                file_id=relative_target,
             ):
                 sys.exit(1)
         else:

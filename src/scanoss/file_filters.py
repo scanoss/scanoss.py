@@ -308,28 +308,29 @@ class FileFilters(ScanossBase):
         self.file_folder_pat_spec = self._get_file_folder_pattern_spec(kwargs.get('operation_type', 'scanning'))
         self.size_pat_rules = self._get_size_limit_pattern_rules(kwargs.get('operation_type', 'scanning'))
 
+    @staticmethod
+    def _filter_parts(path_value: str) -> tuple:
+        return tuple(part for part in Path(path_value).parts if part not in ('.', ''))
+
     def get_filtered_files_from_folder(self, root: str, filter_path: str = None) -> List[str]:
         """
-        Retrieve a list of files to scan or fingerprint from a given directory root based on filter settings.
+        Filters and retrieves a list of files from a specified root directory based on various optional conditions.
 
-        Args:
-            root (str): Root directory to scan or fingerprint
-            filter_path (str): Path to filter files within the root directory
+        This method performs a recursive directory traversal starting from the provided root directory,
+        collects all file paths, and optionally filters the files or directories based on directory skip rules,
+        global skip rules, or a specific path filter. The filtered list of file paths is then returned.
+
+        Parameters:
+        root: str
+            The root directory path to start the recursive search for files.
+        filter_path: str, optional
+            A specific filter path used to limit the selection of files to certain subdirectories. Default is None.
 
         Returns:
-            list[str]: Filtered list of files to scan or fingerprint
+        List[str]
+            A list of file paths, as strings, that meet the specified filtering criteria.
         """
-        if self.debug:
-            if self.file_folder_pat_spec:
-                self.print_stderr(f'Running with {len(self.file_folder_pat_spec)} pattern filters.')
-            if self.size_pat_rules:
-                self.print_stderr(f'Running with {len(self.size_pat_rules)} size pattern rules.')
-            if self.skip_size:
-                self.print_stderr(f'Running with global skip size: {self.skip_size}')
-            if self.skip_extensions:
-                self.print_stderr(f'Running with extra global skip extensions: {self.skip_extensions}')
-            if self.skip_folders:
-                self.print_stderr(f'Running with extra global skip folders: {self.skip_folders}')
+        self._print_filtered_files_folder_debug()
         all_files = []
         root_path = Path(root).resolve()
         if not root_path.exists() or not root_path.is_dir():
@@ -351,9 +352,28 @@ class FileFilters(ScanossBase):
         # Now filter the files and return the reduced list
         files = self.get_filtered_files_from_files(all_files, str(root_path))
         if filter_path:
-            normalized = filter_path.strip('/')
-            files = [f for f in files if f == normalized or f.startswith(normalized + os.sep)]
+            filter_parts = self._filter_parts(filter_path)
+            if filter_parts:
+                files = [f for f in files if tuple(Path(f).parts[:len(filter_parts)]) == filter_parts]
         return files
+
+    def _print_filtered_files_folder_debug(self):
+        """
+        Print debug information regarding filtered files, folders, and rules when
+        debug mode is enabled.
+        """
+        if self.debug:
+            if self.file_folder_pat_spec:
+                self.print_stderr(f'Running with {len(self.file_folder_pat_spec)} pattern filters.')
+            if self.size_pat_rules:
+                self.print_stderr(f'Running with {len(self.size_pat_rules)} size pattern rules.')
+            if self.skip_size:
+                self.print_stderr(f'Running with global skip size: {self.skip_size}')
+            if self.skip_extensions:
+                self.print_stderr(f'Running with extra global skip extensions: {self.skip_extensions}')
+            if self.skip_folders:
+                self.print_stderr(f'Running with extra global skip folders: {self.skip_folders}')
+
 
     def get_filtered_files_from_files(self, files: List[str], scan_root: Optional[str] = None) -> List[str]:
         """
@@ -527,9 +547,10 @@ class FileFilters(ScanossBase):
             self.print_debug(f'Skipping directory: {dir_rel_path} (hidden directory)')
             return True
         if filter_path and dir_rel_path != '.':
-            normalized = filter_path.strip('/')
-            in_filter = dir_rel_path == normalized or dir_rel_path.startswith(normalized + '/')
-            is_ancestor = normalized.startswith(dir_rel_path + '/')
+            filter_parts = self._filter_parts(filter_path)
+            dir_parts = self._filter_parts(dir_rel_path)
+            in_filter = tuple(dir_parts[:len(filter_parts)]) == filter_parts
+            is_ancestor = tuple(filter_parts[:len(dir_parts)]) == dir_parts
             if not in_filter and not is_ancestor:
                 self.print_debug(f'Skipping directory: {dir_rel_path} (not in filter path)')
                 return True
