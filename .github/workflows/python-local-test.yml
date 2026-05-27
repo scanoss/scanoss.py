@@ -111,7 +111,7 @@ jobs:
           hash_names=$(cat hpfm-hashes.json | grep 'sim_hash_names')
           echo "Sim Hash: $hash_names"
           if [ "$hash_names" = "" ]; then
-            echo "Error: Folder hash failed to generate HPFM hashes. Failing.
+            echo "Error: Folder hash failed to generate HPFM hashes. Failing."
             exit 1
           fi
 
