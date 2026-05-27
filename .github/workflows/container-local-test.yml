@@ -91,6 +91,7 @@ jobs:
           docker image ls -a
           docker run ${{ env.IMAGE_NAME }} version
           docker run ${{ env.IMAGE_NAME }} utils fast
+          echo "Running file scan on tests"
           docker run -e SCANOSS_API_KEY="${{ secrets.SC_API_KEY }}" -v "$(pwd)":"/scanoss" ${{ env.IMAGE_NAME }} scan -o results.json tests
           id_count=$(cat results.json | grep '"id":' | wc -l)
           echo "ID Count: $id_count"
@@ -98,6 +99,7 @@ jobs:
             echo "Error: Scan test did not produce any results. Failing"
             exit 1
           fi
+          echo "Running fingerprinting on tests"
           docker run -v "$(pwd)":"/scanoss" ${{ env.IMAGE_NAME }} wfp --skip-headers -o fingers.wfp tests
           wfp_count=$(cat fingers.wfp | grep 'file=' | wc -l)
           echo "WFP Count: $wfp_count"
@@ -105,3 +107,12 @@ jobs:
             echo "Error: WFP test did not produce any results. Failing"
             exit 1
           fi
+          echo "Running dependency scan on tests"
+          docker run -e SCANOSS_API_KEY="${{ secrets.SC_API_KEY }}" -v "$(pwd)":"/scanoss" ${{ env.IMAGE_NAME }} scan --dependencies-only -o results.json tests 
+          dep_count=$(python3 -c "import json,sys; d=json.load(open('results.json')); print(sum(len(v.get('dependencies',[])) for f in d.values() for v in f))" 2>/dev/null || echo 0)
+          echo "Dependency count: $dep_count"
+          if [[ $dep_count -lt 1 ]]; then
+            echo "Error: Dependency scan did not find any dependencies. Failing"
+            exit 1
+          fi
+

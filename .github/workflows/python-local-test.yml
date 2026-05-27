@@ -103,6 +103,18 @@ jobs:
             exit 1
           fi
 
+      - name: Run Tests HPFM
+        run: |
+          which scanoss-py
+          scanoss-py version
+          scanoss-py fh -o hpfm-hashes.json tests
+          hash_names=$(cat hpfm-hashes.json | grep 'sim_hash_names')
+          echo "Sim Hash: $hash_names"
+          if [ "$hash_names" = "" ]; then
+            echo "Error: Folder hash failed to generate HPFM hashes. Failing.
+            exit 1
+          fi
+
       - name: Run Unit Tests
         run: |
           python -m unittest
