@@ -1799,6 +1799,9 @@ def dependency(parser, args):
 
     # Workaround to return syft scan results converted to our dependency output format
     if args.container:
+        if getattr(args, 'scan_root', None):
+            print_stderr('ERROR: --scan-root is not supported with --container.')
+            sys.exit(1)
         args.scan_loc = args.container
         return container_scan(parser, args, only_interim_results=True)
 
