@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Added `--apiurl` option to the `folder-scan` command to configure a custom SCANOSS API base URL (consistent with the `scan` command)
+### Changed
+- Changed the default `--rank-threshold` for the `folder-scan`/`fs` command from `5` to `9`, so valid components with ranks 6-9 are no longer filtered out by default
 
 ## [1.53.0] - 2026-05-21
 ### Added
