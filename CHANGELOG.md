@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.53.1] - 2026-06-04
 ### Added
 - Added `--apiurl` option to the `folder-scan` command to configure a custom SCANOSS API base URL (consistent with the `scan` command)
 ### Changed
@@ -893,3 +893,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.52.0]: https://github.com/scanoss/scanoss.py/compare/v1.51.1...v1.52.0
 [1.52.1]: https://github.com/scanoss/scanoss.py/compare/v1.52.0...v1.52.1
 [1.53.0]: https://github.com/scanoss/scanoss.py/compare/v1.52.1...v1.53.0
+[1.53.1]: https://github.com/scanoss/scanoss.py/compare/v1.53.0...v1.53.1

@@ -253,6 +253,8 @@ Performs a comprehensive scan of a directory using folder hashing to identify co
      - Skip default settings file (scanoss.json) if it exists
    * - --key <token>, -k <token>
      - SCANOSS API Key token (optional - not required for default OSSKB URL)
+   * - --apiurl <API_URL>
+     - SCANOSS API base URL (optional - default https://api.osskb.org)
    * - --proxy <url>
      - Proxy URL to use for connections
    * - --pac <file/url>
