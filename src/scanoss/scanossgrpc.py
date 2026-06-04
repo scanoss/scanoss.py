@@ -973,7 +973,7 @@ class GrpcConfig:
 
 def create_grpc_config_from_args(args) -> GrpcConfig:
     return GrpcConfig(
-        url=getattr(args, 'api2url', DEFAULT_URL),
+        url=getattr(args, 'apiurl', None) or getattr(args, 'api2url', None) or DEFAULT_URL,
         api_key=getattr(args, 'key', SCANOSS_API_KEY),
         debug=getattr(args, 'debug', False),
         trace=getattr(args, 'trace', False),

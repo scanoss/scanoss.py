@@ -77,7 +77,7 @@ class ScannerHFH:
             config (ScannerConfig): Configuration parameters for the scanner.
             client (ScanossGrpc): gRPC client for communicating with the scanning service.
             scanoss_settings (Optional[ScanossSettings]): Optional settings for Scanoss.
-            rank_threshold (int): Get results with rank below this threshold (default: 5).
+            rank_threshold (int): Get results with rank at or below this threshold (default: 9).
             depth (int): How many levels to scan (default: 1).
             recursive_threshold (float): Minimum score threshold to consider a match (default: 0.25).
             min_accepted_score (float): Only show results with a score at or above this threshold (default: 0.15).
