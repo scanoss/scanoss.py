@@ -1139,7 +1139,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         )
 
     # Global Scan command options
-    for p in [p_scan, p_cs]:
+    for p in [p_scan, p_cs, p_folder_scan]:
         p.add_argument(
             '--apiurl', type=str, help='SCANOSS API base URL (optional - default: https://api.osskb.org)'
         )
