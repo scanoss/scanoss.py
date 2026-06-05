@@ -743,10 +743,16 @@ scanoss-py folder-scan /path/to/folder -o folder-scan-results.json
 **Options:**
 - `--rank-threshold`: Filter results to only show those with rank value at or below this threshold (e.g., `--rank-threshold 3` returns results with rank 1, 2, or 3). Lower rank values indicate higher quality matches.
 - `--format`: Result output format (json or cyclonedx, default: json)
+- `--apiurl`: SCANOSS API base URL (optional - default: `https://api.osskb.org`)
 
 **Example with rank threshold:**
 ```shell
 scanoss-py folder-scan /path/to/folder --rank-threshold 3 -o folder-scan-results.json
+```
+
+**Example with a custom API URL:**
+```shell
+scanoss-py folder-scan /path/to/folder --apiurl https://api.scanoss.com -o folder-scan-results.json
 ```
 
 ### Container-Scan a Docker Image
