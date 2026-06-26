@@ -35,6 +35,7 @@ import pypac
 from scanoss.cryptography import Cryptography, create_cryptography_config_from_args
 from scanoss.delta import Delta
 from scanoss.export.dependency_track import DependencyTrackExporter
+from scanoss.export.hermine import HermineExporter
 from scanoss.scanners.container_scanner import (
     DEFAULT_SYFT_COMMAND,
     DEFAULT_SYFT_TIMEOUT,
@@ -74,6 +75,7 @@ from .gitlabqualityreport import GitLabQualityReport
 from .inspection.policy_check.dependency_track.project_violation import (
     DependencyTrackProjectViolationPolicyCheck,
 )
+from .inspection.policy_check.hermine.violations import HermineViolationsPolicyCheck
 from .inspection.policy_check.scanoss.copyleft import Copyleft
 from .inspection.policy_check.scanoss.undeclared_component import UndeclaredComponent
 from .inspection.summary.component_summary import ComponentSummary
@@ -891,6 +893,71 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         help='Timeout (in seconds) for API communication (optional - default 300 sec)',
     )
 
+    # -------------------------------------------------------------------------
+    # HERMINE INSPECTION - Analyse Hermine project violations
+    # -------------------------------------------------------------------------
+
+    p_hermine_sub = p_inspect_sub.add_parser(
+        'hermine',
+        aliases=['hm'],
+        description='Inspect and analyse Hermine product status and policy violations',
+        help='Analyse Hermine products',
+    )
+
+    p_inspect_hermine_sub = p_hermine_sub.add_subparsers(
+        title='Hermine Inspection Commands',
+        dest='subparser_subcmd',
+        description='Tools for analysing Hermine product data',
+        help='Choose a Hermine analysis type',
+    )
+
+    p_inspect_hm_violations = p_inspect_hermine_sub.add_parser(
+        'violations',
+        aliases=['v'],
+        description='Analyse policy violations and compliance issues in Hermine products',
+        help='Inspect product policy violations',
+    )
+    p_inspect_hm_violations.add_argument(
+        '--url', required=True, type=str, help='Hermine server base URL (e.g., https://hermine.example.com)'
+    )
+    p_inspect_hm_violations.add_argument(
+        '--apikey', '-k', required=True, type=str, help='Hermine API key for authentication'
+    )
+    p_inspect_hm_violations.add_argument(
+        '--product-name', '-pn', required=False, type=str, help='Hermine product name'
+    )
+    p_inspect_hm_violations.add_argument(
+        '--release-name', '-rn', required=False, type=str, help='Hermine release name'
+    )
+    p_inspect_hm_violations.add_argument(
+        '--product-id', '-pid', required=False, type=int, help='Hermine product ID (alternative to --product-name)'
+    )
+    p_inspect_hm_violations.add_argument(
+        '--release-id', '-rid', required=False, type=int, help='Hermine release ID (alternative to --release-name)'
+    )
+    p_inspect_hm_violations.add_argument(
+        '--output', '-o', required=False, type=str, help='Save inspection results to specified file'
+    )
+    p_inspect_hm_violations.add_argument(
+        '--status', required=False, type=str, help='Save summary status report to specified file'
+    )
+    p_inspect_hm_violations.add_argument(
+        '--format',
+        '-f',
+        required=False,
+        choices=['json', 'md', 'jira_md'],
+        default='json',
+        help='Output format: json (default), md (Markdown) or jira_md (JIRA Markdown)',
+    )
+    p_inspect_hm_violations.add_argument(
+        '--timeout',
+        '-M',
+        required=False,
+        default=300,
+        type=float,
+        help='Timeout (in seconds) for API communication (optional - default 300 sec)',
+    )
+
     # ==============================================================================
     # GitLab Integration Parser
     # ==============================================================================
@@ -959,6 +1026,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     p_inspect_legacy_component_summary.set_defaults(func=inspect_component_summary)
     # Dependency Track
     p_inspect_dt_project_violation.set_defaults(func=inspect_dep_track_project_violations)
+    # Hermine
+    p_inspect_hm_violations.set_defaults(func=inspect_hermine_violations)
     # GitLab
     p_gl_inspect_matches.set_defaults(func=inspect_gitlab_matches)
 
@@ -996,6 +1065,23 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     e_dt.add_argument('--project-name', '-pn', type=str, help='Dependency Track project name')
     e_dt.add_argument('--project-version', '-pv', type=str, help='Dependency Track project version')
     e_dt.set_defaults(func=export_dt)
+
+    # Export Sub-command: export hermine
+    e_hm = export_sub.add_parser(
+        'hermine',
+        aliases=['hm'],
+        description='Export SPDX SBOM to Hermine',
+        help='Upload SPDX SBOM files to Hermine',
+    )
+    e_hm.add_argument('-i', '--input', type=str, required=True, help='Input SBOM file (SPDX JSON format)')
+    e_hm.add_argument('--url', type=str, required=True, help='Hermine base URL')
+    e_hm.add_argument('--apikey', '-k', type=str, required=True, help='Hermine API key')
+    e_hm.add_argument('--output', '-o', type=str, help='File to save export response data')
+    e_hm.add_argument('--product-name', '-pn', type=str, help='Hermine product name')
+    e_hm.add_argument('--release-name', '-rn', type=str, help='Hermine release name')
+    e_hm.add_argument('--product-id', '-pid', type=int, help='Hermine product ID (alternative to --product-name)')
+    e_hm.add_argument('--release-id', '-rid', type=int, help='Hermine release ID (alternative to --release-name)')
+    e_hm.set_defaults(func=export_hermine)
 
     # Sub-command: folder-scan
     p_folder_scan = subparsers.add_parser(
@@ -1338,6 +1424,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         p_inspect_legacy_license_summary,
         p_inspect_legacy_component_summary,
         p_inspect_dt_project_violation,
+        p_inspect_hm_violations,
         p_gl_inspect_matches,
         c_provenance,
         p_folder_scan,
@@ -1349,6 +1436,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         c_licenses,
         c_status,
         e_dt,
+        e_hm,
         p_copy,
     ]:
         p.add_argument(
@@ -2242,6 +2330,125 @@ def _dt_args_validator(parser, args):
         sys.exit(1)
     if not args.project_id and (not args.project_name or not args.project_version):
         print_stderr('Please supply a project name (--project-name) and version (--project-version)')
+        sys.exit(1)
+
+
+def _hm_args_validator(parser, args):
+    """
+    Validates command-line arguments for Hermine product identification.
+
+    Raises
+    ------
+    SystemExit
+        If neither (product_name + release_name) nor (product_id + release_id) are specified.
+    """
+    has_names = args.product_name and args.release_name
+    has_ids = args.product_id and args.release_id
+    if not has_names and not has_ids:
+        print_stderr(
+            'Please specify either --product-name and --release-name, or --product-id and --release-id'
+        )
+        parser.parse_args([args.subparser, '-h'])
+        sys.exit(1)
+    if args.product_name and not args.release_name:
+        print_stderr('Please supply a release name (--release-name) to go with --product-name')
+        sys.exit(1)
+    if args.release_name and not args.product_name:
+        print_stderr('Please supply a product name (--product-name) to go with --release-name')
+        sys.exit(1)
+    if args.product_id and not args.release_id:
+        print_stderr('Please supply a release ID (--release-id) to go with --product-id')
+        sys.exit(1)
+    if args.release_id and not args.product_id:
+        print_stderr('Please supply a product ID (--product-id) to go with --release-id')
+        sys.exit(1)
+
+
+def inspect_hermine_violations(parser, args):
+    """
+    Handle Hermine product violations inspection command.
+
+    Analyses Hermine products for policy violations and compliance status.
+    Connects to Hermine API to retrieve product data and generate violation reports.
+
+    Parameters
+    ----------
+    parser : ArgumentParser
+        Command line parser object for help display
+    args : Namespace
+        Parsed command line arguments containing:
+        - url: Hermine base URL
+        - apikey: API key for authentication
+        - product_name: Product name to inspect (mutually exclusive with product_id/release_id)
+        - release_name: Product release to inspect (mutually exclusive with product_id/release_id)
+        - product_id: Product ID to inspect (alternative to product_name)
+        - release_id: Release ID to inspect (alternative to release_name)
+        - output: Optional output file path
+        - format: Output format (json, md, jira_md)
+        - timeout: Optional timeout for API requests
+    """
+    _hm_args_validator(parser, args)
+    if args.output:
+        initialise_empty_file(args.output)
+    try:
+        hm_violations = HermineViolationsPolicyCheck(
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+            output=args.output,
+            status=args.status,
+            format_type=args.format,
+            url=args.url,
+            api_key=args.apikey,
+            product_name=args.product_name,
+            release_name=args.release_name,
+            product_id=args.product_id,
+            release_id=args.release_id,
+            timeout=args.timeout,
+        )
+        status = hm_violations.run()
+        sys.exit(status)
+    except Exception as e:
+        print_stderr(e)
+        if args.debug:
+            traceback.print_exc()
+        sys.exit(1)
+
+
+def export_hermine(parser, args):
+    """
+    Validates and exports a Software Bill of Materials (SBOM) to a Hermine server.
+
+    Parameters:
+        parser (argparse.ArgumentParser): The argument parser to validate input arguments.
+        args (argparse.Namespace): Parsed arguments passed to the command.
+
+    Raises:
+        SystemExit: If argument validation fails or uploading the SBOM to Hermine is unsuccessful.
+    """
+    _hm_args_validator(parser, args)
+    if args.output:
+        initialise_empty_file(args.output)
+        if not args.quiet:
+            print_stderr(f'Outputting export data result to: {args.output}')
+    try:
+        hm_exporter = HermineExporter(
+            url=args.url,
+            api_key=args.apikey,
+            output=args.output,
+            debug=args.debug,
+            trace=args.trace,
+            quiet=args.quiet,
+        )
+        success = hm_exporter.upload_sbom_file(
+            args.input, args.product_name, args.release_name, args.output
+        )
+        if not success:
+            sys.exit(1)
+    except Exception as e:
+        print_stderr(f'ERROR: {e}')
+        if args.debug:
+            traceback.print_exc()
         sys.exit(1)
 
 
