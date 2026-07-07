@@ -92,11 +92,12 @@ class RetryAfterParsingTestCase(unittest.TestCase):
 class RateLimitRetryTestCase(unittest.TestCase):
 
     @patch('scanoss.scanossapi.time.sleep', return_value=None)
-    def test_503_retry_after_then_success(self, mock_sleep):
+    def test_429_retry_after_then_success(self, mock_sleep):
+        """The gateway now returns 429 for rate limits: retry, honour Retry-After, then succeed."""
         api = ScanossApi(retry=3, quiet=True)
         rate_limited = _mock_response(
-            requests.codes.service_unavailable,
-            headers={'Retry-After': '2'},
+            requests.codes.too_many_requests,
+            headers={'Retry-After': '2', 'X-Ratelimit-Burst-Capacity': '50'},
             json_body={'error': 'Rate limit exceeded', 'retry_after': 2, 'strategy': 'token_bucket'},
             text='{"error":"Rate limit exceeded"}',
         )
@@ -111,19 +112,57 @@ class RateLimitRetryTestCase(unittest.TestCase):
         mock_sleep.assert_called_once_with(2)  # honoured Retry-After header
 
     @patch('scanoss.scanossapi.time.sleep', return_value=None)
-    def test_503_aborts_after_retries_exhausted(self, mock_sleep):
+    def test_429_honours_differing_retry_after_across_retries(self, mock_sleep):
+        """Each retry must honour its own Retry-After value, not a fixed backoff."""
+        api = ScanossApi(retry=5, quiet=True)
+        first = _mock_response(requests.codes.too_many_requests, headers={'Retry-After': '2'})
+        second = _mock_response(requests.codes.too_many_requests, headers={'Retry-After': '4'})
+        ok = _mock_response(200, json_body={'result': 'ok'})
+        api.session = MagicMock()
+        api.session.post.side_effect = [first, second, ok]
+
+        result = api.scan('dummy-wfp')
+
+        self.assertEqual(result, {'result': 'ok'})
+        self.assertEqual([c.args[0] for c in mock_sleep.call_args_list], [2, 4])
+
+    @patch('scanoss.scanossapi.time.sleep', return_value=None)
+    def test_429_aborts_after_retries_exhausted_with_rate_limit_message(self, mock_sleep):
         api = ScanossApi(retry=1, quiet=True)
+        body = '{"error":"Rate limit exceeded","message":"Retry in 1s.","retry_after":1}'
         rate_limited = _mock_response(
-            requests.codes.service_unavailable,
-            headers={'Retry-After': '1'},
-            json_body={'error': 'Rate limit exceeded', 'retry_after': 1},
-            text='{"error":"Rate limit exceeded"}',
+            requests.codes.too_many_requests, headers={'Retry-After': '1'}, text=body,
         )
         api.session = MagicMock()
         api.session.post.return_value = rate_limited
 
         with self.assertRaises(Exception) as ctx:
             api.scan('dummy-wfp')
-        self.assertIn('service limits being exceeded', str(ctx.exception))
+        msg = str(ctx.exception)
+        self.assertIn('429', msg)
+        self.assertIn('rate limit', msg.lower())
+        self.assertIn(body, msg)  # the actual server response body is surfaced
         # retry_limit=1 => one initial attempt + one retry = 2 posts
         self.assertEqual(api.session.post.call_count, 2)
+
+    @patch('scanoss.scanossapi.time.sleep', return_value=None)
+    def test_503_generic_outage_not_reported_as_rate_limit(self, mock_sleep):
+        """A generic 503 (circuit breaker) must surface status + body, NOT claim a rate limit."""
+        api = ScanossApi(retry=1, quiet=True)
+        body = 'upstream connect error or disconnect/reset before headers'
+        outage = _mock_response(requests.codes.service_unavailable, text=body)
+        api.session = MagicMock()
+        api.session.post.return_value = outage
+
+        with self.assertRaises(Exception) as ctx:
+            api.scan('dummy-wfp')
+        msg = str(ctx.exception)
+        self.assertIn('503', msg)
+        self.assertIn('currently unavailable', msg.lower())
+        self.assertNotIn('rate limit', msg.lower())
+        self.assertIn(body, msg)  # the actual server response body is surfaced
+        self.assertEqual(api.session.post.call_count, 2)
+
+
+if __name__ == '__main__':
+    unittest.main()
