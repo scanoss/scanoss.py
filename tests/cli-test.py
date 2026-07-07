@@ -26,8 +26,9 @@ import os
 import shutil
 import tempfile
 import unittest
+from types import SimpleNamespace
 
-from scanoss.cli import load_files_from_file, process_req_headers
+from scanoss.cli import get_scanoss_settings_from_args, load_files_from_file, process_req_headers
 
 
 class TestLoadFilesFromFile(unittest.TestCase):
@@ -130,3 +131,27 @@ class MyTestCase(unittest.TestCase):
         # Test that the malformed header was not included
         self.assertNotIn('generic-header2', processed_headers,
                          "Malformed header without colon separator should not be included")
+
+
+class TestGetScanossSettingsFromArgs(unittest.TestCase):
+    """Covers all commands that share this helper (scan, dependency, wfp, folder-scan,
+    folder-hash), since --settings/--skip-settings-file conflict handling previously
+    lived only inside scan() and silently regressed for the other commands."""
+
+    def _args(self, **overrides):
+        defaults = dict(
+            debug=False, trace=False, quiet=True,
+            settings=None, skip_settings_file=False,
+            scan_root=None, scan_dir=None,
+        )
+        defaults.update(overrides)
+        return SimpleNamespace(**defaults)
+
+    def test_rejects_settings_with_skip_settings_file(self):
+        args = self._args(settings='scanoss.json', skip_settings_file=True)
+        with self.assertRaises(SystemExit):
+            get_scanoss_settings_from_args(args)
+
+    def test_skip_settings_file_alone_returns_none(self):
+        args = self._args(skip_settings_file=True)
+        self.assertIsNone(get_scanoss_settings_from_args(args))
