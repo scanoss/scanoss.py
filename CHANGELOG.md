@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.53.2] - 2026-07-07
+### Fixed
+- No longer reports every HTTP 503 as "service limits being exceeded", which misled users into thinking they had hit a rate limit during unrelated service outages. Rate limits (HTTP 429) are now distinguished from generic service unavailability (HTTP 503), and the actual server response body is surfaced in the error message.
+### Changed
+- Honour the `Retry-After` header on HTTP 429/503 responses, retrying with backoff (capped at 60s) instead of aborting immediately on the first 503
+
 ## [1.53.1] - 2026-06-04
 ### Added
 - Added `--apiurl` option to the `folder-scan` command to configure a custom SCANOSS API base URL (consistent with the `scan` command)
