@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.54.0] - 2026-05-27
+## [1.54.0] - 2026-07-07
 ### Added
 - Added `--scan-root` to specify the scan root to load scanoss.json from (Commands: `scan`, `wfp`, `dependencies`, `folder-scan`, `folder-hash`)
 - Added a priority list for loading scanoss.json (1. --settings 2. Scan directory (`--scan-root` if specified) 3. CWD)
@@ -17,11 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `--apiurl` option to the `folder-scan` command to configure a custom SCANOSS API base URL (consistent with the `scan` command)
 ### Changed
 - Changed the default `--rank-threshold` for the `folder-scan`/`fs` command from `5` to `9`, so valid components with ranks 6-9 are no longer filtered out by default
-
-## [1.54.0] - 2026-05-27
-### Added
-- Added `--scan-root` to specify the scan root to load scanoss.json from (Commands: `scan`, `wfp`, `dependencies`, `folder-scan`, `folder-hash`)
-- Added a priority list for loading scanoss.json (1. --settings 2. Scan directory (`--scan-root` if specified) 3. CWD)
 
 ## [1.53.0] - 2026-05-21
 ### Added

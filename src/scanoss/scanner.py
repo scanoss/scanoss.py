@@ -418,8 +418,9 @@ class Scanner(ScanossBase):
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
+            dep_scan_dir = os.path.join(scan_dir, filter_path) if filter_path else scan_dir
             if not self.threaded_deps.run(
-                what_to_scan=scan_dir,
+                what_to_scan=dep_scan_dir,
                 deps_file=deps_file,
                 wait=False,
                 dep_scope=dep_scope,
