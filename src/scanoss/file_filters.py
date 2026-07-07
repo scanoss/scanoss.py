@@ -308,15 +308,59 @@ class FileFilters(ScanossBase):
         self.file_folder_pat_spec = self._get_file_folder_pattern_spec(kwargs.get('operation_type', 'scanning'))
         self.size_pat_rules = self._get_size_limit_pattern_rules(kwargs.get('operation_type', 'scanning'))
 
-    def get_filtered_files_from_folder(self, root: str) -> List[str]:
-        """
-        Retrieve a list of files to scan or fingerprint from a given directory root based on filter settings.
+    @staticmethod
+    def _filter_parts(path_value: str) -> tuple:
+        return tuple(part for part in Path(path_value).parts if part not in ('.', ''))
 
-        Args:
-            root (str): Root directory to scan or fingerprint
+    def get_filtered_files_from_folder(self, root: str, filter_path: str = None) -> List[str]:
+        """
+        Filters and retrieves a list of files from a specified root directory based on various optional conditions.
+
+        This method performs a recursive directory traversal starting from the provided root directory,
+        collects all file paths, and optionally filters the files or directories based on directory skip rules,
+        global skip rules, or a specific path filter. The filtered list of file paths is then returned.
+
+        Parameters:
+        root: str
+            The root directory path to start the recursive search for files.
+        filter_path: str, optional
+            A specific filter path used to limit the selection of files to certain subdirectories. Default is None.
 
         Returns:
-            list[str]: Filtered list of files to scan or fingerprint
+        List[str]
+            A list of file paths, as strings, that meet the specified filtering criteria.
+        """
+        self._print_filtered_files_folder_debug()
+        all_files = []
+        root_path = Path(root).resolve()
+        if not root_path.exists() or not root_path.is_dir():
+            self.print_stderr(f'ERROR: Specified root directory {root} does not exist or is not a directory.')
+            return all_files
+        # Walk the tree looking for files to process. While taking into account files/folders to skip
+        for dirpath, dirnames, filenames in os.walk(root_path):
+            dir_path = Path(dirpath)
+            rel_path = dir_path.relative_to(root_path)
+            if dir_path.is_symlink():  # TODO should we skip symlink folders?
+                self.print_msg(f'WARNING: Found symbolic link folder: {dir_path}')
+            if self.should_skip_dir(str(rel_path), filter_path):  # The current directory should be skipped
+                dirnames.clear()
+                continue
+            for filename in filenames:
+                file_path = dir_path / filename
+                all_files.append(str(file_path))
+        # End os.walk loop
+        # Now filter the files and return the reduced list
+        files = self.get_filtered_files_from_files(all_files, str(root_path))
+        if filter_path:
+            filter_parts = self._filter_parts(filter_path)
+            if filter_parts:
+                files = [f for f in files if tuple(Path(f).parts[:len(filter_parts)]) == filter_parts]
+        return files
+
+    def _print_filtered_files_folder_debug(self):
+        """
+        Print debug information regarding filtered files, folders, and rules when
+        debug mode is enabled.
         """
         if self.debug:
             if self.file_folder_pat_spec:
@@ -329,27 +373,7 @@ class FileFilters(ScanossBase):
                 self.print_stderr(f'Running with extra global skip extensions: {self.skip_extensions}')
             if self.skip_folders:
                 self.print_stderr(f'Running with extra global skip folders: {self.skip_folders}')
-        all_files = []
-        root_path = Path(root).resolve()
-        if not root_path.exists() or not root_path.is_dir():
-            self.print_stderr(f'ERROR: Specified root directory {root} does not exist or is not a directory.')
-            return all_files
-        # Walk the tree looking for files to process. While taking into account files/folders to skip
-        for dirpath, dirnames, filenames in os.walk(root_path):
-            dir_path = Path(dirpath)
-            rel_path = dir_path.relative_to(root_path)
-            if dir_path.is_symlink():  # TODO should we skip symlink folders?
-                self.print_msg(f'WARNING: Found symbolic link folder: {dir_path}')
 
-            if self.should_skip_dir(str(rel_path)):  # Current directory should be skipped
-                dirnames.clear()
-                continue
-            for filename in filenames:
-                file_path = dir_path / filename
-                all_files.append(str(file_path))
-        # End os.walk loop
-        # Now filter the files and return the reduced list
-        return self.get_filtered_files_from_files(all_files, str(root_path))
 
     def get_filtered_files_from_files(self, files: List[str], scan_root: Optional[str] = None) -> List[str]:
         """
@@ -502,15 +526,16 @@ class FileFilters(ScanossBase):
         # End rules loop
         return min_size, max_size
 
-    def should_skip_dir(self, dir_rel_path: str) -> bool:  # noqa: PLR0911
+    def should_skip_dir(self, dir_rel_path: str, filter_path: str = None) -> bool:  # noqa: PLR0911
         """
         Check if a directory should be skipped based on operation type and default rules.
 
         Args:
             dir_rel_path (str): Relative path to the directory
+            filter_path (str): Optional filter path to check if the directory is within it
 
         Returns:
-            bool: True if directory should be skipped, False otherwise
+            bool: True if the directory should be skipped, False otherwise
         """
         dir_name = os.path.basename(dir_rel_path)
         dir_path = Path(dir_rel_path)
@@ -521,6 +546,14 @@ class FileFilters(ScanossBase):
         ):
             self.print_debug(f'Skipping directory: {dir_rel_path} (hidden directory)')
             return True
+        if filter_path and dir_rel_path != '.':
+            filter_parts = self._filter_parts(filter_path)
+            dir_parts = self._filter_parts(dir_rel_path)
+            in_filter = tuple(dir_parts[:len(filter_parts)]) == filter_parts
+            is_ancestor = tuple(filter_parts[:len(dir_parts)]) == dir_parts
+            if not in_filter and not is_ancestor:
+                self.print_debug(f'Skipping directory: {dir_rel_path} (not in filter path)')
+                return True
         if self.all_folders:
             return False
         dir_name_lower = dir_name.lower()

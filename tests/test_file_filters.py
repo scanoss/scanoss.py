@@ -323,5 +323,54 @@ class TestFileFilters(unittest.TestCase):
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
 
+class TestFilterPath(unittest.TestCase):
+    """Tests for filter_path support in get_filtered_files_from_folder."""
+
+    def setUp(self):
+        self.file_filters = FileFilters(debug=True, all_extensions=True, all_folders=True,
+                                        hidden_files_folders=True, operation_type='scanning')
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def _create(self, paths):
+        for p in paths:
+            full = os.path.join(self.test_dir, p)
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            with open(full, 'w') as f:
+                f.write('int main(){}')  # non-empty so FileFilters doesn't skip it
+
+    def test_filter_path_returns_only_subfolder_files(self):
+        self._create(['sub/a.c', 'sub/b.c', 'other/c.c', 'root.c'])
+        result = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'sub')
+        self.assertEqual(sorted(result), ['sub/a.c', 'sub/b.c'])
+
+    def test_filter_path_excludes_partial_name_match(self):
+        self._create(['sub/a.c', 'sub2/b.c'])
+        result = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'sub')
+        self.assertEqual(result, ['sub/a.c'])
+
+    def test_filter_path_allows_nested_subdir(self):
+        self._create(['sub/deep/a.c', 'sub/b.c', 'other/c.c'])
+        result = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'sub')
+        self.assertEqual(sorted(result), ['sub/b.c', 'sub/deep/a.c'])
+
+    def test_filter_path_nested_target(self):
+        self._create(['sub/deep/a.c', 'sub/b.c', 'other/c.c'])
+        result = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'sub/deep')
+        self.assertEqual(result, ['sub/deep/a.c'])
+
+    def test_filter_path_none_returns_all(self):
+        self._create(['sub/a.c', 'other/b.c', 'root.c'])
+        result = self.file_filters.get_filtered_files_from_folder(self.test_dir, None)
+        self.assertEqual(sorted(result), ['other/b.c', 'root.c', 'sub/a.c'])
+
+    def test_filter_path_with_trailing_slash(self):
+        self._create(['sub/a.c', 'other/b.c'])
+        result = self.file_filters.get_filtered_files_from_folder(self.test_dir, 'sub/')
+        self.assertEqual(result, ['sub/a.c'])
+
+
 if __name__ == '__main__':
     unittest.main()
