@@ -282,25 +282,31 @@ class ScanossApi(ScanossBase):
                         self.print_stderr(f'Warning: No response received from {self.url}. Retrying...')
                         time.sleep(5)
                 elif r.status_code in (
-                    requests.codes.service_unavailable,  # 503 - rate limit / service limits
                     requests.codes.too_many_requests,  # 429 - rate limit
+                    requests.codes.service_unavailable,  # 503 - transient service unavailability
                 ):
-                    # Rate limited: back off (honouring Retry-After) and retry rather than aborting.
-                    if retry > self.retry_limit:  # Exhausted retries, fail with a clear message
-                        self.print_stderr(
-                            f'ERROR: SCANOSS API rejected the scan request ({request_id}) due to '
-                            f'service limits being exceeded'
-                        )
-                        self.print_stderr(f'ERROR: Details: {r.text.strip()}')
+                    # Both are potentially transient: back off (honouring Retry-After) and retry
+                    # rather than aborting. Only 429 is a rate limit; a 503 is a generic outage
+                    # (backend down, gateway circuit breaker) and must not be misreported as
+                    # "service limits exceeded".
+                    rate_limited = r.status_code == requests.codes.too_many_requests
+                    if retry > self.retry_limit:  # Exhausted retries, fail surfacing the real response
+                        if rate_limited:
+                            raise Exception(
+                                f'ERROR: {r.status_code} - The SCANOSS API request ({request_id}) for '
+                                f'{self.url} was rejected due to service limits/rate limit being exceeded. '
+                                f'Server response: {r.text.strip()}'
+                            )
                         raise Exception(
-                            f'ERROR: {r.status_code} - The SCANOSS API request ({request_id}) rejected '
-                            f'for {self.url} due to service limits being exceeded.'
+                            f'ERROR: {r.status_code} - The SCANOSS API is currently unavailable '
+                            f'({request_id}) for {self.url}. Server response: {r.text.strip()}'
                         )
                     else:
                         backoff = parse_retry_after(r)
+                        reason = 'Rate limit exceeded' if rate_limited else 'Service unavailable'
                         self.print_stderr(
-                            f'Warning: Rate limited (HTTP {r.status_code}) by {self.url}. '
-                            f'Backing off for {backoff}s before retrying...'
+                            f'Warning: {reason} (HTTP {r.status_code}) from {self.url}: '
+                            f'{r.text.strip()}. Backing off for {backoff}s before retrying...'
                         )
                         time.sleep(backoff)
                 elif r.status_code >= requests.codes.bad_request:
