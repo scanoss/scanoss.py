@@ -240,7 +240,14 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
             f'Link: {self.url}{link}\n'
             f'{descriptions}'
         )
-        return []
+        return [
+            {
+                'project': item.get('project', ''),
+                'scope': item.get('scope', ''),
+                'description': item.get('description', '').strip(),
+            }
+            for item in items
+        ]
 
     def _format_validation_output(self, components: list[dict], link: str) -> str:
         """Format validation failure components according to the current format_type."""
@@ -262,9 +269,14 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
             )
         return json.dumps(components, indent=2)
 
-    def release_validation(self) -> tuple[bool, list[dict], str]:
+    def release_validation(self) -> tuple[Optional[bool], list[dict], str]:
         """
-        Run validations 1-4. Returns (True, [], '') if all pass, or (False, components, link) on first failure.
+        Run validations 1-4.
+
+        Returns:
+            (True, [], '') if all pass.
+            (False, components, link) if a policy validation step reports a violation.
+            (None, [], '') if a validation request could not be completed.
         """
         handlers = [
             (1, self._handle_validation_1),
@@ -274,8 +286,11 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
         ]
         for i, handler in handlers:
             response = self.hm_service.get_hermine_data(f'{self.url}/api/releases/{self.release_id}/validation_{i}')
-            if response is None or not response.get('valid', False):
-                link = response.get('details', '') if response else ''
+            if response is None:
+                self.print_stderr(f'Step {i} could not be completed: no response from Hermine.')
+                return None, [], ''
+            if not response.get('valid', False):
+                link = response.get('details', '')
                 return False, handler(response), link
         return True, [], ''
 
@@ -327,7 +342,7 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
         def is_exempt(usage: dict) -> bool:
             version_id = usage.get('version')
             lics = matched_lics(usage.get('license_expression', ''))
-            return any((version_id, lic['id']) in derogated for lic in lics)
+            return bool(lics) and all((version_id, lic['id']) in derogated for lic in lics)
 
         def format_usage(usage: dict) -> dict:
             expr = usage.get('license_expression', '')
@@ -416,6 +431,8 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
             self.print_msg(f'Output: {self.output}')
             self.print_msg(f'Timeout: {self.timeout}')
         valid, components, link = self.release_validation()
+        if valid is None:
+            return PolicyStatus.ERROR.value
         if not valid:
             if components:
                 self.print_to_file_or_stdout(self._format_validation_output(components, link), self.output)
