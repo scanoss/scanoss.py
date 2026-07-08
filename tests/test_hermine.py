@@ -232,6 +232,20 @@ class HermineViolationsPolicyCheckTestCase(unittest.TestCase):
             status = check.run()
         self.assertEqual(status, PolicyStatus.ERROR.value)
 
+    def test_run_returns_error_when_validation_request_fails(self):
+        check = self._make_check()
+        with patch.object(check.hm_service, 'get_hermine_data', return_value=None):
+            status = check.run()
+        self.assertEqual(status, PolicyStatus.ERROR.value)
+
+    def test_release_validation_distinguishes_request_failure_from_policy_fail(self):
+        check = self._make_check()
+        with patch.object(check.hm_service, 'get_hermine_data', return_value=None):
+            valid, components, link = check.release_validation()
+        self.assertIsNone(valid)
+        self.assertEqual(components, [])
+        self.assertEqual(link, '')
+
     def test_release_validation_reports_invalid_expressions(self):
         check = self._make_check()
         response = {
@@ -246,6 +260,52 @@ class HermineViolationsPolicyCheckTestCase(unittest.TestCase):
         self.assertFalse(valid)
         self.assertEqual(link, '/link')
         self.assertEqual(components, [{'purl': 'pkg:pypi/foo@1.0', 'declared_license_expr': 'GPL-BAD'}])
+
+    def test_validation_5_not_exempt_when_only_some_matched_licenses_derogated(self):
+        check = self._make_check()
+        response = {
+            'involved_lic': [
+                {'spdx_id': 'GPL-2.0-only', 'id': 10, 'copyleft': True, 'osi_approved': True},
+                {'spdx_id': 'MIT', 'id': 20, 'copyleft': False, 'osi_approved': True},
+            ],
+            # Only GPL-2.0-only is derogated for this version; MIT is not.
+            'derogations': [{'version': 1, 'license': 10}],
+            'usages_lic_never_allowed': [
+                {'version': 1, 'license_expression': 'GPL-2.0-only AND MIT', 'scope': 'runtime', 'project': 'p'},
+            ],
+            'usages_lic_context_allowed': [],
+        }
+        never_allowed, _ = check._handle_validation_5(response, {1: 'pkg:pypi/foo@1.0'})
+        self.assertEqual(len(never_allowed), 1)
+
+    def test_validation_5_exempt_when_all_matched_licenses_derogated(self):
+        check = self._make_check()
+        response = {
+            'involved_lic': [
+                {'spdx_id': 'GPL-2.0-only', 'id': 10, 'copyleft': True, 'osi_approved': True},
+                {'spdx_id': 'MIT', 'id': 20, 'copyleft': False, 'osi_approved': True},
+            ],
+            'derogations': [{'version': 1, 'license': 10}, {'version': 1, 'license': 20}],
+            'usages_lic_never_allowed': [
+                {'version': 1, 'license_expression': 'GPL-2.0-only AND MIT', 'scope': 'runtime', 'project': 'p'},
+            ],
+            'usages_lic_context_allowed': [],
+        }
+        never_allowed, _ = check._handle_validation_5(response, {1: 'pkg:pypi/foo@1.0'})
+        self.assertEqual(len(never_allowed), 0)
+
+    def test_validation_5_not_exempt_when_license_unmatched(self):
+        check = self._make_check()
+        response = {
+            'involved_lic': [],
+            'derogations': [],
+            'usages_lic_never_allowed': [
+                {'version': 1, 'license_expression': 'Unknown-License', 'scope': 'runtime', 'project': 'p'},
+            ],
+            'usages_lic_context_allowed': [],
+        }
+        never_allowed, _ = check._handle_validation_5(response, {1: 'pkg:pypi/foo@1.0'})
+        self.assertEqual(len(never_allowed), 1)
 
     def test_json_formatter_empty_violations(self):
         check = self._make_check()
