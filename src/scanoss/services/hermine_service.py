@@ -124,30 +124,6 @@ class HermineService(ScanossBase):
             url = response.get('next')
         return purl_map
 
-    def get_violations(self, product_id: str):
-        """
-        Get policy violations for a Hermine product.
-
-        Args:
-            product_id: product identifier
-
-        Returns:
-            List of violations or None on error
-        """
-
-
-    def get_product_status(self, upload_token: str):
-        """
-        Check the processing status of an uploaded SBOM.
-
-        Args:
-            upload_token: Token returned from SBOM upload
-
-        Returns:
-            Status dictionary or None on error
-        """
-        # TODO: implement Hermine product status check
-        raise NotImplementedError("TODO: implement Hermine product status check")
 
     def get_hermine_data(self, uri, params=None, data=None, files=None):
         """

@@ -143,40 +143,6 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
         """
         return self._md_summary_generator(violations, generate_jira_table)
 
-    def _set_ids(self) -> None:
-        """
-        Set the product ID based on the product name and release if not already set.
-
-        Raises:
-            ValueError: If the product name/release is missing or the product is not found.
-        """
-        if self.product_id is not None and self.release_id is not None:
-            return
-
-
-
-        self.print_debug(f'Searching for product id by name and release: {self.product_name}@{self.release_name}')
-        # TODO: implement Hermine product lookup by name/release
-        raise NotImplementedError("TODO: implement Hermine product lookup by name/release")
-
-    def _sort_violations(self, violations: List[HermineViolationDict]) -> List[HermineViolationDict]:
-        """
-        Sort violations by priority.
-
-        Sorts violations with SECURITY issues first, followed by LICENSE, then OTHER types.
-
-        Args:
-            violations: List of violation dictionaries
-
-        Returns:
-            Sorted list of violations
-        """
-        # TODO: confirm Hermine violation types match SECURITY/LICENSE/OTHER
-        type_priority = {'SECURITY': 3, 'LICENSE': 2, 'OTHER': 1}
-        return sorted(
-            violations,
-            key=lambda x: -type_priority.get(x.get('type', 'OTHER'), 1)
-        )
 
     def _md_summary_generator(self, violations: list[dict], table_generator) -> PolicyOutput:
         """

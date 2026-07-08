@@ -22,12 +22,8 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-import base64
 import json
 import traceback
-from os import replace
-
-import requests
 
 from ..scanossbase import ScanossBase
 from ..services.hermine_service import HermineService
@@ -120,7 +116,11 @@ class HermineExporter(ScanossBase):
                 self.print_stderr(f'Reading SBOM file: {input_file}')
             self._read_and_validate_sbom(input_file)
 
-            product_id, release_id = self.hm_service.get_ids(product_name, release_name)
+            ids = self.hm_service.get_ids(product_name, release_name)
+            if not ids:
+                self.print_stderr('Failed to get product/release ids.')
+                return False
+            product_id, release_id = ids
             file_payload = _build_file_payload(input_file)
             data = {
                 "release": release_id,
@@ -146,10 +146,12 @@ class HermineExporter(ScanossBase):
         output = self.output
         if output_file:
             output = output_file
+        success = False
         try:
             response = self.hm_service.get_hermine_data(f'{self.url}/api/upload_spdx/', data=data, files=file_payload)
-            response.raise_for_status()
-
+            if response is not None:
+                self.print_to_file_or_stdout(json.dumps(response, indent=2), output)
+                success = True
         except NotImplementedError:
             raise
         except ValueError as e:
@@ -158,5 +160,5 @@ class HermineExporter(ScanossBase):
             self.print_stderr(f'Unexpected error: {e}')
             if self.debug:
                 traceback.print_exc()
-        self.print_msg('Upload complete.')
-        return False
+        self.print_msg('Upload complete.' if success else 'Upload failed.')
+        return success
