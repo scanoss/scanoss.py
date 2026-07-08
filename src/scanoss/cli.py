@@ -1077,10 +1077,8 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
     e_hm.add_argument('--url', type=str, required=True, help='Hermine base URL')
     e_hm.add_argument('--apikey', '-k', type=str, required=True, help='Hermine API key')
     e_hm.add_argument('--output', '-o', type=str, help='File to save export response data')
-    e_hm.add_argument('--product-name', '-pn', type=str, help='Hermine product name')
-    e_hm.add_argument('--release-name', '-rn', type=str, help='Hermine release name')
-    e_hm.add_argument('--product-id', '-pid', type=int, help='Hermine product ID (alternative to --product-name)')
-    e_hm.add_argument('--release-id', '-rid', type=int, help='Hermine release ID (alternative to --release-name)')
+    e_hm.add_argument('--product-name', '-pn', type=str, required=True, help='Hermine product name')
+    e_hm.add_argument('--release-name', '-rn', type=str, required=True, help='Hermine release name')
     e_hm.set_defaults(func=export_hermine)
 
     # Sub-command: folder-scan
@@ -1498,7 +1496,7 @@ def setup_args() -> None:  # noqa: PLR0912, PLR0915
         sys.exit(1)
     elif (
         (args.subparser in 'inspect')
-        and (args.subparsercmd in ('raw', 'dt', 'glc', 'gitlab'))
+        and (args.subparsercmd in ('raw', 'dt', 'glc', 'gitlab', 'hermine', 'hm'))
         and (args.subparser_subcmd is None)
     ):
         parser.parse_args([args.subparser, args.subparsercmd, '--help'])  # Force utils helps to be displayed
@@ -1689,9 +1687,6 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         sys.exit(1)
     if args.identify and args.settings:
         print_stderr('ERROR: Cannot specify both --identify and --settings options.')
-        sys.exit(1)
-    if args.settings and args.skip_settings_file:
-        print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
         sys.exit(1)
     validate_scan_root(args)
     # Figure out which settings (if any) to load before processing
@@ -2429,7 +2424,6 @@ def export_hermine(parser, args):
     Raises:
         SystemExit: If argument validation fails or uploading the SBOM to Hermine is unsuccessful.
     """
-    _hm_args_validator(parser, args)
     if args.output:
         initialise_empty_file(args.output)
         if not args.quiet:
@@ -3175,6 +3169,9 @@ def validate_scan_root(args):
 
 
 def get_scanoss_settings_from_args(args):
+    if args.settings and args.skip_settings_file:
+        print_stderr('ERROR: Cannot specify both --settings and --skip-settings-file options.')
+        sys.exit(1)
     if args.skip_settings_file:
         return None
     settings_root = getattr(args, 'scan_root', None) or getattr(args, 'scan_dir', None)

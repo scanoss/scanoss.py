@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Hermine integration
 
-
 ## [1.54.0] - 2026-07-07
 ### Added
 - Added `--scan-root` to specify the scan root to load scanoss.json from (Commands: `scan`, `wfp`, `dependencies`, `folder-scan`, `folder-hash`)

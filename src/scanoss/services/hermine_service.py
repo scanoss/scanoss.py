@@ -22,22 +22,23 @@ SPDX-License-Identifier: MIT
   THE SOFTWARE.
 """
 
-from ..scanossbase import ScanossBase
-
 import requests
+
+from ..scanossbase import ScanossBase
 
 HTTP_OK = 200
 
 
 class HermineService(ScanossBase):
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
             self,
             api_key: str,
             url: str,
             debug: bool = False,
             trace: bool = False,
             quiet: bool = False,
+            timeout: float = 300.0,
     ):
         super().__init__(debug=debug, trace=trace, quiet=quiet)
         if not url:
@@ -46,6 +47,7 @@ class HermineService(ScanossBase):
         if not api_key:
             raise ValueError("Error: Hermine API key is required")
         self.api_key = api_key
+        self.timeout = timeout
 
     def get_products(self):
         """
@@ -60,29 +62,33 @@ class HermineService(ScanossBase):
         products = self.get_products()
         if products is None:
             return False
-        product = next((item for item in products["results"] if item["name"] == product_name), None)
+        results = products.get('results') or []
+        product = next((item for item in results if item.get('name') == product_name), None)
         if product:
-            product_id = product["id"]
-            release = next((r for r in product["releases"] if r["release_number"] == release_name), None)
+            product_id = product.get('id')
+            releases = product.get('releases') or []
+            release = next((r for r in releases if r.get('release_number') == release_name), None)
             if release:
-                release_id = release["id"]
+                release_id = release.get('id')
             else:
                 self.print_debug(f'Release {release_name} not found for product {product_name}. Creating new release.')
                 release = self.create_release(product_id, release_name)
                 if release is None:
                     return False
-                release_id = release["id"]
+                release_id = release.get('id')
         else:
             self.print_debug(f'Product {product_name} not found. Creating new product.')
             product = self.create_product(product_name)
             if product is None:
                 return False
-            product_id = product["id"]
+            product_id = product.get('id')
             self.print_debug(f'Creating release {release_name} for product {product_name}.')
             release = self.create_release(product_id, release_name)
             if release is None:
                 return False
-            release_id = release["id"]
+            release_id = release.get('id')
+        if product_id is None or release_id is None:
+            return False
         return product_id, release_id
 
     def create_product(self, name):
@@ -148,11 +154,11 @@ class HermineService(ScanossBase):
         try:
             self.print_debug(f'URL: {uri}, Params: {params}, Data: {data}')
             if data:
-                response = requests.post(uri, headers=req_headers, data=data, files=files)
+                response = requests.post(uri, headers=req_headers, data=data, files=files, timeout=self.timeout)
             elif params:
-                response = requests.get(uri, headers=req_headers, params=params)
+                response = requests.get(uri, headers=req_headers, params=params, timeout=self.timeout)
             else:
-                response = requests.get(uri, headers=req_headers)
+                response = requests.get(uri, headers=req_headers, timeout=self.timeout)
             response.raise_for_status()  # Raises an HTTPError for bad responses
             return response.json()
         except requests.exceptions.RequestException as e:

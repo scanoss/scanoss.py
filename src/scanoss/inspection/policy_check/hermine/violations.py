@@ -24,18 +24,14 @@ SPDX-License-Identifier: MIT
 import ast
 import json
 import re
-import time
-from datetime import datetime
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import List, Optional, TypedDict
 
 from ....services.hermine_service import HermineService
 from ...utils.markdown_utils import generate_jira_table, generate_table
 from ..policy_check import PolicyCheck, PolicyOutput, PolicyStatus
 
 # Constants
-PROCESSING_RETRY_DELAY = 5  # seconds
 DEFAULT_TIME_OUT = 300.0
-MILLISECONDS_TO_SECONDS = 1000
 
 """
 Hermine violation policy check implementation.
@@ -102,7 +98,9 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
         self.release_id = release_id
         self.timeout = timeout
         self.url = url.strip().rstrip('/') if url else None
-        self.hm_service = HermineService(self.api_key, self.url, debug=debug, trace=trace, quiet=quiet)
+        self.hm_service = HermineService(
+            self.api_key, self.url, debug=debug, trace=trace, quiet=quiet, timeout=self.timeout
+        )
 
     def _json(self, violations: list[HermineViolationDict]) -> PolicyOutput:
         """
@@ -205,7 +203,8 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
             for item in (response or {}).get('to_confirm', [])
         ]
         self.print_stderr(
-            f'Step 2 failed: {len(components)} component(s) have AND license expressions requiring confirmation — configure in Hermine.\n'
+            f'Step 2 failed: {len(components)} component(s) have AND license expressions requiring '
+            f'confirmation — configure in Hermine.\n'
             f'Link: {self.url}{link}'
         )
         return components
@@ -215,7 +214,8 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
         link = response.get('details', '') if response else ''
         unset_scopes = (response or {}).get('unset_scopes', [])
         self.print_stderr(
-            f'Step 3 failed: {len(unset_scopes)} scope(s) are missing an exploitation mode definition — configure in Hermine.\n'
+            f'Step 3 failed: {len(unset_scopes)} scope(s) are missing an exploitation mode definition — '
+            f'configure in Hermine.\n'
             f'Link: {self.url}{link}'
         )
         parsed = []
@@ -249,11 +249,17 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
         if self.format_type == 'jira_md':
             headers = list(components[0].keys())
             rows = [[str(item.get(h, '')) for h in headers] for item in components]
-            return f'h3. Hermine: Action Required\n{generate_jira_table(headers, rows, [])}\nConfigure in Hermine [here|{self.url}{link}].\n'
+            return (
+                f'h3. Hermine: Action Required\n{generate_jira_table(headers, rows, [])}\n'
+                f'Configure in Hermine [here|{self.url}{link}].\n'
+            )
         if self.format_type == 'md':
             headers = list(components[0].keys())
             rows = [[str(item.get(h, '')) for h in headers] for item in components]
-            return f'### Hermine: Action Required\n{generate_table(headers, rows, [])}\nConfigure in Hermine [here]({self.url}{link}).\n'
+            return (
+                f'### Hermine: Action Required\n{generate_table(headers, rows, [])}\n'
+                f'Configure in Hermine [here]({self.url}{link}).\n'
+            )
         return json.dumps(components, indent=2)
 
     def release_validation(self) -> tuple[bool, list[dict], str]:
@@ -285,7 +291,11 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
                 'project': usage.get('project', ''),
                 'exploitation': usage.get('exploitation', ''),
                 'licenses': [
-                    {'spdx_id': lic['spdx_id'], 'copyleft': lic.get('copyleft'), 'osi_approved': lic.get('osi_approved')}
+                    {
+                        'spdx_id': lic['spdx_id'],
+                        'copyleft': lic.get('copyleft'),
+                        'osi_approved': lic.get('osi_approved'),
+                    }
                     for spdx_id, lic in lic_by_spdx.items()
                     if spdx_id in self._spdx_tokens(usage.get('license_expression', ''))
                 ],
@@ -297,10 +307,16 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
     @staticmethod
     def _spdx_tokens(expr: str) -> set[str]:
         """Split an SPDX expression into individual license identifiers."""
-        return set(re.split(r'\s+(?:AND|OR|WITH)\s+|\s+', expr.strip())) - {'', '+'}
+        tokens = re.split(r'\s+(?:AND|OR|WITH)\s+|\s+', expr.strip())
+        return {token.strip('()') for token in tokens} - {'', '+'}
 
-    def _handle_validation_5(self, response: Optional[dict], version_purl_map: dict) -> tuple[list[dict], list[dict]]:
-        """Step 5: Check licenses against policy. Returns (never_allowed, context_allowed) after derogation filtering."""
+    def _handle_validation_5(
+            self, response: Optional[dict], version_purl_map: dict
+    ) -> tuple[list[dict], list[dict]]:
+        """Step 5: Check licenses against policy.
+
+        Returns (never_allowed, context_allowed) after derogation filtering.
+        """
         lic_by_spdx = {lic['spdx_id']: lic for lic in (response or {}).get('involved_lic', [])}
         derogated = {(d['version'], d['license']) for d in (response or {}).get('derogations', [])}
 
@@ -310,7 +326,8 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
 
         def is_exempt(usage: dict) -> bool:
             version_id = usage.get('version')
-            return any((version_id, lic['id']) in derogated for lic in matched_lics(usage.get('license_expression', '')))
+            lics = matched_lics(usage.get('license_expression', ''))
+            return any((version_id, lic['id']) in derogated for lic in lics)
 
         def format_usage(usage: dict) -> dict:
             expr = usage.get('license_expression', '')
@@ -321,13 +338,21 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
                 'project': usage.get('project', ''),
                 'exploitation': usage.get('exploitation', ''),
                 'licenses': [
-                    {'spdx_id': lic['spdx_id'], 'copyleft': lic.get('copyleft'), 'osi_approved': lic.get('osi_approved')}
+                    {
+                        'spdx_id': lic['spdx_id'],
+                        'copyleft': lic.get('copyleft'),
+                        'osi_approved': lic.get('osi_approved'),
+                    }
                     for lic in matched_lics(expr)
                 ],
             }
 
-        never_allowed = [format_usage(u) for u in (response or {}).get('usages_lic_never_allowed', []) if not is_exempt(u)]
-        context_allowed = [format_usage(u) for u in (response or {}).get('usages_lic_context_allowed', []) if not is_exempt(u)]
+        never_allowed = [
+            format_usage(u) for u in (response or {}).get('usages_lic_never_allowed', []) if not is_exempt(u)
+        ]
+        context_allowed = [
+            format_usage(u) for u in (response or {}).get('usages_lic_context_allowed', []) if not is_exempt(u)
+        ]
         return never_allowed, context_allowed
 
     def release_violations(self) -> int:
