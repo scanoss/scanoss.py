@@ -78,15 +78,12 @@ class HermineExporter(ScanossBase):
         self.output = output
         self.hm_service = HermineService(self.api_key, self.url, debug=debug, trace=trace, quiet=quiet)
 
-    def _read_and_validate_sbom(self, input_file: str):
+    def _read_and_validate_sbom(self, input_file: str) -> None:
         """
-        Read and validate the SBOM file.
+        Validate that the SBOM file exists, is valid JSON, and is a valid SPDX SBOM.
 
         Args:
             input_file: Path to the SPDX SBOM file (JSON format)
-
-        Returns:
-            Parsed SBOM content as dictionary
 
         Raises:
             ValueError: If the file doesn't exist, is invalid JSON, or is not a valid SPDX SBOM
@@ -96,7 +93,6 @@ class HermineExporter(ScanossBase):
             raise ValueError(f'Invalid JSON file: {result.error}')
         if 'spdxVersion' not in result.data:
             raise ValueError(f'Input file is not a valid SPDX SBOM: {input_file}')
-        return None
 
     def upload_sbom_file(self, input_file, product_name, release_name, output_file) -> bool:
         """
