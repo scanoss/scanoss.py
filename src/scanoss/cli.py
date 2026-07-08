@@ -1690,6 +1690,9 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
     if args.identify and args.settings:
         print_stderr('ERROR: Cannot specify both --identify and --settings options.')
         sys.exit(1)
+    if args.settings and args.skip_settings_file:
+        print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
+        sys.exit(1)
     validate_scan_root(args)
     # Figure out which settings (if any) to load before processing
     scanoss_settings = get_scanoss_settings_from_args(args)
@@ -3172,18 +3175,14 @@ def validate_scan_root(args):
 
 
 def get_scanoss_settings_from_args(args):
-    settings = getattr(args, 'settings', None)
-    skip_settings_file = getattr(args, 'skip_settings_file', False)
-    if settings and skip_settings_file:
-        print_stderr('ERROR: Cannot specify both --settings and --skip-file-settings options.')
-        sys.exit(1)
-    if skip_settings_file:
+    if args.skip_settings_file:
         return None
     settings_root = getattr(args, 'scan_root', None) or getattr(args, 'scan_dir', None)
     scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
     try:
         identify = getattr(args, 'identify', None)
         ignore = getattr(args, 'ignore', None)
+        settings = getattr(args, 'settings', None)
         if identify:
             scanoss_settings.load_json_file(identify, settings_root).set_file_type('legacy').set_scan_type('identify')
         elif ignore:

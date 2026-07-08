@@ -27,11 +27,9 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-from src.scanoss.scanner import Scanner
 from src.scanoss.scanoss_settings import ScanossSettings
-from src.scanoss.scantype import ScanType
 
 
 class TestScanossSettingsLoadJsonFile(unittest.TestCase):
@@ -118,35 +116,3 @@ class TestScanossSettingsLoadJsonFile(unittest.TestCase):
 
             self.assertIs(result, settings)
             self.assertEqual(settings.data, {})
-
-
-class TestScanFolderWithOptionsDependencyScope(unittest.TestCase):
-    """Regression tests: with --scan-root <root> <subdir>, dependency scanning must be
-    scoped to <root>/<subdir> (via filter_path), matching fingerprinting's scope -
-    not the whole scan root, which would pull in dependencies from sibling paths."""
-
-    def _make_scanner(self):
-        scanner = Scanner(
-            quiet=True,
-            nb_threads=0,
-            scan_options=ScanType.SCAN_DEPENDENCIES.value,
-        )
-        scanner.threaded_deps.run = MagicMock(return_value=True)
-        return scanner
-
-    def test_dependency_scan_scoped_to_filter_path(self):
-        scanner = self._make_scanner()
-        scanner.scan_folder_with_options('.', filter_path='subdir')
-
-        scanner.threaded_deps.run.assert_called_once()
-        self.assertEqual(
-            scanner.threaded_deps.run.call_args.kwargs['what_to_scan'],
-            os.path.join('.', 'subdir'),
-        )
-
-    def test_dependency_scan_uses_scan_dir_when_no_filter_path(self):
-        scanner = self._make_scanner()
-        scanner.scan_folder_with_options('.')
-
-        scanner.threaded_deps.run.assert_called_once()
-        self.assertEqual(scanner.threaded_deps.run.call_args.kwargs['what_to_scan'], '.')

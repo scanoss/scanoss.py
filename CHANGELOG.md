@@ -7,22 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.54.0] - 2026-07-07
+## [1.54.0] - 2026-05-27
 ### Added
 - Added `--scan-root` to specify the scan root to load scanoss.json from (Commands: `scan`, `wfp`, `dependencies`, `folder-scan`, `folder-hash`)
 - Added a priority list for loading scanoss.json (1. --settings 2. Scan directory (`--scan-root` if specified) 3. CWD)
-
-## [1.53.2] - 2026-07-07
-### Fixed
-- No longer reports every HTTP 503 as "service limits being exceeded", which misled users into thinking they had hit a rate limit during unrelated service outages. Rate limits (HTTP 429) are now distinguished from generic service unavailability (HTTP 503), and the actual server response body is surfaced in the error message.
-### Changed
-- Honour the `Retry-After` header on HTTP 429/503 responses, retrying with backoff (capped at 60s) instead of aborting immediately on the first 503
 
 ## [1.53.1] - 2026-06-04
 ### Added
 - Added `--apiurl` option to the `folder-scan` command to configure a custom SCANOSS API base URL (consistent with the `scan` command)
 ### Changed
 - Changed the default `--rank-threshold` for the `folder-scan`/`fs` command from `5` to `9`, so valid components with ranks 6-9 are no longer filtered out by default
+
+## [1.54.0] - 2026-05-27
+### Added
+- Added `--scan-root` to specify the scan root to load scanoss.json from (Commands: `scan`, `wfp`, `dependencies`, `folder-scan`, `folder-hash`)
+- Added a priority list for loading scanoss.json (1. --settings 2. Scan directory (`--scan-root` if specified) 3. CWD)
 
 ## [1.53.0] - 2026-05-21
 ### Added
@@ -907,5 +906,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.52.1]: https://github.com/scanoss/scanoss.py/compare/v1.52.0...v1.52.1
 [1.53.0]: https://github.com/scanoss/scanoss.py/compare/v1.52.1...v1.53.0
 [1.53.1]: https://github.com/scanoss/scanoss.py/compare/v1.53.0...v1.53.1
-[1.53.2]: https://github.com/scanoss/scanoss.py/compare/v1.53.1...v1.53.2
-[1.54.0]: https://github.com/scanoss/scanoss.py/compare/v1.53.2...v1.54.0
+[1.54.0]: https://github.com/scanoss/scanoss.py/compare/v1.53.1...v1.54.0
