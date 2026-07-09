@@ -242,16 +242,6 @@ class ScanossApi(ScanossBase):
                     else:
                         self.print_stderr(f'Warning: No response received from {self.url}. Retrying...')
                         time.sleep(5)
-                elif r.status_code == requests.codes.service_unavailable:  # Service limits most likely reached
-                    self.print_stderr(
-                        f'ERROR: SCANOSS API rejected the scan request ({request_id}) due to '
-                        f'service limits being exceeded'
-                    )
-                    self.print_stderr(f'ERROR: Details: {r.text.strip()}')
-                    raise Exception(
-                        f'ERROR: {r.status_code} - The SCANOSS API request ({request_id}) rejected '
-                        f'for {self.url} due to service limits being exceeded.'
-                    )
                 elif r.status_code >= requests.codes.bad_request:
                     if retry > self.retry_limit:  # No response retry_limit or more times, fail
                         self.save_bad_req_wfp(scan_files, request_id, scan_id)
