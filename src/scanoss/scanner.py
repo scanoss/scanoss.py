@@ -393,6 +393,7 @@ class Scanner(ScanossBase):
         dep_scope: SCOPE = None,
         dep_scope_include: str = None,
         dep_scope_exclude: str = None,
+        filter_path: str = None,
     ) -> bool:
         """
         Scan the given folder for whatever scaning options that have been configured
@@ -402,6 +403,7 @@ class Scanner(ScanossBase):
         :param scan_dir: directory to scan
         :param deps_file: pre-parsed dependency file to decorate
         :param file_map: mapping of obfuscated files back into originals
+        :param filter_path: restrict scanning to this sub-path within scan_dir
         :return: True if successful, False otherwise
         """
 
@@ -416,8 +418,9 @@ class Scanner(ScanossBase):
         if self.scan_output:
             self.print_msg(f'Writing results to {self.scan_output}...')
         if self.is_dependency_scan():
+            dep_scan_dir = os.path.join(scan_dir, filter_path) if filter_path else scan_dir
             if not self.threaded_deps.run(
-                what_to_scan=scan_dir,
+                what_to_scan=dep_scan_dir,
                 deps_file=deps_file,
                 wait=False,
                 dep_scope=dep_scope,
@@ -426,14 +429,14 @@ class Scanner(ScanossBase):
             ):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
-            if not self.scan_folder(scan_dir):
+            if not self.scan_folder(scan_dir, filter_path):
                 success = False
         if self.threaded_scan:
             if not self.__finish_scan_threaded(file_map):
                 success = False
         return success
 
-    def scan_folder(self, scan_dir: str) -> bool:  # noqa: PLR0912, PLR0915
+    def scan_folder(self, scan_dir: str, filter_path: str = None) -> bool:  # noqa: PLR0912, PLR0915
         """
         Scan the specified folder producing fingerprints, send to the SCANOSS API and return results
 
@@ -473,7 +476,7 @@ class Scanner(ScanossBase):
             wfp_list = [] if self.wfp_output else None  # Collect WFPs if output file is specified
             batch_context = None  # Track SBOM context (purls, scan_type) for the current batch
 
-            to_scan_files = file_filters.get_filtered_files_from_folder(scan_dir)
+            to_scan_files = file_filters.get_filtered_files_from_folder(scan_dir, filter_path)
             for to_scan_file in to_scan_files:
                 if self.threaded_scan and self.threaded_scan.stop_scanning():
                     self.print_stderr('Warning: Aborting fingerprinting as the scanning service is not available.')
@@ -669,6 +672,7 @@ class Scanner(ScanossBase):
         dep_scope: SCOPE = None,
         dep_scope_include: str = None,
         dep_scope_exclude: str = None,
+        file_id: str = None,
     ) -> bool:
         """
         Scan the given file for whatever scaning options that have been configured
@@ -676,6 +680,7 @@ class Scanner(ScanossBase):
         :param file: file to scan
         :param deps_file: pre-parsed dependency file to decorate
         :param file_map: mapping of obfuscated files back into originals
+        :param file_id: override the file identifier used in WFP and path matching (defaults to file)
         :return: True if successful, False otherwise
         """
         success = True
@@ -699,20 +704,22 @@ class Scanner(ScanossBase):
             ):  # Kick off a background dependency scan
                 success = False
         if self.is_file_or_snippet_scan():
-            if not self.scan_file(file):
+            if not self.scan_file(file, file_id):
                 success = False
         if self.threaded_scan:
             if not self.__finish_scan_threaded(file_map):
                 success = False
         return success
 
-    def scan_file(self, file: str) -> bool:
+    def scan_file(self, file: str, file_id: str = None) -> bool:
         """
         Scan the specified file and produce a result
         Parameters
         ----------
             file: str
                 File to fingerprint and scan/identify
+            file_id: str
+                Override for WFP identifier and path matching (defaults to file)
         :return True if successful, False otherwise
         """
         success = True
@@ -721,11 +728,12 @@ class Scanner(ScanossBase):
         if not os.path.exists(file) or not os.path.isfile(file):
             raise Exception(f'ERROR: Specified files does not exist or is not a file: {file}')
         self.print_debug(f'Fingerprinting {file}...')
-        wfp = self.winnowing.wfp_for_file(file, file)
+        wfp_id = file_id or file
+        wfp = self.winnowing.wfp_for_file(file, wfp_id)
         if wfp is not None and wfp != '':
             if self.threaded_scan:
                 file_context = (
-                    self.scanoss_settings.get_sbom_context(file)
+                    self.scanoss_settings.get_sbom_context(wfp_id)
                     if self.scanoss_settings else SbomContext.empty()
                 )
                 sbom = file_context.to_payload()
@@ -1090,7 +1098,7 @@ class Scanner(ScanossBase):
         else:
             Scanner.print_stderr(f'Warning: No fingerprints generated for: {wfp_file}')
 
-    def wfp_file(self, scan_file: str, wfp_file: str = None):
+    def wfp_file(self, scan_file: str, wfp_file: str = None, file_id: str = None):
         """
         Fingerprint the specified file
         """
@@ -1100,7 +1108,8 @@ class Scanner(ScanossBase):
             raise Exception(f'ERROR: Specified file does not exist or is not a file: {scan_file}')
 
         self.print_debug(f'Fingerprinting {scan_file}...')
-        wfp = self.winnowing.wfp_for_file(scan_file, scan_file)
+        wfp_id = file_id or scan_file
+        wfp = self.winnowing.wfp_for_file(scan_file, wfp_id)
         if wfp:
             if wfp_file:
                 self.print_stderr(f'Writing fingerprints to {wfp_file}')
@@ -1111,7 +1120,7 @@ class Scanner(ScanossBase):
         else:
             Scanner.print_stderr(f'Warning: No fingerprints generated for: {scan_file}')
 
-    def wfp_folder(self, scan_dir: str, wfp_file: str = None):
+    def wfp_folder(self, scan_dir: str, wfp_file: str = None, filter_path: str = None):
         """
         Fingerprint the specified folder producing fingerprints
         """
@@ -1137,7 +1146,7 @@ class Scanner(ScanossBase):
         spinner_ctx = Spinner('Fingerprinting ') if (not self.quiet and self.isatty) else nullcontext()
 
         with spinner_ctx as spinner:
-            to_fingerprint_files = file_filters.get_filtered_files_from_folder(scan_dir)
+            to_fingerprint_files = file_filters.get_filtered_files_from_folder(scan_dir, filter_path)
             for file in to_fingerprint_files:
                 if spinner:
                     spinner.next()

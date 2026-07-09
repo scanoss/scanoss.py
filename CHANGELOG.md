@@ -5,9 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.53.2] - 2026-07-09
+## [Unreleased]
+
+## [1.54.0] - 2026-07-07
+### Added
+- Added `--scan-root` to specify the scan root to load scanoss.json from (Commands: `scan`, `wfp`, `dependencies`, `folder-scan`, `folder-hash`)
+- Added a priority list for loading scanoss.json (1. --settings 2. Scan directory (`--scan-root` if specified) 3. CWD)
+
+## [1.53.2] - 2026-07-07
 ### Fixed
-- Fixed HTTP 503 scan API errors incorrectly reporting service limits being exceeded; 503 responses now retry and surface the server response body.
+- No longer reports every HTTP 503 as "service limits being exceeded", which misled users into thinking they had hit a rate limit during unrelated service outages. Rate limits (HTTP 429) are now distinguished from generic service unavailability (HTTP 503), and the actual server response body is surfaced in the error message.
+### Changed
+- Honour the `Retry-After` header on HTTP 429/503 responses, retrying with backoff (capped at 60s) instead of aborting immediately on the first 503
 
 ## [1.53.1] - 2026-06-04
 ### Added
@@ -899,3 +908,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.53.0]: https://github.com/scanoss/scanoss.py/compare/v1.52.1...v1.53.0
 [1.53.1]: https://github.com/scanoss/scanoss.py/compare/v1.53.0...v1.53.1
 [1.53.2]: https://github.com/scanoss/scanoss.py/compare/v1.53.1...v1.53.2
+[1.54.0]: https://github.com/scanoss/scanoss.py/compare/v1.53.2...v1.54.0

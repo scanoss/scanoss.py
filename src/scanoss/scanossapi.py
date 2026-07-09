@@ -49,6 +49,45 @@ DEFAULT_URL2 = 'https://api.scanoss.com'  # default premium service base URL
 SCAN_ENDPOINT = '/scan/direct'  # scan endpoint path
 SCANOSS_SCAN_URL = os.environ.get('SCANOSS_SCAN_URL') if os.environ.get('SCANOSS_SCAN_URL') else DEFAULT_URL
 SCANOSS_API_KEY = os.environ.get('SCANOSS_API_KEY') if os.environ.get('SCANOSS_API_KEY') else ''
+DEFAULT_RETRY_AFTER = 5  # Default backoff (seconds) when a rate-limit response gives no hint
+MAX_RETRY_AFTER = 60  # Cap on backoff (seconds) to avoid pathological waits
+
+
+def parse_retry_after(response, default: int = DEFAULT_RETRY_AFTER, maximum: int = MAX_RETRY_AFTER) -> int:
+    """
+    Determine how long to back off before retrying a rate-limited request.
+
+    Reads the standard 'Retry-After' response header (interpreted as seconds); if it is
+    missing or non-numeric, falls back to the 'retry_after' field in the JSON body; if
+    neither is available, uses the supplied default. The result is clamped to [0, maximum].
+
+    :param response: requests Response object (may be None)
+    :param default: fallback delay in seconds when no hint is provided
+    :param maximum: upper bound for the returned delay in seconds
+    :return: delay in seconds (int)
+    """
+    delay = None
+    if response is not None:
+        # Prefer the standard Retry-After header (seconds)
+        header_val = response.headers.get('Retry-After') if getattr(response, 'headers', None) else None
+        if header_val is not None:
+            try:
+                delay = int(float(str(header_val).strip()))
+            except (ValueError, TypeError):
+                delay = None
+        # Fall back to the retry_after field in the JSON body
+        if delay is None:
+            try:
+                body = response.json()
+                if isinstance(body, dict) and body.get('retry_after') is not None:
+                    delay = int(float(body.get('retry_after')))
+            except Exception:  # noqa: BLE001 - defensive: any body/parse issue falls back to default
+                delay = None
+    if delay is None:
+        delay = default
+    if delay < 0:
+        delay = default
+    return min(delay, maximum)
 
 
 class ScanossApi(ScanossBase):
@@ -242,6 +281,34 @@ class ScanossApi(ScanossBase):
                     else:
                         self.print_stderr(f'Warning: No response received from {self.url}. Retrying...')
                         time.sleep(5)
+                elif r.status_code in (
+                    requests.codes.too_many_requests,  # 429 - rate limit
+                    requests.codes.service_unavailable,  # 503 - transient service unavailability
+                ):
+                    # Both are potentially transient: back off (honouring Retry-After) and retry
+                    # rather than aborting. Only 429 is a rate limit; a 503 is a generic outage
+                    # (backend down, gateway circuit breaker) and must not be misreported as
+                    # "service limits exceeded".
+                    rate_limited = r.status_code == requests.codes.too_many_requests
+                    if retry > self.retry_limit:  # Exhausted retries, fail surfacing the real response
+                        if rate_limited:
+                            raise Exception(
+                                f'ERROR: {r.status_code} - The SCANOSS API request ({request_id}) for '
+                                f'{self.url} was rejected due to service limits/rate limit being exceeded. '
+                                f'Server response: {r.text.strip()}'
+                            )
+                        raise Exception(
+                            f'ERROR: {r.status_code} - The SCANOSS API is currently unavailable '
+                            f'({request_id}) for {self.url}. Server response: {r.text.strip()}'
+                        )
+                    else:
+                        backoff = parse_retry_after(r)
+                        reason = 'Rate limit exceeded' if rate_limited else 'Service unavailable'
+                        self.print_stderr(
+                            f'Warning: {reason} (HTTP {r.status_code}) from {self.url}: '
+                            f'{r.text.strip()}. Backing off for {backoff}s before retrying...'
+                        )
+                        time.sleep(backoff)
                 elif r.status_code >= requests.codes.bad_request:
                     if retry > self.retry_limit:  # No response retry_limit or more times, fail
                         self.save_bad_req_wfp(scan_files, request_id, scan_id)

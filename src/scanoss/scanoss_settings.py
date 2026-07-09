@@ -237,36 +237,55 @@ class ScanossSettings(ScanossBase):
         Load the scan settings file. If no filepath is provided, scanoss.json will be used as default.
 
         Args:
-            filepath (str): Path to the SCANOSS settings file
+            :param filepath: Path to the SCANOSS settings file
+            :param scan_root: Path to the scan root directory/file
         """
 
-        if not filepath:
-            filepath = DEFAULT_SCANOSS_JSON_FILE
-
-        filepath = Path(scan_root) / filepath if scan_root else Path(filepath)
-
-        json_file = filepath.resolve()
-
-        if filepath == DEFAULT_SCANOSS_JSON_FILE and not json_file.exists():
-            self.print_debug(f'Default settings file "{filepath}" not found. Skipping...')
+        file_path = DEFAULT_SCANOSS_JSON_FILE
+        if filepath:
+            file_path = Path(filepath)
+        # Builds a prioritised candidate paths for settings file from scan root or cwd
+        candidates = []
+        # Prepend the scan root directory to the filepath if it's not an absolute path and not a relative path
+        if not file_path.is_absolute() and (not filepath or not filepath.startswith('.')):
+            if scan_root:
+                scan_root_path = Path(scan_root)
+                if scan_root_path.is_file():  # Attempt to load from the parent directory of the file
+                    candidates.append(Path(scan_root_path.parent / file_path))
+                else:
+                    candidates.append(Path(scan_root_path / file_path))  # Attempt to load from scan root directory
+            candidates.append(Path(Path.cwd() / file_path))  # Attempt to load from the current working directory
+        # Fallback to the defined filepath
+        candidates.append(file_path)
+        # Loads the first valid settings file after validation and schema check
+        self.print_debug(f'Searching for settings file from: {candidates}...')
+        json_file = None
+        for candidate in candidates:
+            js_file = candidate.resolve()
+            if js_file.exists():
+                json_file = js_file
+                break
+        # End for loop
+        if json_file:
+            self.print_msg(f'Loading settings file {json_file}...')
+            result = validate_json_file(json_file)
+            if not result.is_valid:
+                if result.error_code in (JSON_ERROR_FILE_NOT_FOUND, JSON_ERROR_FILE_EMPTY):
+                    self.print_msg(
+                        f'WARNING: The supplied settings file "{filepath}" was not found or is empty. Skipping...'
+                    )
+                    return self
+                else:
+                    raise ScanossSettingsError(f'Problem with settings file. {result.error}')
+            try:
+                validate(result.data, self.schema)
+            except Exception as e:
+                raise ScanossSettingsError(f'Invalid settings file. {e}') from e
+            self.data = result.data
+            self.print_debug(f'Loaded scan settings from: {json_file}')
             return self
-        self.print_msg(f'Loading settings file {filepath}...')
-
-        result = validate_json_file(json_file)
-        if not result.is_valid:
-            if result.error_code in (JSON_ERROR_FILE_NOT_FOUND, JSON_ERROR_FILE_EMPTY):
-                self.print_msg(
-                    f'WARNING: The supplied settings file "{filepath}" was not found or is empty. Skipping...'
-                )
-                return self
-            else:
-                raise ScanossSettingsError(f'Problem with settings file. {result.error}')
-        try:
-            validate(result.data, self.schema)
-        except Exception as e:
-            raise ScanossSettingsError(f'Invalid settings file. {e}') from e
-        self.data = result.data
-        self.print_debug(f'Loading scan settings from: {filepath}')
+        # Not valid settings file found. Skip
+        self.print_debug(f'Default settings file "{file_path}" not found. Skipping...')
         return self
 
     def set_file_type(self, file_type: str):

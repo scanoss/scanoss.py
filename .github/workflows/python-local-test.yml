@@ -20,10 +20,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.9.x"
 
@@ -36,7 +36,7 @@ jobs:
         run: make dist
 
       - name: Install Test Package
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 2
           retry_wait_seconds: 10
@@ -100,6 +100,18 @@ jobs:
           echo "WFP Count: $wfp_count"
           if [[ $wfp_count -lt 1 ]]; then
             echo "Error: WFP test did not produce any results. Failing"
+            exit 1
+          fi
+
+      - name: Run Tests HPFM
+        run: |
+          which scanoss-py
+          scanoss-py version
+          scanoss-py fh -o hpfm-hashes.json tests
+          hash_names=$(cat hpfm-hashes.json | grep 'sim_hash_names')
+          echo "Sim Hash: $hash_names"
+          if [ "$hash_names" = "" ]; then
+            echo "Error: Folder hash failed to generate HPFM hashes. Failing."
             exit 1
           fi
 
