@@ -568,7 +568,14 @@ class FileFilters(ScanossBase):
                 self.print_debug(f'Skipping directory: {dir_rel_path} (matches default skip extension: {ext})')
                 return True
 
-        if self.file_folder_pat_spec and self.file_folder_pat_spec.match_file(dir_rel_path):
+        # Never skip the scan root itself. A broad pattern such as '*' or '/*' matches '.',
+        # which would prune the entire tree before any negation ('!keep') could re-include a
+        # descendant. The root is the scan target, not a candidate for exclusion.
+        if (
+            dir_rel_path not in ('.', '')
+            and self.file_folder_pat_spec
+            and self.file_folder_pat_spec.match_file(dir_rel_path)
+        ):
             self.print_debug(f'Skipping directory: {dir_rel_path} (matches custom pattern)')
             return True
         return False

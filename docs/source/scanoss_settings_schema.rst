@@ -48,6 +48,9 @@ skip.patterns.scanning
 ^^^^^^^^^^^^^^^^^^^^^^
 A list of patterns that determine which files should be skipped during scanning. The patterns follow the same format as ``.gitignore`` files. For more information, see the `gitignore patterns documentation <https://git-scm.com/docs/gitignore#_pattern_format>`_.
 
+.. note::
+    Negation (``!``) follows ``.gitignore`` semantics: a leading ``!`` re-includes a path that an earlier pattern excluded. To skip everything **except** the contents of a folder, anchor the exclusion to the scan root, e.g. ``["/*", "!/game"]``. An unanchored ``["*", "!game"]`` will still skip the files inside ``game`` because a bare ``*`` matches those files directly at every level (this matches ``git`` behaviour).
+
 :Type: Array of strings
 :Required: No
 :Example:

@@ -323,6 +323,97 @@ class TestFileFilters(unittest.TestCase):
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
 
+class TestSkipPatternOperationType(unittest.TestCase):
+    """Tests that skip patterns are read from the operation-specific settings section."""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def _create(self, paths):
+        for p in paths:
+            full = os.path.join(self.test_dir, p)
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            with open(full, 'w') as f:
+                f.write('int main(){}')
+
+    def _settings(self, patterns_by_op):
+        settings = ScanossSettings()
+        settings.data = {'settings': {'skip': {'patterns': patterns_by_op}}}
+        return settings
+
+    def test_fingerprinting_patterns_applied_to_fingerprinting(self):
+        """A pattern under skip.patterns.fingerprinting is honored for the fingerprinting operation."""
+        self._create(['app.uasset', 'main.cpp'])
+        settings = self._settings({'fingerprinting': ['*.uasset']})
+        file_filters = FileFilters(
+            debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='fingerprinting'
+        )
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
+        self.assertEqual(sorted(filtered_files), ['main.cpp'])
+
+    def test_scanning_patterns_not_applied_to_fingerprinting(self):
+        """A pattern under skip.patterns.scanning must NOT leak into the fingerprinting operation."""
+        self._create(['app.uasset', 'main.cpp'])
+        settings = self._settings({'scanning': ['*.uasset']})
+        file_filters = FileFilters(
+            debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='fingerprinting'
+        )
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
+        self.assertEqual(sorted(filtered_files), ['app.uasset', 'main.cpp'])
+
+
+class TestSkipPatternNegation(unittest.TestCase):
+    """Tests for gitignore-style negation ('!') re-including paths."""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def _create(self, paths):
+        for p in paths:
+            full = os.path.join(self.test_dir, p)
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            with open(full, 'w') as f:
+                f.write('int main(){}')
+
+    def _filters(self, patterns):
+        settings = ScanossSettings()
+        settings.data = {'settings': {'skip': {'patterns': {'scanning': patterns}}}}
+        return FileFilters(
+            debug=True, scanoss_settings=settings, hidden_files_folders=True, operation_type='scanning'
+        )
+
+    def test_anchored_negation_reincludes_folder(self):
+        """['/*', '!/game'] skips everything except the contents of the game folder.
+
+        Regression: a broad root pattern used to match '.' and prune the whole tree
+        before the negation could re-include anything, so nothing was ever kept.
+        """
+        self._create(['game/file.cpp', 'game/sub/a.cpp', 'other/x.cpp', 'foo.cpp'])
+        file_filters = self._filters(['/*', '!/game'])
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
+        self.assertEqual(sorted(filtered_files), ['game/file.cpp', 'game/sub/a.cpp'])
+
+    def test_root_is_never_pruned_by_broad_pattern(self):
+        """A bare '*' must not prune the scan root; matching still applies to descendants."""
+        self._create(['game/file.cpp', 'other/x.cpp', 'foo.cpp'])
+        file_filters = self._filters(['/*', '!/game', '!/game/**'])
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
+        self.assertEqual(sorted(filtered_files), ['game/file.cpp'])
+
+    def test_negation_reincludes_specific_file(self):
+        """['*.uasset', '!important.uasset'] keeps important.uasset while skipping other .uasset files."""
+        self._create(['a.uasset', 'important.uasset', 'sub/b.uasset', 'keep.cpp'])
+        file_filters = self._filters(['*.uasset', '!important.uasset'])
+        filtered_files = file_filters.get_filtered_files_from_folder(self.test_dir)
+        self.assertEqual(sorted(filtered_files), ['important.uasset', 'keep.cpp'])
+
+
 class TestFilterPath(unittest.TestCase):
     """Tests for filter_path support in get_filtered_files_from_folder."""
 

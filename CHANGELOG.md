@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.54.1] - 2026-07-10
+### Fixed
+- `settings.skip.patterns.fingerprinting` (and `settings.skip.sizes.fingerprinting`) are now applied to the fingerprinting operation (`wfp` command). Previously the fingerprinting code path always read the `scanning` section, so fingerprinting-specific skip rules were silently ignored.
+- Fixed gitignore-style negation (`!`) skip patterns being ignored when combined with a broad root pattern. A pattern such as `["/*", "!/game"]` matched the scan root itself and pruned the entire tree before the negation could re-include anything, so nothing was ever kept. The scan root is no longer treated as a candidate for exclusion.
+
 ## [1.54.0] - 2026-07-07
 ### Added
 - Added `--scan-root` to specify the scan root to load scanoss.json from (Commands: `scan`, `wfp`, `dependencies`, `folder-scan`, `folder-hash`)
