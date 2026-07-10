@@ -914,3 +914,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.53.1]: https://github.com/scanoss/scanoss.py/compare/v1.53.0...v1.53.1
 [1.53.2]: https://github.com/scanoss/scanoss.py/compare/v1.53.1...v1.53.2
 [1.54.0]: https://github.com/scanoss/scanoss.py/compare/v1.53.2...v1.54.0
+[1.54.1]: https://github.com/scanoss/scanoss.py/compare/v1.54.0...v1.54.1
