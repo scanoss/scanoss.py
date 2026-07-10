@@ -1139,7 +1139,7 @@ class Scanner(ScanossBase):
             skip_size=self.skip_size,
             skip_folders=self.skip_folders,
             skip_extensions=self.skip_extensions,
-            operation_type='scanning',
+            operation_type='fingerprinting',
         )
         wfps = ''
         self.print_msg(f'Searching {scan_dir} for files to fingerprint...')
