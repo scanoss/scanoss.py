@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.55.0] - 2026-07-08
+### Added
+- Hermine integration
+
 ## [1.54.1] - 2026-07-10
 ### Fixed
 - `settings.skip.patterns.fingerprinting` (and `settings.skip.sizes.fingerprinting`) are now applied to the fingerprinting operation (`wfp` command). Previously the fingerprinting code path always read the `scanning` section, so fingerprinting-specific skip rules were silently ignored.
@@ -915,3 +919,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.53.2]: https://github.com/scanoss/scanoss.py/compare/v1.53.1...v1.53.2
 [1.54.0]: https://github.com/scanoss/scanoss.py/compare/v1.53.2...v1.54.0
 [1.54.1]: https://github.com/scanoss/scanoss.py/compare/v1.54.0...v1.54.1
+[1.55.0]: https://github.com/scanoss/scanoss.py/compare/v1.54.1...v1.55.0
