@@ -323,8 +323,8 @@ class TestFileFilters(unittest.TestCase):
         self.assertEqual(sorted(filtered_files), sorted(expected_files))
 
 
-class TestSkipPatternOperationType(unittest.TestCase):
-    """Tests that skip patterns are read from the operation-specific settings section."""
+class BaseFileFiltersTest(unittest.TestCase):
+    """Shared setUp/tearDown/_create helpers for the FileFilters test classes below."""
 
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
@@ -338,6 +338,10 @@ class TestSkipPatternOperationType(unittest.TestCase):
             os.makedirs(os.path.dirname(full), exist_ok=True)
             with open(full, 'w') as f:
                 f.write('int main(){}')
+
+
+class TestSkipPatternOperationType(BaseFileFiltersTest):
+    """Tests that skip patterns are read from the operation-specific settings section."""
 
     def _settings(self, patterns_by_op):
         settings = ScanossSettings()
@@ -365,21 +369,8 @@ class TestSkipPatternOperationType(unittest.TestCase):
         self.assertEqual(sorted(filtered_files), ['app.uasset', 'main.cpp'])
 
 
-class TestSkipPatternNegation(unittest.TestCase):
+class TestSkipPatternNegation(BaseFileFiltersTest):
     """Tests for gitignore-style negation ('!') re-including paths."""
-
-    def setUp(self):
-        self.test_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-
-    def _create(self, paths):
-        for p in paths:
-            full = os.path.join(self.test_dir, p)
-            os.makedirs(os.path.dirname(full), exist_ok=True)
-            with open(full, 'w') as f:
-                f.write('int main(){}')
 
     def _filters(self, patterns):
         settings = ScanossSettings()
@@ -414,23 +405,13 @@ class TestSkipPatternNegation(unittest.TestCase):
         self.assertEqual(sorted(filtered_files), ['important.uasset', 'keep.cpp'])
 
 
-class TestFilterPath(unittest.TestCase):
+class TestFilterPath(BaseFileFiltersTest):
     """Tests for filter_path support in get_filtered_files_from_folder."""
 
     def setUp(self):
+        super().setUp()
         self.file_filters = FileFilters(debug=True, all_extensions=True, all_folders=True,
                                         hidden_files_folders=True, operation_type='scanning')
-        self.test_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-
-    def _create(self, paths):
-        for p in paths:
-            full = os.path.join(self.test_dir, p)
-            os.makedirs(os.path.dirname(full), exist_ok=True)
-            with open(full, 'w') as f:
-                f.write('int main(){}')  # non-empty so FileFilters doesn't skip it
 
     def test_filter_path_returns_only_subfolder_files(self):
         self._create(['sub/a.c', 'sub/b.c', 'other/c.c', 'root.c'])

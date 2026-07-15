@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added Hermine integration
 - Added `export hm` subcommand to export SBOM files to Hermine
-- Added `inspect hm v` subcommand to retrieve Dependency Track project violations in Markdown and JSON formats
+- Added `inspect hm v` subcommand to retrieve Hermine product violations/validation in Markdown and JSON formats
 
 ## [1.54.1] - 2026-07-10
 ### Fixed
