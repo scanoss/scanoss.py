@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.54.2] - 2026-07-20
 ### Fixed
 - `scan --wfp` now exits with a non-zero code when the scan fails, consistent with the folder, STDIN and dependency scan modes. Previously the `--wfp` branch discarded the scanner's success/failure status and always exited `0`, which broke CI pipelines relying on the exit code to detect failures.
 
