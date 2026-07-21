@@ -1,5 +1,5 @@
 requests
-crc32c>=2.2
+crc32c>=2.8
 binaryornot
 progress
 grpcio>=1.73.1
