@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `export hm` subcommand to export SBOM files to Hermine
 - Added `inspect hm v` subcommand to retrieve Hermine product violations/validation in Markdown and JSON formats
 
+## [1.54.2] - 2026-07-20
+### Fixed
+- `scan --wfp` now exits with a non-zero code when the scan fails, consistent with the folder, STDIN and dependency scan modes. Previously the `--wfp` branch discarded the scanner's success/failure status and always exited `0`, which broke CI pipelines relying on the exit code to detect failures.
+
 ## [1.54.1] - 2026-07-10
 ### Fixed
 - `settings.skip.patterns.fingerprinting` (and `settings.skip.sizes.fingerprinting`) are now applied to the fingerprinting operation (`wfp` command). Previously the fingerprinting code path always read the `scanning` section, so fingerprinting-specific skip rules were silently ignored.
@@ -921,4 +925,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.53.2]: https://github.com/scanoss/scanoss.py/compare/v1.53.1...v1.53.2
 [1.54.0]: https://github.com/scanoss/scanoss.py/compare/v1.53.2...v1.54.0
 [1.54.1]: https://github.com/scanoss/scanoss.py/compare/v1.54.0...v1.54.1
-[1.55.0]: https://github.com/scanoss/scanoss.py/compare/v1.54.1...v1.55.0
+[1.54.2]: https://github.com/scanoss/scanoss.py/compare/v1.54.1...v1.54.2
+[1.55.0]: https://github.com/scanoss/scanoss.py/compare/v1.54.2...v1.55.0

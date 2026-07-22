@@ -1796,7 +1796,8 @@ def scan(parser, args):  # noqa: PLR0912, PLR0915
         if scanner.is_dependency_scan() and not args.dep:
             print_stderr('Error: Cannot specify WFP & Dependency scanning without a dependency file (--dep)')
             sys.exit(1)
-        scanner.scan_wfp_with_options(args.wfp, args.dep)
+        if not scanner.scan_wfp_with_options(args.wfp, args.dep):
+            sys.exit(1)
     elif args.stdin:
         contents = sys.stdin.buffer.read()
         if not scanner.scan_contents(args.stdin, contents):
