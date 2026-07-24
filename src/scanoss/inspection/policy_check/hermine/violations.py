@@ -56,7 +56,7 @@ class HermineViolationsPolicyCheck(PolicyCheck[HermineViolationDict]):
     from a Hermine instance for a specific project.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0917
             self,
             debug: bool = False,
             trace: bool = False,
