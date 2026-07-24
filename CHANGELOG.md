@@ -7,9 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.55.0] - 2026-07-15
+## [1.55.0] - 2026-07-23
 ### Added
-- Added Hermine integration
 - Added `export hm` subcommand to export SBOM files to Hermine
 - Added `inspect hm v` subcommand to retrieve Hermine product violations/validation in Markdown and JSON formats
 
