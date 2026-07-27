@@ -3170,17 +3170,18 @@ def validate_scan_root(args):
 
 
 def get_scanoss_settings_from_args(args):
-    if args.settings and args.skip_settings_file:
+    settings = getattr(args, 'settings', None)
+    skip_settings_file = getattr(args, 'skip_settings_file', False)
+    if settings and skip_settings_file:
         print_stderr('ERROR: Cannot specify both --settings and --skip-settings-file options.')
         sys.exit(1)
-    if args.skip_settings_file:
+    if skip_settings_file:
         return None
     settings_root = getattr(args, 'scan_root', None) or getattr(args, 'scan_dir', None)
     scanoss_settings = ScanossSettings(debug=args.debug, trace=args.trace, quiet=args.quiet)
     try:
         identify = getattr(args, 'identify', None)
         ignore = getattr(args, 'ignore', None)
-        settings = getattr(args, 'settings', None)
         if identify:
             scanoss_settings.load_json_file(identify, settings_root).set_file_type('legacy').set_scan_type('identify')
         elif ignore:
