@@ -58,7 +58,7 @@ class ScannerHFH:
     and calculates simhash values based on file names and content to detect folder-level similarities.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         scan_dir: str,
         config: ScannerConfig,
