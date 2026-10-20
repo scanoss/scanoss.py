@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.54.3] - 2026-10-20
 ### Fixed
 - CycloneDX and SPDX Lite outputs now list every detected version of a component, matching the default JSON output. Previously only one version was kept, chosen by result order, and its vulnerabilities could be attributed to the wrong version.
 ### Changed
@@ -923,3 +925,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.53.2]: https://github.com/scanoss/scanoss.py/compare/v1.53.1...v1.53.2
 [1.54.0]: https://github.com/scanoss/scanoss.py/compare/v1.53.2...v1.54.0
 [1.54.1]: https://github.com/scanoss/scanoss.py/compare/v1.54.0...v1.54.1
+[1.54.2]: https://github.com/scanoss/scanoss.py/compare/v1.54.1...v1.54.2
+[1.54.3]: https://github.com/scanoss/scanoss.py/compare/v1.54.2...v1.54.3
