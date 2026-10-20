@@ -30,6 +30,7 @@ RUN pip3 install --no-cache-dir scanoss_winnowing
 RUN pip3 install --no-cache-dir -r /install/requirements-dev.txt
 RUN pip3 install --no-cache-dir scancode-toolkit-mini
 RUN pip3 install --no-cache-dir click==8.2.1 # Temporary workaround for scancode-toolkit-mini (https://github.com/aboutcode-org/scancode-toolkit/issues/4573)
+RUN pip3 install --no-cache-dir "pluggy<1.7" # Temporary workaround: plugincode fails to register hooks with pluggy 1.7 (#229)
 
 # Download compile and install typecode-libmagic from source (as there is not ARM wheel available)
 ADD https://github.com/nexB/typecode_libmagic_from_sources/archive/refs/tags/v5.39.210212.tar.gz /install/
