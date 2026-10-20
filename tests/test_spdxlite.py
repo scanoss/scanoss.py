@@ -58,8 +58,9 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(name, "SCANOSS-SBOM")
             self.assertEqual(organization, "Organization: SCANOSS")
             self.assertEqual(creation_info_comment, "SBOM Build information - SBOM Type: Build")
-            self.assertEqual(len(document_describes), 6)
-            self.assertEqual(len(packages), 6)
+            # 6 components, two of them matched at two versions each
+            self.assertEqual(len(document_describes), 8)
+            self.assertEqual(len(packages), 8)
 
             for package in packages:
                 for checksum in package.get("checksums", []):

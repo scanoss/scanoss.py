@@ -341,7 +341,7 @@ class ScannerHFHPresenter(AbstractPresenter):
                 return None
 
             if vulnerabilities:
-                cdx_output = cdx.append_vulnerabilities(cdx_output, vulnerabilities, purl)
+                cdx_output = cdx.append_vulnerabilities(cdx_output, vulnerabilities, cdx.bom_ref(purl, version))
 
             return json.dumps(cdx_output, indent=2)
         except Exception as e:
