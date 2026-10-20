@@ -136,7 +136,7 @@ class SpdxLite:
             if not self._is_valid_purl(file_path, dep, purl, summary):
                 continue
             # Modifying the summary dictionary directly as it's passed by reference
-            summary[purl] = self._create_dependency_summary(dep)
+            summary[(purl, dep.get('version'))] = self._create_dependency_summary(dep)
 
     def _process_file_entry(self, file_path: str, entry: dict, summary: dict):
         """
@@ -156,11 +156,11 @@ class SpdxLite:
         if not self._is_valid_purl(file_path, entry, purl, summary):
             return
 
-        summary[purl] = self._create_file_summary(entry)
+        summary[(purl, entry.get('version'))] = self._create_file_summary(entry)
 
     def _is_valid_purl(self, file_path: str, entry: dict, purl: str, summary: dict) -> bool:
         """
-        Check if purl is valid and not already processed.
+        Check if purl is valid and this purl and version is not already processed.
 
         Args:
             file_path: Path to the file being processed
@@ -175,8 +175,9 @@ class SpdxLite:
             self.print_stderr(f'Warning: No PURL found for {file_path}: {entry}')
             return False
 
-        if summary.get(purl):
-            self.print_debug(f'Component {purl} already stored: {summary.get(purl)}')
+        key = (purl, entry.get('version'))
+        if summary.get(key):
+            self.print_debug(f'Component {key} already stored: {summary.get(key)}')
             return False
 
         return True
@@ -403,8 +404,7 @@ class SpdxLite:
             license references to be processed separately.
 
             Args:
-                raw_data (dict): Dictionary of package data indexed by PURL
-                                (Package URL identifiers)
+                raw_data (dict): Dictionary of package data indexed by (PURL, version)
                 spdx_document (dict): Reference to the SPDX document being built,
                                      which will be modified in place
 
@@ -416,7 +416,7 @@ class SpdxLite:
         """
         lic_refs = set()
 
-        for purl, comp in raw_data.items():
+        for (purl, _), comp in raw_data.items():
             package_info = self._create_package_info(purl, comp, lic_refs)
             spdx_document['packages'].append(package_info)
             spdx_document['documentDescribes'].append(package_info['SPDXID'])

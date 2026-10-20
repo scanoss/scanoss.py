@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- CycloneDX and SPDX Lite outputs now list every detected version of a component, matching the default JSON output. Previously only one version was kept, chosen by result order, and its vulnerabilities could be attributed to the wrong version.
+### Changed
+- CycloneDX `bom-ref` is now `purl@version` instead of the bare `purl`. Tools that look up components by `bom-ref` need to account for the version.
 
 ## [1.54.2] - 2026-07-20
 ### Fixed

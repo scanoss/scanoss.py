@@ -51,6 +51,15 @@ class CycloneDx(ScanossBase):
         self.debug = debug
         self._spdx = SpdxLite(debug=debug)
 
+    @staticmethod
+    def bom_ref(purl: str, version: str) -> str:
+        """
+        Return the bom-ref for a component: one per purl and version, so every detected version is kept
+        """
+        if not version or '@' in purl:  # purl already pinned to a version
+            return purl
+        return f'{purl}@{version}'
+
     def parse(self, data: dict):  # noqa: PLR0912, PLR0915
         """
         Parse the given input (raw/plain) JSON string and return CycloneDX summary
@@ -84,10 +93,11 @@ class CycloneDx(ScanossBase):
                         if not purl:
                             self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
                             continue
-                        if cdx.get(purl):
-                            self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                        ref = self.bom_ref(purl, deps.get('version'))
+                        if cdx.get(ref):
+                            self.print_debug(f'Component {ref} already stored: {cdx.get(ref)}')
                             continue
-                        fd = {}
+                        fd = {'purl': purl}
                         for field in ['component', 'version']:
                             fd[field] = deps.get(field, '')
                         licenses = deps.get('licenses')
@@ -100,7 +110,7 @@ class CycloneDx(ScanossBase):
                                     fdl.append({'id': name})
                                     dc.append(name)
                         fd['licenses'] = fdl
-                        cdx[purl] = fd
+                        cdx[ref] = fd
                 else:
                     purls = d.get('purl')
                     if not purls:
@@ -113,7 +123,8 @@ class CycloneDx(ScanossBase):
                     if not purl:
                         self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
                         continue
-                    fd = {}
+                    ref = self.bom_ref(purl, d.get('version'))
+                    fd = {'purl': purl}
                     vulnerabilities = d.get('vulnerabilities')
                     if vulnerabilities:
                         for vuln in vulnerabilities:
@@ -141,10 +152,10 @@ class CycloneDx(ScanossBase):
                                     'severity': self._sev_lookup(vuln.get('severity', 'unknown').lower()),
                                     'affects': set(),
                                 }
-                            vd.get('affects').add(purl)
+                            vd.get('affects').add(ref)
                             vdx[vuln_id] = vd
-                    if cdx.get(purl):
-                        self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                    if cdx.get(ref):
+                        self.print_debug(f'Component {ref} already stored: {cdx.get(ref)}')
                         continue
                     for field in ['id', 'vendor', 'component', 'version', 'latest']:
                         fd[field] = d.get(field)
@@ -158,7 +169,7 @@ class CycloneDx(ScanossBase):
                                 continue
                             fdl.append({'id': name})
                     fd['licenses'] = fdl
-                    cdx[purl] = fd
+                    cdx[ref] = fd
         # self.print_stderr(f'VD: {vdx}')
         # self.print_stderr(f'CDX: {cdx}')
         return cdx, vdx
@@ -224,8 +235,7 @@ class CycloneDx(ScanossBase):
             'components': [],
             'vulnerabilities': [],
         }
-        for purl in cdx:
-            comp = cdx.get(purl)
+        for ref, comp in cdx.items():
             lic_text = []
             licenses = comp.get('licenses')
             if licenses:
@@ -247,8 +257,8 @@ class CycloneDx(ScanossBase):
                 'name': comp.get('component'),
                 'publisher': comp.get('vendor', ''),
                 'version': comp.get('version'),
-                'purl': purl,
-                'bom-ref': purl,
+                'purl': comp.get('purl'),
+                'bom-ref': ref,
                 'licenses': lic_text,
             }
             cpe = comp.get('cpe', '')
@@ -263,8 +273,8 @@ class CycloneDx(ScanossBase):
                     continue
                 v_source = vulns.get('source')
                 affects = []
-                for purl in vulns.get('affects'):
-                    affects.append({'ref': purl})
+                for ref in vulns.get('affects'):
+                    affects.append({'ref': ref})
                 vd = {
                     'id': vuln_id,
                     'source': {'name': v_source, 'url': vulns.get('url')},
@@ -318,7 +328,7 @@ class CycloneDx(ScanossBase):
 
         return vuln_id, vuln_cve
 
-    def _create_vulnerability_entry(self, vuln_id: str, vuln: dict, vuln_cve: str, purl: str) -> dict:
+    def _create_vulnerability_entry(self, vuln_id: str, vuln: dict, vuln_cve: str, bom_ref: str) -> dict:
         """
         Create a new vulnerability entry for CycloneDX format.
         """
@@ -332,17 +342,17 @@ class CycloneDx(ScanossBase):
                 else f'https://github.com/advisories/{vuln_id}',
             },
             'ratings': [{'severity': self._sev_lookup(vuln.get('severity', 'unknown').lower())}],
-            'affects': [{'ref': purl}],
+            'affects': [{'ref': bom_ref}],
         }
 
-    def append_vulnerabilities(self, cdx_dict: dict, vulnerabilities_data: dict, purl: str) -> dict:
+    def append_vulnerabilities(self, cdx_dict: dict, vulnerabilities_data: dict, bom_ref: str) -> dict:
         """
         Append vulnerabilities to an existing CycloneDX dictionary
 
         Args:
             cdx_dict (dict): The existing CycloneDX dictionary
             vulnerabilities_data (dict): The vulnerabilities data from get_vulnerabilities_json
-            purl (str): The PURL of the component these vulnerabilities affect
+            bom_ref (str): The bom-ref of the component these vulnerabilities affect
 
         Returns:
             dict: The updated CycloneDX dictionary with vulnerabilities appended
@@ -371,12 +381,12 @@ class CycloneDx(ScanossBase):
             existing_vuln = next((v for v in cdx_dict['vulnerabilities'] if v.get('id') == vuln_id), None)
 
             if existing_vuln:
-                # Add this PURL to the affects list if not already present
-                if not any(ref.get('ref') == purl for ref in existing_vuln.get('affects', [])):
-                    existing_vuln['affects'].append({'ref': purl})
+                # Add this bom-ref to the affects list if not already present
+                if not any(ref.get('ref') == bom_ref for ref in existing_vuln.get('affects', [])):
+                    existing_vuln['affects'].append({'ref': bom_ref})
             else:
                 # Create new vulnerability entry
-                cdx_dict['vulnerabilities'].append(self._create_vulnerability_entry(vuln_id, vuln, vuln_cve, purl))
+                cdx_dict['vulnerabilities'].append(self._create_vulnerability_entry(vuln_id, vuln, vuln_cve, bom_ref))
 
         return cdx_dict
 
