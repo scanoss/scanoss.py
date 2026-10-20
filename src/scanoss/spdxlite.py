@@ -65,6 +65,28 @@ class SpdxLite:
         if self.debug:
             self.print_stderr(*args, **kwargs)
 
+    @staticmethod
+    def _versioned_purl(purl: str, version) -> str:
+        """
+        Attach the component version to a versionless purl.
+
+        Raw scan results normally carry versionless purls (the detected version lives
+        in the entry's ``version`` field), so the purl alone cannot tell two versions
+        of the same component apart. Purls that already carry a version are returned
+        unchanged. Qualifiers are left alone: only the part before ``?`` is inspected.
+
+        Args:
+            purl: Package URL, with or without a version or qualifiers
+            version: Component version (may be None or empty)
+
+        Returns:
+            str: The purl with a version attached when it had none
+        """
+        version = str(version) if version not in (None, '') else ''
+        if not version or '@' in purl.split('?')[0]:
+            return purl
+        return f'{purl}@{version}'
+
     def parse(self, data: json):
         """
         Parse the given input (raw/plain) JSON string and return a summary
@@ -135,8 +157,11 @@ class SpdxLite:
             purl = dep.get('purl')
             if not self._is_valid_purl(file_path, dep, purl, summary):
                 continue
-            # Modifying the summary dictionary directly as it's passed by reference
-            summary[purl] = self._create_dependency_summary(dep)
+            # Modifying the summary dictionary directly as it's passed by reference.
+            # The key carries the detected version so that several versions of the
+            # same component all survive instead of the first one winning.
+            key = self._versioned_purl(purl, dep.get('version'))
+            summary[key] = self._create_dependency_summary(dep)
 
     def _process_file_entry(self, file_path: str, entry: dict, summary: dict):
         """
@@ -156,7 +181,10 @@ class SpdxLite:
         if not self._is_valid_purl(file_path, entry, purl, summary):
             return
 
-        summary[purl] = self._create_file_summary(entry)
+        # The key carries the detected version so that several versions of the same
+        # component all survive instead of the first one winning.
+        key = self._versioned_purl(purl, entry.get('version'))
+        summary[key] = self._create_file_summary(entry)
 
     def _is_valid_purl(self, file_path: str, entry: dict, purl: str, summary: dict) -> bool:
         """
@@ -456,7 +484,7 @@ class SpdxLite:
         """
         lic_text = self._process_package_licenses(comp.get('licenses', []), lic_refs)
         comp_ver = comp.get('version')
-        purl_ver = f'{purl}@{comp_ver}'
+        purl_ver = self._versioned_purl(purl, comp_ver)
         purl_hash = hashlib.md5(purl_ver.encode('utf-8')).hexdigest()
 
         external_refs = [

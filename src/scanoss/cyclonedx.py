@@ -51,6 +51,21 @@ class CycloneDx(ScanossBase):
         self.debug = debug
         self._spdx = SpdxLite(debug=debug)
 
+    @staticmethod
+    def _versioned_purl(purl: str, version) -> str:
+        """
+        Attach the component version to a versionless purl.
+
+        Raw scan results normally carry versionless purls (the detected version lives
+        in the entry's ``version`` field), so the purl alone cannot tell two versions
+        of the same component apart. Purls that already carry a version are returned
+        unchanged. Qualifiers are left alone: only the part before ``?`` is inspected.
+        """
+        version = str(version) if version not in (None, '') else ''
+        if not version or '@' in purl.split('?')[0]:
+            return purl
+        return f'{purl}@{version}'
+
     def parse(self, data: dict):  # noqa: PLR0912, PLR0915
         """
         Parse the given input (raw/plain) JSON string and return CycloneDX summary
@@ -84,8 +99,11 @@ class CycloneDx(ScanossBase):
                         if not purl:
                             self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
                             continue
-                        if cdx.get(purl):
-                            self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                        # The key carries the detected version so that several versions
+                        # of the same component all survive instead of the first one winning.
+                        key = self._versioned_purl(purl, deps.get('version'))
+                        if cdx.get(key):
+                            self.print_debug(f'Component {key} already stored: {cdx.get(key)}')
                             continue
                         fd = {}
                         for field in ['component', 'version']:
@@ -100,7 +118,7 @@ class CycloneDx(ScanossBase):
                                     fdl.append({'id': name})
                                     dc.append(name)
                         fd['licenses'] = fdl
-                        cdx[purl] = fd
+                        cdx[key] = fd
                 else:
                     purls = d.get('purl')
                     if not purls:
@@ -113,6 +131,9 @@ class CycloneDx(ScanossBase):
                     if not purl:
                         self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
                         continue
+                    # The key carries the detected version so that several versions of
+                    # the same component all survive instead of the first one winning.
+                    key = self._versioned_purl(purl, d.get('version'))
                     fd = {}
                     vulnerabilities = d.get('vulnerabilities')
                     if vulnerabilities:
@@ -141,10 +162,10 @@ class CycloneDx(ScanossBase):
                                     'severity': self._sev_lookup(vuln.get('severity', 'unknown').lower()),
                                     'affects': set(),
                                 }
-                            vd.get('affects').add(purl)
+                            vd.get('affects').add(key)
                             vdx[vuln_id] = vd
-                    if cdx.get(purl):
-                        self.print_debug(f'Component {purl} already stored: {cdx.get(purl)}')
+                    if cdx.get(key):
+                        self.print_debug(f'Component {key} already stored: {cdx.get(key)}')
                         continue
                     for field in ['id', 'vendor', 'component', 'version', 'latest']:
                         fd[field] = d.get(field)
@@ -158,7 +179,7 @@ class CycloneDx(ScanossBase):
                                 continue
                             fdl.append({'id': name})
                     fd['licenses'] = fdl
-                    cdx[purl] = fd
+                    cdx[key] = fd
         # self.print_stderr(f'VD: {vdx}')
         # self.print_stderr(f'CDX: {cdx}')
         return cdx, vdx

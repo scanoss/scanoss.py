@@ -58,8 +58,11 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(name, "SCANOSS-SBOM")
             self.assertEqual(organization, "Organization: SCANOSS")
             self.assertEqual(creation_info_comment, "SBOM Build information - SBOM Type: Build")
-            self.assertEqual(len(document_describes), 6)
-            self.assertEqual(len(packages), 6)
+            # result.json carries two versions of the same component twice
+            # (scanner.c 1.3.3 / 1.1.4, engine 5.4.0 / 4.0.4). All detected versions
+            # are retained now instead of the first one winning, so both lists grew by two.
+            self.assertEqual(len(document_describes), 8)
+            self.assertEqual(len(packages), 8)
 
             for package in packages:
                 for checksum in package.get("checksums", []):
