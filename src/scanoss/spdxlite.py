@@ -34,6 +34,7 @@ import importlib_resources
 from packageurl import PackageURL
 
 from . import __version__
+from .utils.purl import versioned_purl
 
 
 class SpdxLite:
@@ -136,7 +137,7 @@ class SpdxLite:
             if not self._is_valid_purl(file_path, dep, purl, summary):
                 continue
             # Modifying the summary dictionary directly as it's passed by reference
-            summary[(purl, dep.get('version'))] = self._create_dependency_summary(dep)
+            summary[versioned_purl(purl, dep.get('version'))] = self._create_dependency_summary(dep)
 
     def _process_file_entry(self, file_path: str, entry: dict, summary: dict):
         """
@@ -156,7 +157,7 @@ class SpdxLite:
         if not self._is_valid_purl(file_path, entry, purl, summary):
             return
 
-        summary[(purl, entry.get('version'))] = self._create_file_summary(entry)
+        summary[versioned_purl(purl, entry.get('version'))] = self._create_file_summary(entry)
 
     def _is_valid_purl(self, file_path: str, entry: dict, purl: str, summary: dict) -> bool:
         """
@@ -169,13 +170,13 @@ class SpdxLite:
             summary: Reference to summary dictionary to check for existing entries
 
         Returns:
-            bool: True if purl is valid and not already processed
+            bool: True if purl is valid and this purl and version is not already processed
         """
         if not purl:
             self.print_stderr(f'Warning: No PURL found for {file_path}: {entry}')
             return False
 
-        key = (purl, entry.get('version'))
+        key = versioned_purl(purl, entry.get('version'))
         if summary.get(key):
             self.print_debug(f'Component {key} already stored: {summary.get(key)}')
             return False
@@ -404,7 +405,7 @@ class SpdxLite:
             license references to be processed separately.
 
             Args:
-                raw_data (dict): Dictionary of package data indexed by (PURL, version)
+                raw_data (dict): Dictionary of package data indexed by versioned PURL
                 spdx_document (dict): Reference to the SPDX document being built,
                                      which will be modified in place
 
@@ -416,14 +417,14 @@ class SpdxLite:
         """
         lic_refs = set()
 
-        for (purl, _), comp in raw_data.items():
-            package_info = self._create_package_info(purl, comp, lic_refs)
+        for purl_ver, comp in raw_data.items():
+            package_info = self._create_package_info(purl_ver, comp, lic_refs)
             spdx_document['packages'].append(package_info)
             spdx_document['documentDescribes'].append(package_info['SPDXID'])
 
         self._process_license_refs(lic_refs, spdx_document)
 
-    def _create_package_info(self, purl: str, comp: dict, lic_refs: set) -> dict:
+    def _create_package_info(self, purl_ver: str, comp: dict, lic_refs: set) -> dict:
         """
             Create package information for SPDX document.
 
@@ -433,7 +434,7 @@ class SpdxLite:
             fields for the SPDX document.
 
             Args:
-                purl (str): Package URL identifier for the component
+                purl_ver (str): Package URL identifier for the component, pinned to its version
                 comp (dict): Component information dictionary containing metadata like
                             component name, version, URLs, and license information
                 lic_refs (set): Reference to a set that will be populated with license
@@ -456,7 +457,6 @@ class SpdxLite:
         """
         lic_text = self._process_package_licenses(comp.get('licenses', []), lic_refs)
         comp_ver = comp.get('version')
-        purl_ver = f'{purl}@{comp_ver}'
         purl_hash = hashlib.md5(purl_ver.encode('utf-8')).hexdigest()
 
         external_refs = [

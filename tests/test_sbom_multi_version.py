@@ -21,6 +21,7 @@ SPDX-License-Identifier: MIT
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 """
+
 import json
 import os
 import tempfile
@@ -33,25 +34,29 @@ PURL = 'pkg:github/signalwire/freeswitch'
 
 
 def _file_match(version, vulnerabilities=None):
-    return [{
-        'id': 'file',
-        'component': 'freeswitch',
-        'vendor': 'signalwire',
-        'version': version,
-        'latest': 'v1.10.12',
-        'url': 'https://github.com/signalwire/freeswitch',
-        'url_hash': 'abc123',
-        'purl': [PURL],
-        'licenses': [{'name': 'MPL-1.1', 'source': 'component_declared'}],
-        'vulnerabilities': vulnerabilities or [],
-    }]
+    return [
+        {
+            'id': 'file',
+            'component': 'freeswitch',
+            'vendor': 'signalwire',
+            'version': version,
+            'latest': 'v1.10.12',
+            'url': 'https://github.com/signalwire/freeswitch',
+            'url_hash': 'abc123',
+            'purl': [PURL],
+            'licenses': [{'name': 'MPL-1.1', 'source': 'component_declared'}],
+            'vulnerabilities': vulnerabilities or [],
+        }
+    ]
 
 
 def _dependency(version):
-    return [{
-        'id': 'dependency',
-        'dependencies': [{'purl': 'pkg:npm/lodash', 'component': 'lodash', 'version': version, 'licenses': []}],
-    }]
+    return [
+        {
+            'id': 'dependency',
+            'dependencies': [{'purl': 'pkg:npm/lodash', 'component': 'lodash', 'version': version, 'licenses': []}],
+        }
+    ]
 
 
 RAW = {
@@ -97,10 +102,6 @@ class CycloneDxMultiVersionTests(unittest.TestCase):
         self.assertIn({'purl': PURL, 'requirement': 'v1.6.7'}, request['purls'])
         self.assertIn({'purl': PURL, 'requirement': 'v1.6.8'}, request['purls'])
 
-    def test_bom_ref_does_not_double_pin_a_versioned_purl(self):
-        self.assertEqual(CycloneDx.bom_ref('pkg:npm/lodash@4.17.21', '4.17.21'), 'pkg:npm/lodash@4.17.21')
-        self.assertEqual(CycloneDx.bom_ref('pkg:npm/lodash', ''), 'pkg:npm/lodash')
-
 
 class SpdxLiteMultiVersionTests(unittest.TestCase):
     """
@@ -127,6 +128,37 @@ class SpdxLiteMultiVersionTests(unittest.TestCase):
         ids = [p['SPDXID'] for p in self.doc['packages']]
         self.assertEqual(len(ids), len(set(ids)))
         self.assertEqual(sorted(ids), sorted(self.doc['documentDescribes']))
+
+
+class CrossFormatTests(unittest.TestCase):
+    """
+    CycloneDX and SPDX Lite pin purls the same way.
+    """
+
+    def test_both_formats_agree_on_edge_cases(self):
+        raw = {
+            'package.json': [
+                {
+                    'id': 'dependency',
+                    'dependencies': [
+                        {'purl': 'pkg:npm/lodash@4.17.21', 'component': 'lodash', 'version': '4.17.21', 'licenses': []},
+                        {'purl': 'pkg:npm/left-pad', 'component': 'left-pad', 'version': None, 'licenses': []},
+                    ],
+                }
+            ]
+        }
+        _, bom = CycloneDx(debug=False).produce_from_json(raw, print_output=False)
+        fd, out_path = tempfile.mkstemp(prefix='spdxlite_pin_', suffix='.json')
+        os.close(fd)  # SpdxLite re-opens the path itself for writing
+        try:
+            SpdxLite(debug=False, output_file=out_path).produce_from_json(raw)
+            with open(out_path, 'r') as f:
+                doc = json.load(f)
+        finally:
+            os.remove(out_path)
+        spdx_purls = sorted(r['referenceLocator'] for p in doc['packages'] for r in p['externalRefs'])
+        self.assertEqual(sorted(c['bom-ref'] for c in bom['components']), spdx_purls)
+        self.assertEqual(spdx_purls, ['pkg:npm/left-pad', 'pkg:npm/lodash@4.17.21'])
 
 
 if __name__ == '__main__':
