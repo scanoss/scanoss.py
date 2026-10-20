@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.54.3] - 2026-10-20
 ### Fixed
 - CycloneDX and SPDX Lite outputs now list every detected version of a component, matching the default JSON output. Previously only one version was kept, chosen by result order, and its vulnerabilities could be attributed to the wrong version.
+- The container image builds again. `pluggy` is pinned below 1.7, which broke scancode's plugin loading. (#229)
 ### Changed
 - CycloneDX `bom-ref` is now `purl@version` instead of the bare `purl`. Tools that look up components by `bom-ref` need to account for the version.
 
