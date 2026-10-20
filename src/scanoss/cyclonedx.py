@@ -34,6 +34,7 @@ from cyclonedx.validation.json import JsonValidator
 from . import __version__
 from .scanossbase import ScanossBase
 from .spdxlite import SpdxLite
+from .utils.purl import versioned_purl
 
 
 class CycloneDx(ScanossBase):
@@ -50,15 +51,6 @@ class CycloneDx(ScanossBase):
         self.output_file = output_file
         self.debug = debug
         self._spdx = SpdxLite(debug=debug)
-
-    @staticmethod
-    def bom_ref(purl: str, version: str) -> str:
-        """
-        Return the bom-ref for a component: one per purl and version, so every detected version is kept
-        """
-        if not version or '@' in purl:  # purl already pinned to a version
-            return purl
-        return f'{purl}@{version}'
 
     def parse(self, data: dict):  # noqa: PLR0912, PLR0915
         """
@@ -93,7 +85,7 @@ class CycloneDx(ScanossBase):
                         if not purl:
                             self.print_stderr(f'Warning: No PURL found for {f}: {deps}')
                             continue
-                        ref = self.bom_ref(purl, deps.get('version'))
+                        ref = versioned_purl(purl, deps.get('version'))
                         if cdx.get(ref):
                             self.print_debug(f'Component {ref} already stored: {cdx.get(ref)}')
                             continue
@@ -123,7 +115,7 @@ class CycloneDx(ScanossBase):
                     if not purl:
                         self.print_stderr(f'Warning: No PURL found for {f}: {file_details}')
                         continue
-                    ref = self.bom_ref(purl, d.get('version'))
+                    ref = versioned_purl(purl, d.get('version'))
                     fd = {'purl': purl}
                     vulnerabilities = d.get('vulnerabilities')
                     if vulnerabilities:

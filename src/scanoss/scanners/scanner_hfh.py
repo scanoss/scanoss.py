@@ -47,6 +47,7 @@ from scanoss.scanoss_settings import ScanossSettings
 from scanoss.scanossbase import ScanossBase
 from scanoss.scanossgrpc import ScanossGrpc
 from scanoss.utils.abstract_presenter import AbstractPresenter
+from scanoss.utils.purl import versioned_purl
 
 
 class ScannerHFH:
@@ -341,7 +342,7 @@ class ScannerHFHPresenter(AbstractPresenter):
                 return None
 
             if vulnerabilities:
-                cdx_output = cdx.append_vulnerabilities(cdx_output, vulnerabilities, cdx.bom_ref(purl, version))
+                cdx_output = cdx.append_vulnerabilities(cdx_output, vulnerabilities, versioned_purl(purl, version))
 
             return json.dumps(cdx_output, indent=2)
         except Exception as e:
